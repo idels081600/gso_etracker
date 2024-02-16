@@ -3,8 +3,8 @@ require_once 'dbh.php';
 session_start();
 $username1 = $_SESSION['username'];
 $servername = "localhost";
-$username = "root";
-$password = "";
+$username = "bryanmysql";
+$password = "gsotagbilaran";
 $dbname = "my_data";
 $conn = new mysqli($servername, $username, $password, $dbname);
 

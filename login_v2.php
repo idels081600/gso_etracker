@@ -34,7 +34,7 @@
       align-items: center;
       margin: 0;
       padding: 0;
-      background-color: rgba(0, 0, 0, 0.1!important); 
+      background-color: rgba(0, 0, 0, 0.1); 
     }
 
     .background-overlay {

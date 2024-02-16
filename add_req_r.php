@@ -7,7 +7,7 @@ if (!isset($_SESSION['username'])) {
 } else if ($_SESSION['role'] == 'Desk Clerk') {
     header("location:login_v2.php");
 }
-$conn = mysqli_connect("localhost", "root", '', "my_data");
+$conn = mysqli_connect("localhost", "bryanmysql", 'gsotagbilaran', "my_data");
 
 if (isset($_POST['save_data2'])) {
     $name = $_POST['name'];

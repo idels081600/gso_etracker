@@ -2,8 +2,6 @@
 session_start();
 require_once 'dbh.php'; // Assuming this file contains your database connection logic
 
-$conn = mysqli_connect("localhost", "root", '', "my_data");
-
 if(!isset($_SESSION['username'])){
     header("location:login_v2.php");
    }else if ($_SESSION['role'] == 'Admin'){

@@ -6,8 +6,8 @@ $url = "https://fcm.googleapis.com/fcm/send";
 
 // Replace these database connection details with your own
 $servername = "localhost";
-$username = "root";
-$password = "";
+$username = "bryanmysql";
+$password = "gsotagbilaran";
 $dbname = "my_data";
 
 $conn = new mysqli($servername, $username, $password, $dbname);

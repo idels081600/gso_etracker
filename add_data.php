@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-$conn = mysqli_connect("localhost", "root", '', "my_data");
+$conn = mysqli_connect("localhost", "bryanmysql", 'gsotagbilaran', "my_data");
 if(mysqli_connect_errno()){
     echo "failed to connect";
     exit();

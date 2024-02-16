@@ -225,7 +225,7 @@ if (!isset($_SESSION['username'])) {
     </style>
 
     <?php
-    $conn = mysqli_connect("localhost", "root", '', "my_data");
+    $conn = mysqli_connect("localhost", "bryanmysql", 'gsotagbilaran', "my_data");
     if (isset($_POST['register_user'])) {
         $username = $_POST['username'];
         $password = $_POST['password'];

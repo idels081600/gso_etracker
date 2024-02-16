@@ -2,8 +2,6 @@
 session_start();
 require_once 'dbh.php';
 
-$conn = mysqli_connect("localhost", "root", '', "my_data");
-
 if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }

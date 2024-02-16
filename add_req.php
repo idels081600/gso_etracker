@@ -123,7 +123,7 @@ if (!isset($_SESSION['username'])) {
 
     <?php
 
-    $conn = mysqli_connect("localhost", "root", '', "my_data");
+    $conn = mysqli_connect("localhost", "bryanmysql", 'gsotagbilaran', "my_data");
 
     if (isset($_POST['save_data2'])) {
         $name = $_POST['name'];
