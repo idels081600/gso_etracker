@@ -7,7 +7,12 @@ if (!isset($_SESSION['username'])) {
 } else if ($_SESSION['role'] == 'Desk Clerk') {
     header("location:login_v2.php");
 }
-$conn = mysqli_connect("localhost", "bryanmysql", 'gsotagbilaran', "my_data");
+$servername = "157.245.193.124";
+$username = "bryanmysql";
+$password = "gsotagbilaran";
+$dbname = "my_data";
+
+$conn = mysqli_connect($servername, $username, $password, $dbname);
 
 if (isset($_POST['save_data2'])) {
     $name = $_POST['name'];
