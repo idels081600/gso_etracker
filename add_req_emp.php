@@ -139,7 +139,7 @@ if (isset($_POST['save_data2'])) {
             color: #fff !important;
         }
     </style>
-    <script>
+    <!-- <script>
         // Function to hide the "Personal" option if the current time is before 9:00 AM or between 12:00 PM and 1:30 PM
         function hidePersonalOption() {
             // Get the current time
@@ -164,7 +164,7 @@ if (isset($_POST['save_data2'])) {
 
         // Call the function when the page loads
         window.onload = hidePersonalOption;
-    </script>
+    </script> -->
     <?php
     ?>
     <div class="container mt-5">
@@ -205,7 +205,7 @@ if (isset($_POST['save_data2'])) {
                                 <select class="form-control" id="sel1" name='typeofbusiness'>
                                     <?php
                                     // Check if the current time is before 9:00 AM
-                                    $currentTime = date('H:i');
+                                    $currentTime = date('Y-m-d H:i:s');
                                     if ($currentTime <= '9:30') {
                                         // If before 9:00 AM, only show Official Business option
                                         echo '<option>Official Business</option>';
