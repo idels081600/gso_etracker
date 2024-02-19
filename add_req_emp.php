@@ -17,18 +17,7 @@ if (!isset($_SESSION['username'])) {
 }
 
 if (isset($_POST['save_data2'])) {
-    // Check if the user has a pending request
-    $username = $_SESSION['username'];
-    $query_pending = "SELECT * FROM request WHERE name = '$username' AND Status = 'Pending'";
-    $result_pending = mysqli_query($conn, $query_pending);
-
-    if (mysqli_num_rows($result_pending) > 0) {
-        echo '<div class="alert alert-danger alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <strong>Error!</strong> You already have a pending request.
-            </div>';
-    } else {
-        // Proceed with inserting the new request
+         // Proceed with inserting the new request
         $name = mysqli_real_escape_string($conn, $_POST["name"]);
         $position = mysqli_real_escape_string($conn, $_POST["position"]);
         $date = date('Y-m-d', strtotime($_POST['date']));
@@ -51,7 +40,7 @@ if (isset($_POST['save_data2'])) {
                 </div>';
         }
     }
-}
+
 ?>
 
 
@@ -190,7 +179,7 @@ if (isset($_POST['save_data2'])) {
             <div class="card">
                 <div class="card-body">
                     <h2 class="card-title">Add Request</h2>
-                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
+                    <form action='add_req_emp.php' method="POST">
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input type="text" class="form-control" id="name" placeholder="Name" name="name" value="<?php echo $_SESSION['username']; ?>" readonly required>
