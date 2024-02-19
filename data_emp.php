@@ -2,7 +2,7 @@
 require_once 'dbh.php';
 session_start();
 $username1 = $_SESSION['username'];
-$servername = "localhost";
+$servername = "157.245.193.124";
 $username = "bryanmysql";
 $password = "gsotagbilaran";
 $dbname = "my_data";
