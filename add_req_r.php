@@ -15,23 +15,39 @@ $dbname = "my_data";
 $conn = mysqli_connect($servername, $username, $password, $dbname);
 
 if (isset($_POST['save_data2'])) {
-    // Proceed with inserting the new request
-   $name = mysqli_real_escape_string($conn, $_POST["name"]);
-   $position = mysqli_real_escape_string($conn, $_POST["position"]);
-   $date = date('Y-m-d', strtotime($_POST['date']));
-   $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
-   $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
-   $role = "Employee";
-   $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
 
-   $query_insert = "INSERT INTO request(name, position, date, destination, purpose, esttime, typeofbusiness, time_returned, Status, status1, dest2, ImageName, confirmed_by,remarks ,reason ,Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '00:00:00', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', ' ', ' ', ' ', '$role')";
-   $query_run = mysqli_query($conn, $query_insert);
+    $username = $_SESSION['username'];
+    $query_pending = "SELECT * FROM request WHERE name = '$username' AND (Status = 'Pending' OR status1 = 'Pass-Slip' OR status1 = 'Waiting For Pass Slip Approval' OR status1 = 'Scan Qrcode')";
+    $result_pending = mysqli_query($conn, $query_pending);
 
-   if ($query_run) {
-       // require_once 'send_notification.php';
-       header("Location: index_r.php");
-       exit(); // Make sure to exit after a header redirect
-   } 
+    if (mysqli_num_rows($result_pending) > 0) {
+        echo '<div class="alert alert-danger alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <strong>Error!</strong> You already have a pending request or You forgot to scan your Qrcode for arrival.
+            </div>';
+    } else {
+        $name = mysqli_real_escape_string($conn, $_POST["name"]);
+        $position = mysqli_real_escape_string($conn, $_POST["position"]);
+        $date = date('Y-m-d', strtotime($_POST['date']));
+        $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
+        $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
+        $role = $_SESSION['role'];
+        $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
+        // Proceed with inserting the new request
+        $query_insert = "INSERT INTO request(name, position, date, destination, purpose, timedept, esttime, typeofbusiness, time_returned, Status, status1, dest2, ImageName, confirmed_by,remarks ,reason ,Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '00:00:00', '00:00:00', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', ' ', ' ', ' ', '$role')";
+        $query_run = mysqli_query($conn, $query_insert);
+
+        if ($query_run) {
+            // require_once 'send_notification.php';
+            header("Location: index_emp.php");
+            exit();
+        } else {
+            echo '<div class="alert alert-danger alert-dismissible">
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    <strong>Error!</strong> Failed to add request. Please try again.
+                </div>';
+        }
+    }
 }
 ?>
 
