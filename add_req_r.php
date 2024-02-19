@@ -15,22 +15,23 @@ $dbname = "my_data";
 $conn = mysqli_connect($servername, $username, $password, $dbname);
 
 if (isset($_POST['save_data2'])) {
-    $name = $_POST['name'];
-    $position = $_POST['position'];
-    $date = date('Y-m-d', strtotime($_POST['date']));
-    $destination = $_POST['destination'];
-    $purpose = $_POST['purpose'];
-    $role = "Employee";
-    $typeofbusiness = $_POST['typeofbusiness'];
+    // Proceed with inserting the new request
+   $name = mysqli_real_escape_string($conn, $_POST["name"]);
+   $position = mysqli_real_escape_string($conn, $_POST["position"]);
+   $date = date('Y-m-d', strtotime($_POST['date']));
+   $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
+   $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
+   $role = "Employee";
+   $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
 
-    $query = "INSERT INTO request(name, position, date, destination, purpose, typeofbusiness, time_returned, Status, status1, dest2, ImageName, Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', '$role')";
-    $query_run = mysqli_query($conn, $query);
+   $query_insert = "INSERT INTO request(name, position, date, destination, purpose, esttime, typeofbusiness, time_returned, Status, status1, dest2, ImageName, confirmed_by,remarks ,reason ,Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '00:00:00', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', ' ', ' ', ' ', '$role')";
+   $query_run = mysqli_query($conn, $query_insert);
 
-    if ($query_run) {
-        // require_once 'send_notification.php';
-        header("Location: index_r.php");
-        exit(); // Make sure to exit after a header redirect
-    } 
+   if ($query_run) {
+       // require_once 'send_notification.php';
+       header("Location: index_emp.php");
+       exit(); // Make sure to exit after a header redirect
+   } 
 }
 ?>
 
