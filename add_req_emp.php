@@ -18,7 +18,7 @@ if (!isset($_SESSION['username'])) {
 if (isset($_POST['save_data2'])) {
 
     $username = $_SESSION['username'];
-    $query_pending = "SELECT * FROM request WHERE name = '$username' AND (Status = 'Pending' OR status1 = 'Pass-Slip')";
+    $query_pending = "SELECT * FROM request WHERE name = '$username' AND (Status = 'Pending' OR status1 = 'Pass-Slip' OR status1 = 'Waiting For Pass Slip Approval' OR status1 = 'Scan Qrcode')";
     $result_pending = mysqli_query($conn, $query_pending);
 
     if (mysqli_num_rows($result_pending) > 0) {
