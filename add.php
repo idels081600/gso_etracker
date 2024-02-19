@@ -24,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $date = mysqli_real_escape_string($conn, $_POST["date"]);
 
     // Insert the data into the database
-    $sql = "INSERT INTO timer (name, date) VALUES ('$name', '$date')";
+    $sql = "INSERT INTO your_table_name (name, date) VALUES ('$name', '$date')";
     if (mysqli_query($conn, $sql)) {
         echo "Record inserted successfully";
     } else {

@@ -16,7 +16,7 @@ if (!isset($_SESSION['username'])) {
     header("location:login_v2.php");
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if (isset($_POST['save_data2'])) {
     // Check if the user has a pending request
     $username = $_SESSION['username'];
     $query_pending = "SELECT * FROM request WHERE name = '$username' AND Status = 'Pending'";
@@ -29,13 +29,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>';
     } else {
         // Proceed with inserting the new request
-        $name = mysqli_real_escape_string($conn, $_POST["name"]);
-        $position = mysqli_real_escape_string($conn, $_POST["position"]);
+        $name = $_POST['name'];
+        $position = $_POST['position'];
         $date = date('Y-m-d', strtotime($_POST['date']));
-        $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
-        $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
+        $destination = $_POST['destination'];
+        $purpose = $_POST['purpose'];
         $role = $_SESSION['role'];
-        $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
+        $typeofbusiness = $_POST['typeofbusiness'];
 
         $query_insert = "INSERT INTO request(name, position, date, destination, purpose, typeofbusiness, time_returned, Status, status1, dest2, ImageName, Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', '$role')";
         $query_run = mysqli_query($conn, $query_insert);
@@ -191,7 +191,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="card">
                 <div class="card-body">
                     <h2 class="card-title">Add Request</h2>
-                    <form action=<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?> method="POST">
+                    <form action="add_req_emp.php" method="POST">
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input type="text" class="form-control" id="name" placeholder="Name" name="name" value="<?php echo $_SESSION['username']; ?>" readonly required>
