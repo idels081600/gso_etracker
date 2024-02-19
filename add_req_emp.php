@@ -37,7 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $role = $_SESSION['role'];
         $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
 
-        $query_insert = "INSERT INTO request(name, position, date, destination, purpose, typeofbusiness, time_returned, Status, status1, dest2, ImageName, Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', '$role')";
+        $query_insert = "INSERT INTO request(name, position, date, destination, purpose, esttime, typeofbusiness, time_returned, Status, status1, dest2, ImageName, confirmed_by,remarks ,reason ,Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '2024-02-19 11:55:00', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', ' ', ' ', ' ', '$role')";
         $query_run = mysqli_query($conn, $query_insert);
 
         if ($query_run) {
