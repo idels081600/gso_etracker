@@ -30,7 +30,8 @@ if (isset($_POST['save_data2'])) {
         $query_run = mysqli_query($conn, $query_insert);
 
         if ($query_run) {
-            require_once 'send_notification.php';
+            // require_once 'send_notification.php';
+            header("Location: index_emp.php");
             exit(); // Make sure to exit after a header redirect
         } 
     }
