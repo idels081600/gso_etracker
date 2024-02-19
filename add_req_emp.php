@@ -11,55 +11,43 @@ if (!isset($_SESSION['username'])) {
     header("location:login_v2.php");
 }
 $conn = new mysqli($servername, $username, $password, $dbname);
-
 if (isset($_POST['save_data2'])) {
-    // Check if the form has been submitted recently
-    if (!isset($_SESSION['last_submit']) || time() - $_SESSION['last_submit'] > 0) {
-        // Set the last submit time
-        $_SESSION['last_submit'] = time();
+    // Check if the user has a pending request
+    $username = $_SESSION['username'];
+    $query_pending = "SELECT * FROM request WHERE name = '$username' AND Status = 'Pending'";
+    $result_pending = mysqli_query($conn, $query_pending);
 
-        // Check if the user has a pending request
-        $username = $_SESSION['username'];
-        $query_pending = "SELECT * FROM request WHERE name = '$username' AND Status = 'Pending'";
-        $result_pending = mysqli_query($conn, $query_pending);
+    if (mysqli_num_rows($result_pending) > 0) {
+        echo '<div class="alert alert-danger alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <strong>Error!</strong> You already have a pending request.
+            </div>';
+    } else {
+        // Proceed with inserting the new request
+        $name = $_POST['name'];
+        $position = $_POST['position'];
+        $date = date('Y-m-d', strtotime($_POST['date']));
+        $destination = $_POST['destination'];
+        $purpose = $_POST['purpose'];
+        $role = $_SESSION['role'];
+        $typeofbusiness = $_POST['typeofbusiness'];
 
-        if (mysqli_num_rows($result_pending) > 0) {
+        $query_insert = "INSERT INTO request(name, position, date, destination, purpose, typeofbusiness, time_returned, Status, status1, dest2, ImageName, Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', '$role')";
+        $query_run = mysqli_query($conn, $query_insert);
+
+        if ($query_run) {
+            require_once 'send_notification.php';
+            header("Location: index_emp.php");
+            exit(); // Make sure to exit after a header redirect
+        } else {
             echo '<div class="alert alert-danger alert-dismissible">
                     <button type="button" class="close" data-dismiss="alert">&times;</button>
-                    <strong>Error!</strong> You already have a pending request.
+                    <strong>Error!</strong> Please try again.
                 </div>';
-        } else {
-            // Proceed with inserting the new request
-            $name = $_POST['name'];
-            $position = $_POST['position'];
-            $date = date('Y-m-d', strtotime($_POST['date']));
-            $destination = $_POST['destination'];
-            $purpose = $_POST['purpose'];
-            $role = $_SESSION['role'];
-            $typeofbusiness = $_POST['typeofbusiness'];
-
-            $query_insert = "INSERT INTO request(name, position, date, destination, purpose, typeofbusiness, time_returned, Status, status1, dest2, ImageName, Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', '$role')";
-            $query_run = mysqli_query($conn, $query_insert);
-
-            if ($query_run) {
-                require_once 'send_notification.php';
-                header("Location: index_emp.php");
-                exit(); // Make sure to exit after a header redirect
-            } else {
-                echo '<div class="alert alert-danger alert-dismissible">
-                        <button type="button" class="close" data-dismiss="alert">&times;</button>
-                        <strong>Error!</strong> Please try again.
-                    </div>';
-            }
         }
-    } else {
-        // Double submission attempt
-        echo '<div class="alert alert-warning alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <strong>Warning!</strong> Please wait before submitting again.
-            </div>';
     }
 }
+
 ?>
 
 
