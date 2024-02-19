@@ -1,13 +1,7 @@
 <?php
 require_once 'dbh.php';
 session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Desk Clerk') {
-    header("location:login_v2.php");
-}
+
 ?>
 
 <!doctype html>
