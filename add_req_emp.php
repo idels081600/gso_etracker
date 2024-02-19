@@ -1,5 +1,6 @@
 <?php
 session_start();
+date_default_timezone_set('Asia/Manila'); // Set the timezone to Philippines
 $servername = "157.245.193.124";
 $username = "bryanmysql";
 $password = "gsotagbilaran";
@@ -139,7 +140,7 @@ if (isset($_POST['save_data2'])) {
         }
     </style>
     <script>
-        date_default_timezone_set('Asia/Manila'); // Set the timezone to Philippines
+       
         // Function to hide the "Personal" option if the current time is before 9:00 AM or between 12:00 PM and 1:30 PM
         function hidePersonalOption() {
             // Get the current time
