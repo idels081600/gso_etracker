@@ -253,10 +253,10 @@ if (!isset($_SESSION['username'])) {
         </div>
 
         <div class="row" id="textrow">
-            <a href="qrcode_scanner_dept_r.php">
+            <a href="qrcode_scanner_dept_tcws.php">
                 <button type="button" class="btn btn-primary mr-2" id="arrivalButton">In</button>
             </a>
-            <a href="qrcode_scanner_desk_r.php">
+            <a href="qrcode_scanner_desk_tcws.php">
                 <button type="button" class="btn btn-primary" id="departureButton">Out</button>
             </a>
             <h2 id="texthead">Take Care,</h2>
