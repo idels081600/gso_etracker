@@ -112,9 +112,9 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESS
                 <li class="nav-item">
                     <a class="nav-link" href="index.php">Home <span class="sr-only">(current)</span></a>
                 </li>
-                <!-- <li class="nav-item">
+                <li class="nav-item">
                     <a class="nav-link" href="add_req.php">Add Request</a>
-                </li> -->
+                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="approved.php">Approved</a>
                 </li>
