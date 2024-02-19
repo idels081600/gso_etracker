@@ -10,7 +10,8 @@ if (!isset($_SESSION['username'])) {
 } else if ($_SESSION['role'] == 'Desk Clerk') {
     header("location:login_v2.php");
 }
-$conn = mysqli_connect("localhost", "bryanmysql", 'gsotagbilaran', "my_data");
+$conn = new mysqli($servername, $username, $password, $dbname);
+
 if (isset($_POST['save_data2'])) {
     // Check if the form has been submitted recently
     if (!isset($_SESSION['last_submit']) || time() - $_SESSION['last_submit'] > 0) {
