@@ -153,7 +153,7 @@ if (isset($_POST['save_data2'])) {
             var personalOption = selectElement.querySelector('option[value="Personal"]');
 
             // Check if the current time is before 9:00 AM or between 12:00 PM and 1:30 PM
-            if ($currentTime < '09:00' || ($currentTime >= '12:00' && $currentTime <= '13:30')) {
+            if ($currentTime < '09:00') {
                 // Hide the "Personal" option
                 personalOption.style.display = "none";
             } else {
@@ -208,10 +208,8 @@ if (isset($_POST['save_data2'])) {
                                     <?php
                                     // Check if the current time is before 9:00 AM
                                     $currentTime = date('H:i');
-                                    if ($currentTime >= '12:00' && $currentTime <= '13:30') {
+                                    if ($currentTime < '9:00') {
                                         // If before 9:00 AM, only show Official Business option
-                                        echo '<option>Official Business</option>';
-                                    } else if ($currentTime < '9:00') {
                                         echo '<option>Official Business</option>';
                                     } else {
                                         // If after 9:00 AM, show both options
