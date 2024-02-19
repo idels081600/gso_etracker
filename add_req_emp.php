@@ -219,8 +219,9 @@ if (isset($_POST['save_data2'])) {
                             <div class="form-group">
                                 <label for="sel1">Type of Business:</label>
                                 <select class="form-control" id="sel1" name='typeofbusiness'>
-                                    <option>Personal</option>
                                     <option>Official Business</option>
+                                    <option>Personal</option>
+
                                 </select>
                             </div>
                         </div>
