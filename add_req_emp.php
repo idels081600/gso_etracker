@@ -203,18 +203,8 @@ if (isset($_POST['save_data2'])) {
                             <div class="form-group">
                                 <label for="sel1">Type of Business:</label>
                                 <select class="form-control" id="sel1" name='typeofbusiness'>
-                                    <?php
-                                    // Check if the current time is before 9:00 AM
-                                    $currentTime = date('Y-m-d H:i:s');
-                                    if ($currentTime <= '9:30') {
-                                        // If before 9:00 AM, only show Official Business option
-                                        echo '<option>Official Business</option>';
-                                    } else if ($currentTime > '9:30') {
-                                        // If after 9:00 AM, show both options
-                                        echo '<option>Personal</option>';
-                                        echo '<option>Official Business</option>';
-                                    }
-                                    ?>
+                                    <option>Personal</option>
+                                    <option>Official Business</option>
                                 </select>
                             </div>
                         </div>
