@@ -10,13 +10,13 @@ date_default_timezone_set('Asia/Manila'); // Set the timezone to Philippines
 
 if (!isset($_SESSION['username'])) {
     header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Admin') {
+    exit(); // Exit the script after redirection
+} elseif ($_SESSION['role'] == 'Admin' || $_SESSION['role'] == 'Desk Clerk') {
     header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Desk Clerk') {
-    header("location:login_v2.php");
+    exit(); // Exit the script after redirection
 }
 
-if (isset($_POST['save_data2'])) {
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Check if the user has a pending request
     $username = $_SESSION['username'];
     $query_pending = "SELECT * FROM request WHERE name = '$username' AND Status = 'Pending'";
@@ -29,13 +29,13 @@ if (isset($_POST['save_data2'])) {
             </div>';
     } else {
         // Proceed with inserting the new request
-        $name = $_POST['name'];
-        $position = $_POST['position'];
+        $name = mysqli_real_escape_string($conn, $_POST["name"]);
+        $position = mysqli_real_escape_string($conn, $_POST["position"]);
         $date = date('Y-m-d', strtotime($_POST['date']));
-        $destination = $_POST['destination'];
-        $purpose = $_POST['purpose'];
+        $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
+        $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
         $role = $_SESSION['role'];
-        $typeofbusiness = $_POST['typeofbusiness'];
+        $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
 
         $query_insert = "INSERT INTO request(name, position, date, destination, purpose, typeofbusiness, time_returned, Status, status1, dest2, ImageName, Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', '$role')";
         $query_run = mysqli_query($conn, $query_insert);
@@ -47,12 +47,11 @@ if (isset($_POST['save_data2'])) {
         } else {
             echo '<div class="alert alert-danger alert-dismissible">
                     <button type="button" class="close" data-dismiss="alert">&times;</button>
-                    <strong>Error!</strong> Please try again.
+                    <strong>Error!</strong> Failed to submit request: ' . mysqli_error($conn) . '
                 </div>';
         }
     }
 }
-
 ?>
 
 
@@ -191,7 +190,7 @@ if (isset($_POST['save_data2'])) {
             <div class="card">
                 <div class="card-body">
                     <h2 class="card-title">Add Request</h2>
-                    <form action="add_req_emp.php" method="POST">
+                    <form action=<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?> method="POST">
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input type="text" class="form-control" id="name" placeholder="Name" name="name" value="<?php echo $_SESSION['username']; ?>" readonly required>
@@ -228,10 +227,9 @@ if (isset($_POST['save_data2'])) {
                                     if ($currentTime >= '12:00' && $currentTime <= '13:30') {
                                         // If before 9:00 AM, only show Official Business option
                                         echo '<option>Official Business</option>';
-                                    } else if($currentTime < '9:00'){
+                                    } else if ($currentTime < '9:00') {
                                         echo '<option>Official Business</option>';
-                                    }
-                                    else {
+                                    } else {
                                         // If after 9:00 AM, show both options
                                         echo '<option>Personal</option>';
                                         echo '<option>Official Business</option>';
