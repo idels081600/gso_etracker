@@ -31,7 +31,6 @@ if (isset($_POST['save_data2'])) {
 
         if ($query_run) {
             require_once 'send_notification.php';
-            header("Location: index_emp.php");
             exit(); // Make sure to exit after a header redirect
         } else {
             echo '<div class="alert alert-danger alert-dismissible">
@@ -118,7 +117,7 @@ if (isset($_POST['save_data2'])) {
                     <a class="nav-link" href="index_emp.php">Home <span class="sr-only">(current)</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="add_req_emp_r.php">Add Request</a>
+                    <a class="nav-link" href="add_req_emp.php">Add Request</a>
                 </li>
                 <!-- <li class="nav-item">
                 <a class="nav-link" href="approved_emp.php">Approved</a>
