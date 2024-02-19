@@ -155,6 +155,16 @@ if (!isset($_SESSION['username'])) {
         /* Add or adjust margin-top as needed */
     }
 
+    #arrivalButton {
+        background-color: #28a745;
+        margin-left: 180px;
+    }
+
+    #departureButton {
+        background-color: #dc3545;
+        /* Blue */
+    }
+
     @media screen and (max-width: 600px) {
         #textrow {
             margin-top: 10px;
@@ -190,13 +200,15 @@ if (!isset($_SESSION['username'])) {
             height: 90%;
             margin-left: 1%;
         }
+
+
     }
 </style>
 
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <a class="navbar-brand" href="qrcode_scanner_desk_tcws.php">
+        <a class="navbar-brand" href="index_tcws.php">
             <img src="logo.png" alt="Logo" class="logo-img">
             <span class="logo-text">E-Pass</span>
         </a>
@@ -205,7 +217,7 @@ if (!isset($_SESSION['username'])) {
         </button>
 
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="nav navbar-nav navbar-right">
+        <ul class="nav navbar-nav navbar-right">
                 <li class="nav-item">
                     <a class="nav-link" href="index_tcws.php">Home <span class="sr-only">(current)</span></a>
                 </li>
@@ -239,8 +251,15 @@ if (!isset($_SESSION['username'])) {
             <video id="preview"></video>
 
         </div>
+
         <div class="row" id="textrow">
-            <h2 id="texthead">Amping,</h2>
+            <a href="qrcode_scanner_dept_r.php">
+                <button type="button" class="btn btn-primary mr-2" id="arrivalButton">In</button>
+            </a>
+            <a href="qrcode_scanner_desk_r.php">
+                <button type="button" class="btn btn-primary" id="departureButton">Out</button>
+            </a>
+            <h2 id="texthead">Take Care,</h2>
             <h1 name="text" id="text"></h1>
             <form method="post" action="">
                 <!-- <button id="submit" name="approve_req_depart" >Submit</button> -->
@@ -301,10 +320,14 @@ if (!isset($_SESSION['username'])) {
                             document.getElementById('text').textContent = scannedData;
 
                             // Play a sound
-                            var audio = new Audio('qrcode.mp3'); // Replace 'path/to/sound.mp3' with the actual path to your sound file
+                            var audio = new Audio('Success.mp3'); // Replace 'path/to/sound.mp3' with the actual path to your sound file
                             audio.play();
                         } else {
-                            alert('Your Request does not exist in the database');
+                            var audio = new Audio('error.wav'); // Replace 'path/to/sound.mp3' with the actual path to your sound file
+                            audio.play();
+                            setTimeout(function() {
+                                alert('Your Request does not exist in the database');
+                            }, 100);
                         }
                     },
                     error: function() {
