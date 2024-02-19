@@ -31,7 +31,7 @@ if (isset($_POST['save_data2'])) {
         $date = date('Y-m-d', strtotime($_POST['date']));
         $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
         $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
-        $role = $_SESSION['role'];
+        $role = "Employee";
         $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
         // Proceed with inserting the new request
         $query_insert = "INSERT INTO request(name, position, date, destination, purpose, timedept, esttime, typeofbusiness, time_returned, Status, status1, dest2, ImageName, confirmed_by,remarks ,reason ,Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '00:00:00', '00:00:00', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', ' ', ' ', ' ', '$role')";
