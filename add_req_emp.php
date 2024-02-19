@@ -16,7 +16,7 @@ if (!isset($_SESSION['username'])) {
     exit(); // Exit the script after redirection
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if (isset($_POST['save_data2'])) {
     // Check if the user has a pending request
     $username = $_SESSION['username'];
     $query_pending = "SELECT * FROM request WHERE name = '$username' AND Status = 'Pending'";
@@ -190,7 +190,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="card">
                 <div class="card-body">
                     <h2 class="card-title">Add Request</h2>
-                    <form action='index_emp.php' method="POST">
+                    <form action='add_req_emp.php' method="POST">
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input type="text" class="form-control" id="name" placeholder="Name" name="name" value="<?php echo $_SESSION['username']; ?>" readonly required>
