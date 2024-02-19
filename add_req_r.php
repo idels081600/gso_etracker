@@ -1,4 +1,5 @@
 <?php
+require_once 'dbh.php';
 session_start();
 if (!isset($_SESSION['username'])) {
     header("location:login_v2.php");
@@ -7,7 +8,6 @@ if (!isset($_SESSION['username'])) {
 } else if ($_SESSION['role'] == 'Desk Clerk') {
     header("location:login_v2.php");
 }
-$conn = mysqli_connect("localhost", "bryanmysql", 'gsotagbilaran', "my_data");
 
 if (isset($_POST['save_data2'])) {
     $name = $_POST['name'];
