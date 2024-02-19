@@ -25,11 +25,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $date = date('Y-m-d', strtotime($_POST['date']));
     $destination = $_POST['destination'];
     $purpose = $_POST['purpose'];
-    $role = $_SESSION['role'];
+    // $role = $_SESSION['role'];
     $typeofbusiness = $_POST['typeofbusiness'];
 
     // Insert the data into the database
-    $sql = "INSERT INTO request(name, position, date, destination, purpose, typeofbusiness, time_returned, Status, status1, dest2, ImageName, Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', '$role')";
+    $sql = "INSERT INTO request (name, position, date, destination, purpose, typeofbusiness, time_returned, Status, status1, dest2, ImageName, Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', '$role')";
     if (mysqli_query($conn, $sql)) {
         echo "Record inserted successfully";
     } else {
@@ -140,7 +140,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             color: #fff !important;
         }
     </style>
-    <script>
+    <!-- <script>
         // Function to hide the "Personal" option if the current time is before 9:00 AM or between 12:00 PM and 1:30 PM
         function hidePersonalOption() {
             // Get the current time
@@ -165,7 +165,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Call the function when the page loads
         window.onload = hidePersonalOption;
-    </script>
+    </script> -->
     <?php
 
 
