@@ -29,15 +29,10 @@ if (isset($_POST['save_data2'])) {
         $query_insert = "INSERT INTO request(name, position, date, destination, purpose, esttime, typeofbusiness, time_returned, Status, status1, dest2, ImageName, confirmed_by,remarks ,reason ,Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '2024-02-19 11:55:00', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', ' ', ' ', ' ', '$role')";
         $query_run = mysqli_query($conn, $query_insert);
 
-        // if ($query_run) {
-        //     require_once 'send_notification.php';
-        //     exit(); // Make sure to exit after a header redirect
-        // } else {
-        //     echo '<div class="alert alert-danger alert-dismissible">
-        //             <button type="button" class="close" data-dismiss="alert">&times;</button>
-        //             <strong>Error!</strong> Failed to submit request: ' . mysqli_error($conn) . '
-        //         </div>';
-        // }
+        if ($query_run) {
+            require_once 'send_notification.php';
+            exit(); // Make sure to exit after a header redirect
+        } 
     }
 
 ?>
