@@ -15,28 +15,25 @@ if (!isset($_SESSION['username'])) {
     header("location:login_v2.php");
     exit(); // Exit the script after redirection
 }
-
 if (isset($_POST['save_data2'])) {
-    // Proceed with inserting the new request
-    $name = mysqli_real_escape_string($conn, $_POST["name"]);
-    $position = mysqli_real_escape_string($conn, $_POST["position"]);
-    $date = date('Y-m-d', strtotime($_POST['date']));
-    $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
-    $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
-    $role = $_SESSION['role'];
-    $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
 
-    // Add a condition to check if the user already has a pending request with specific statuses
     $username = $_SESSION['username'];
-    $query_pending = "SELECT * FROM request WHERE name = '$username' AND Status = 'Pending' AND status1 = 'Pass-Slip'";
+    $query_pending = "SELECT * FROM request WHERE name = '$username' AND (Status = 'Pending' OR status1 = 'Pass-Slip')";
     $result_pending = mysqli_query($conn, $query_pending);
 
     if (mysqli_num_rows($result_pending) > 0) {
         echo '<div class="alert alert-danger alert-dismissible">
                 <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <strong>Error!</strong> You already have a pending request with a Pass-Slip status.
+                <strong>Error!</strong> You already have a pending request or You forgot to scan your Qrcode for arrival.
             </div>';
     } else {
+        $name = mysqli_real_escape_string($conn, $_POST["name"]);
+        $position = mysqli_real_escape_string($conn, $_POST["position"]);
+        $date = date('Y-m-d', strtotime($_POST['date']));
+        $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
+        $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
+        $role = $_SESSION['role'];
+        $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
         // Proceed with inserting the new request
         $query_insert = "INSERT INTO request(name, position, date, destination, purpose, timedept, esttime, typeofbusiness, time_returned, Status, status1, dest2, ImageName, confirmed_by,remarks ,reason ,Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '00:00:00', '00:00:00', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', ' ', ' ', ' ', '$role')";
         $query_run = mysqli_query($conn, $query_insert);
@@ -44,8 +41,7 @@ if (isset($_POST['save_data2'])) {
         if ($query_run) {
             // require_once 'send_notification.php';
             header("Location: index_emp.php");
-            exit(); 
-
+            exit();
         } else {
             echo '<div class="alert alert-danger alert-dismissible">
                     <button type="button" class="close" data-dismiss="alert">&times;</button>
