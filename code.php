@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      SET `timedept` = NOW(), 
                          Status = 'Approved', 
                          `status1` = 'Pass-Slip',  
-                         `ImageName`= 'Check-Approved.png' 
+                         `ImageName`= 'check-approved.png' 
                      WHERE name = '$scannedData' 
                      ORDER BY id DESC 
                      LIMIT 1";
