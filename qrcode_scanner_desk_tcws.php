@@ -320,7 +320,7 @@ if (!isset($_SESSION['username'])) {
                             document.getElementById('text').textContent = scannedData;
 
                             // Play a sound
-                            var audio = new Audio('Success.mp3'); // Replace 'path/to/sound.mp3' with the actual path to your sound file
+                            var audio = new Audio('success.mp3'); // Replace 'path/to/sound.mp3' with the actual path to your sound file
                             audio.play();
                         } else {
                             var audio = new Audio('error.wav'); // Replace 'path/to/sound.mp3' with the actual path to your sound file
