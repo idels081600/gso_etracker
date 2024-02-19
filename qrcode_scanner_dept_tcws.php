@@ -205,30 +205,27 @@ if (!isset($_SESSION['username'])) {
         </button>
 
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="nav navbar-nav navbar-right">
+        <ul class="nav navbar-nav navbar-right">
+                <li class="nav-item">
+                    <a class="nav-link" href="index_tcws.php">Home <span class="sr-only">(current)</span></a>
+                </li>
                 <!-- <li class="nav-item">
-                    <a class="nav-link" href="index.php">Home <span class="sr-only">(current)</span></a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" href="add_req.php">Add Request</a>
+                </li> -->
+                <!-- <li class="nav-item">
+                    <a class="nav-link" href="approved_tcws.php">Approved</a>
+                </li> -->
+                <li class="nav-item">
+                    <a class="nav-link" href="declined_tcws.php">Declined Request</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="approved.php">Approved</a>
+                    <a class="nav-link" href="track_emp_tcws.php">Track Employees</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="decline.php">Declined Request</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="track_emp.php">Track Employees</a>
-                </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link" href="register.php">Register</a>
                 </li> -->
                 <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_dept_tcws.php">Arrival</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_desk_tcws.php">Departure</a>
+                    <a class="nav-link" href="qrcode_scanner_desk_tcws.php">Scan QRcode</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="logout.php">Logout</a>

@@ -127,9 +127,9 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESS
                 <!-- <li class="nav-item">
                     <a class="nav-link" href="register.php">Register</a>
                 </li> -->
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner.php">Scan QRcode</a>
-                </li> -->
+                <li class="nav-item">
+                    <a class="nav-link" href="qrcode_scanner_desk_tcws.php">Scan QRcode</a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="logout.php">Logout</a>
                 </li>

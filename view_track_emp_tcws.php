@@ -80,7 +80,7 @@ if (!isset($_SESSION['username'])) {
         </button>
 
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="nav navbar-nav navbar-right">
+        <ul class="nav navbar-nav navbar-right">
                 <li class="nav-item">
                     <a class="nav-link" href="index_tcws.php">Home <span class="sr-only">(current)</span></a>
                 </li>
@@ -99,9 +99,9 @@ if (!isset($_SESSION['username'])) {
                 <!-- <li class="nav-item">
                     <a class="nav-link" href="register.php">Register</a>
                 </li> -->
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner.php">Scan QRcode</a>
-                </li> -->
+                <li class="nav-item">
+                    <a class="nav-link" href="qrcode_scanner_desk_tcws.php">Scan QRcode</a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="logout.php">Logout</a>
                 </li>
