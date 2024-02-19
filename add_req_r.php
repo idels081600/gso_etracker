@@ -29,7 +29,7 @@ if (isset($_POST['save_data2'])) {
 
    if ($query_run) {
        // require_once 'send_notification.php';
-       header("Location: index_emp.php");
+       header("Location: index_r.php");
        exit(); // Make sure to exit after a header redirect
    } 
 }
