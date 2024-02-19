@@ -20,11 +20,16 @@ $conn->set_charset("utf8mb4");
 // Check if the form was submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Retrieve the input values from the form
-    $name = mysqli_real_escape_string($conn, $_POST["name"]);
-    $date = mysqli_real_escape_string($conn, $_POST["date"]);
+    $name = $_POST['name'];
+    $position = $_POST['position'];
+    $date = date('Y-m-d', strtotime($_POST['date']));
+    $destination = $_POST['destination'];
+    $purpose = $_POST['purpose'];
+    $role = $_SESSION['role'];
+    $typeofbusiness = $_POST['typeofbusiness'];
 
     // Insert the data into the database
-    $sql = "INSERT INTO timer (name, date) VALUES ('$name', '$date')";
+    $sql = "INSERT INTO request(name, position, date, destination, purpose, typeofbusiness, time_returned, Status, status1, dest2, ImageName, Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', '$role')";
     if (mysqli_query($conn, $sql)) {
         echo "Record inserted successfully";
     } else {
