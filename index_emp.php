@@ -334,7 +334,7 @@ if (!isset($_SESSION['username'])) {
   </div>
   <div class="text">
     Note: Please Scan Your QR to Complete The Process <br>
-    Personal Request will show After 9:30 Am and 1:30 Pm
+    Personal Request will be approve after 9:30 Am
   </div>
 </body>
 

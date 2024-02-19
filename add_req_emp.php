@@ -17,15 +17,26 @@ if (!isset($_SESSION['username'])) {
 }
 
 if (isset($_POST['save_data2'])) {
-         // Proceed with inserting the new request
-        $name = mysqli_real_escape_string($conn, $_POST["name"]);
-        $position = mysqli_real_escape_string($conn, $_POST["position"]);
-        $date = date('Y-m-d', strtotime($_POST['date']));
-        $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
-        $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
-        $role = $_SESSION['role'];
-        $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
+    // Proceed with inserting the new request
+    $name = mysqli_real_escape_string($conn, $_POST["name"]);
+    $position = mysqli_real_escape_string($conn, $_POST["position"]);
+    $date = date('Y-m-d', strtotime($_POST['date']));
+    $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
+    $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
+    $role = $_SESSION['role'];
+    $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
 
+    // Add a condition to check if the user already has a pending request with specific statuses
+    $query_pending = "SELECT * FROM request WHERE name = '$name' AND Status = 'Pending' AND status1 = 'Pass-Slip'";
+    $result_pending = mysqli_query($conn, $query_pending);
+
+    if (mysqli_num_rows($result_pending) > 0) {
+        echo '<div class="alert alert-danger alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <strong>Error!</strong> You already have a pending request with a Pass-Slip status.
+            </div>';
+    } else {
+        // Proceed with inserting the new request
         $query_insert = "INSERT INTO request(name, position, date, destination, purpose, timedept, esttime, typeofbusiness, time_returned, Status, status1, dest2, ImageName, confirmed_by,remarks ,reason ,Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '00:00:00', '00:00:00', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', ' ', ' ', ' ', '$role')";
         $query_run = mysqli_query($conn, $query_insert);
 
@@ -33,8 +44,15 @@ if (isset($_POST['save_data2'])) {
             // require_once 'send_notification.php';
             header("Location: index_emp.php");
             exit(); // Make sure to exit after a header redirect
-        } 
+        } else {
+            echo '<div class="alert alert-danger alert-dismissible">
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    <strong>Error!</strong> Failed to add request. Please try again.
+                </div>';
+        }
     }
+}
+
 
 ?>
 
