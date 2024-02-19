@@ -163,7 +163,7 @@ if (isset($_POST['save_data2'])) {
             <div class="card">
                 <div class="card-body">
                     <h2 class="card-title">Add Request</h2>
-                    <form action="add_req_emp.php" method="POST">
+                    <form action="add_req_r.php" method="POST">
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input type="text" class="form-control" id="name" placeholder="Name" name="name"
