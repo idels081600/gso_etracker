@@ -243,39 +243,4 @@ if (isset($_POST['returned_emp_desk'])) {
         exit(0);
     }
 }
-if (isset($_POST['save_data2'])) {
-    // Check if the user has a pending request
-    $username = $_SESSION['username'];
-    $query_pending = "SELECT * FROM request WHERE name = '$username' AND Status = 'Pending'";
-    $result_pending = mysqli_query($conn, $query_pending);
 
-    if (mysqli_num_rows($result_pending) > 0) {
-        echo '<div class="alert alert-danger alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <strong>Error!</strong> You already have a pending request.
-            </div>';
-    } else {
-        // Proceed with inserting the new request
-        $name = mysqli_real_escape_string($conn, $_POST["name"]);
-        $position = mysqli_real_escape_string($conn, $_POST["position"]);
-        $date = date('Y-m-d', strtotime($_POST['date']));
-        $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
-        $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
-        $role = $_SESSION['role'];
-        $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
-
-        $query_insert = "INSERT INTO request(name, position, date, destination, purpose, esttime, typeofbusiness, time_returned, Status, status1, dest2, ImageName, confirmed_by,remarks ,reason ,Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '2024-02-19 11:55:00', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', ' ', ' ', ' ', '$role')";
-        $query_run = mysqli_query($conn, $query_insert);
-
-        if ($query_run) {
-            require_once 'send_notification.php';
-            header("Location: index_emp.php");
-            exit(); // Make sure to exit after a header redirect
-        } else {
-            echo '<div class="alert alert-danger alert-dismissible">
-                    <button type="button" class="close" data-dismiss="alert">&times;</button>
-                    <strong>Error!</strong> Failed to submit request: ' . mysqli_error($conn) . '
-                </div>';
-        }
-    }
-}
