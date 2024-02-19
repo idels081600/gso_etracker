@@ -16,7 +16,7 @@ if (!isset($_SESSION['username'])) {
     header("location:login_v2.php");
 }
 
-if (isset($_POST['save_data2'])) {
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Check if the user has a pending request
     $username = $_SESSION['username'];
     $query_pending = "SELECT * FROM request WHERE name = '$username' AND Status = 'Pending'";
@@ -29,13 +29,13 @@ if (isset($_POST['save_data2'])) {
             </div>';
     } else {
         // Proceed with inserting the new request
-        $name = $_POST['name'];
-        $position = $_POST['position'];
+        $name = mysqli_real_escape_string($conn, $_POST["name"]);
+        $position = mysqli_real_escape_string($conn, $_POST["position"]);
         $date = date('Y-m-d', strtotime($_POST['date']));
-        $destination = $_POST['destination'];
-        $purpose = $_POST['purpose'];
+        $destination = mysqli_real_escape_string($conn, $_POST["destination"]);
+        $purpose = mysqli_real_escape_string($conn, $_POST["purpose"]);
         $role = $_SESSION['role'];
-        $typeofbusiness = $_POST['typeofbusiness'];
+        $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
 
         $query_insert = "INSERT INTO request(name, position, date, destination, purpose, typeofbusiness, time_returned, Status, status1, dest2, ImageName, Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', '$role')";
         $query_run = mysqli_query($conn, $query_insert);
