@@ -171,7 +171,7 @@ if (!isset($_SESSION['username'])) {
 
     </script> -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <a class="navbar-brand" href="index">
+        <a class="navbar-brand" href="index.php">
             <img src="logo.png" alt="Logo" class="logo-img">
             <span class="logo-text">E-Pass</span>
         </a>
@@ -183,28 +183,28 @@ if (!isset($_SESSION['username'])) {
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="nav navbar-nav navbar-right">
                 <li class="nav-item">
-                    <a class="nav-link" href="index">Home <span class="sr-only">(current)</span></a>
+                    <a class="nav-link" href="index.php">Home <span class="sr-only">(current)</span></a>
                 </li>
                 <!-- <li class="nav-item">
                     <a class="nav-link" href="add_req.php">Add Request</a>
                 </li> -->
                 <li class="nav-item">
-                    <a class="nav-link" href="approved">Approved</a>
+                    <a class="nav-link" href="approved.php">Approved</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="decline">Declined Request</a>
+                    <a class="nav-link" href="decline.php">Declined Request</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="track_emp">Track Employees</a>
+                    <a class="nav-link" href="track_emp.php">Track Employees</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="register">Register</a>
+                    <a class="nav-link" href="register.php">Register</a>
                 </li>
                 <!-- <li class="nav-item">
                     <a class="nav-link" href="qrcode_scanner.php">Scan QRcode</a>
                 </li> -->
                 <li class="nav-item">
-                    <a class="nav-link" href="logout">Logout</a>
+                    <a class="nav-link" href="logout.php">Logout</a>
                 </li>
             </ul>
         </div>
@@ -225,7 +225,7 @@ if (!isset($_SESSION['username'])) {
     </style>
 
     <?php
-    $conn = mysqli_connect("localhost", "bryanmysql", 'gsotagbilaran', "my_data");
+    $conn = mysqli_connect("157.245.193.124", "bryanmysql", 'gsotagbilaran', "my_data");
     if (isset($_POST['register_user'])) {
         $username = $_POST['username'];
         $password = $_POST['password'];
