@@ -20,22 +20,17 @@ if (isset($_POST['save_data2'])) {
     $date = date('Y-m-d', strtotime($_POST['date']));
     $destination = $_POST['destination'];
     $purpose = $_POST['purpose'];
-    $role = $_SESSION['role'];
+    $role = "Employee";
     $typeofbusiness = $_POST['typeofbusiness'];
 
     $query = "INSERT INTO request(name, position, date, destination, purpose, typeofbusiness, time_returned, Status, status1, dest2, ImageName, Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', 'pending.png', '$role')";
     $query_run = mysqli_query($conn, $query);
 
     if ($query_run) {
-        require_once 'send_notification.php';
+        // require_once 'send_notification.php';
         header("Location: index_emp.php");
         exit(); // Make sure to exit after a header redirect
-    } else {
-        echo '<div class="alert alert-danger alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <strong>Error!</strong> Please try again.
-            </div>';
-    }
+    } 
 }
 ?>
 
