@@ -6,7 +6,6 @@ $password = "gsotagbilaran";
 $dbname = "my_data";
 
 $conn = mysqli_connect($servername, $username, $password, $dbname);
-date_default_timezone_set('Asia/Manila'); // Set the timezone to Philippines
 
 if (!isset($_SESSION['username'])) {
     header("location:login_v2.php");
@@ -140,6 +139,7 @@ if (isset($_POST['save_data2'])) {
         }
     </style>
     <script>
+        date_default_timezone_set('Asia/Manila'); // Set the timezone to Philippines
         // Function to hide the "Personal" option if the current time is before 9:00 AM or between 12:00 PM and 1:30 PM
         function hidePersonalOption() {
             // Get the current time
@@ -166,8 +166,6 @@ if (isset($_POST['save_data2'])) {
         window.onload = hidePersonalOption;
     </script>
     <?php
-
-
     ?>
     <div class="container mt-5">
         <div class="p-5 rounded shadow">
