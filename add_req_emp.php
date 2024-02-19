@@ -27,6 +27,7 @@ if (isset($_POST['save_data2'])) {
     $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
 
     // Add a condition to check if the user already has a pending request with specific statuses
+    $username = $_SESSION['username'];
     $query_pending = "SELECT * FROM request WHERE name = '$name' AND Status = 'Pending' AND status1 = 'Pass-Slip'";
     $result_pending = mysqli_query($conn, $query_pending);
 
