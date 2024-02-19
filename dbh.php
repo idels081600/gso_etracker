@@ -17,6 +17,5 @@ if (!$conn) {
 // Set the character set
 $conn->set_charset("utf8mb4");
 
-// Connection successful
-echo "Connected successfully";
+
 ?>
