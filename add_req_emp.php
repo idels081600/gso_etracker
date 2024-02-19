@@ -1,6 +1,11 @@
 <?php
 session_start();
-require_once 'dbh.php';
+$servername = "157.245.193.124";
+$username = "bryanmysql";
+$password = "gsotagbilaran";
+$dbname = "my_data";
+
+$conn = mysqli_connect($servername, $username, $password, $dbname);
 date_default_timezone_set('Asia/Manila'); // Set the timezone to Philippines
 
 if (!isset($_SESSION['username'])) {
@@ -10,7 +15,7 @@ if (!isset($_SESSION['username'])) {
 } else if ($_SESSION['role'] == 'Desk Clerk') {
     header("location:login_v2.php");
 }
-$conn = new mysqli($servername, $username, $password, $dbname);
+
 if (isset($_POST['save_data2'])) {
     // Check if the user has a pending request
     $username = $_SESSION['username'];
