@@ -49,6 +49,14 @@ if (isset($_POST['save_data2'])) {
         }
     }
 }
+$username = $_SESSION['username'];
+$query_position = "SELECT position FROM logindb WHERE username = '$username'";
+$result_position = mysqli_query($conn, $query_position);
+if ($row = mysqli_fetch_assoc($result_position)) {
+    $default_position = $row['position'];
+} else {
+    $default_position = ''; // Default value if position not found
+}
 ?>
 
 
@@ -185,7 +193,7 @@ if (isset($_POST['save_data2'])) {
 
                         <div class="form-group">
                             <label for="position">Position</label>
-                            <input type="text" class="form-control" id="position" placeholder="Position" name="position" required>
+                            <input type="text" class="form-control" id="position" placeholder="Position" name="position" value="<?php echo $default_position; ?>" required>
                         </div>
                         <div class="form-group">
                             <label for="date">Date</label>
