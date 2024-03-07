@@ -233,7 +233,7 @@ if (!isset($_SESSION['username'])) {
         $name = $_POST['name'];
         $role = $_POST['role'];
 
-        $query = "INSERT INTO `logindb` (`username`, `password`, `name`, `role`,`Positon`) VALUES ('$username', '$password', '$name', '$role','$position')";
+        $query = "INSERT INTO `logindb` (`username`, `password`, `name`, `role`,`Position`) VALUES ('$username', '$password', '$name', '$role','$position')";
         $query_run = mysqli_query($conn, $query);
         if ($query_run) {
             ?>
