@@ -228,11 +228,12 @@ if (!isset($_SESSION['username'])) {
     $conn = mysqli_connect("157.245.193.124", "bryanmysql", 'gsotagbilaran', "my_data");
     if (isset($_POST['register_user'])) {
         $username = $_POST['username'];
+        $position = $_POST['position'];
         $password = $_POST['password'];
         $name = $_POST['name'];
         $role = $_POST['role'];
 
-        $query = "INSERT INTO `logindb` (`username`, `password`, `name`, `role`) VALUES ('$username', '$password', '$name', '$role')";
+        $query = "INSERT INTO `logindb` (`username`, `password`, `name`, `role`,`Positon`) VALUES ('$username', '$password', '$name', '$role','$position')";
         $query_run = mysqli_query($conn, $query);
         if ($query_run) {
             ?>
@@ -265,6 +266,11 @@ if (!isset($_SESSION['username'])) {
                         <div class="form-group">
                             <label for="username">Username:</label>
                             <input type="text" class="form-control" id="position" placeholder="Username" name="username"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label for="Position">Position:</label>
+                            <input type="text" class="form-control" id="position" placeholder="Position" name="position"
                                 required>
                         </div>
                         <div class="form-group">
