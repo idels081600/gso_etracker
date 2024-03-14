@@ -210,9 +210,6 @@ if (!isset($_SESSION['username'])) {
                                         <div class="form-group">
                                             <label for="sel1">Status:</label>
                                             <select class="form" id="sel1" name='status'>
-                                                <option>
-                                                    <?= $data['Status']; ?>
-                                                </option>
                                                 <option>Partially Approved</option>
                                                 <option>Declined</option>
                                             </select>
