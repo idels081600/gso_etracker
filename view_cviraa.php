@@ -3,6 +3,7 @@ session_start();
 require_once 'dbh.php';
 
 
+
 if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
@@ -85,9 +86,9 @@ if (!isset($_SESSION['username'])) {
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <a class="navbar-brand" href="index.php">
+        <a class="navbar-brand" href="index_cviraa.php">
             <img src="logo.png" alt="Logo" class="logo-img">
-            <span class="logo-text">E-Pass</span>
+            <span class="logo-text">E-Pass </span>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,35 +96,40 @@ if (!isset($_SESSION['username'])) {
         </button>
 
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="nav navbar-nav navbar-right">
+        <ul class="nav navbar-nav navbar-right">
                 <li class="nav-item">
-                    <a class="nav-link" href="index.php">Home <span class="sr-only">(current)</span></a>
+                    <a class="nav-link" href="index_cviraa.php">Home <span class="sr-only">(current)</span></a>
                 </li>
                 <!-- <li class="nav-item">
-                    <a class="nav-link" href="add_req.php">Add Request</a>
+                    <a class="nav-link" href="add_req_r.php">Add Request</a>
+                </li> -->
+                <!-- <li class="nav-item">
+                    <a class="nav-link" href="approved_tcws.php">Approved</a>
                 </li> -->
                 <li class="nav-item">
-                    <a class="nav-link" href="approved.php">Approved</a>
+                    <a class="nav-link" href="declined_cviraa.php">Declined Request</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="decline.php">Declined Request</a>
+                    <a class="nav-link" href="track_emp_cviraa.php">Track Employees</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="track_emp.php">Track Employees</a>
-                </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link" href="register.php">Register</a>
-                </li>
+                </li> -->
                 <!-- <li class="nav-item">
                     <a class="nav-link" href="qrcode_scanner.php">Scan QRcode</a>
                 </li> -->
+                <!-- <li class="nav-item">
+                    <a class="nav-link" href="qrcode_scanner_dept_r.php">Arrival</a>
+                </li> -->
                 <li class="nav-item">
-                    <a class="nav-link" href="login_v2.php">Logout</a>
+                    <a class="nav-link" href="qrcode_scanner_desk_cviraa.php">Scanner</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="logout.php">Logout</a>
                 </li>
             </ul>
         </div>
     </nav>
-
     <style>
         /* Remove the white box on hover */
         .navbar-nav .nav-link {
@@ -143,7 +149,7 @@ if (!isset($_SESSION['username'])) {
             <div class="card">
                 <div class="card-header">
                     <h4>Request Details
-                        <a href="index.php" id="btn_back" class="btn btn-danger float-end">Back</a>
+                        <a href="index_cviraa.php" id="btn_back" class="btn btn-danger float-end">Back</a>
                     </h4>
                 </div>
                 <div class="card-body">
@@ -226,17 +232,35 @@ if (!isset($_SESSION['username'])) {
                                         <div class="form-group">
                                             <label for="sel2">Confirmed By:</label>
                                             <select class="form" id="sel2" name='confirmed_by'>
-                                                <option>RUBY CASAS</option>
-                                                <option>MA. EMILIA GALAURA</option>
+                                                <option>Archery Coach/Trainer</option>
+                                                <option>Arnis Coach/Trainer</option>
+                                                <option>Athletics Coach/Trainer</option>
+                                                <option>Badminton Coach/Trainer</option>
+                                                <option>Baseball Coach/Trainer</option>
+                                                <option>Basketball Coach/Trainer</option>
+                                                <option>Boxing Coach/Trainer</option>
+                                                <option>Billiards Coach/Trainer</option>
+                                                <option>Chess Coach/Trainer</option>
+                                                <option>Dancesport Coach/Trainer</option>
+                                                <option>Football Coach/Trainer</option>
+                                                <option>Futsal Coach/Trainer</option>
+                                                <option>Sepak Takraw Coach/Trainer</option>
+                                                <option>Softball Coach/Trainer</option>
+                                                <option>Swimming Coach/Trainer</option>
+                                                <option>Table Tennis Coach/Trainer</option>
+                                                <option>Taekwondo Coach/Trainer</option>
+                                                <option>Tennis Coach/Trainer</option>
+                                                <option>Volleyball Coach/Trainer</option>
+                                                <option>SPED Coach/Trainer</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="button-row">
                                         <div id="approveButtonContainer">
-                                            <button type="submit" name="approve_req" class="btn btn-success">Approve</button>
+                                            <button type="submit" name="approve_req_cviraa" class="btn btn-success">Approve</button>
                                         </div>
                                         <div id="declineButtonContainer">
-                                            <button type="submit" name="decline_req" class="btn btn-danger">Decline</button>
+                                            <button type="submit" name="decline_req_cviraa" class="btn btn-danger">Decline</button>
                                         </div>
                                     </div>
                                 </div>

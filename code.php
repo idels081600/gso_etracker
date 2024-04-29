@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      SET `timedept` = NOW(), 
                          Status = 'Approved', 
                          `status1` = 'Pass-Slip',  
-                         `ImageName`= 'check-approved.png' 
+                         `ImageName`= 'Check-Approved.png' 
                      WHERE name = '$scannedData' 
                      ORDER BY id DESC 
                      LIMIT 1";
@@ -99,6 +99,30 @@ if (isset($_POST['approve_req_r'])) {
         exit(0);
     }
 }
+if (isset($_POST['approve_req_cviraa'])) {
+    $data_id = mysqli_real_escape_string($conn, $_POST['data_id']);
+    $status = mysqli_real_escape_string($conn, $_POST['status']);
+    $confirmed_by = mysqli_real_escape_string($conn, $_POST['confirmed_by']);
+    $esttime = mysqli_real_escape_string($conn, $_POST['esttime']);
+
+    // Convert the $esttime to DATETIME format
+    $esttime = date('Y-m-d H:i:s', strtotime($esttime));
+
+    $query = "UPDATE request SET esttime = '$esttime', Status = '$status', status1 = 'Scan Qrcode', confirmed_by = '$confirmed_by' WHERE id = '$data_id'";
+
+    // Execute the query and check for errors
+    $query_run = mysqli_query($conn, $query);
+
+    if ($query_run) {
+        $_SESSION['message'] = "Request Updated Successfully";
+        header("Location: index_cviraa.php");
+        exit(0);
+    } else {
+        $_SESSION['message'] = "Request Not Updated. Error: " . mysqli_error($conn);
+        header("Location: index_cviraa.php");
+        exit(0);
+    }
+}
 if (isset($_POST['approve_req_tcws'])) {
     $data_id = mysqli_real_escape_string($conn, $_POST['data_id']);
     $status = mysqli_real_escape_string($conn, $_POST['status']);
@@ -163,6 +187,27 @@ if (isset($_POST['decline_req_r'])) {
     } else {
         $_SESSION['message'] = "Request Not Updated. Error: " . mysqli_error($conn); // Capture and display the error message
         header("Location: index_r.php");
+        exit(0);
+    }
+}
+if (isset($_POST['decline_req_cviraa'])) {
+    $data_id = mysqli_real_escape_string($conn, $_POST['data_id']);
+    $status = mysqli_real_escape_string($conn, $_POST['status']);
+    $confirmed_by = mysqli_real_escape_string($conn, $_POST['confirmed_by']);
+    $reason = mysqli_real_escape_string($conn, $_POST['decline_reason']);
+
+    $query = "UPDATE request SET Status = '$status', `status1` = 'Declined', confirmed_by = '$confirmed_by', `reason` = '$reason',`ImageName` = 'declined.png' WHERE id = '$data_id'";
+
+    // Execute the query and check for errors
+    $query_run = mysqli_query($conn, $query);
+
+    if ($query_run) {
+        $_SESSION['message'] = "Request Updated Successfully";
+        header("Location: index_cviraa.php");
+        exit(0);
+    } else {
+        $_SESSION['message'] = "Request Not Updated. Error: " . mysqli_error($conn); // Capture and display the error message
+        header("Location: index_cviraa.php");
         exit(0);
     }
 }
@@ -243,4 +288,3 @@ if (isset($_POST['returned_emp_desk'])) {
         exit(0);
     }
 }
-

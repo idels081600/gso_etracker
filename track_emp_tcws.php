@@ -42,7 +42,8 @@ if (isset($_POST['delete_all'])) {
 
   <!-- Bootstrap CSS -->
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+    integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -130,7 +131,8 @@ if (isset($_POST['delete_all'])) {
       <img src="logo.png" alt="Logo" class="logo-img">
       <span class="logo-text">E-Pass </span>
     </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
@@ -154,9 +156,9 @@ if (isset($_POST['delete_all'])) {
         <!-- <li class="nav-item">
                     <a class="nav-link" href="register.php">Register</a>
                 </li> -->
-        <li class="nav-item">
-          <a class="nav-link" href="qrcode_scanner_desk_tcws.php">Scan QRcode</a>
-        </li>
+        <!-- <li class="nav-item">
+                    <a class="nav-link" href="qrcode_scanner.php">Scan QRcode</a>
+                </li> -->
         <li class="nav-item">
           <a class="nav-link" href="logout.php">Logout</a>
         </li>
@@ -190,7 +192,8 @@ if (isset($_POST['delete_all'])) {
               <a href="export.php" class="btn btn-success btn-sm" style="margin: 5px;">Export</a>
               <!-- Delete Form -->
               <form method="post" action="">
-                <button type="submit" name="delete_all" class="btn btn-danger btn-sm" onclick="confirmDelete()">Delete</button>
+                <button type="submit" name="delete_all" class="btn btn-danger btn-sm"
+                  onclick="confirmDelete()">Delete</button>
                 <input type="hidden" name="confirm" id="confirm" value="no">
                 <input type="submit" name="delete" style="display: none;">
               </form>
@@ -203,9 +206,9 @@ if (isset($_POST['delete_all'])) {
     </style>
     <script type="text/javascript">
       function loadDoc() {
-        setInterval(function() {
+        setInterval(function () {
           var xhttp = new XMLHttpRequest();
-          xhttp.onreadystatechange = function() {
+          xhttp.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
               document.getElementById("table").innerHTML = this.responseText;
             }
@@ -237,7 +240,7 @@ if (isset($_POST['delete_all'])) {
             <tbody id="showdata">
               <?php
               while ($row = mysqli_fetch_assoc($result)) {
-              ?>
+                ?>
                 <td>
                   <?php echo $row["name"]; ?>
                 </td>
@@ -255,12 +258,12 @@ if (isset($_POST['delete_all'])) {
                 </td>
                 <td> <a href="view_track_emp_tcws.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a></td>
 
-          </tr>
+            </tr>
 
-        <?php
+            <?php
               }
-        ?>
-        </tbody>
+              ?>
+          </tbody>
         </table>
       </div>
     </div>
@@ -310,7 +313,9 @@ if (isset($_POST['delete_all'])) {
       }
     }
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
+    crossorigin="anonymous"></script>
 </body>
 
 </html>

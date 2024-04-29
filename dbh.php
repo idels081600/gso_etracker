@@ -3,7 +3,6 @@ $servername = "157.245.193.124";
 $username = "bryanmysql";
 $password = "gsotagbilaran";
 $dbname = "my_data";
-
 // Attempt to establish a connection to the database
 $conn = mysqli_connect($servername, $username, $password, $dbname);
 

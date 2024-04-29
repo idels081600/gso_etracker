@@ -26,6 +26,13 @@ function display_data_r()
     $result = mysqli_query($conn, $query);
     return $result;
 }
+function display_data_cviraa()
+{
+    global $conn, $username; // Add $username as a global variable
+    $query = "SELECT * FROM `request` WHERE `Status` = 'Pending' AND `Role` = 'CVIRAA' ORDER BY `id` DESC";
+    $result = mysqli_query($conn, $query);
+    return $result;
+}
 function display_data_emp()
 {
     global $conn, $username; // Add $username as a global variable
@@ -98,6 +105,13 @@ function display_emp_status_r()
     $result = mysqli_query($conn, $query);
     return $result;
 }
+function display_emp_status_cviraa()
+{
+    global $conn, $username; // Add $username as a global variable
+    $query = "SELECT * FROM `request` WHERE `Role` = 'CVIRAA' ORDER BY `id` DESC";
+    $result = mysqli_query($conn, $query);
+    return $result;
+}
 
 function display_users()
 {
@@ -106,4 +120,3 @@ function display_users()
     $result = mysqli_query($conn, $query);
     return $result;
 }
-?>

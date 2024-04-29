@@ -1,13 +1,13 @@
 <?php
 // Assuming you have a database connection
-
+require_once 'dbh.php';
 session_start();
 $username1 = $_SESSION['username'];
-$servername = "157.245.193.124";
+$servername = "localhost";
 $username = "bryanmysql";
 $password = "gsotagbilaran";
 $dbname = "my_data";
-$conn = mysqli_connect($servername, $username, $password, $dbname);
+$conn = new mysqli($servername, $username, $password, $dbname);
 
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
