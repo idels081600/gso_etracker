@@ -168,6 +168,7 @@ if (!isset($_SESSION['username'])) {
     @media screen and (max-width: 600px) {
         #textrow {
             margin-top: 10px;
+            margin-left: -60px;
         }
 
         #label {
@@ -180,7 +181,8 @@ if (!isset($_SESSION['username'])) {
             font-size: 20px;
             /* Adjust font size as needed */
             text-align: center;
-            margin-left: 5%;
+            margin-left: -200px;
+            margin-top: 10px;
         }
 
         #text {
@@ -265,12 +267,13 @@ if (!isset($_SESSION['username'])) {
             <a href="qrcode_scanner_desk_cviraa.php">
                 <button type="button" class="btn btn-primary" id="departureButton">Out</button>
             </a>
-            <h2 id="texthead">Take Care,</h2>
-            <h1 name="text" id="text"></h1>
+       
             <form method="post" action="">
                 <!-- <button id="submit" name="approve_req_depart" >Submit</button> -->
             </form>
         </div>
+        <h2 id="texthead">Take Care,</h2>
+            <h1 name="text" id="text"> Bryan Laureano</h1>
     </div>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
