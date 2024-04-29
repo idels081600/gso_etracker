@@ -168,7 +168,7 @@ if (!isset($_SESSION['username'])) {
     @media screen and (max-width: 600px) {
         #textrow {
             margin-top: 10px;
-            margin-left: -60px;
+            margin-left: -45px;
         }
 
         #label {
@@ -273,7 +273,7 @@ if (!isset($_SESSION['username'])) {
             </form>
         </div>
         <h2 id="texthead">Take Care,</h2>
-            <h1 name="text" id="text"> Bryan Laureano</h1>
+            <h1 name="text" id="text"></h1>
     </div>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
