@@ -221,31 +221,25 @@ if (!isset($_SESSION['username'])) {
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="nav navbar-nav navbar-right">
                 <li class="nav-item">
-                    <a class="nav-link" href="index_cviraa.php">Home <span class="sr-only">(current)</span></a>
+                    <a class="nav-link" href="index_tcws.php">Home <span class="sr-only">(current)</span></a>
                 </li>
                 <!-- <li class="nav-item">
-                    <a class="nav-link" href="add_req_r.php">Add Request</a>
+                    <a class="nav-link" href="add_req.php">Add Request</a>
                 </li> -->
                 <!-- <li class="nav-item">
                     <a class="nav-link" href="approved_tcws.php">Approved</a>
                 </li> -->
                 <li class="nav-item">
-                    <a class="nav-link" href="declined_cviraa.php">Declined Request</a>
+                    <a class="nav-link" href="declined_tcws.php">Declined Request</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="track_emp_cviraa.php">Track Employees</a>
+                    <a class="nav-link" href="track_emp_tcws.php">Track Employees</a>
                 </li>
                 <!-- <li class="nav-item">
                     <a class="nav-link" href="register.php">Register</a>
                 </li> -->
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner.php">Scan QRcode</a>
-                </li> -->
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_dept_r.php">Arrival</a>
-                </li> -->
                 <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_desk_cviraa.php">Scanner</a>
+                    <a class="nav-link" href="qrcode_scanner_desk_tcws.php">Scan QRcode</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="logout.php">Logout</a>
@@ -267,13 +261,13 @@ if (!isset($_SESSION['username'])) {
             <a href="qrcode_scanner_desk_cviraa.php">
                 <button type="button" class="btn btn-primary" id="departureButton">Out</button>
             </a>
-       
+
             <form method="post" action="">
                 <!-- <button id="submit" name="approve_req_depart" >Submit</button> -->
             </form>
         </div>
         <h2 id="texthead">Take Care,</h2>
-            <h1 name="text" id="text"></h1>
+        <h1 name="text" id="text"></h1>
     </div>
     <script>
         document.addEventListener("DOMContentLoaded", function() {

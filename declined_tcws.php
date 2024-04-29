@@ -20,8 +20,7 @@ if (!isset($_SESSION['username'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-        integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
@@ -89,13 +88,12 @@ if (!isset($_SESSION['username'])) {
 </style>
 
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <a class="navbar-brand" href="index_tcws.php">
             <img src="logo.png" alt="Logo" class="logo-img">
             <span class="logo-text">E-Pass </span>
         </a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
@@ -119,9 +117,9 @@ if (!isset($_SESSION['username'])) {
                 <!-- <li class="nav-item">
                     <a class="nav-link" href="register.php">Register</a>
                 </li> -->
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner.php">Scan QRcode</a>
-                </li> -->
+                <li class="nav-item">
+                    <a class="nav-link" href="qrcode_scanner_desk_tcws.php">Scan QRcode</a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="logout.php">Logout</a>
                 </li>
@@ -145,9 +143,9 @@ if (!isset($_SESSION['username'])) {
 
     <script type="text/javascript">
         function loadDoc() {
-            setInterval(function () {
+            setInterval(function() {
                 var xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function () {
+                xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
                         document.getElementById("table").innerHTML = this.responseText;
 
@@ -158,7 +156,6 @@ if (!isset($_SESSION['username'])) {
             }, 1000);
         }
         loadDoc();
-
     </script>
     <div class="container">
         <h2 id="pen_label">Declined Request</h2>
@@ -176,7 +173,7 @@ if (!isset($_SESSION['username'])) {
                     <tr>
                         <?php
                         while ($row = mysqli_fetch_assoc($result)) {
-                            ?>
+                        ?>
                             <td>
                                 <?php echo $row["name"]; ?>
                             </td>
@@ -194,10 +191,10 @@ if (!isset($_SESSION['username'])) {
                             </td>
                             <td> <a href="view_decline_req_tcws.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a>
                             </td>
-                        </tr>
-                        <?php
+                    </tr>
+                <?php
                         }
-                        ?>
+                ?>
                 </table>
             </div>
         </div>
