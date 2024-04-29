@@ -279,14 +279,34 @@ if (!isset($_SESSION['username'])) {
             });
 
             function requestCameraPermission() {
-                navigator.mediaDevices.getUserMedia({
-                        video: true
-                    })
-                    .then(function(stream) {
-                        scanner.start(stream);
+                navigator.mediaDevices.enumerateDevices()
+                    .then(function(devices) {
+                        // Filter video devices to get only those which are videoinput type
+                        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+                        // Find the back camera
+                        const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back'));
+
+                        // Use the back camera if available, otherwise use the default camera
+                        const selectedCamera = backCamera ? backCamera : videoDevices[0];
+
+                        // Start the scanner with the selected camera
+                        navigator.mediaDevices.getUserMedia({
+                                video: {
+                                    deviceId: {
+                                        exact: selectedCamera.deviceId
+                                    }
+                                }
+                            })
+                            .then(function(stream) {
+                                scanner.start(stream);
+                            })
+                            .catch(function(error) {
+                                console.error('Camera access denied:', error);
+                            });
                     })
                     .catch(function(error) {
-                        console.error('Camera access denied:', error);
+                        console.error('Error accessing devices:', error);
                     });
             }
 
