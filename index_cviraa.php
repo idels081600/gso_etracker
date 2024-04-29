@@ -59,7 +59,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             border: 1.5px solid #8f8d8d;
             border-radius: 20px;
             font-size: 16px;
-            margin-left: 30%;
+            margin-left: 35%;
             /* margin-top: 10%; */
             margin-bottom: 10px;
             transition: border-color 0.3s ease;
