@@ -59,7 +59,7 @@ $result_position = mysqli_query($conn, $query_position);
 if ($row = mysqli_fetch_assoc($result_position)) {
     $default_position = $row['position'];
 } else {
-    $default_position = ''; // Default value if position not found
+    $default_position = ''; 
 }
 
 ?>
