@@ -266,7 +266,7 @@ if (!isset($_SESSION['username'])) {
                 <!-- <button id="submit" name="approve_req_depart" >Submit</button> -->
             </form>
         </div>
-        <h2 id="texthead">Take Care,</h2>
+        <h2 id="texthead">Welcome Back,</h2>
         <h1 name="text" id="text"></h1>
     </div>
     <script>
@@ -332,7 +332,7 @@ if (!isset($_SESSION['username'])) {
                 // I'll provide a simplified example using jQuery for this purpose
 
                 $.ajax({
-                    url: 'code.php', // Create a separate PHP file to handle the database check
+                    url: 'code_dept.php', // Create a separate PHP file to handle the database check
                     type: 'POST',
                     data: {
                         scannedData: scannedData

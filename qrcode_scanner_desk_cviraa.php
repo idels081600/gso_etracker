@@ -266,7 +266,7 @@ if (!isset($_SESSION['username'])) {
                 <!-- <button id="submit" name="approve_req_depart" >Submit</button> -->
             </form>
         </div>
-        <h2 id="texthead">Take Care,</h2>
+        <h2 id="texthead">Welcome Back,</h2>
         <h1 name="text" id="text"></h1>
     </div>
     <script>
