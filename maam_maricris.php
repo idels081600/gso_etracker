@@ -1,6 +1,11 @@
 <?php
 require_once 'db.php'; // Assuming this file contains your database connection code
 require_once 'display_data.php';
+if (!isset($_SESSION['username'])) {
+    header("location:login_v2.php");
+  } else if ($_SESSION['role'] == 'Employee'||$_SESSION['role'] == 'TCWS Employee') {
+    header("location:login_v2.php");
+  }
 $result = display_data_maam_mariecris();
 $result2 = display_data_maam_mariecris_print();
 $total_amount = 0;
