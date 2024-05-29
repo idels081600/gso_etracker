@@ -65,11 +65,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "TCWS Scanner":
                 header("location:qrcode_scanner_desk_tcws.php");
                 break;
-            case "CVIRAA":
-                header("location:add_req_emp.php");
-                break;
-            case "CVIRAA Admin":
-                header("location:index_cviraa.php");
+            case "SAP":
+                header("location:sir_bayong.php");
                 break;
             default:
                 header("location:login_v2.php");
