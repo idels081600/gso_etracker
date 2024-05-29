@@ -70,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                     <li><a href="BQ.php">March Christine Igang </a></li>
                 </ul>
             </li>
-            <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
+            <li><a href="#"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
         <a href="login_v2.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
