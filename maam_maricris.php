@@ -4,9 +4,9 @@ require_once 'display_data.php';
 session_start();
 if (!isset($_SESSION['username'])) {
     header("location:login_v2.php");
-  } else if ($_SESSION['role'] == 'Employee'||$_SESSION['role'] == 'TCWS Employee') {
+} else if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'TCWS Employee') {
     header("location:login_v2.php");
-  }
+}
 $result = display_data_maam_mariecris();
 $result2 = display_data_maam_mariecris_print();
 $total_amount = 0;
@@ -125,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 <h1 id="label_modal1">Add Payment</h1>
                 <div class="form-element">
                     <div class="form-element1">
-                        <label for="payment_name" class="payment-label">Name:</label>
+                        <label for="payment_name" class="payment-label">P.O/Payment Details:</label>
                         <input type="text" id="payment" name="payment_name" placeholder="">
                     </div>
                 </div>

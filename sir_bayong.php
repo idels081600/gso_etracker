@@ -125,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 <h1 id="label_modal1">Add Payment</h1>
                 <div class="form-element">
                     <div class="form-element1">
-                        <label for="payment_name" class="payment-label">Name:</label>
+                        <label for="payment_name" class="payment-label">P.O/Payment Details:</label>
                         <input type="text" id="payment" name="payment_name" placeholder="">
                     </div>
                 </div>
