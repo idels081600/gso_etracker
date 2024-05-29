@@ -285,8 +285,7 @@ if (!isset($_SESSION['username'])) {
                                     <option>Desk Clerk</option>
                                     <option>Division Head</option>
                                     <option>TCWS Division Head</option>
-                                    <option>CVIRAA Admin</option>
-                                    <option>CVIRAA</option>
+                                    <option>SAP</option>
                                 </select>
                             </div>
                         </div>
