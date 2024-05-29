@@ -1,6 +1,7 @@
 <?php
 require_once 'db.php'; // Assuming this file contains your database connection code
 require_once 'display_data.php';
+session_start();
 if (!isset($_SESSION['username'])) {
     header("location:login_v2.php");
   } else if ($_SESSION['role'] == 'Employee'||$_SESSION['role'] == 'TCWS Employee') {
