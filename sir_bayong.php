@@ -519,11 +519,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                     if (selectedRowIds4.length === 1) {
                         $('#sr_no').val(rowData[0]);
                         $('#date1').val(rowData[1]);
-                        $('#quantity').val(rowData[2]);
+                        $('#quantity').val(rowData[6]);
                         $('#description').val(rowData[3]);
 
                         // Remove the currency symbol and commas
-                        var amountValue = rowData[4].replace('₱', '').replace(/,/g, '');
+                        var amountValue = rowData[7].replace('₱', '').replace(/,/g, '');
                         console.log('Processed Amount String:', amountValue); // Debugging
 
                         // Convert the cleaned string to a float
@@ -537,9 +537,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                             console.error('Invalid number:', amountValue);
                         }
 
-                        $('#office').val(rowData[5]);
-                        $('#vehicle').val(rowData[6]);
-                        $('#plate').val(rowData[7]);
+                        $('#office').val(rowData[2]);
+                        $('#vehicle').val(rowData[4]);
+                        $('#plate').val(rowData[5]);
 
                         // Add a change event listener to check the final value set in the input field
                         $('#amount').change(function() {

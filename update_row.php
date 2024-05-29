@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $conn->prepare($query);
 
     // Bind parameters to the statement
-    $stmt->bind_param('sssssssi', $sr_no, $date, $quantity, $description, $amount, $office, $vehicle, $plate, $id);
+    $stmt->bind_param('ssssssssi', $sr_no, $date, $quantity, $description, $amount, $office, $vehicle, $plate, $id);
 
     // Execute the query
     if ($stmt->execute()) {
