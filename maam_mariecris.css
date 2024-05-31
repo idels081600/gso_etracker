@@ -1,12 +1,669 @@
 .column {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 90%;
+  padding: 20px;
+  box-sizing: border-box;
+  height: 40%;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #e6e3e3;
+  display: flex;
+  justify-content: center;
+  height: 90vh;
+  overflow: hidden;
+}
+
+.form_container {
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 700px; /* Fixed width */
+  translate: 110% 0%;
+  height: 90%;
+}
+
+form {
+  display: grid;
+  grid-template-columns: repeat(3, 2fr);
+  gap: 5px;
+}
+
+.form-element-sr_no,
+.form-element-date,
+.form-element-quantity,
+.form-element-description,
+.form-element-amount,
+.form-element-office,
+.form-element-vehicle,
+.form-element-plate {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  width: 90%;
+}
+
+input:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+.container_table {
+  width: 175%;
+  background-color: #fff;
+  height: 65vh;
+  margin-left: -22.5%;
+  border-radius: 10px;
+  position: relative; /* Ensure container is relative for .translate positioning */
+  transform: translate(-3%, 55%);
+  z-index: 0; /* Ensure this is lower than #total-amount */
+}
+
+.table-container1 {
+  position: relative;
+  max-height: 500px; /* Adjust the max height as needed */
+  overflow-y: auto;
+  /* overflow-x: auto; Enable horizontal scrolling */
+  width: 100%; /* Ensure the table wrapper takes full width */
+}
+
+.table_tent1 {
+  border-collapse: collapse;
+  font-size: 14px;
+  width: 98%;
+  margin-left: 20px;
+  margin-top: 20px;
+}
+.table_print {
+  border-collapse: collapse;
+  font-size: 14px;
+  width: 98%;
+  margin-left: 20px;
+  margin-top: 20px;
+}
+
+th {
+  background-color: #009532;
+  color: #ffffff;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 1; /* Ensure the sticky headers stay above the table content */
+}
+
+th,
+td {
+  padding: 6px 10px;
+  font-weight: normal;
+  padding: 8px;
+}
+/* .table_tent tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+  } */
+
+tr:hover {
+  background-color: #bbb9b9;
+}
+.button-37 {
+  background-color: #13aa52;
+  border: 1px solid #13aa52;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 10px;
+  text-align: center;
+  position: absolute;
+  translate: 0% 620%;
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 15%;
+}
+
+.button-38 {
+  background-color: #1343aa;
+  border: 1px solid #1343aa;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 15px;
+  text-align: center;
+  position: absolute;
+  translate: 105% 603%;
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 15%;
+}
+.button-39 {
+  background-color: #aa1d13;
+  border: 1px solid #aa1d13;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 15px;
+  text-align: center;
+  position: absolute;
+  translate: 210% 603%;
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 15%;
+}
+
+.button-40 {
+  background-color: #13aa52;
+  border: 1px solid #13aa52;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 2px 15px;
+  text-align: center;
+  position: absolute;
+  translate: 315% 586%;
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 15%;
+}
+.button-43 {
+  background-color: #13aa52;
+  border: 1px solid #13aa52;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 2px 15px;
+  text-align: center;
+  position: absolute;
+  translate: 420% 586%;
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 15%;
+}
+.button-41 {
+  background-color: #13aa52;
+  border: 1px solid #13aa52;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 15px;
+  text-align: center;
+  transform: translate(-145%, 810%);
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 90%;
+}
+.button-42 {
+  background-color: #13aa52;
+  border: 1px solid #13aa52;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 15px;
+  text-align: center;
+  transform: translate(23%, 576%);
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 188%;
+}
+
+#search-input {
+  padding: 9px;
+  border: 1.5px solid #8f8d8d;
+  border-radius: 20px;
+  font-size: 16px;
+  transition: border-color 0.3s ease; /* Add transition for smoother effect */
+  width: 15%;
+  translate: 415% 20%;
+}
+
+#search-input:hover {
+  border-color: #069937; /* Change border color on hover */
+}
+#deductions {
+  padding: 9px;
+  border: 1.5px solid #8f8d8d;
+  border-radius: 5px;
+  font-size: 16px;
+  transition: border-color 0.3s ease; /* Add transition for smoother effect */
+  width: 10%;
+  translate: -120% 20%;
+}
+#total-amount {
+  position: absolute; /* Use absolute positioning */
+  top: 110%; /* Adjust based on your needs */
+  left: 50%; /* Adjust based on your needs */
+  transform: translate(280%, -170%); /* Center the element */
+  font-weight: bold;
+  z-index: 99; /* Ensure this is higher than .container_table */
+}
+.popup3 {
+  position: absolute;
+  top: -150%;
+  left: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1.25);
+  width: 19.5%;
+  height: 54%;
+  backdrop-filter: blur(10px) saturate(148%);
+  -webkit-backdrop-filter: blur(10px) saturate(148%);
+  background-color: rgb(233, 233, 233);
+  border-radius: 12px;
+  border: 1px solid rgba(209, 213, 219, 0.3);
+  transition: top 0ms ease-in-out 200ms, opacity 200ms ease-in-out 0ms,
+    transform 20ms ease-in-out 0ms;
+  z-index: 999;
+}
+.popup3.active {
+  top: 50%;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  transition: top 0ms ease-in-out 0ms, opacity 200ms ease-in-out 0ms,
+    transform 20ms ease-in-out 0ms;
+}
+.popup3 .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 15px;
+  height: 15px;
+  background: #888;
+  color: #eee;
+  text-align: center;
+  line-height: 15px;
+  border-radius: 15px;
+  cursor: pointer;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent dark color */
+  backdrop-filter: blur(4px) saturate(180%);
+  -webkit-backdrop-filter: blur(4px) saturate(180%);
+  z-index: 998; /* Ensure the overlay is behind the modal */
+  display: none; /* Initially hidden */
+  pointer-events: none; /* Allow pointer events to pass through */
+}
+
+.form-element1 {
+  translate: -32% 160%;
+}
+.form-element2 {
+  translate: -134% 300%;
+}
+#payment {
+  width: 250px;
+  margin-left: 5px;
+  height: 25px;
+  border-radius: 5px;
+  translate: -2% 10%;
+}
+#label_modal1 {
+  margin-top: 7%;
+  margin-left: 10%;
+}
+#amount2 {
+  width: 250px;
+  margin-left: 5px;
+  height: 25px;
+  border-radius: 5px;
+  translate: -2% 10%;
+}
+#date4 {
+  width: 6%;
+  translate: 20% 18%;
+  font-size: 16px;
+}
+#date3 {
+  width: 6%;
+  translate: 20% 18%;
+  font-size: 16px;
+}
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row.selected {
+  background-color: #d3d3d3; /* or any darker color you prefer */
+}
+
+.selected-row {
+  background-color: #d3d3d3; /* Light grey background to indicate selection */
+}
+
+.popup4 {
+  position: absolute;
+  top: -150%;
+  left: 80%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1.25);
+  width: 30%;
+  height: 45%;
+  backdrop-filter: blur(10px) saturate(148%);
+  -webkit-backdrop-filter: blur(10px) saturate(148%);
+  background-color: rgb(233, 233, 233);
+  border-radius: 12px;
+  border: 1px solid rgba(209, 213, 219, 0.3);
+  transition: top 0ms ease-in-out 200ms, opacity 200ms ease-in-out 0ms,
+    transform 20ms ease-in-out 0ms;
+  z-index: 999;
+}
+.popup4.active {
+  top: 50%;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  transition: top 0ms ease-in-out 0ms, opacity 200ms ease-in-out 0ms,
+    transform 20ms ease-in-out 0ms;
+}
+.popup4 .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 15px;
+  height: 15px;
+  background: #888;
+  color: #eee;
+  text-align: center;
+  line-height: 15px;
+  border-radius: 15px;
+  cursor: pointer;
+}
+.button-44 {
+  background-color: #13aa52;
+  border: 1px solid #13aa52;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 15px;
+  text-align: center;
+  transform: translate(23%, 570%);
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 188%;
+}
+.payment_container {
+  position: relative;
+  max-height: 340px; /* Adjust the max height as needed */
+  overflow-y: auto;
+  width: 90%; /* Ensure the table wrapper takes full width */
+  margin-left: 17px;
+  margin-top: 50px;
+}
+
+.table_payment {
+  border-collapse: collapse;
+  overflow-y: auto;
+  max-height: 350px;
+  font-size: 14px;
+  width: 95%;
+  margin-left: 20px;
+  margin-top: 20px;
+}
+
+.table_payment th {
+  background-color: #009532;
+  color: #ffffff;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 1; /* Ensure the sticky headers stay above the table content */
+}
+
+/* th,
+td {
+  padding: 6px 10px;
+  font-weight: normal;
+  padding: 8px;
+}
+/* .table_tent tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+  } */
+*/ .table_payment tr:hover {
+  background-color: #bbb9b9;
+}
+
+.button-45 {
+  position: absolute;
+  background-color: #aa1d13;
+  border: 1px solid #aa1d13;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 15px;
+  text-align: center;
+  transform: translate(35%, 40%);
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 20%;
+}
+
+.clickable-row2 {
+  cursor: pointer;
+}
+
+.clickable-row2.selected {
+  background-color: #d3d3d3; /* or any darker color you prefer */
+}
+
+.selected-row2 {
+  background-color: #d3d3d3; /* Light grey background to indicate selection */
+}
+
+.popup5 {
+  position: absolute;
+  top: -150%;
+  left: 20%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1.25);
+  width: 30%;
+  height: 45%;
+  backdrop-filter: blur(10px) saturate(148%);
+  -webkit-backdrop-filter: blur(10px) saturate(148%);
+  background-color: rgb(233, 233, 233);
+  border-radius: 12px;
+  border: 1px solid rgba(209, 213, 219, 0.3);
+  transition: top 0ms ease-in-out 200ms, opacity 200ms ease-in-out 0ms,
+    transform 20ms ease-in-out 0ms;
+  z-index: 999;
+}
+.popup5.active {
+  top: 50%;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  transition: top 0ms ease-in-out 0ms, opacity 200ms ease-in-out 0ms,
+    transform 20ms ease-in-out 0ms;
+}
+.popup5 .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 15px;
+  height: 15px;
+  background: #888;
+  color: #eee;
+  text-align: center;
+  line-height: 15px;
+  border-radius: 15px;
+  cursor: pointer;
+}
+.button-46 {
+  background-color: #13aa52;
+  border: 1px solid #13aa52;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 15px;
+  text-align: center;
+  transform: translate(-32%, 450%);
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 90%;
+}
+
+.button-47 {
+  position: absolute;
+  background-color: #aa1d13;
+  border: 1px solid #aa1d13;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 15px;
+  text-align: center;
+  transform: translate(35%, 40%);
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 20%;
+}
+
+.clickable-row3 {
+  cursor: pointer;
+}
+
+.clickable-row3.selected {
+  background-color: #d3d3d3; /* or any darker color you prefer */
+}
+
+.selected-row3 {
+  background-color: #d3d3d3; /* Light grey background to indicate selection */
+}
+@media only screen and (min-width: 1024px) and (max-width: 1449px) {
+  .column {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 90%;
-    padding: 20px;
+    width: 100%;
+    height: 390%;
+    padding: 10px;
     box-sizing: border-box;
+    margin-left: 35%;
+    margin-top: 1%;
   }
-  
   body {
     font-family: Arial, sans-serif;
     background-color: #e6e3e3;
@@ -14,110 +671,94 @@
     padding: 0;
     display: flex;
     justify-content: center;
-    height: 90vh;
+    height: 9vh; /* Adjusted height */
+    width: 5%;
+    min-width: 5%; /* Set minimum height */
+    overflow-x: hidden;
   }
-  
+
   .form_container {
     background-color: #fff;
-    padding: 15px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 800px; /* Fixed width */
-    margin-left: 20%;
-    height: 90%;
+    width: 100%; /* Adjusted width */
+    margin: 1vh auto; /* Centered horizontally and adjusted margin */
+    translate: 165% -2%;
   }
-  
+
   form {
     display: grid;
-    grid-template-columns: repeat(3, 2fr);
-    gap: 5px;
+    grid-template-columns: repeat(4, 5fr); /* Adjusted grid columns */
+    gap: 1vw; /* Adjusted gap */
+    margin-left: -2%;
   }
-  
-  .form-element-sr_no,
-  .form-element-date,
-  .form-element-quantity,
-  .form-element-description,
-  .form-element-amount,
-  .form-element-office,
-  .form-element-activity,
-  .form-element-plate {
-    margin-bottom: 15px;
+
+  .form-element {
+    margin-bottom: 2vh; /* Adjusted margin */
     display: flex;
     flex-direction: column;
   }
-  
-  label {
-    font-weight: bold;
-    margin-bottom: 5px;
-  }
-  
-  input {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
-    width: 90%;
-  }
-  
-  input:focus {
-    border-color: #007bff;
-    outline: none;
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-  }
+
   .container_table {
-    width: 175%;
+    /* width: 130%; */
     background-color: #fff;
-    height: 65vh;
-    margin-left: -22.5%;
+    min-width: 76.5dvw; /* Set minimum width */
+    min-height: 59vh; /* Set minimum height */
+    height: auto; /* Allow height to adjust based on content */
     border-radius: 10px;
+    translate: 47% 10%;
+    overflow: hidden; /* Prevent container from expanding */
   }
-  
+
   .table-container1 {
+    table-layout: fixed;
     position: relative;
-    max-height: 500px; /* Adjust the max height as needed */
+    max-height: 49vh; /* Adjusted max height */
     overflow-y: auto;
-    /* overflow-x: auto; Enable horizontal scrolling */
-    width: 100%; /* Ensure the table wrapper takes full width */
   }
-  
-  .table_tent1 {
-    border-collapse: collapse;
-    font-size: 14px;
-    width: 98%;
-    margin-left: 20px;
-    margin-top: 20px;
-  }
+
+  .table_tent1,
   .table_print {
     border-collapse: collapse;
-    font-size: 14px;
-    width: 98%;
-    margin-left: 20px;
-    margin-top: 20px;
+    font-size: 1rem; /* Adjusted font size */
+    width: 100%; /* Adjusted width */
+    margin-top: 2vh; /* Adjusted margin */
   }
-  
+
   th {
     background-color: #009532;
     color: #ffffff;
     text-align: left;
     position: sticky;
     top: 0;
-    z-index: 1; /* Ensure the sticky headers stay above the table content */
+    padding: 8px; /* Adjusted padding */
+    font-size: 13px;
+    /* Set fixed width for the th elements to prevent resizing */
+    width: 150px;
   }
-  
+
+  td {
+    font-size: 13px;
+    /* Set fixed width for the td elements to prevent resizing */
+    width: 200px;
+  }
+
   th,
   td {
-    padding: 6px 10px;
-    font-weight: normal;
-    padding: 8px;
+    padding: 8px; /* Adjusted padding */
   }
-  /* .table_tent tbody tr:nth-of-type(even) {
-      background-color: #f3f3f3;
-    } */
-  
+
   tr:hover {
     background-color: #bbb9b9;
   }
+
+  #total-amount {
+    translate: -150% 90%;
+    font-weight: bold;
+    z-index: 1;
+  }
   .button-37 {
+    position: absolute;
     background-color: #13aa52;
     border: 1px solid #13aa52;
     border-radius: 9px;
@@ -127,21 +768,20 @@
     cursor: pointer;
     font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
       sans-serif;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 400;
     outline: none;
     outline: 0;
-    padding: 5px 10px;
+    padding: 10px 10px;
     text-align: center;
     position: absolute;
-    translate: -490% 645%;
+    translate: 65% 440%;
     transition: transform 150ms, box-shadow 150ms;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    width: 4%;
+    width: 15%;
   }
-  
   .button-38 {
     background-color: #1343aa;
     border: 1px solid #1343aa;
@@ -152,19 +792,19 @@
     cursor: pointer;
     font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
       sans-serif;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 400;
     outline: none;
     outline: 0;
     padding: 10px 15px;
     text-align: center;
     position: absolute;
-    translate: -385% 730%;
+    translate: 170% 440%;
     transition: transform 150ms, box-shadow 150ms;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    width: 4%;
+    width: 15%;
   }
   .button-39 {
     background-color: #aa1d13;
@@ -176,21 +816,20 @@
     cursor: pointer;
     font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
       sans-serif;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 400;
     outline: none;
     outline: 0;
     padding: 10px 15px;
     text-align: center;
     position: absolute;
-    translate: 235% 18%;
+    translate: 275% 440%;
     transition: transform 150ms, box-shadow 150ms;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    width: 4%;
+    width: 15%;
   }
-  
   .button-40 {
     background-color: #13aa52;
     border: 1px solid #13aa52;
@@ -201,19 +840,19 @@
     cursor: pointer;
     font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
       sans-serif;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 400;
     outline: none;
     outline: 0;
-    padding: 10px 15px;
+    padding: 10px 10px;
     text-align: center;
     position: absolute;
-    translate: 195% 18%;
+    translate: 380% 440%;
     transition: transform 150ms, box-shadow 150ms;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    width: 7%;
+    width: 15%;
   }
   .button-43 {
     background-color: #13aa52;
@@ -225,67 +864,20 @@
     cursor: pointer;
     font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
       sans-serif;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 400;
     outline: none;
     outline: 0;
-    padding: 10px 15px;
+    padding: 3px 15px;
     text-align: center;
     position: absolute;
-    translate: 298% 18%;
+    translate: 485% 440%;
     transition: transform 150ms, box-shadow 150ms;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    width: 7%;
+    width: 15%;
   }
-  .button-41 {
-    background-color: #13aa52;
-    border: 1px solid #13aa52;
-    border-radius: 9px;
-    box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
-    box-sizing: border-box;
-    color: #fff;
-    cursor: pointer;
-    font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
-      sans-serif;
-    font-size: 15px;
-    font-weight: 400;
-    outline: none;
-    outline: 0;
-    padding: 10px 15px;
-    text-align: center;
-    transform: translate(-145%, 810%);
-    transition: transform 150ms, box-shadow 150ms;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    width: 90%;
-  }
-  .button-42 {
-    background-color: #13aa52;
-    border: 1px solid #13aa52;
-    border-radius: 9px;
-    box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
-    box-sizing: border-box;
-    color: #fff;
-    cursor: pointer;
-    font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
-      sans-serif;
-    font-size: 15px;
-    font-weight: 400;
-    outline: none;
-    outline: 0;
-    padding: 10px 15px;
-    text-align: center;
-    transform: translate(23%, 576%);
-    transition: transform 150ms, box-shadow 150ms;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    width:188%;
-  }
-  
   #search-input {
     padding: 9px;
     border: 1.5px solid #8f8d8d;
@@ -293,11 +885,34 @@
     font-size: 16px;
     transition: border-color 0.3s ease; /* Add transition for smoother effect */
     width: 15%;
-    translate: 415% 20%;
+    translate: 335% 5%;
   }
-  
+
   #search-input:hover {
     border-color: #069937; /* Change border color on hover */
+  }
+  .form-element-sr_no,
+  .form-element-date,
+  .form-element-quantity,
+  .form-element-description,
+  .form-element-amount,
+  .form-element-office,
+  .form-element-vehicle,
+  .form-element-plate {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    width: 130px;
+  }
+  #date4 {
+    width: 9%;
+    translate: 20% 5%;
+    font-size: 16px;
+  }
+  #date3 {
+    width: 9%;
+    translate: 20% 5%;
+    font-size: 16px;
   }
   #deductions {
     padding: 9px;
@@ -306,21 +921,26 @@
     font-size: 16px;
     transition: border-color 0.3s ease; /* Add transition for smoother effect */
     width: 10%;
-    translate: 220% 20%;
+    translate: -120% 5%;
   }
-  #total-amount {
-    translate: 118% 420%;
-    font-weight: bold;
+  #office1,
+  #sr_no1,
+  #date2,
+  #quantity1,
+  #description1,
+  #amount1,
+  #plate1,
+  #vehicle1 {
+    font-size: 13px;
   }
-  
   .popup3 {
     position: absolute;
     top: -150%;
     left: 50%;
     opacity: 0;
     transform: translate(-50%, -50%) scale(1.25);
-    width: 19.5%;
-    height: 54%;
+    width: 20.5%;
+    height: 58%;
     backdrop-filter: blur(10px) saturate(148%);
     -webkit-backdrop-filter: blur(10px) saturate(148%);
     background-color: rgb(233, 233, 233);
@@ -350,103 +970,30 @@
     border-radius: 15px;
     cursor: pointer;
   }
-  
-  .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent dark color */
-    backdrop-filter: blur(4px) saturate(180%);
-    -webkit-backdrop-filter: blur(4px) saturate(180%);
-    z-index: 998; /* Ensure the overlay is behind the modal */
-    display: none; /* Initially hidden */
-    pointer-events: none; /* Allow pointer events to pass through */
-  }
-  
   .form-element1 {
-    translate: -32% 160%;
+    translate: -43% 130%;
   }
   .form-element2 {
-    translate: -134% 300%;
+    translate: -150% 260%;
   }
   #payment {
-    width: 250px;
+    width: 160px;
     margin-left: 5px;
-    height: 25px;
+    height: 20px;
+    border-radius: 5px;
+    translate: -2% 10%;
+  }
+  #amount2 {
+    width: 160px;
+    margin-left: 5px;
+    height: 20px;
     border-radius: 5px;
     translate: -2% 10%;
   }
   #label_modal1 {
     margin-top: 7%;
     margin-left: 10%;
-  }
-  #amount2 {
-    width: 250px;
-    margin-left: 5px;
-    height: 25px;
-    border-radius: 5px;
-    translate: -2% 10%;
-  }
-  #date4 {
-    width: 6%;
-    translate: 550% 18%;
-    font-size: 16px;
-  }
-  #date3 {
-    width: 6%;
-    translate: 550% 18%;
-    font-size: 16px;
-  }
-  .clickable-row {
-    cursor: pointer;
-  }
-  
-  .clickable-row.selected {
-    background-color: #d3d3d3; /* or any darker color you prefer */
-  }
-  
-  .selected-row {
-    background-color: #d3d3d3; /* Light grey background to indicate selection */
-  }
-  
-  .popup4 {
-    position: absolute;
-    top: -150%;
-    left: 80%;
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1.25);
-    width: 30%;
-    height: 45%;
-    backdrop-filter: blur(10px) saturate(148%);
-    -webkit-backdrop-filter: blur(10px) saturate(148%);
-    background-color: rgb(233, 233, 233);
-    border-radius: 12px;
-    border: 1px solid rgba(209, 213, 219, 0.3);
-    transition: top 0ms ease-in-out 200ms, opacity 200ms ease-in-out 0ms,
-      transform 20ms ease-in-out 0ms;
-    z-index: 999;
-  }
-  .popup4.active {
-    top: 50%;
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-    transition: top 0ms ease-in-out 0ms, opacity 200ms ease-in-out 0ms,
-      transform 20ms ease-in-out 0ms;
-  }
-  .popup4 .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 15px;
-    height: 15px;
-    background: #888;
-    color: #eee;
-    text-align: center;
-    line-height: 15px;
-    border-radius: 15px;
-    cursor: pointer;
+    font-size: 26px;
   }
   .button-44 {
     background-color: #13aa52;
@@ -458,133 +1005,19 @@
     cursor: pointer;
     font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
       sans-serif;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 400;
     outline: none;
     outline: 0;
-    padding: 10px 15px;
+    padding: 0px 9px;
     text-align: center;
-    transform: translate(23%, 570%);
+    transform: translate(-323%, 670%);
     transition: transform 150ms, box-shadow 150ms;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    width: 188%;
-  }
-  .payment_container {
-    position: relative;
-    max-height: 340px; /* Adjust the max height as needed */
-    overflow-y: auto;
-    width: 90%; /* Ensure the table wrapper takes full width */
-    margin-left: 17px;
-    margin-top: 50px;
-  }
-  
-  .table_payment {
-    border-collapse: collapse;
-    overflow-y: auto;
-    max-height: 350px;
-    font-size: 14px;
-    width: 95%;
-    margin-left: 20px;
-    margin-top: 20px;
-  }
-  
-  .table_payment th {
-    background-color: #009532;
-    color: #ffffff;
-    text-align: left;
-    position: sticky;
-    top: 0;
-    z-index: 1; /* Ensure the sticky headers stay above the table content */
-  }
-  
-  /* th,
-  td {
-    padding: 6px 10px;
-    font-weight: normal;
-    padding: 8px;
-  }
-  /* .table_tent tbody tr:nth-of-type(even) {
-      background-color: #f3f3f3;
-    } */
-  */ .table_payment tr:hover {
-    background-color: #bbb9b9;
-  }
-  
-  .button-45 {
-    position: absolute;
-    background-color: #aa1d13;
-    border: 1px solid #aa1d13;
-    border-radius: 9px;
-    box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
-    box-sizing: border-box;
-    color: #fff;
-    cursor: pointer;
-    font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
-      sans-serif;
-    font-size: 15px;
-    font-weight: 400;
-    outline: none;
-    outline: 0;
-    padding: 10px 15px;
-    text-align: center;
-    transform: translate(35%, 40%);
-    transition: transform 150ms, box-shadow 150ms;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    width: 20%;
-  }
-  
-  .clickable-row2 {
-    cursor: pointer;
-  }
-  
-  .clickable-row2.selected {
-    background-color: #d3d3d3; /* or any darker color you prefer */
-  }
-  
-  .selected-row2 {
-    background-color: #d3d3d3; /* Light grey background to indicate selection */
-  }
-  
-  .popup5 {
-    position: absolute;
-    top: -150%;
-    left: 20%;
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1.25);
-    width: 30%;
-    height: 45%;
-    backdrop-filter: blur(10px) saturate(148%);
-    -webkit-backdrop-filter: blur(10px) saturate(148%);
-    background-color: rgb(233, 233, 233);
-    border-radius: 12px;
-    border: 1px solid rgba(209, 213, 219, 0.3);
-    transition: top 0ms ease-in-out 200ms, opacity 200ms ease-in-out 0ms,
-      transform 20ms ease-in-out 0ms;
-    z-index: 999;
-  }
-  .popup5.active {
-    top: 50%;
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-    transition: top 0ms ease-in-out 0ms, opacity 200ms ease-in-out 0ms,
-      transform 20ms ease-in-out 0ms;
-  }
-  .popup5 .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 15px;
-    height: 15px;
-    background: #888;
-    color: #eee;
-    text-align: center;
-    line-height: 15px;
-    border-radius: 15px;
-    cursor: pointer;
+    width: 200%;
+    height: 40%;
   }
   .button-46 {
     background-color: #13aa52;
@@ -596,24 +1029,23 @@
     cursor: pointer;
     font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
       sans-serif;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 400;
     outline: none;
     outline: 0;
-    padding: 10px 15px;
+    padding: 10px 10px;
     text-align: center;
-    transform: translate(-32%, 450%);
+    transform: translate(43%, 530%);
     transition: transform 150ms, box-shadow 150ms;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    width: 90%;
+    width: 130%;
+    height: 85%;
   }
-  
-  .button-47 {
-    position: absolute;
-    background-color: #aa1d13;
-    border: 1px solid #aa1d13;
+  .button-41 {
+    background-color: #13aa52;
+    border: 1px solid #13aa52;
     border-radius: 9px;
     box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
     box-sizing: border-box;
@@ -621,28 +1053,50 @@
     cursor: pointer;
     font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
       sans-serif;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 400;
     outline: none;
     outline: 0;
     padding: 10px 15px;
     text-align: center;
-    transform: translate(35%, 40%);
+    transform: translate(-43%, 640%);
     transition: transform 150ms, box-shadow 150ms;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    width: 20%;
+    width: 75%;
+    height: 85%;
   }
-  
-  .clickable-row3 {
+  .button-42 {
+    background-color: #13aa52;
+    border: 1px solid #13aa52;
+    border-radius: 9px;
+    box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+    box-sizing: border-box;
+    color: #fff;
     cursor: pointer;
+    font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+      sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    outline: none;
+    outline: 0;
+    padding: 10px 15px;
+    text-align: center;
+    transform: translate(-185%, 750%);
+    transition: transform 150ms, box-shadow 150ms;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    width: 75%;
+    height: 85%;
   }
-  
-  .clickable-row3.selected {
-    background-color: #d3d3d3; /* or any darker color you prefer */
+  .payment_container {
+    position: relative;
+    max-height: 240px; /* Adjust the max height as needed */
+    overflow-y: auto;
+    width: 90%; /* Ensure the table wrapper takes full width */
+    margin-left: 17px;
+    margin-top: 50px;
   }
-  
-  .selected-row3 {
-    background-color: #d3d3d3; /* Light grey background to indicate selection */
-  }
+}

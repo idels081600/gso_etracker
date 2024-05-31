@@ -1,12 +1,6 @@
 <?php
 require_once 'db.php'; // Assuming this file contains your database connection code
 require_once 'display_data.php';
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-  } else if ($_SESSION['role'] == 'Employee'||$_SESSION['role'] == 'TCWS Employee') {
-    header("location:login_v2.php");
-  }
 $result = display_data_bq_print();
 $payment = display_data_BQ_payments();
 require_once('vendor/autoload.php');

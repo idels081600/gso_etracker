@@ -1,12 +1,6 @@
 <?php
 require_once 'db.php'; // Assuming this file contains your database connection code
 require_once 'display_data.php';
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-  } else if ($_SESSION['role'] == 'Employee'||$_SESSION['role'] == 'TCWS Employee') {
-    header("location:login_v2.php");
-  }
 $result = display_data_sir_bayong();
 $result2 = display_data_sir_bayong_print();
 $total_amount = 0;
@@ -71,9 +65,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                     <li><a href="BQ.php">March Christine Igang </a></li>
                 </ul>
             </li>
-            <li><a href="#"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
+            <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="login_v2.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
     <div class="container">
         <div class="column">
@@ -100,7 +94,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                         <input type="number" id="amount" name="amount" placeholder="" value="" min="0" step="any">
                     </div>
                     <div class="form-element-office">
-                        <label for="office" id="office1">Office</label>
+                        <label for="office" id="office1">Department/Requestor</label>
                         <input type="text" id="office" name="office" placeholder="" value=" ">
                     </div>
                     <div class="form-element-vehicle">
@@ -108,11 +102,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                         <input type="text" id="vehicle" name="vehicle" placeholder="" value=" ">
                     </div>
                     <div class="form-element-plate">
-                        <label for="plate" id="plate1">Plate</label>
+                        <label for="plate" id="plate1">Plate No.</label>
                         <input type="text" id="plate" name="plate" placeholder="" value=" ">
                     </div>
                     <button class="button-37" role="button" name="save_data">Add Data</button>
                     <button class="button-38" role="button" name="save_data2">Edit</button>
+                    <button class="button-39" role="button" name="delete_data">Delete</button>
+                    <button class="button-40" role="button" name="generate_pdf" id="generate_pdf">Review PDF</button>
+                    <button class="button-43" role="button" name="add_print" id="addtoprint">Add to Print</button>
                 </form>
                 <!-- <input type="text" id="search-input" placeholder="Search...">
                 <input type="number" id="deductions" name="deductions" placeholder=" Deductions.." value=" "> -->
@@ -125,7 +122,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 <h1 id="label_modal1">Add Payment</h1>
                 <div class="form-element">
                     <div class="form-element1">
-                        <label for="payment_name" class="payment-label">P.O/Payment Details:</label>
+                        <label for="payment_name" class="payment-label">Name:</label>
                         <input type="text" id="payment" name="payment_name" placeholder="">
                     </div>
                 </div>
@@ -205,48 +202,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 </table>
             </div>
         </div>
-        <div class="container_table">
-            <button class="button-39" role="button" name="delete_data">Delete</button>
-            <button class="button-40" role="button" name="generate_pdf" id="generate_pdf">Review PDF</button>
-            <button class="button-43" role="button" name="add_print" id="addtoprint">Add to Print</button>
-            <input type="text" id="date4" name="date4" placeholder="Start.." value=" ">
-            <input type="text" id="date3" name="date3" placeholder="End.." value=" ">
-            <input type="text" id="search-input" placeholder="Search...">
-            <input type="number" id="deductions" name="deductions" placeholder=" Payments.." value=" ">
-            <div class="table-container1">
-                <table id="table_tent1" class="table_tent1">
-                    <thead>
-                        <tr>
-                            <th>SR/DR</th>
-                            <th>Date</th>
-                            <th>Department/Requestor</th>
-                            <th>Description</th>                           
-                            <th>Vehicle</th>
-                            <th>Plate</th>
-                            <th>Quantity</th>
-                            <th>Amount</th>
+    </div>
+    <div class="container_table">
+        <input type="text" id="date4" name="date4" placeholder="Start.." value=" ">
+        <input type="text" id="date3" name="date3" placeholder="End.." value=" ">
+        <input type="text" id="search-input" placeholder="Search...">
+        <input type="number" id="deductions" name="deductions" placeholder=" Payments.." value=" ">
+        <div class="table-container1">
+            <table id="table_tent1" class="table_tent1">
+                <thead>
+                    <tr>
+                        <th>SR/DR</th>
+                        <th>Date</th>
+                        <th>Department/Requestor</th>
+                        <th>Description</th>
+                        <th>Vehicle</th>
+                        <th>Plate</th>
+                        <th>Quantity</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    // Reset the result pointer and re-fetch the rows to display them
+                    mysqli_data_seek($result, 0);
+                    while ($row = mysqli_fetch_assoc($result)) { ?>
+                        <tr class="clickable-row" data-rfq-id="<?php echo $row['id']; ?>"> <!-- Add data-rfq-id attribute with the row's ID -->
+                            <td><?php echo $row["SR_DR"]; ?></td>
+                            <td><?php echo $row["Date"]; ?></td>
+                            <td><?php echo $row["Office"]; ?></td>
+                            <td><?php echo $row["Description"]; ?></td>
+                            <td><?php echo $row["Vehicle"]; ?></td>
+                            <td><?php echo $row["Plate"]; ?></td>
+                            <td><?php echo $row["Quantity"]; ?></td>
+                            <td><?php echo '₱' . number_format($row["Amount"], 2); ?></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        // Reset the result pointer and re-fetch the rows to display them
-                        mysqli_data_seek($result, 0);
-                        while ($row = mysqli_fetch_assoc($result)) { ?>
-                            <tr class="clickable-row" data-rfq-id="<?php echo $row['id']; ?>"> <!-- Add data-rfq-id attribute with the row's ID -->
-                                <td><?php echo $row["SR_DR"]; ?></td>
-                                <td><?php echo $row["Date"]; ?></td>
-                                <td><?php echo $row["Office"]; ?></td>
-                                <td><?php echo $row["Description"]; ?></td>
-                                <td><?php echo $row["Vehicle"]; ?></td>
-                                <td><?php echo $row["Plate"]; ?></td>
-                                <td><?php echo $row["Quantity"]; ?></td>
-                                <td><?php echo '₱' . number_format($row["Amount"], 2); ?></td>
-                            </tr>
-                        <?php } ?>
-                    </tbody>
+                    <?php } ?>
+                </tbody>
 
-                </table>
-            </div>
+            </table>
         </div>
     </div>
     <div class="overlay"></div>

@@ -1,12 +1,6 @@
 <?php
 require_once 'db.php'; // Assuming this file contains your database connection code
 require_once 'display_data.php';
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'TCWS Employee') {
-    header("location:login_v2.php");
-}
 $result = display_data_BQ();
 $result2 = display_data_bq_print();
 $total_amount = 0;
@@ -46,7 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="sidebar.css">
-    <link rel="stylesheet" href="bq.css">
+    <link rel="stylesheet" href="BQ.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"> <!-- Corrected path for jQuery UI CSS -->
 
@@ -70,9 +64,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                     <li><a href="BQ.php">March Christine Igang </a></li>
                 </ul>
             </li>
-            <li><a href="#"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
+            <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="login_v2.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
     <div class="container">
         <div class="column">
@@ -117,6 +111,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                     </div> -->
                     <button class="button-37" role="button" name="save_data">Add Data</button>
                     <button class="button-38" role="button" name="save_data2">Edit</button>
+                    <button class="button-39" role="button" name="delete_data">Delete</button>
+                    <button class="button-40" role="button" name="generate_pdf" id="generate_pdf">Review PDF</button>
+                    <button class="button-43" role="button" name="add_print" id="addtoprint">Add to Print</button>
                 </form>
                 <!-- <input type="text" id="search-input" placeholder="Search...">
                 <input type="number" id="deductions" name="deductions" placeholder=" Deductions.." value=" "> -->
@@ -207,46 +204,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 </table>
             </div>
         </div>
-        <div class="container_table">
-            <button class="button-39" role="button" name="delete_data">Delete</button>
-            <button class="button-40" role="button" name="generate_pdf" id="generate_pdf">Review PDF</button>
-            <button class="button-43" role="button" name="add_print" id="addtoprint">Add to Print</button>
-            <input type="text" id="date4" name="date4" placeholder="Start..">
-            <input type="text" id="date3" name="date3" placeholder="End..">
-            <input type="text" id="search-input" placeholder="Search...">
-            <input type="number" id="deductions" name="deductions" placeholder=" Payments.." value=" ">
-            <div class="table-container1">
-                <table id="table_tent1" class="table_tent1">
-                    <thead>
-                        <tr>
-                            <th>SR/DR</th>
-                            <th>Date</th>
-                            <th>Department/Requestor</th>
-                            <th>Activity</th>
-                            <th>Description</th>
-                            <th>Quantity</th>
-                            <th>Amount</th>
+    </div>
+    <div class="container_table">
+        <input type="text" id="date4" name="date4" placeholder="Start..">
+        <input type="text" id="date3" name="date3" placeholder="End..">
+        <input type="text" id="search-input" placeholder="Search...">
+        <input type="number" id="deductions" name="deductions" placeholder=" Payments.." value=" ">
+        <div class="table-container1">
+            <table id="table_tent1" class="table_tent1">
+                <thead>
+                    <tr>
+                        <th>SR/DR</th>
+                        <th>Date</th>
+                        <th>Department/Requestor</th>
+                        <th>Activity</th>
+                        <th>Description</th>
+                        <th>Quantity</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    // Reset the result pointer and re-fetch the rows to display them
+                    mysqli_data_seek($result, 0);
+                    while ($row = mysqli_fetch_assoc($result)) {
+                    ?>
+                        <tr class="clickable-row" data-rfq-id="<?php echo $row['id']; ?>">
+                            <td><?php echo $row["SR_DR"]; ?></td>
+                            <td><?php echo $row["date"]; ?></td>
+                            <td><?php echo $row["requestor"]; ?></td>
+                            <td><?php echo $row["activity"]; ?></td>
+                            <td><?php echo $row["description"]; ?></td>
+                            <td><?php echo $row["quantity"]; ?></td>
+                            <td><?php echo '₱' . number_format($row["amount"], 2); ?></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        // Reset the result pointer and re-fetch the rows to display them
-                        mysqli_data_seek($result, 0);
-                        while ($row = mysqli_fetch_assoc($result)) {
-                        ?>
-                            <tr class="clickable-row" data-rfq-id="<?php echo $row['id']; ?>">
-                                <td><?php echo $row["SR_DR"]; ?></td>
-                                <td><?php echo $row["date"]; ?></td>
-                                <td><?php echo $row["requestor"]; ?></td>
-                                <td><?php echo $row["activity"]; ?></td>
-                                <td><?php echo $row["description"]; ?></td>
-                                <td><?php echo $row["quantity"]; ?></td>
-                                <td><?php echo '₱' . number_format($row["amount"], 2); ?></td>
-                            </tr>
-                        <?php } ?>
-                    </tbody>
-                </table>
-            </div>
+                    <?php } ?>
+                </tbody>
+            </table>
         </div>
     </div>
     <div class="overlay"></div>
