@@ -583,12 +583,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                             var selectedRow = $('#table_tent1 tbody tr[data-rfq-id="' + selectedRowId4 + '"]');
                             selectedRow.find('td:eq(0)').text(srNo);
                             selectedRow.find('td:eq(1)').text(date);
-                            selectedRow.find('td:eq(2)').text(quantity);
+                            selectedRow.find('td:eq(6)').text(quantity);
                             selectedRow.find('td:eq(3)').text(description);
-                            selectedRow.find('td:eq(4)').text('₱' + parseFloat(amount).toFixed(2));
-                            selectedRow.find('td:eq(5)').text(office);
-                            selectedRow.find('td:eq(6)').text(vehicle);
-                            selectedRow.find('td:eq(7)').text(plate);
+                            selectedRow.find('td:eq(7)').text('₱' + parseFloat(amount).toFixed(2));
+                            selectedRow.find('td:eq(2)').text(office);
+                            selectedRow.find('td:eq(4)').text(vehicle);
+                            selectedRow.find('td:eq(5)').text(plate);
                         },
                         error: function() {
                             // Handle error response
