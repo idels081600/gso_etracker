@@ -2,6 +2,17 @@
 // Include your database connection file
 require 'db.php';
 
+// Helper function to validate that all elements in an array are integers
+function all_integers($array)
+{
+    foreach ($array as $element) {
+        if (!filter_var($element, FILTER_VALIDATE_INT)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Check if IDs are received via POST
 if (isset($_POST['ids'])) {
     // Get the IDs from the POST request
@@ -14,11 +25,12 @@ if (isset($_POST['ids'])) {
     }
 
     // Prepare a placeholder string for the IN clause
-    $placeholders = implode(',', array_fill(0, count($selectedIDs), '?'));
+    $placeholders = rtrim(str_repeat('?, ', count($selectedIDs)), ', ');
 
     // Prepare SQL statement to search for data based on the selected IDs in the bq table
-    $stmt = $conn->prepare("SELECT SR_DR, date, requestor, activity, description, quantity, amount FROM bq WHERE id IN ($placeholders)");
+    $stmt = $conn->prepare("SELECT SR_DR, date, supplier, requestor, activity, description, quantity, amount FROM bq WHERE id IN ($placeholders)");
 
+    // Check if the statement was prepared successfully
     if (!$stmt) {
         echo json_encode(["status" => "error", "message" => "Failed to prepare select statement."]);
         exit;
@@ -39,8 +51,9 @@ if (isset($_POST['ids'])) {
     $result = $stmt->get_result();
 
     // Prepare SQL statement for inserting data into bq_print table
-    $insertStmt = $conn->prepare("INSERT INTO bq_print (SR_DR, date, requestor, activity, description, quantity, amount) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $insertStmt = $conn->prepare("INSERT INTO bq_print (SR_DR, date, supplier, requestor, activity, description, quantity, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
+    // Check if the statement was prepared successfully
     if (!$insertStmt) {
         echo json_encode(["status" => "error", "message" => "Failed to prepare insert statement."]);
         $stmt->close();
@@ -50,20 +63,25 @@ if (isset($_POST['ids'])) {
     // Loop through each row of the result set and insert into the bq_print table
     while ($row = $result->fetch_assoc()) {
         // Check if the data already exists in bq_print table
-        $checkStmt = $conn->prepare("SELECT COUNT(*) FROM bq_print WHERE SR_DR = ? AND date = ? AND requestor = ? AND activity = ? AND description = ? AND quantity = ? AND amount = ?");
-        $checkStmt->bind_param("sssssis", $row['SR_DR'], $row['date'], $row['requestor'], $row['activity'], $row['description'], $row['quantity'], $row['amount']);
+        $checkStmt = $conn->prepare("SELECT COUNT(*) FROM bq_print WHERE SR_DR = ? AND date = ? AND supplier = ? AND requestor = ? AND activity = ? AND description = ? AND quantity = ? AND amount = ?");
+        $checkStmt->bind_param("ssssssii", $row['SR_DR'], $row['date'], $row['supplier'], $row['requestor'], $row['activity'], $row['description'], $row['quantity'], $row['amount']);
         $checkStmt->execute();
         $checkStmt->bind_result($count);
         $checkStmt->fetch();
         $checkStmt->close();
 
+        // Debug: Output the row data before attempting to insert
+        error_log(print_r($row, true));
+
         // If the data doesn't exist, insert it into the bq_print table
         if ($count == 0) {
             // Bind parameters to the prepared statement
-            $insertStmt->bind_param("sssssis", $row['SR_DR'], $row['date'], $row['requestor'], $row['activity'], $row['description'], $row['quantity'], $row['amount']);
+            $insertStmt->bind_param("ssssssii", $row['SR_DR'], $row['date'], $row['supplier'], $row['requestor'], $row['activity'], $row['description'], $row['quantity'], $row['amount']);
 
             // Execute the prepared statement to insert data
-            $insertStmt->execute();
+            if (!$insertStmt->execute()) {
+                error_log("Insert failed: " . $insertStmt->error);
+            }
         }
     }
 
@@ -80,14 +98,3 @@ if (isset($_POST['ids'])) {
 
 // Close the database connection
 $conn->close();
-
-// Function to validate all elements in the array are integers
-function all_integers($array)
-{
-    foreach ($array as $element) {
-        if (!filter_var($element, FILTER_VALIDATE_INT)) {
-            return false;
-        }
-    }
-    return true;
-}

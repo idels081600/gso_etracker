@@ -30,7 +30,7 @@ if (isset($_POST['ids'])) {
     while ($row = $result->fetch_assoc()) {
         // Check if the data already exists in sir_bayong_print table
         $checkStmt = $conn->prepare("SELECT COUNT(*) FROM Maam_mariecris_print WHERE SR_DR = ? AND date = ? AND department = ? AND store = ? AND activity = ? AND no_of_pax = ? AND amount = ? AND total = ?");
-        $checkStmt->bind_param("ssisssss", $row['SR_DR'], $row['date'], $row['department'], $row['store'], $row['activity'], $row['no_of_pax'], $row['amount'], $row['total']);
+        $checkStmt->bind_param("ssssssis", $row['SR_DR'], $row['date'], $row['department'], $row['store'], $row['activity'], $row['no_of_pax'], $row['amount'], $row['total']);
         $checkStmt->execute();
         $checkStmt->bind_result($count);
         $checkStmt->fetch();
@@ -39,7 +39,7 @@ if (isset($_POST['ids'])) {
         // If the data doesn't exist, insert it into the sir_bayong_print table
         if ($count == 0) {
             // Bind parameters to the prepared statement
-            $insertStmt->bind_param("ssisssss", $row['SR_DR'], $row['date'], $row['department'], $row['store'], $row['activity'], $row['no_of_pax'], $row['amount'], $row['total']);
+            $insertStmt->bind_param("ssssssis", $row['SR_DR'], $row['date'], $row['department'], $row['store'], $row['activity'], $row['no_of_pax'], $row['amount'], $row['total']);
 
             // Execute the prepared statement to insert data
             $insertStmt->execute();

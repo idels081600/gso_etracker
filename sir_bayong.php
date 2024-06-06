@@ -17,9 +17,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     $office = mysqli_real_escape_string($conn, $_POST['office']);
     $vehicle = mysqli_real_escape_string($conn, $_POST['vehicle']);
     $plate = mysqli_real_escape_string($conn, $_POST['plate']);
-
-    $query = "INSERT INTO sir_bayong(`SR_DR`, `Date`, `Quantity`, `Description`, `Amount`, `Office`, `Vehicle`, `Plate`) 
-              VALUES ('$sr_no', '$date', '$quantity', '$description', '$amount', '$office', '$vehicle', '$plate')";
+    $supplier = mysqli_real_escape_string($conn, $_POST['supplier']);
+    $query = "INSERT INTO sir_bayong(`SR_DR`, `Date`, `Supplier`, `Quantity`, `Description`, `Amount`, `Office`, `Vehicle`, `Plate` ) 
+              VALUES ('$sr_no', '$date', '$supplier', '$quantity', '$description', '$amount', '$office', '$vehicle', '$plate')";
 
     $query_run = mysqli_query($conn, $query);
     if ($query_run) {
@@ -67,7 +67,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
             </li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="login_v2.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
     <div class="container">
         <div class="column">
@@ -104,6 +104,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                     <div class="form-element-plate">
                         <label for="plate" id="plate1">Plate No.</label>
                         <input type="text" id="plate" name="plate" placeholder="" value=" ">
+                    </div>
+                    <div class="form-element-supplier">
+                        <label for="supplier" id="supplier1">Supplier</label>
+                        <input type="text" id="supplier" name="supplier" placeholder="" value=" ">
                     </div>
                     <button class="button-37" role="button" name="save_data">Add Data</button>
                     <button class="button-38" role="button" name="save_data2">Edit</button>
@@ -173,6 +177,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                         <tr>
                             <th>SR/DR</th>
                             <th>Date</th>
+                            <th>Supplier</th>
                             <th>Department/Requestor</th>
                             <th>Description</th>
                             <th>Vehicle</th>
@@ -189,6 +194,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                             <tr class="clickable-row3" data-rfq-id="<?php echo $row['id']; ?>"> <!-- Add data-rfq-id attribute with the row's ID -->
                                 <td><?php echo $row["SR_DR"]; ?></td>
                                 <td><?php echo $row["Date"]; ?></td>
+                                <td><?php echo $row["Supplier"]; ?></td>
                                 <td><?php echo $row["Office"]; ?></td>
                                 <td><?php echo $row["Description"]; ?></td>
                                 <td><?php echo $row["Vehicle"]; ?></td>
@@ -214,6 +220,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                     <tr>
                         <th>SR/DR</th>
                         <th>Date</th>
+                        <th>Supplier</th>
                         <th>Department/Requestor</th>
                         <th>Description</th>
                         <th>Vehicle</th>
@@ -230,6 +237,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                         <tr class="clickable-row" data-rfq-id="<?php echo $row['id']; ?>"> <!-- Add data-rfq-id attribute with the row's ID -->
                             <td><?php echo $row["SR_DR"]; ?></td>
                             <td><?php echo $row["Date"]; ?></td>
+                            <td><?php echo $row["Supplier"]; ?></td>
                             <td><?php echo $row["Office"]; ?></td>
                             <td><?php echo $row["Description"]; ?></td>
                             <td><?php echo $row["Vehicle"]; ?></td>
@@ -340,7 +348,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 // Loop through all visible table rows (excluding the first row which contains <th> elements)
                 for (var i = 1; i < rows.length; i++) {
                     if (rows[i].style.display !== 'none') { // Check if the row is visible
-                        var amountCell = rows[i].getElementsByTagName('td')[7]; // Get the cell containing the amount
+                        var amountCell = rows[i].getElementsByTagName('td')[8]; // Get the cell containing the amount
                         var amount = parseFloat(amountCell.textContent.replace('₱', '').replace(/,/g, '')) || 0; // Parse the amount
                         totalAmount += amount; // Add the amount to the total
                     }
@@ -409,7 +417,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 return selectedIDs;
             }
 
-            // Add click event listener to the addtoprint button
             $("#addtoprint").on("click", function() {
                 var selectedIDs = getSelectedIDs(); // Get the IDs of the currently selected rows
 
@@ -424,23 +431,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 }
 
                 // Send the IDs to the server via AJAX
-                $.ajax({
-                    type: "POST",
-                    url: "insert_print_data.php", // Update with the file that handles data insertion
-                    data: {
-                        ids: selectedIDs // Send the IDs array to the server
-                    },
-                    success: function(response) {
-                        alert("Data successfully added to print.");
-
-                        // Reload the page after successful data upload
-                        location.reload();
-                    },
-                    error: function() {
+                $.post("insert_print_data.php", {
+                        ids: selectedIDs
+                    })
+                    .done(function(response) {
+                        console.log("Server Response:", response); // Log the server response
+                        // Check if the response indicates success
+                        if (response.success) {
+                            alert(response.message); // Display success message
+                            location.reload(); // Reload the page
+                        } else {
+                            alert(response.message); // Display failure message
+                        }
+                    })
+                    .fail(function(jqXHR, textStatus, errorThrown) {
+                        console.error("AJAX Error:", textStatus, errorThrown); // Log detailed error information
                         alert("An error occurred while adding data to print.");
-                    }
-                });
+                    });
             });
+
 
 
             // Function to add click event listeners to table rows
@@ -478,12 +487,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
             function clearInputFields() {
                 $('#sr_no').val('');
                 $('#date1').val('');
+                $('#supplier').val('');
                 $('#quantity').val('');
                 $('#description').val('');
                 $('#amount').val('');
                 $('#office').val('');
                 $('#vehicle').val('');
                 $('#plate').val('');
+
             }
 
             // Add event listener for single click on table rows
@@ -513,11 +524,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                     if (selectedRowIds4.length === 1) {
                         $('#sr_no').val(rowData[0]);
                         $('#date1').val(rowData[1]);
-                        $('#quantity').val(rowData[6]);
-                        $('#description').val(rowData[3]);
+                        $('#supplier').val(rowData[2]);
+                        $('#quantity').val(rowData[7]);
+                        $('#description').val(rowData[4]);
 
                         // Remove the currency symbol and commas
-                        var amountValue = rowData[7].replace('₱', '').replace(/,/g, '');
+                        var amountValue = rowData[8].replace('₱', '').replace(/,/g, '');
                         console.log('Processed Amount String:', amountValue); // Debugging
 
                         // Convert the cleaned string to a float
@@ -531,9 +543,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                             console.error('Invalid number:', amountValue);
                         }
 
-                        $('#office').val(rowData[2]);
-                        $('#vehicle').val(rowData[4]);
-                        $('#plate').val(rowData[5]);
+                        $('#office').val(rowData[3]);
+                        $('#vehicle').val(rowData[5]);
+                        $('#plate').val(rowData[6]);
 
                         // Add a change event listener to check the final value set in the input field
                         $('#amount').change(function() {
@@ -556,6 +568,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 var office = $('#office').val();
                 var vehicle = $('#vehicle').val();
                 var plate = $('#plate').val();
+                var supplier = $('#supplier').val();
 
                 // Check if there's a selected row ID
                 if (selectedRowIds4.length === 1) {
@@ -573,7 +586,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                             amount: amount,
                             office: office,
                             vehicle: vehicle,
-                            plate: plate
+                            plate: plate,
+                            supplier: supplier
                         },
                         success: function(response) {
                             // Handle success response
@@ -583,12 +597,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                             var selectedRow = $('#table_tent1 tbody tr[data-rfq-id="' + selectedRowId4 + '"]');
                             selectedRow.find('td:eq(0)').text(srNo);
                             selectedRow.find('td:eq(1)').text(date);
-                            selectedRow.find('td:eq(6)').text(quantity);
-                            selectedRow.find('td:eq(3)').text(description);
-                            selectedRow.find('td:eq(7)').text('₱' + parseFloat(amount).toFixed(2));
-                            selectedRow.find('td:eq(2)').text(office);
-                            selectedRow.find('td:eq(4)').text(vehicle);
-                            selectedRow.find('td:eq(5)').text(plate);
+                            selectedRow.find('td:eq(2)').text(supplier);
+                            selectedRow.find('td:eq(7)').text(quantity);
+                            selectedRow.find('td:eq(4)').text(description);
+                            selectedRow.find('td:eq(8)').text('₱' + parseFloat(amount).toFixed(2));
+                            selectedRow.find('td:eq(3)').text(office);
+                            selectedRow.find('td:eq(5)').text(vehicle);
+                            selectedRow.find('td:eq(6)').text(plate);
                         },
                         error: function() {
                             // Handle error response
@@ -949,7 +964,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
         }
     });
 </script>
-
 
 
 

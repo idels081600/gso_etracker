@@ -11,8 +11,9 @@ if ($result) {
         $html .= '<tr class="clickable-row3" data-rfq-id="' . $row['id'] . '">';
         $html .= '<td>' . $row["SR_DR"] . '</td>';
         $html .= '<td>' . $row["Date"] . '</td>';
-        $html .= '<td>' . $row["Quantity"] . '</td>';
+        $html .= '<td>' . $row["Supplier"] . '</td>';
         $html .= '<td>' . $row["Description"] . '</td>';
+        $html .= '<td>' . $row["Quantity"] . '</td>';
         $html .= '<td>₱' . number_format($row["Amount"], 2) . '</td>';
         $html .= '<td>' . $row["Office"] . '</td>';
         $html .= '<td>' . $row["Vehicle"] . '</td>';

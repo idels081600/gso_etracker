@@ -109,6 +109,7 @@ td {
             <tr>
                 <th>SR/DR</th>
                 <th>Date</th>
+                <th>Supplier</th>
                 <th>Quantity</th>
                 <th>Description</th>
                 <th>Office</th>
@@ -127,6 +128,7 @@ while ($row = mysqli_fetch_assoc($result)) {
     $html .= '<tr data-id="' . $row['id'] . '">
                 <td>' . $row["SR_DR"] . '</td>
                 <td>' . $row["Date"] . '</td>
+                <td>' . $row["Supplier"] . '</td>
                 <td>' . $row["Quantity"] . '</td>
                 <td>' . $row["Description"] . '</td>
                 <td>' . $row["Office"] . '</td>
@@ -139,12 +141,12 @@ while ($row = mysqli_fetch_assoc($result)) {
 
 // Add payment details to HTML
 $html .= '<tr>
-            <td colspan="8" style="font-weight: bold;">Payment Details</td>
+            <td colspan="9" style="font-weight: bold;">Payment Details</td>
           </tr>';
 
 foreach ($paymentNames as $key => $paymentName) {
     $html .= '<tr>
-                <td colspan="7">' . $paymentName . '</td>
+                <td colspan="8">' . $paymentName . '</td>
                 <td>₱' . number_format($paymentAmounts[$key], 2) . '</td>
               </tr>';
 }
@@ -154,17 +156,17 @@ $finalTotalAmount = $totalAmount - array_sum($paymentAmounts);
 
 // Add total amount rows
 $html .= '<tr>
-            <td colspan="7" style="text-align: right; font-weight: bold;">Total Amount:</td>
+            <td colspan="8" style="text-align: right; font-weight: bold;">Total Amount:</td>
             <td style="font-weight: bold;">₱' . number_format($totalAmount, 2) . '</td>
           </tr>';
 
 $html .= '<tr>
-            <td colspan="7" style="text-align: right; font-weight: bold;">Total Payments:</td>
+            <td colspan="8" style="text-align: right; font-weight: bold;">Total Payments:</td>
             <td style="font-weight: bold;">₱' . number_format(array_sum($paymentAmounts), 2) . '</td>
           </tr>';
 
 $html .= '<tr>
-            <td colspan="7" style="text-align: right; font-weight: bold;">Final Total Amount:</td>
+            <td colspan="8" style="text-align: right; font-weight: bold;">Final Total Amount:</td>
             <td style="font-weight: bold;">₱' . number_format($finalTotalAmount, 2) . '</td>
           </tr>';
 

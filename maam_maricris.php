@@ -66,7 +66,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
             </li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="login_v2.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
     <div class="container">
         <div class="column">
@@ -98,7 +98,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                         <input type="text" id="office" name="office" placeholder="" value=" ">
                     </div>
                     <div class="form-element-vehicle">
-                        <label for="store" id="store1">Store</label>
+                        <label for="store" id="store1">Supplier</label>
                         <input type="text" id="store" name="store" placeholder="" value=" ">
                     </div>
                     <!-- <div class="form-element-plate">

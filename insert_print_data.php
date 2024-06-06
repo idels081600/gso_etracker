@@ -2,60 +2,87 @@
 // Include your database connection file
 require 'db.php';
 
+// Initialize response array
+$response = array();
+
 // Check if IDs are received via POST
 if (isset($_POST['ids'])) {
     // Get the IDs from the POST request
     $selectedIDs = $_POST['ids'];
 
-    // Prepare a placeholder string for the IN clause
-    $placeholders = rtrim(str_repeat('?, ', count($selectedIDs)), ', ');
+    // Ensure the IDs are safe to use in a SQL query
+    $ids = array_map('intval', $selectedIDs); // Convert to integers to prevent SQL injection
+    $idList = implode(',', $ids); // Create a comma-separated string of IDs
 
-    // Prepare SQL statement to search for data based on the selected IDs in the sir_bayong table
-    $stmt = $conn->prepare("SELECT SR_DR, Date, Quantity, Description, Amount, Office, Vehicle, Plate FROM sir_bayong WHERE id IN ($placeholders)");
+    // Prepare the SQL query to select the data from sir_bayong
+    $selectQuery = "SELECT SR_DR, Date, Supplier, Description, Quantity, Amount, Office, Vehicle, Plate 
+                    FROM sir_bayong 
+                    WHERE id IN ($idList)";
 
-    // Bind parameters to the prepared statement
-    $types = str_repeat('i', count($selectedIDs)); // Assuming IDs are integers
-    $stmt->bind_param($types, ...$selectedIDs);
+    // Execute the query
+    $result = $conn->query($selectQuery);
 
-    // Execute the prepared statement
-    $stmt->execute();
+    // Check if any rows are returned
+    if ($result->num_rows > 0) {
+        // Prepare the insert query
+        $insertQuery = "INSERT INTO sir_bayong_print (SR_DR, Date, Supplier, Description, Quantity, Amount, Office, Vehicle, Plate) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    // Get the result set
-    $result = $stmt->get_result();
+        // Prepare the statement
+        $stmt = $conn->prepare($insertQuery);
 
-    // Prepare SQL statement for inserting data into sir_bayong_print table
-    $insertStmt = $conn->prepare("INSERT INTO sir_bayong_print (SR_DR, Date, Quantity, Description, Amount, Office, Vehicle, Plate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        // Bind the parameters
+        $stmt->bind_param("sssssssss", $SR_DR, $Date, $Supplier, $Description, $Quantity, $Amount, $Office, $Vehicle, $Plate);
 
-    // Loop through each row of the result set and insert into the sir_bayong_print table
-    while ($row = $result->fetch_assoc()) {
-        // Check if the data already exists in sir_bayong_print table
-        $checkStmt = $conn->prepare("SELECT COUNT(*) FROM sir_bayong_print WHERE SR_DR = ? AND Date = ? AND Quantity = ? AND Description = ? AND Amount = ? AND Office = ? AND Vehicle = ? AND Plate = ?");
-        $checkStmt->bind_param("ssisssss", $row['SR_DR'], $row['Date'], $row['Quantity'], $row['Description'], $row['Amount'], $row['Office'], $row['Vehicle'], $row['Plate']);
-        $checkStmt->execute();
-        $checkStmt->bind_result($count);
-        $checkStmt->fetch();
-        $checkStmt->close();
+        // Loop through the selected rows and insert each into sir_bayong_print
+        while ($row = $result->fetch_assoc()) {
+            // Assign values to variables
+            $SR_DR = $row['SR_DR'];
+            $Date = $row['Date'];
+            $Supplier = $row['Supplier'];
+            $Description = $row['Description'];
+            $Quantity = $row['Quantity'];
+            $Amount = $row['Amount'];
+            $Office = $row['Office'];
+            $Vehicle = $row['Vehicle'];
+            $Plate = $row['Plate'];
 
-        // If the data doesn't exist, insert it into the sir_bayong_print table
-        if ($count == 0) {
-            // Bind parameters to the prepared statement
-            $insertStmt->bind_param("ssisssss", $row['SR_DR'], $row['Date'], $row['Quantity'], $row['Description'], $row['Amount'], $row['Office'], $row['Vehicle'], $row['Plate']);
-
-            // Execute the prepared statement to insert data
-            $insertStmt->execute();
+            // Check if the row already exists in sir_bayong_print
+            $checkQuery = "SELECT id FROM sir_bayong_print WHERE SR_DR = ? AND Date = ? AND Supplier = ? AND Description = ? AND Quantity = ? AND Amount = ? AND Office = ? AND Vehicle = ? AND Plate = ?";
+            $checkStmt = $conn->prepare($checkQuery);
+            $checkStmt->bind_param("sssssssss", $SR_DR, $Date, $Supplier, $Description, $Quantity, $Amount, $Office, $Vehicle, $Plate);
+            $checkStmt->execute();
+            $checkStmt->store_result();
+            if ($checkStmt->num_rows == 0) { // If row doesn't exist, insert it
+                // Execute the insert statement
+                $stmt->execute();
+                $response['success'] = true;
+                $response['message'] = 'Data successfully added to print.';
+            } else {
+                $response['success'] = false;
+                $response['message'] = 'Data is already uploaded.';
+            }
+            // Close the check statement
+            $checkStmt->close();
         }
+
+        // Close the statement
+        $stmt->close();
+    } else {
+        $response['success'] = false;
+        $response['message'] = 'No data found to upload.';
     }
 
-    // Close the prepared statements
-    $stmt->close();
-    $insertStmt->close();
-
-    // Return success message
-    echo json_encode(["status" => "success", "message" => "Data successfully added to print."]);
+    // Close the result set
+    $result->close();
 } else {
-    // Return error message if no IDs are received
-    echo json_encode(["status" => "error", "message" => "No IDs received."]);
+    $response['success'] = false;
+    $response['message'] = 'No IDs received.';
 }
 
 // Close the database connection
 $conn->close();
+
+// Send response as JSON
+header('Content-Type: application/json');
+echo json_encode($response);
