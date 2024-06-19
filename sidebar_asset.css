@@ -1,0 +1,168 @@
+/* Resetting default margin and padding */
+body {
+  font-family: Arial, Helvetica, sans-serif; /* Use sans-serif font stack */
+  margin: 0; /* Remove default margin */
+  padding: 0; /* Remove default padding */
+}
+/* Styling sidebar */
+.sidebar {
+  background-color: #039a00;
+  color: #fff;
+  width: 250px; /* Adjust width as needed */
+  height: 100vh; /* 100% of viewport height */
+  position: fixed;
+  top: 0;
+  left: 0;
+  overflow-y: auto; /* Enables scrolling if content overflows */
+}
+
+.sidebar ul {
+  list-style-type: none;
+  padding-left: 6%;
+  padding-top: 0%;
+}
+
+.sidebar ul li {
+  padding: 7px;
+}
+
+.sidebar ul li a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 80%;
+  display: flex; /* Use flexbox for better alignment */
+  align-items: center; /* Vertically center the icon and text */
+}
+.sidebar ul li a i {
+  margin-right: 10px; /* Adjust the space between the icon and text */
+}
+.logout-item {
+  color: #fff;
+  text-decoration: none;
+  font-size: 80%;
+  display: flex; /* Use flexbox for better alignment */
+  align-items: center; /* Vertically center the icon and text */
+  position: fixed; /* Set the position to fixed */
+  bottom: 40px; /* Adjust the vertical position */
+  left: 20px; /* Adjust the horizontal position */
+  transform: translate(0, 0); /* Apply translate to keep the item in position */
+}
+
+.sidebar ul li:nth-child(1) a i {
+  margin-right: 10px; /* Adjust the space for the first list item */
+  margin-bottom: 6px;
+}
+
+.sidebar ul li:nth-child(2) a i {
+  margin-right: 12px; /* Adjust the space for the second list item */
+  margin-bottom: 10px;
+}
+.sidebar ul li:nth-child(3) a i {
+  margin-right: 12px; /* Adjust the space for the second list item */
+  margin-bottom: 10px;
+}
+
+
+.sidebar ul li:last-child {
+  margin-top: auto; /* Move the last list item to the bottom */
+}
+
+.sidebar ul li:last-child a i {
+  margin-top: 10px; /* Adjust the margin of the logout icon */
+}
+.sidebar ul li a:hover {
+  background-color: #a19f9f;
+}
+
+/* Styling main content area */
+.content {
+  margin-left: 250px; /* Same as sidebar width */
+  padding: 20px;
+}
+.logo img {
+  border-radius: 50%;
+  height: 20%;
+  width: 20%;
+  margin-left: 5%;
+  margin-top: 5%;
+}
+.logo {
+  display: flex;
+  align-items: center; /* Align items vertically */
+}
+
+.role {
+  display: block; /* Display the role as a block element */
+  margin-left: 5%; /* Adjust the spacing between role and logo */
+  margin-top: -1%;
+  font-size: 70%;
+}
+
+.user-name {
+  display: block; /* Display the user name as a block element */
+  margin-top: 12%;
+  margin-left: -13%;
+  font-size: 80%; /* Adjust the font size of the user name */
+}
+.divider {
+  border: none; /* Remove default border */
+  border-top: 2px solid #ffffff; /* Add a 1px solid border on top */
+  margin: 10% 4%; /* Adjust margin as needed */
+}
+
+.icon-size {
+  font-size: 150%; /* Adjust the size as needed */
+}
+
+.dropdown-menu.active {
+  display: block;
+}
+.dropdown .dropdown-icon {
+  margin-left: 55%; /* Adjust the margin for all dropdown icons */
+  transition: transform 0.3s ease; /* Add animation to the dropdown icon */
+}
+
+/* Add more rules for other dropdown icons as needed */
+
+.dropdown.open .dropdown-icon {
+  transform: rotate(180deg); /* Rotate the icon when dropdown is open */
+}
+/* Use more specific selectors */
+.dropdown .dropdown-menu li {
+  margin-left: 18px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.dropdown .dropdown-menu.active li:nth-child(1) {
+  opacity: 1;
+}
+
+.dropdown .dropdown-menu.active li:nth-child(2) {
+  opacity: 1;
+  transition-delay: 0.5s;
+}
+.dropdown .dropdown-menu.active li:nth-child(3) {
+  opacity: 1;
+  transition-delay: 0.5s;
+}
+
+.dropdown-menu {
+  display: none;
+  transition: all 0.3s ease; /* Add animation to the dropdown menu */
+}
+
+.dropdown.open .dropdown-menu {
+  display: block;
+}
+
+/* Media query for responsiveness */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 200px; /* Adjust width for smaller screens */
+  }
+
+  .content {
+    margin-left: 200px; /* Adjust margin for smaller screens */
+  }
+}

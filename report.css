@@ -1,0 +1,586 @@
+/* .container_tent {
+  display: flex;
+  justify-content: left; 
+  background-color: #ffffff;
+  height: 60%;
+  width: 99%;
+  border-radius: 10px;
+  padding: 10px; 
+  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+} */
+.content {
+  overflow-x: hidden;
+}
+#tent_label {
+  margin-left: 5px;
+  font-size: 1.6rem;
+  margin-top: 5px;
+}
+
+.tent_summary {
+  background-color: #ffffff;
+  height: 400px;
+  width: 280px;
+  border-radius: 10px;
+  padding: 10px; /* Optional: Add padding inside containers */
+  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+}
+.rfq_summary {
+  background-color: #ffffff;
+  height: 400px;
+  width: 280px;
+  border-radius: 10px;
+  padding: 10px; /* Optional: Add padding inside containers */
+  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  translate: 0px -790px;
+}
+.tent_purpose {
+  background-color: #f9f9f9;
+  height: 80%;
+  width: 18%;
+  border-radius: 5px;
+  border: 0.5px solid black;
+  translate: -150px 53px;
+}
+#tent_purpose_label {
+  background-color: #559c7a;
+  color: #ffffff;
+  font-size: 1.2rem;
+  border-radius: 5px 5px 0px 0px;
+  padding-left: 1%;
+  padding-top: 0.9%;
+  padding-bottom: 0.9%;
+}
+#tent_summary_label {
+  background-color: #559c7a;
+  color: #ffffff;
+  font-size: 1.2rem;
+  border-radius: 5px 5px 0px 0px;
+  padding-left: 4%;
+
+  padding-top: 2%;
+  padding-bottom: 2%;
+}
+
+/* Optional: Add some margin between the two boxes */
+.tent_summary {
+  margin-right: 10px;
+}
+/* CSS for the unordered list */
+.list_purpose ul {
+  list-style-type: none; /* Removes default list styling */
+  padding: 10px 0 0; /* Top padding to create the gap */
+  margin: 0; /* Removes default margin */
+  display: grid;
+  grid-template-columns: 1fr 1.5fr; /* Creates two equal columns */
+  gap: 20px; /* Adds gap between the items */
+}
+
+.list_purpose li {
+  margin-bottom: 5px; /* Adds some space between list items */
+  font-size: 1rem; /* Font size for the list items */
+  box-sizing: border-box; /* Ensures padding is included in the width/height */
+  font-weight: 600;
+  margin-left: 20px;
+  color: #404040;
+}
+
+#chartContainer {
+  translate: -70px -90px;
+}
+
+#chartContainer2 {
+  translate: -40px -90px;
+}
+.canvas {
+  border-radius: 50%;
+  height: 500px;
+}
+.pie_tent {
+  background-color: #ffffff;
+  height: 400px;
+  width: 600px;
+  border-radius: 10px;
+  padding: 10px; /* Optional: Add padding inside containers */
+  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  position: relative;
+  translate: 310px -420px;
+}
+.pie_tent2 {
+  background-color: #ffffff;
+  height: 400px;
+  width: 620px;
+  border-radius: 10px;
+  padding: 10px; /* Optional: Add padding inside containers */
+  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  position: relative;
+  translate: 940px -840px;
+}
+
+#stock,
+#field,
+#retrieval,
+#long {
+  margin-top: 50px;
+  font-size: 1.4rem;
+  color: #6d6b6b;
+}
+#stock {
+  translate: 20px 70px;
+}
+#field {
+  translate: 160px -6px;
+}
+#retrieval {
+  translate: 20px 68px;
+}
+#long {
+  translate: 145px -8px;
+}
+#square {
+  background-color: white;
+  height: 50px;
+  width: 90px;
+  translate: 540px -30px;
+}
+#tent_location_label {
+  background-color: #559c7a;
+  color: #ffffff;
+  font-size: 1.2rem;
+  border-radius: 5px 5px 0px 0px;
+  padding-left: 1%;
+  padding-top: 0.9%;
+  padding-bottom: 0.9%;
+}
+#on_stocks,
+#on_fields,
+#on_retrievals,
+#long_term_uses {
+  font-size: 3.5rem;
+}
+
+#on_stocks {
+  color: rgb(43, 194, 83);
+  translate: 40px -285px;
+}
+#on_fields {
+  color: rgb(218, 105, 0);
+  translate: 180px -385px;
+}
+#on_retrievals {
+  color: rgb(241, 8, 8);
+  translate: 35px -340px;
+}
+#long_term_uses {
+  color: rgb(11, 94, 218);
+  translate: 173px -440px;
+}
+#datepicker-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  margin-bottom: -15px;
+  translate: 0px -40px;
+}
+
+.datepicker-input {
+  height: 30px;
+  border-radius: 5px;
+}
+.button-2 {
+  appearance: none;
+  background-color: #2ea44f;
+  border: 1px solid rgba(27, 31, 35, 0.15);
+  border-radius: 6px;
+  box-shadow: rgba(27, 31, 35, 0.1) 0 1px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  padding: 6px 16px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  vertical-align: middle;
+  white-space: nowrap;
+  translate: 370px 5px;
+  margin-bottom: -10px;
+  z-index: 9999;
+}
+
+.button-2:focus:not(:focus-visible):not(.focus-visible) {
+  box-shadow: none;
+  outline: none;
+}
+
+.button-2:hover {
+  background-color: #2c974b;
+}
+
+.button-2:focus {
+  box-shadow: rgba(46, 164, 79, 0.4) 0 0 0 3px;
+  outline: none;
+}
+
+.button-2:disabled {
+  background-color: #94d3a2;
+  border-color: rgba(27, 31, 35, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: default;
+}
+
+.button-2:active {
+  background-color: #298e46;
+  box-shadow: rgba(20, 70, 32, 0.2) 0 1px 0 inset;
+}
+#vehicle_label {
+  margin-left: 5px;
+  font-size: 1.6rem;
+  margin-top: 5px;
+  translate: 0px -800px;
+}
+#datepicker-container1 {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  margin-bottom: -15px;
+  translate: 0px -800px;
+}
+.datepicker-input1 {
+  height: 30px;
+  border-radius: 5px;
+}
+.button-3 {
+  appearance: none;
+  background-color: #2ea44f;
+  border: 1px solid rgba(27, 31, 35, 0.15);
+  border-radius: 6px;
+  box-shadow: rgba(27, 31, 35, 0.1) 0 1px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  padding: 6px 16px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  vertical-align: middle;
+  white-space: nowrap;
+  translate: 370px -820px;
+  margin-bottom: -10px;
+  z-index: 9999;
+}
+
+.button-3:focus:not(:focus-visible):not(.focus-visible) {
+  box-shadow: none;
+  outline: none;
+}
+
+.button-3:hover {
+  background-color: #2c974b;
+}
+
+.button-3:focus {
+  box-shadow: rgba(46, 164, 79, 0.4) 0 0 0 3px;
+  outline: none;
+}
+
+.button-3:disabled {
+  background-color: #94d3a2;
+  border-color: rgba(27, 31, 35, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: default;
+}
+
+.button-3:active {
+  background-color: #298e46;
+  box-shadow: rgba(20, 70, 32, 0.2) 0 1px 0 inset;
+}
+.transpo_summary {
+  background-color: #ffffff;
+  height: 400px;
+  width: 280px;
+  border-radius: 10px;
+  padding: 10px; /* Optional: Add padding inside containers */
+  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  translate: 0px -800px;
+}
+#dispatch {
+  margin-top: 50px;
+  font-size: 1.8rem;
+  color: #6d6b6b;
+  translate: 60px 180px;
+}
+#rfq {
+  margin-top: 50px;
+  font-size: 1.8rem;
+  color: #6d6b6b;
+  translate: 60px 180px;
+}
+#dispatched_value {
+  color: rgb(43, 194, 83);
+  translate: 40px -285px;
+  font-size: 7rem;
+  translate: 27% -50%;
+}
+#rfq_value {
+  color: rgb(43, 194, 83);
+  translate: 40px -285px;
+  font-size: 7rem;
+  translate: 75px -50px;
+}
+.pie_transpo {
+  background-color: #ffffff;
+  height: 400px;
+  width: 600px;
+  border-radius: 10px;
+  padding: 10px; /* Optional: Add padding inside containers */
+  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  position: relative;
+  translate: 310px -1220px;
+}
+.pie_transpo2 {
+  background-color: #ffffff;
+  height: 400px;
+  width: 620px;
+  border-radius: 10px;
+  padding: 10px; /* Optional: Add padding inside containers */
+  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  position: relative;
+  translate: 940px -1640px;
+}
+#chartContainer3 {
+  translate: -70px -90px;
+}
+
+#chartContainer4 {
+  translate: -40px -90px;
+}
+.button-4 {
+  appearance: none;
+  background-color: #2ea44f;
+  border: 1px solid rgba(27, 31, 35, 0.15);
+  border-radius: 6px;
+  box-shadow: rgba(27, 31, 35, 0.1) 0 1px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  padding: 6px 16px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  vertical-align: middle;
+  white-space: nowrap;
+  translate: 370px -820px;
+  margin-bottom: -10px;
+}
+
+.button-4:focus:not(:focus-visible):not(.focus-visible) {
+  box-shadow: none;
+  outline: none;
+}
+
+.button-4:hover {
+  background-color: #2c974b;
+}
+
+.button-4:focus {
+  box-shadow: rgba(46, 164, 79, 0.4) 0 0 0 3px;
+  outline: none;
+}
+
+.button-4:disabled {
+  background-color: #94d3a2;
+  border-color: rgba(27, 31, 35, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: default;
+}
+
+.button-4:active {
+  background-color: #298e46;
+  box-shadow: rgba(20, 70, 32, 0.2) 0 1px 0 inset;
+}
+.rfq {
+  translate: 0px -800px;
+}
+@media only screen and (max-width: 1440px) and (max-height: 900px) {
+  .tent_summary {
+    background-color: #ffffff;
+    height: 400px;
+    width: 120px;
+    border-radius: 10px;
+    padding: 10px; /* Optional: Add padding inside containers */
+    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  }
+  .pie_tent {
+    background-color: #ffffff;
+    height: 400px;
+    width: 460px;
+    border-radius: 10px;
+    padding: 10px; /* Optional: Add padding inside containers */
+    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    position: relative;
+    translate: 155px -420px;
+  }
+  .pie_tent2 {
+    background-color: #ffffff;
+    height: 400px;
+    width: 460px;
+    border-radius: 10px;
+    padding: 10px; /* Optional: Add padding inside containers */
+    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    position: relative;
+    translate: 650px -840px;
+  }
+  #chartContainer {
+    translate: -132px -90px;
+  }
+
+  #chartContainer2 {
+    translate: -110px -90px;
+  }
+  #stock,
+  #field,
+  #retrieval,
+  #long {
+    margin-top: 50px;
+    font-size: 1rem;
+    color: #6d6b6b;
+  }
+  #stock {
+    translate: 22px 25px;
+  }
+  #field {
+    translate: 22px 35px;
+  }
+  #retrieval {
+    translate: 22px 45px;
+  }
+  #long {
+    translate: 20px 55px;
+  }
+  #on_stocks,
+  #on_fields,
+  #on_retrievals,
+  #long_term_uses {
+    font-size: 3rem;
+  }
+
+  #on_stocks {
+    color: rgb(43, 194, 83);
+    translate: 32px -285px;
+  }
+  #on_fields {
+    color: rgb(218, 105, 0);
+    translate: 32px -290px;
+  }
+  #on_retrievals {
+    color: rgb(241, 8, 8);
+    translate: 32px -300px;
+  }
+  #long_term_uses {
+    color: rgb(11, 94, 218);
+    translate: 32px -310px;
+  }
+  .transpo_summary {
+    background-color: #ffffff;
+    height: 400px;
+    width: 120px;
+    border-radius: 10px;
+    padding: 10px; /* Optional: Add padding inside containers */
+    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    translate: 0px -800px;
+  }
+  .pie_transpo {
+    background-color: #ffffff;
+    height: 400px;
+    width: 460px;
+    border-radius: 10px;
+    padding: 10px; /* Optional: Add padding inside containers */
+    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    position: relative;
+    translate: 155px -1220px;
+  }
+  .pie_transpo2 {
+    background-color: #ffffff;
+    height: 400px;
+    width: 460px;
+    border-radius: 10px;
+    padding: 10px; /* Optional: Add padding inside containers */
+    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    position: relative;
+    translate: 650px -1640px;
+  }
+  #chartContainer3 {
+    translate: -122px -90px;
+  }
+
+  #chartContainer4 {
+    translate: -110px -90px;
+  }
+  #dispatch {
+    margin-top: 50px;
+    font-size: 1.2rem;
+    color: #6d6b6b;
+    translate: 10px 170px;
+  }
+  #rfq {
+    margin-top: 50px;
+    font-size: 1.8rem;
+    color: #6d6b6b;
+    translate:55px 180px;
+  }
+}

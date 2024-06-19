@@ -68,6 +68,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "SAP":
                 header("location:sir_bayong.php");
                 break;
+            case "ASSET":
+                header("location:dashboard_asset_tracker.php");
+                break;
             default:
                 header("location:login_v2.php");
                 break;
