@@ -43,7 +43,7 @@ $dispatched = display_vehicle_dispatched();
         </div>
         <hr class="divider">
         <ul>
-            <li><a href="dashboard.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
+            <li><a href="dashboard_asset_tracker.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
             <li class="dropdown">
                 <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
                 <ul class="dropdown-menu">
