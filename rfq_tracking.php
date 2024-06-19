@@ -126,37 +126,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"  && isset($_POST['save_data'])) {
                             <div class="form-element">
                                 <div class="form-element1">
                                     <label for="rfqno" id="rfqno-label">RFQ No.</label>
-                                    <input type="text" id="rfqno" name="rfqno" placeholder="" required>
+                                    <input type="text" id="rfqno" name="rfqno" placeholder="" >
                                 </div>
                             </div>
                             <div class="form-element">
                                 <div class="form-element2">
                                     <label for="prno" id="prno-label">PR No.</label>
-                                    <input type="text" id="prno" name="prno" placeholder="" required>
+                                    <input type="text" id="prno" name="prno" placeholder="" >
                                 </div>
                             </div>
                             <div class="form-element">
                                 <div class="form-element3">
                                     <label for="rfqname" id="rfqname-label">RFQ Name</label>
-                                    <input type="text" id="rfqname" name="rfqname" placeholder="" required>
+                                    <input type="text" id="rfqname" name="rfqname" placeholder="" >
                                 </div>
                             </div>
                             <div class="form-element">
                                 <div class="form-element4">
                                     <label for="amount" id="amount-label">Amount</label>
-                                    <input type="text" id="amount" name="amount" placeholder="" required>
+                                    <input type="text" id="amount" name="amount" placeholder="" >
                                 </div>
                             </div>
                             <div class="form-element">
                                 <div class="form-element5">
                                     <label for="requestor" id="requestor-label">Requestor</label>
-                                    <input type="text" id="requestor" name="requestor" placeholder="" required>
+                                    <input type="text" id="requestor" name="requestor" placeholder="" >
                                 </div>
                             </div>
                             <div class="form-element">
                                 <div class="form-element6">
                                     <label for="supplier" id="supplier-label">Supplier</label>
-                                    <input type="text" id="supplier" name="supplier" placeholder="" required>
+                                    <input type="text" id="supplier" name="supplier" placeholder="" >
                                 </div>
                             </div>
                             <button class="button-39" role="button" name="save_data">Submit</button>
