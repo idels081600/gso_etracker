@@ -1,6 +1,12 @@
 <?php
 // Include database connection
 include 'db_asset.php';
+session_start();
+if (!isset($_SESSION['username'])) {
+    header("location:login_v2.php");
+} else if ($_SESSION['role'] == 'Employee') {
+    header("location:login_v2.php");
+}
 $query = "SELECT * FROM RFQ ";
 $result1 = mysqli_query($conn, $query);
 

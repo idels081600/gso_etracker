@@ -2,6 +2,12 @@
 
 require_once 'db_asset.php'; // Assuming this file contains your database connection code
 require_once 'display_data_asset.php';
+session_start();
+if (!isset($_SESSION['username'])) {
+    header("location:login_v2.php");
+} else if ($_SESSION['role'] == 'Employee') {
+    header("location:login_v2.php");
+}
 $result = display_data_transpo();
 $Plate = display_data_vehicle();
 $Drivers = display_data_driver();

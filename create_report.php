@@ -1,6 +1,12 @@
 <?php
 require_once "display_data_asset.php";
 require_once 'db_asset.php';
+session_start();
+if (!isset($_SESSION['username'])) {
+    header("location:login_v2.php");
+} else if ($_SESSION['role'] == 'Employee') {
+    header("location:login_v2.php");
+}
 $on_stock = display_tent_status();
 $longterm = display_tent_status_Longterm();
 $on_field = display_tent_status_Installed();
