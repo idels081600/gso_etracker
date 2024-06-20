@@ -88,7 +88,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customizable Sidebar</title>
+    <title>Transportation Tracker</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="transpo.css">
     <!-- <link rel="stylesheet" href="style_box.css"> -->

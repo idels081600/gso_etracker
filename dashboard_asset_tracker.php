@@ -28,7 +28,7 @@ $rfq = display_data_rfq();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customizable Sidebar</title>
+    <title>Dashboard</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="main_content.css">
 
