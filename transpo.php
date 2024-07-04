@@ -82,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transportation Tracker</title>
+    <title>Customizable Sidebar</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="transpo.css">
     <!-- <link rel="stylesheet" href="style_box.css"> -->
@@ -257,6 +257,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                                     <option value="Tiptip">Tiptip</option>
                                     <option value="Ubujan">Ubujan</option>
                                     <option value="Outside Tagbilaran">Outside Tagbilaran</option>
+                                    <option value="Within Tagbilaran">Within Tagbilaran</option>
                                 </select>
                             </div>
                             <!-- <div class="form-element-other">
