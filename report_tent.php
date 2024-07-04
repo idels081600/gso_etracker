@@ -24,7 +24,9 @@ $event_counts = [
     'Church' => 0,
     'School' => 0,
     'LGU' => 0,
-    'Province' => 0
+    'Province' => 0,
+    'City Government' => 0,
+    'Municipalities' => 0
 ];
 
 // Build the query based on the input

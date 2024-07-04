@@ -168,6 +168,7 @@ if (isset($_POST['save_data'])) {
                                 <option value="Church">Church</option>
                                 <option value="School">School</option>
                                 <option value="City Government">City Government</option>
+                                <option value="LGU">LGU</option>
                                 <option value="Municipalities">Municipalities</option>
                                 <option value="Province">Province</option>
                                 <!-- Add more options as needed -->
@@ -276,11 +277,11 @@ if (isset($_POST['save_data'])) {
                                     <option value="option6">Private</option>
                                     <option value="option7">Church</option>
                                     <option value="option8">School</option>
-                                    <option value="option9">City Government</option>
                                     <option value="option10">Municipalities</option>
                                     <option value="option11">Province</option>
                                     <option value="option11">Fiesta</option>
-                                    <!-- Add more options as needed -->
+                                    <option value="option9">City Government</option>
+                                    <option value="option9">LGU</option>
                                 </select>
                             </div>
                             <div class="form-element-other1">
@@ -608,7 +609,7 @@ if (isset($_POST['save_data'])) {
             // Populate the purpose dropdown
             var purposeDropdown = document.getElementById('purpose1');
             purposeDropdown.innerHTML = ''; // Clear existing options
-            var purposeOptions = ['Wake', 'Birthday', 'Wedding', 'Baptism', 'Personal', 'Private', 'Church', 'School', 'LGU', 'Province']; // Array of purpose options
+            var purposeOptions = ['Wake', 'Birthday', 'Wedding', 'Baptism', 'Personal', 'Private', 'Church', 'School', 'LGU', 'Province', 'City Government', 'Municipalities']; // Array of purpose options
             purposeOptions.forEach(function(option) {
                 var optionElement = document.createElement('option');
                 optionElement.value = option;
@@ -620,7 +621,7 @@ if (isset($_POST['save_data'])) {
 
             var locationDropdown = document.getElementById('Location1');
             locationDropdown.innerHTML = ''; // Clear existing options
-            var locationOptions = ['Bool', 'Booy', 'Cabawan', 'Cogon', 'Dao', 'Dampas', 'Manga', 'Mansasa', 'Poblacion I', 'Poblacion II', 'Poblacion III', 'San Isidro', 'Taloto', 'Tiptip', 'Ubujan']; // Array of location options
+            var locationOptions = ['Bool', 'Booy', 'Cabawan', 'Cogon', 'Dao', 'Dampas', 'Manga', 'Mansasa', 'Poblacion I', 'Poblacion II', 'Poblacion III', 'San Isidro', 'Taloto', 'Tiptip', 'Ubujan', 'Outside Tagbilaran']; // Array of location options
             locationOptions.forEach(function(option) {
                 var optionElement = document.createElement('option');
                 optionElement.value = option;
@@ -736,7 +737,7 @@ if (isset($_POST['save_data'])) {
                 // Function to handle box click
                 function handleBoxClick(event) {
                     // Check if the box is already orange or blue
-                    if ($(this).hasClass('orange') || $(this).hasClass('blue')|| $(this).hasClass('red')) {
+                    if ($(this).hasClass('orange') || $(this).hasClass('blue') || $(this).hasClass('red')) {
                         return; // Do nothing if the box is orange or blue
                     }
 

@@ -28,7 +28,8 @@ $location_counts = [
     'San Isidro' => 0,
     'Taloto' => 0,
     'Tiptip' => 0,
-    'Ubujan' => 0
+    'Ubujan' => 0,
+    'Outside Tagbilaran' => 0
 ];
 
 // Build the query based on the input
