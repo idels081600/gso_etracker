@@ -1,12 +1,6 @@
 <?php
 require_once "display_data_asset.php";
 require_once 'db_asset.php';
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
-    header("location:login_v2.php");
-}
 $on_stock = display_tent_status();
 $longterm = display_tent_status_Longterm();
 $on_field = display_tent_status_Installed();
@@ -31,7 +25,7 @@ $dispatched = display_vehicle_dispatched();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    <title>Generate Report</title>
+    <title>Document</title>
 </head>
 
 <body>
@@ -54,7 +48,7 @@ $dispatched = display_vehicle_dispatched();
             </li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
     <div class="content">
         <h1>Generate Report</h1>
@@ -278,7 +272,7 @@ $dispatched = display_vehicle_dispatched();
             });
 
             if (totalValue === 0) {
-                document.getElementById(chartContainerId).innerHTML = "No data available.";
+                // document.getElementById(chartContainerId).innerHTML = "No data available.";
                 return;
             }
 
@@ -500,7 +494,7 @@ $dispatched = display_vehicle_dispatched();
             });
 
             if (totalValue === 0) {
-                document.getElementById(chartContainerId).innerHTML = "No data available.";
+                // document.getElementById(chartContainerId).innerHTML = "No data available.";
                 return;
             }
 
