@@ -112,7 +112,7 @@ function display_tent_status_Longterm()
 function display_data_transpo()
 {
     global $conn;
-    $query = "SELECT * FROM `Transportation` WHERE `Status` = 'Stand By' OR `Status` = 'Departed' ORDER BY `id` DESC";
+    $query = "SELECT * FROM `Transportation` ORDER BY `id` DESC";
     $result = mysqli_query($conn, $query);
     return $result;
 }

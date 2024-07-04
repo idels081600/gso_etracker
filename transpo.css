@@ -254,7 +254,7 @@ th {
   opacity: 0;
   transform: translate(-50%, -50%) scale(1.25);
   width: 30%;
-  height: 58%;
+  height: 50%;
   backdrop-filter: blur(10px) saturate(148%);
   -webkit-backdrop-filter: blur(10px) saturate(148%);
   background-color: rgb(233, 233, 233);
@@ -316,6 +316,7 @@ th {
 }
 #plate_no-label {
   color: rgb(14, 14, 14);
+  translate: -15% 0%;
 }
 #plate_no {
   height: 33px;
@@ -324,11 +325,11 @@ th {
   border-radius: 5px;
   border: 0.5px solid rgb(110, 110, 110);
   position: absolute;
-  translate: -38% 68%;
+  translate: -28% 68%;
 }
 #datepicker-label {
   position: absolute;
-  translate: 565% -100%;
+  translate: 760% -100%;
 }
 #datepicker {
   height: 25px;
@@ -338,11 +339,11 @@ th {
   margin-top: 20%;
   border: 0.5px solid rgb(110, 110, 110);
   position: absolute;
-  translate: 107% -250%;
+  translate: 109% -335%;
 }
 #name-label {
   position: absolute;
-  translate: 10% 270%;
+  translate: 12% 270%;
 }
 #name {
   margin-top: 14%;
@@ -352,11 +353,11 @@ th {
   border: 0.5px solid rgb(110, 110, 110);
   width: 93.5%;
   margin-left: 13px;
-  translate: 0% 50%;
+  translate: 0% 0%;
 }
 #driver-label {
   position: absolute;
-  translate: 27% 150%;
+  translate: 30% 50%;
 }
 #driver {
   height: 32px;
@@ -366,7 +367,7 @@ th {
   border-radius: 5px;
   width: 44.5%;
   border: 0.5px solid rgb(110, 110, 110);
-  translate: 0% 65%;
+  translate: 0% -20%;
 }
 #No_tents-label {
   position: absolute;
@@ -383,17 +384,17 @@ th {
 }
 #Location-label {
   position: absolute;
-  translate: 23% 160%;
+  translate: 23% 0%;
 }
 #Location {
   height: 25px;
   border-radius: 5px;
   padding: 3px;
   height: 33px;
-  width: 42%;
+  width: 40%;
   border: 0.5px solid rgb(110, 110, 110);
   position: absolute;
-  translate: 6.5% 160%;
+  translate: 5.5% 60%;
 }
 .button-37 {
   background-color: #13aa52;
@@ -746,7 +747,7 @@ th {
 }
 #purpose-label {
   position: absolute;
-  translate: 320% -190%;
+  translate: 430% -335%;
 }
 #purpose {
   height: 33px;
@@ -755,7 +756,7 @@ th {
   width: 43%;
   border: 0.5px solid rgb(110, 110, 110);
   position: absolute;
-  translate: 103% -37%;
+  translate: 103% -119%;
 }
 #preview {
   width: 300px; /* Set the width */
@@ -943,7 +944,7 @@ th {
   padding: 10px 25px;
   text-align: center;
   position: absolute;
-  translate: 2.5% 400%;
+  translate: 2.5% 200%;
   transition: transform 150ms, box-shadow 150ms;
   user-select: none;
   -webkit-user-select: none;

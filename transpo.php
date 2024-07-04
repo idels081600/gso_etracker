@@ -2,12 +2,6 @@
 
 require_once 'db_asset.php'; // Assuming this file contains your database connection code
 require_once 'display_data_asset.php';
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
-    header("location:login_v2.php");
-}
 $result = display_data_transpo();
 $Plate = display_data_vehicle();
 $Drivers = display_data_driver();
@@ -88,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transportation Tracker</title>
+    <title>Customizable Sidebar</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="transpo.css">
     <!-- <link rel="stylesheet" href="style_box.css"> -->
@@ -154,7 +148,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
             </li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
 
     <div class="content">
@@ -265,10 +259,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                                     <option value="Outside Tagbilaran">Outside Tagbilaran</option>
                                 </select>
                             </div>
-                            <div class="form-element-other">
+                            <!-- <div class="form-element-other">
                                 <label for="other" id="other-label">Specify Location (outside Tagbilaran)</label>
                                 <input type="text" id="other" placeholder="" name="other">
-                            </div>
+                            </div> -->
                             <button class="button-39" role="button" name="save_data">Submit</button>
                         </form>
                     </div>
