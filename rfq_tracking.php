@@ -47,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"  && isset($_POST['save_data'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RFQr</title>
+    <title>RFQ Tracker</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="tracking_rfq_style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
