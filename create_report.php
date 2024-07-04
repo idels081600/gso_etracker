@@ -187,15 +187,9 @@ $dispatched = display_vehicle_dispatched();
             var startDate = $("#datepicker1").val();
             var endDate = $("#datepicker2").val();
 
-            // Log the startDate and endDate variables
-            console.log('Start Date:', startDate);
-            console.log('End Date:', endDate);
-
             // Format the startDate and endDate variables to 'YYYY-MM-DD'
             startDate = formatDate(startDate);
             endDate = formatDate(endDate);
-            console.log('Formatted Start Date:', startDate);
-            console.log('Formatted End Date:', endDate);
 
             // Call the fetchData function for the first chart
             fetchData(startDate, endDate, 'report_tent.php', 'chartContainer');
@@ -208,8 +202,7 @@ $dispatched = display_vehicle_dispatched();
 
         function formatDate(dateString) {
             var parts = dateString.split('/');
-            var formattedDate = parts[2] + '-' + parts[0] + '-' + parts[1];
-            return formattedDate;
+            return parts[2] + '-' + parts[0] + '-' + parts[1];
         }
 
         function initialData(initialUrl, chartContainerId) {
@@ -217,8 +210,12 @@ $dispatched = display_vehicle_dispatched();
                 url: initialUrl,
                 method: 'GET',
                 success: function(response) {
-                    console.log(response);
-                    updateChart(response.event_counts || response.location_count, chartContainerId);
+                    var eventCounts = response.event_counts || response.location_count;
+                    if (eventCounts) {
+                        updateChart(eventCounts, chartContainerId);
+                    } else {
+                        document.getElementById(chartContainerId).innerHTML = "No data available.";
+                    }
                 },
                 error: function(error) {
                     console.error('Error fetching initial data:', error);
@@ -233,11 +230,14 @@ $dispatched = display_vehicle_dispatched();
                 data: {
                     start_date: startDate,
                     end_date: endDate,
-                    tent_status: 'On Stock'
                 },
                 success: function(response) {
-                    console.log(response);
-                    updateChart(response.event_counts || response.location_count, chartContainerId);
+                    var eventCounts = response.event_counts || response.location_count;
+                    if (eventCounts) {
+                        updateChart(eventCounts, chartContainerId);
+                    } else {
+                        document.getElementById(chartContainerId).innerHTML = "No data available.";
+                    }
                 },
                 error: function(error) {
                     console.error('Error fetching data:', error);
@@ -272,7 +272,7 @@ $dispatched = display_vehicle_dispatched();
             });
 
             if (totalValue === 0) {
-                // document.getElementById(chartContainerId).innerHTML = "No data available.";
+                document.getElementById(chartContainerId).innerHTML = "No data available.";
                 return;
             }
 
@@ -324,7 +324,6 @@ $dispatched = display_vehicle_dispatched();
                     end_date: endDate
                 },
                 success: function(response) {
-                    console.log(response);
                     var totalCount = 0;
 
                     response.data.forEach(function(row) {
@@ -332,12 +331,8 @@ $dispatched = display_vehicle_dispatched();
                         totalCount += tentNumbers.length;
                     });
 
-                    console.log('Total Tent Numbers Count:', totalCount);
-
-                    // Update the total count in the h1 element
                     $("#on_fields").text(totalCount);
 
-                    // Update finalCount and calculate on_stock_total
                     finalCount += totalCount;
                     updateOnStockTotal();
                 },
@@ -356,7 +351,6 @@ $dispatched = display_vehicle_dispatched();
                     end_date: endDate
                 },
                 success: function(response) {
-                    console.log(response);
                     var totalCount = 0;
 
                     response.data.forEach(function(row) {
@@ -364,12 +358,8 @@ $dispatched = display_vehicle_dispatched();
                         totalCount += tentNumbers.length;
                     });
 
-                    console.log('Total Tent Numbers Count:', totalCount);
-
-                    // Update the total count in the h1 element
                     $("#on_retrievals").text(totalCount);
 
-                    // Update finalCount and calculate on_stock_total
                     finalCount += totalCount;
                     updateOnStockTotal();
                 },
@@ -381,7 +371,6 @@ $dispatched = display_vehicle_dispatched();
 
         function updateOnStockTotal() {
             var on_stock_total = 120 - finalCount - 40;
-            console.log('Updated On Stock Total:', finalCount);
             $("#on_stocks").text(on_stock_total);
         }
 
@@ -494,7 +483,7 @@ $dispatched = display_vehicle_dispatched();
             });
 
             if (totalValue === 0) {
-                // document.getElementById(chartContainerId).innerHTML = "No data available.";
+                document.getElementById(chartContainerId).innerHTML = "No data available.";
                 return;
             }
 

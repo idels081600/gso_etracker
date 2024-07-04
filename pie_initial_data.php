@@ -20,7 +20,7 @@ $event_counts = [
 ];
 
 // Build the query to count all data with status 'On Stock'
-$query = "SELECT * FROM tent WHERE status = 'On Stock'";
+$query = "SELECT * FROM tent WHERE status IN ('On Stock', 'Installed')";
 
 $result = $conn->query($query);
 

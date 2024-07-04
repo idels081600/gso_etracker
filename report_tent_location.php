@@ -7,11 +7,10 @@ include 'db_asset.php';
 // Get parameters from the request
 $start_date = $_GET['start_date'];
 $end_date = $_GET['end_date'];
-$tent_status = $_GET['tent_status'];
+
 
 $start_date = $conn->real_escape_string($start_date);
 $end_date = $conn->real_escape_string($end_date);
-$tent_status = $conn->real_escape_string($tent_status);
 
 // Initialize the counters for each location
 $location_counts = [
@@ -33,7 +32,7 @@ $location_counts = [
 ];
 
 // Build the query based on the input
-$query = "SELECT * FROM tent WHERE status = '$tent_status' AND date BETWEEN '$start_date' AND '$end_date'";
+$query = "SELECT * FROM tent WHERE status IN ('On Stock', 'Installed') AND date BETWEEN '$start_date' AND '$end_date'";
 $result = $conn->query($query);
 
 if (!$result) {
@@ -61,4 +60,3 @@ $response = [
 echo json_encode($response);
 
 $conn->close();
-?>

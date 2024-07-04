@@ -1,12 +1,6 @@
 <?php
 require_once 'db_asset.php';
 require_once 'display_data_asset.php';
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
-    header("location:login_v2.php");
-}
 $result = display_data();
 if (isset($_POST['save_data'])) {
     $name = mysqli_real_escape_string($conn, $_POST['name']);
@@ -50,7 +44,7 @@ if (isset($_POST['save_data'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tent Inventory</title>
+    <title>Customizable Sidebar</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="tracking_style.css">
     <link rel="stylesheet" href="style_box.css">
@@ -113,7 +107,7 @@ if (isset($_POST['save_data'])) {
             </li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
 
     <div class="content">
@@ -696,7 +690,7 @@ if (isset($_POST['save_data'])) {
 
             dropdown.addEventListener('change', function() {
                 var selectedStatus = this.value;
-                var tentNumbers = tentnoInput.value.split(',').map(Number); // Get an array of tent numbers
+                var tentNumbers = tentNoInput.value.split(',').map(Number); // Get an array of tent numbers
 
                 // Update the status of each tent number
                 tentNumbers.forEach(function(tentNumber) {
@@ -741,13 +735,8 @@ if (isset($_POST['save_data'])) {
 
                 // Function to handle box click
                 function handleBoxClick(event) {
-                    // Check if the dropdown value is "Installed"
-                    if (dropdown.value === 'Installed' || dropdown.value === 'For Retrieval') {
-                        alert('Boxes cannot be clicked when status is "Installed" or "Retrieval".');
-                        return;
-                    }
                     // Check if the box is already orange or blue
-                    if ($(this).hasClass('orange') || $(this).hasClass('blue')) {
+                    if ($(this).hasClass('orange') || $(this).hasClass('blue')|| $(this).hasClass('red')) {
                         return; // Do nothing if the box is orange or blue
                     }
 
