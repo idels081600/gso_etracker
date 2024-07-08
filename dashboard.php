@@ -1,3 +1,11 @@
+<?php
+session_start();
+if (!isset($_SESSION['username'])) {
+    header("location:login_v2.php");
+} else if ($_SESSION['role'] == 'Employee') {
+    header("location:login_v2.php");
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
