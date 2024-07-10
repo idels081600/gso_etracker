@@ -15,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     $description = mysqli_real_escape_string($conn, $_POST['activity']);
     $amount = mysqli_real_escape_string($conn, $_POST['amount']);
     $office = mysqli_real_escape_string($conn, $_POST['office']);
-    $store = mysqli_real_escape_string($conn, $_POST['store']);
+    $store = mysqli_real_escape_string($conn, $_POST['supplier']);
     $total = $quantity * $amount;
     $query = "INSERT INTO Maam_mariecris(`SR_DR`, `date`, `department`, `store`, `activity`, `no_of_pax`, `amount`,`total`) 
               VALUES ('$sr_no', '$date', '$office', '$store', '$description', '$quantity', ' $amount ',' $total ')";
