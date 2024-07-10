@@ -568,7 +568,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 var activity = $('#activity').val();
                 var amount = $('#amount').val();
                 var office = $('#office').val();
-                var store = $('#store').val();
+                var store = $('#supplier').val();
 
                 // Check if there's a selected row ID
                 if (selectedRowIds4.length === 1) {
