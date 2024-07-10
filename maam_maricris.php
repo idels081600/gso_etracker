@@ -496,7 +496,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 $('#activity').val('');
                 $('#amount').val('');
                 $('#office').val('');
-                $('#store').val('');
+                $('#supplier').val('');
             }
 
             // Add event listener for single click on table rows
@@ -551,7 +551,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                         }
 
                         $('#office').val(rowData[2]);
-                        $('#store').val(rowData[3]);
+                        $('#supplier').val(rowData[3]);
 
                     }
                 }
