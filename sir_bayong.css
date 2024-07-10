@@ -40,7 +40,8 @@ form {
 .form-element-amount,
 .form-element-office,
 .form-element-vehicle,
-.form-element-plate {
+.form-element-plate,
+.form-element-supplier {
   margin-bottom: 15px;
   display: flex;
   flex-direction: column;
@@ -357,6 +358,44 @@ tr:hover {
   cursor: pointer;
 }
 
+.popup6 {
+  position: absolute;
+  top: -150%;
+  left: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1.25);
+  width: 19.5%;
+  height: 30%;
+  backdrop-filter: blur(10px) saturate(148%);
+  -webkit-backdrop-filter: blur(10px) saturate(148%);
+  background-color: rgb(233, 233, 233);
+  border-radius: 12px;
+  border: 1px solid rgba(209, 213, 219, 0.3);
+  transition: top 0ms ease-in-out 200ms, opacity 200ms ease-in-out 0ms,
+    transform 20ms ease-in-out 0ms;
+  z-index: 999;
+}
+.popup6.active {
+  top: 50%;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  transition: top 0ms ease-in-out 0ms, opacity 200ms ease-in-out 0ms,
+    transform 20ms ease-in-out 0ms;
+}
+.popup6 .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 15px;
+  height: 15px;
+  background: #888;
+  color: #eee;
+  text-align: center;
+  line-height: 15px;
+  border-radius: 15px;
+  cursor: pointer;
+}
+
 .overlay {
   position: fixed;
   top: 0;
@@ -371,6 +410,9 @@ tr:hover {
   pointer-events: none; /* Allow pointer events to pass through */
 }
 
+.form-element_sup {
+  translate: -2% 60%;
+}
 .form-element1 {
   translate: -32% 160%;
 }
@@ -383,6 +425,17 @@ tr:hover {
   height: 25px;
   border-radius: 5px;
   translate: -2% 10%;
+}
+.supplier-label {
+  translate: 100% -150%;
+  position: absolute;
+}
+#supplier_name {
+  width: 250px;
+  margin-left: 5px;
+  height: 25px;
+  border-radius: 5px;
+  translate: 16% -10%;
 }
 #label_modal1 {
   margin-top: 7%;
@@ -615,7 +668,29 @@ td {
   touch-action: manipulation;
   width: 90%;
 }
-
+.button-49 {
+  background-color: #13aa52;
+  border: 1px solid #13aa52;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 15px;
+  text-align: center;
+  transform: translate(19%, 140%);
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 70%;
+}
 .button-47 {
   position: absolute;
   background-color: #aa1d13;
@@ -651,6 +726,34 @@ td {
 
 .selected-row3 {
   background-color: #d3d3d3; /* Light grey background to indicate selection */
+}
+.button-50 {
+  position: absolute;
+  background-color: #13aa52;
+  border: 1px solid #13aa52;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 10px;
+  text-align: center;
+  transform: translate(190%, 25%);
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 8%;
+  height: 6%;
+}
+#supplierDropdown {
+  height: 39px;
 }
 @media only screen and (min-width: 1024px) and (max-width: 1449px) {
   .column {
@@ -898,7 +1001,8 @@ td {
   .form-element-amount,
   .form-element-office,
   .form-element-vehicle,
-  .form-element-plate,.form-element-supplier {
+  .form-element-plate,
+  .form-element-supplier {
     margin-bottom: 15px;
     display: flex;
     flex-direction: column;
@@ -930,8 +1034,7 @@ td {
   #description1,
   #amount1,
   #plate1,
-  #vehicle1
-  #supplier1 {
+  #vehicle1 #supplier1 {
     font-size: 13px;
   }
   .popup3 {

@@ -1,12 +1,6 @@
 <?php
 require_once 'db.php'; // Assuming this file contains your database connection code
 require_once 'display_data.php';
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
-    header("location:login_v2.php");
-}
 $result = display_data_BQ();
 $result2 = display_data_bq_print();
 $total_amount = 0;
@@ -22,7 +16,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     $description = mysqli_real_escape_string($conn, $_POST['description']);
     $amount = mysqli_real_escape_string($conn, $_POST['amount']);
     $office = mysqli_real_escape_string($conn, $_POST['office']);
-    $supplier = mysqli_real_escape_string($conn, $_POST['store']);
+    $supplier = mysqli_real_escape_string($conn, $_POST['supplier']);
     // $total = $quantity * $amount;
     $query = "INSERT INTO bq(`SR_DR`, `date`, `supplier`, `requestor`, `activity`,`description`, `quantity`, `amount`) 
               VALUES ('$sr_no', '$date', '$supplier','$office', '$description','$activity', '$quantity', ' $amount ')";
@@ -47,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="sidebar.css">
-    <link rel="stylesheet" href="bq.css">
+    <link rel="stylesheet" href="BQ.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"> <!-- Corrected path for jQuery UI CSS -->
 
@@ -73,7 +67,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
             </li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
     <div class="container">
         <div class="column">
@@ -108,9 +102,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                         <label for="office" id="office1">Department/Requestor</label>
                         <input type="text" id="office" name="office" placeholder="" value=" ">
                     </div>
-                    <div class="form-element-vehicle">
-                        <label for="store" id="store1">Supplier</label>
-                        <input type="text" id="store" name="store" placeholder="" value=" ">
+                    <div class="form-element-supplier">
+                        <label for="supplier" id="supplier1">Supplier</label>
+                        <select id="supplierDropdown" name="supplier">
+                            <option value="">Select a supplier</option>
+                            <!-- Options will be dynamically populated here -->
+                        </select>
                     </div>
                     <!-- <div class="form-element-plate">
                         <label for="plate" id="plate1">Plate</label>
@@ -175,6 +172,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 </table>
             </div>
         </div>
+        <div class="popup6" id="popup6">
+            <div class="close-btn">&times;</div>
+            <h1 id="label_modal1">Add Supplier</h1>
+            <div class="form-element">
+                <div class="form-element_sup">
+                    <label for="supplier_name" class="supplier-label">Name:</label>
+                    <input type="text" id="supplier_name" placeholder="">
+                </div>
+                <button class="button-49" role="button" name="save_sup" id="save_supplier">Save</button>
+            </div>
+        </div>
         <div class="popup5" id="popup5">
             <div class="close-btn">&times;</div>
             <button id="delete_print" class="button-47">Delete</button>
@@ -217,6 +225,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     <div class="container_table">
         <input type="text" id="date4" name="date4" placeholder="Start..">
         <input type="text" id="date3" name="date3" placeholder="End..">
+        <button class="button-50" role="button" name="add_sup" id="add_supplier">Add Supplier</button>
         <input type="text" id="search-input" placeholder="Search...">
         <input type="number" id="deductions" name="deductions" placeholder=" Payments.." value=" ">
         <div class="table-container1">
@@ -981,8 +990,136 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
         }
     });
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Function to close the popup
+        function closePopup() {
+            console.log("Closing popup");
+            document.querySelector(".popup6").classList.remove("active");
+            document.querySelector(".overlay").style.display = "none"; // Hide the overlay
+            location.reload(); // Reload the page
+        }
 
+        // Event listener for the Escape key
+        document.addEventListener('keydown', function(event) {
+            console.log("Key pressed: ", event.key);
+            if (event.key === 'Escape') {
+                // Check if the popup is active
+                if (document.querySelector(".popup6").classList.contains("active")) {
+                    closePopup(); // Close the popup
+                }
+            }
+        });
 
+        // Event listener for the add button
+        document.querySelector("#add_supplier").addEventListener("click", function(event) {
+            console.log("Opening popup");
+            event.preventDefault(); // Prevent default behavior to avoid accidental form submissions
+            document.querySelector(".popup6").classList.add("active");
+            document.querySelector(".overlay").style.display = "block"; // Show the overlay
+        });
 
+        // Event listener for the close button
+        document.querySelector(".popup6 .close-btn").addEventListener("click", function() {
+            closePopup(); // Close the popup
+        });
+
+        // Debug log for form submission to ensure it doesn't close the popup
+        document.querySelector(".form1").addEventListener("submit", function(event) {
+            console.log("Form submitted");
+            event.preventDefault(); // Prevent default form submission for debugging purposes
+            // You can handle form submission here if necessary
+        });
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Function to populate suppliers dropdown
+        function populateSuppliersDropdown() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "get_suppliers.php", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    var suppliers = response.suppliers;
+
+                    var dropdown = document.getElementById("supplierDropdown");
+                    dropdown.innerHTML = ""; // Clear existing options
+
+                    // Add default option
+                    var defaultOption = document.createElement("option");
+                    defaultOption.value = "";
+                    defaultOption.text = "Select a supplier";
+                    dropdown.appendChild(defaultOption);
+
+                    // Add suppliers options
+                    suppliers.forEach(function(supplier) {
+                        var option = document.createElement("option");
+                        option.value = supplier;
+                        option.text = supplier;
+                        dropdown.appendChild(option);
+                    });
+                }
+            };
+            xhr.send();
+        }
+
+        // Call the function to populate dropdown on page load
+        populateSuppliersDropdown();
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector("#save_supplier").addEventListener("click", function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            // Get the supplier name input value
+            var supplierName = document.getElementById("supplier_name").value;
+
+            // Send AJAX request to save the supplier name
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "save_supplier.php", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                    // Handle response from server
+                    var response = xhr.responseText.trim(); // Trim to remove any extra whitespace
+
+                    if (response === "exists") {
+                        alert("Supplier already exists."); // Display message if supplier exists
+                        // Optionally, fetch and display existing data here
+                        document.getElementById("supplier_name").value = '';
+                        fetchExistingSupplierData(supplierName);
+                    } else if (response === "saved") {
+                        alert("Supplier name saved successfully!"); // Display success message
+                        document.getElementById("supplier_name").value = ''; // Clear input field
+                    } else {
+                        alert("Error saving supplier."); // Display error message if any
+                    }
+                }
+            };
+            xhr.send("supplier_name=" + encodeURIComponent(supplierName));
+        });
+
+        // Function to fetch and display existing supplier data
+        function fetchExistingSupplierData(supplierName) {
+            // Example: You can add code here to fetch and display existing supplier data
+            // Replace with your implementation to fetch and display existing data
+            console.log("Fetching existing data for supplier: " + supplierName);
+            // Example: AJAX request to fetch and display existing data
+            // var xhrFetch = new XMLHttpRequest();
+            // xhrFetch.open("GET", "fetch_existing_supplier_data.php?supplier_name=" + encodeURIComponent(supplierName), true);
+            // xhrFetch.onreadystatechange = function() {
+            //     if (xhrFetch.readyState === XMLHttpRequest.DONE && xhrFetch.status === 200) {
+            //         var existingData = xhrFetch.responseText;
+            //         // Example: Display existing data in a modal or alert
+            //         alert("Existing Data:\n" + existingData);
+            //     }
+            // };
+            // xhrFetch.send();
+        }
+    });
+</script>
 
 </html>
