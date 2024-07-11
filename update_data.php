@@ -14,7 +14,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $location = mysqli_real_escape_string($conn, $_POST['Location1']);
     $purpose = mysqli_real_escape_string($conn, $_POST['purpose1']);
     $status = mysqli_real_escape_string($conn, $_POST['status']); // Get the selected status value
-
+    $retrieval_date = date('Y-m-d', strtotime($_POST['duration1']));
     // Debug: Print $_POST variables
     echo "Debug: ID: $id, Tent No: $tent_no, Datepicker: $datepicker, Name: $name, Contact: $contact, TentNo: $tentno, Location: $location, Purpose: $purpose, Status: $status<br>";
 
@@ -61,6 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $query = "UPDATE tent SET
                           tent_no = '$tentno',
                           date = '$datepicker',
+                          retrieval_date = '$retrieval_date',
                           name = '$name',
                           Contact_no = '$contact',
                           no_of_tents = '$tent_no',
@@ -72,7 +73,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // If the existing status is not empty, update without modifying the status column
             $query = "UPDATE tent SET
                           tent_no = '$tentno',
-                          date = '$datepicker',
+                          date = '$datepicker'
+                          ,
+                          retrieval_date = '$retrieval_date',
                           name = '$name',
                           Contact_no = '$contact',
                           no_of_tents = '$tent_no',

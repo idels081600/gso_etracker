@@ -29,7 +29,7 @@
 
 .table_tent {
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 13px;
   width: 100%;
 }
 
@@ -354,6 +354,7 @@ th {
   position: absolute;
   translate: 430% -300%;
 }
+
 #No_tents {
   height: 33px;
   padding: 3px;
@@ -367,12 +368,40 @@ th {
   position: absolute;
   translate: 19% 100%;
 }
+#duration-label {
+  position: absolute;
+  translate: 265% 100%;
+}
+#duration1-label {
+  position: absolute;
+  translate: 200% 1500%;
+}
+#tent_duration1 {
+  height: 25px;
+  border-radius: 5px;
+  padding: 3px;
+  height: 26px;
+  width: 25%;
+  border: 0.5px solid rgb(110, 110, 110);
+  position: absolute;
+  translate: 80% 850%;
+}
+#tent_duration {
+  height: 25px;
+  border-radius: 5px;
+  padding: 3px;
+  height: 26px;
+  width: 40%;
+  border: 0.5px solid rgb(110, 110, 110);
+  position: absolute;
+  translate: 108% 105%;
+}
 #Location {
   height: 25px;
   border-radius: 5px;
   padding: 3px;
   height: 33px;
-  width: 42%;
+  width: 40%;
   border: 0.5px solid rgb(110, 110, 110);
   position: absolute;
   translate: 5.5% 110%;
@@ -659,7 +688,6 @@ th {
   box-shadow: rgba(46, 164, 79, 0.4) 0 0 0 3px;
   outline: none;
 }
-
 .button-2:disabled {
   background-color: #94d3a2;
   border-color: rgba(27, 31, 35, 0.1);

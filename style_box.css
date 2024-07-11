@@ -185,7 +185,7 @@
   touch-action: manipulation;
   width: 52.4%;
   position: absolute;
-  translate: 39.5% 870%;
+  translate: 39.5% 860%;
 }
 .popup1 {
   position: absolute;
@@ -194,7 +194,7 @@
   opacity: 0;
   transform: translate(-50%, -50%) scale(1.25);
   width: 50%;
-  height: 80%;
+  height: 83%;
   backdrop-filter: blur(10px) saturate(148%);
   -webkit-backdrop-filter: blur(10px) saturate(148%);
   background-color: rgb(233, 233, 233);

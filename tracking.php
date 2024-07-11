@@ -1,7 +1,9 @@
 <?php
 require_once 'db_asset.php';
 require_once 'display_data_asset.php';
+
 $result = display_data();
+
 if (isset($_POST['save_data'])) {
     $name = mysqli_real_escape_string($conn, $_POST['name']);
     $contact_no = mysqli_real_escape_string($conn, $_POST['contact']);
@@ -9,6 +11,7 @@ if (isset($_POST['save_data'])) {
     $no_of_tents = mysqli_real_escape_string($conn, $_POST['tent_no']);
     $purpose = mysqli_real_escape_string($conn, $_POST['No_tents']);
     $location = "";
+    $duration = mysqli_real_escape_string($conn, $_POST['duration']);
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Check if "other" input is not empty
@@ -20,22 +23,23 @@ if (isset($_POST['save_data'])) {
         }
     }
 
-    $query = "INSERT INTO tent(name, contact_no, no_of_tents, purpose, location, status, date) VALUES ('$name', '$contact_no', '$no_of_tents', '$purpose', '$location', 'Pending', '$date')";
+    // Calculate retrieval date
+    $retrieval_date = date('Y-m-d', strtotime($date . ' + ' . $duration . ' days'));
+
+    $query = "INSERT INTO tent(name, contact_no, no_of_tents, purpose, location, status, date, retrieval_date) 
+              VALUES ('$name', '$contact_no', '$no_of_tents', '$purpose', '$location', 'Pending', '$date', '$retrieval_date')";
 
     $query_run = mysqli_query($conn, $query);
     if ($query_run) {
-
         header("Location: tracking.php");
     } else {
-
-?>
-
-<?php
+        // Handle insert error
         header("Location: tracking.php");
         exit();
     }
 }
 ?>
+
 
 
 <!DOCTYPE html>
@@ -44,7 +48,7 @@ if (isset($_POST['save_data'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tent Tracker</title>
+    <title>Customizable Sidebar</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="tracking_style.css">
     <link rel="stylesheet" href="style_box.css">
@@ -203,6 +207,11 @@ if (isset($_POST['save_data'])) {
                                 <option value="Outside_Tagbilaran">Outside Tagbilaran</option>
                             </select>
                         </div>
+                        <div class="form-element-duration">
+                            <label for="duration" id="duration-label">Tent Duration</label>
+                            <input type="number" id="tent_duration" placeholder="" name="duration" required>
+                        </div>
+
                         <!-- <div class="form-element-other">
                             <label for="other" id="other-label">Specify Location (outside Tagbilaran)</label>
                             <input type="text" id="other" placeholder="" name="other">
@@ -288,7 +297,11 @@ if (isset($_POST['save_data'])) {
                                 <label for="other" id="other-label1">Specify Location (outside Tagbilaran)</label>
                                 <input type="text" id="other1" name="other1" placeholder="">
                             </div>
-                            <button type="submit" class="button-details" role="button">Submit</button> <!-- Submit button -->
+                            <div class="form-element-duration1">
+                                <label for="duration1" id="duration1-label">Tent Duration</label>
+                                <input type="text" id="tent_duration1" placeholder="" name="duration1">
+                            </div>
+                            <button type="submit" class="button-details" role="button">Submit</button>
                         </form>
                     </div>
                 </div>
@@ -302,7 +315,7 @@ if (isset($_POST['save_data'])) {
                                 <div class="boxs">
                                 </div>
                             </div>
-                            <button type="submit" class="button-details" role="button">Submit</button> <!-- Submit button -->
+                            <button type="submit" class="button-details" role="button">Submit</button>
                         </form>
                     </div>
                 </div>
@@ -310,15 +323,16 @@ if (isset($_POST['save_data'])) {
                     <table id="table_tent" class="table_tent">
                         <thead>
                             <tr>
-                                <th>Tent No.</th>
-                                <th>Date</th>
-                                <th>Name</th>
-                                <th>Contact Number</th>
-                                <th>No. of Tents</th>
-                                <th>Purpose</th>
-                                <th>Location</th>
-                                <th>Status</th>
-                                <th>Action</th>
+                                <th class="tent-no">Tent No.</th>
+                                <th class="date">Date</th>
+                                <th class="retrieval-date">Retrieval Date</th>
+                                <th class="name">Name</th>
+                                <th class="contact-number">Contact Number</th>
+                                <th class="no-of-tents">No. of Tents</th>
+                                <th class="purpose">Purpose</th>
+                                <th class="location">Location</th>
+                                <th class="status">Status</th>
+                                <th class="action">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -326,6 +340,7 @@ if (isset($_POST['save_data'])) {
                                 <tr>
                                     <td><?php echo $row["tent_no"]; ?></td>
                                     <td><?php echo $row["date"]; ?></td>
+                                    <td class="retrieval-date"><?php echo $row["retrieval_date"]; ?></td>
                                     <td><?php echo $row["name"]; ?></td>
                                     <td><?php echo $row["Contact_no"]; ?></td>
                                     <td><?php echo $row["no_of_tents"]; ?></td>
@@ -361,11 +376,10 @@ if (isset($_POST['save_data'])) {
                                     </td>
                                 </tr>
                             <?php } ?>
-
                         </tbody>
-
                     </table>
                 </div>
+
             </div>
         </div>
     </div>
@@ -606,6 +620,7 @@ if (isset($_POST['save_data'])) {
             document.getElementById('datepicker1').value = data.date;
             document.getElementById('name1').value = data.name;
             document.getElementById('contact1').value = data.Contact_no;
+            document.getElementById('tent_duration1').value = data.retrieval_date;
             // Populate the purpose dropdown
             var purposeDropdown = document.getElementById('purpose1');
             purposeDropdown.innerHTML = ''; // Clear existing options
@@ -1046,5 +1061,38 @@ if (isset($_POST['save_data'])) {
         $("#datepicker").datepicker();
     });
 </script>
+<script>
+    $(document).ready(function() {
+        // Function to check and update date colors
+        function updateDateColors() {
+            var today = new Date();
+            $('.date, .retrieval-date').each(function() {
+                var dateText = $(this).text();
+                var date = new Date(dateText);
+
+                // Calculate difference in days
+                var timeDiff = date.getTime() - today.getTime();
+                var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+                // Apply color based on difference
+                if (diffDays < 0) {
+                    $(this).css('color', 'red'); // Date is passed
+                } else if (diffDays === 0) {
+                    $(this).css('color', 'orange'); // Today
+                } else {
+                    $(this).css('color', ''); // Reset color if date is in the future
+                }
+            });
+        }
+
+        // Initial call to update colors
+        updateDateColors();
+
+        // Optional: Refresh colors periodically (e.g., every minute)
+        setInterval(updateDateColors, 60000); // Update every 1 minute (60000 milliseconds)
+    });
+</script>
+
+
 
 </html>
