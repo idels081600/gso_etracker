@@ -1,0 +1,227 @@
+/* General Styles */
+.content {
+  background-color: #d9d9d9;
+  height: 95.7vh;
+  padding: 20px;
+}
+
+.supplier_list {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style-type: none;
+  overflow-x: auto;
+  scrollbar-width: none; /* Hide scrollbar in Firefox */
+  scroll-snap-type: x mandatory; /* Enable scroll snapping */
+  scroll-behavior: smooth; /* Enable smooth scrolling */
+}
+
+.supplier_list::-webkit-scrollbar {
+  display: none; /* Hide scrollbar in WebKit-based browsers */
+}
+
+.supplier_container {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 300px; /* Ensure a minimum width for each container */
+  width: 140px;
+  height: 130px; /* Adjust height as needed */
+  scroll-snap-align: start; /* Align the items to the start of the container */
+  color: #000; /* Text color for better contrast */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden; /* Ensure content stays within the container */
+}
+
+.supplier_name {
+  font-size: 1.4em;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #505050;
+  z-index: 1;
+}
+
+.amount {
+  font-size: 2em;
+  font-weight: bold;
+  color: #3b945e; /* Green color for amount */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: font-size 0.3s ease; /* Add transition for font size */
+  word-break: break-all; /* Break long words to ensure they stay within the container */
+  max-height: 100px; /* Initial max height */
+  /* Additional styles to handle large amounts */
+  line-height: 1em; /* Adjust line height for readability */
+}
+
+.supplier_container:hover .amount {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  max-height: 100px; /* Remove max height on hover */
+}
+
+.info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.supplier_name,
+.amount {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Skeleton Loading Styles */
+.skeleton-loader {
+  animation: skeleton-loading 1s ease-in-out infinite;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  height: 20px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+      background-position: 100% 50%;
+  }
+  100% {
+      background-position: -100% 50%;
+  }
+}
+
+/* Additional Styles */
+#pay_table_bayong,
+#pay_table_march,
+#pay_table_cornell {
+  width: 99%;
+  background-color: #fff;
+  border-collapse: collapse; /* Ensure borders collapse into a single border */
+  margin-top: 0%;
+  margin-left: 0.5%;
+}
+
+#pay_table_bayong th,
+#pay_table_march th,
+#pay_table_cornell th {
+  background-color: #009532;
+  color: #ffffff;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 1; /* Ensure the sticky headers stay above the table content */
+  border: none; /* Remove any borders from the header cells */
+}
+
+#pay_table_bayong th,
+#pay_table_bayong td,
+#pay_table_march th,
+#pay_table_march td,
+#pay_table_cornell th,
+#pay_table_cornell td {
+  padding: 6px 10px;
+  font-weight: normal;
+  border: none; /* Remove borders from table cells */
+}
+
+#pay_table_bayong td,
+#pay_table_march td,
+#pay_table_cornell td {
+  font-size: 0.9rem;
+}
+
+.container_pay_table {
+  background-color: #ffffff;
+  height: 55vh;
+  width: 100%;
+  border-radius: 15px; /* Adjust the value to control the roundness of the corners */
+  margin-top: -1%;
+  overflow-y: auto;
+}
+
+#pay_table_bayong tbody tr:hover,
+#pay_table_march tbody tr:hover,
+#pay_table_cornell tbody tr:hover {
+  background-color: #c2c2c2; /* Change background color on hover */
+}
+
+.parent_container_table {
+  background-color: #ffffff;
+  height: 64vh;
+  padding-left: 2%;
+  padding-right: 2%;
+  padding-top: 0.5%;
+  margin-top: 2%;
+  border-radius: 15px;
+}
+
+#search-input {
+  flex: 1; /* Take remaining space */
+  padding: 9px;
+  border: 1.5px solid #8f8d8d;
+  border-radius: 20px;
+  font-size: 16px;
+  transition: border-color 0.3s ease; /* Add transition for smoother effect */
+  translate: 1270px -20px;
+  margin-top: -200px;
+}
+
+#search-input:hover {
+  border-color: #069937; /* Change border color on hover */
+}
+
+#search-button:hover {
+  background-color: #8b8c8d;
+}
+
+.dropdown_menu {
+  margin-left: 0%;
+  margin-right: 70%;
+  margin-bottom: -30px;
+  translate: 5px 10px;
+}
+
+.dropdown_menu select {
+  font-size: 16px; /* Increase font size */
+  padding: 5px; /* Add padding */
+  width: 200px; /* Set width */
+  border: 2px solid #ccc; /* Add border */
+  border-radius: 10px; /* Add border radius */
+  background-color: #fff; /* Set background color */
+  color: #333; /* Set text color */
+}
+
+.dropdown_menu select:hover {
+  border-color: #069937; /* Change border color on hover */
+}
+
+#date3,
+#date4 {
+  width: 100px;
+  translate: 220px 8px;
+  font-size: 16px;
+  height: 25px;
+  margin-bottom: 0px;
+}
+
+@media only screen and (min-width: 2240px) {
+  #search-input {
+      flex: 1; /* Take remaining space */
+      padding: 9px;
+      border: 1.5px solid #8f8d8d;
+      border-radius: 20px;
+      font-size: 16px;
+      transition: border-color 0.3s ease; /* Add transition for smoother effect */
+      translate: 1570px 10px;
+  }
+}
