@@ -156,7 +156,7 @@ $rfq = display_data_rfq();
                 <ul class="dropdown-menu">
                     <li><a href="tracking.php">Tent</a></li>
                     <li><a href="transpo.php">Transportation</a></li>
-                    <!-- <li><a href="pay_track.php">Payables</a></li> -->
+                    <li><a href="pay_track.php">Payables</a></li>
                     <li><a href="rfq_tracking.php">RFQ</a></li>
 
                 </ul>
