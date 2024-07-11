@@ -83,7 +83,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                     </div>
                     <div class="form-element-quantity">
                         <label for="quantity" id="quantity1">Quantity</label>
-                        <input type="number" id="amount" name="amount" placeholder="" value="" min="0" step="any">
+                        <input type="number" id="quantity" name="quantity" placeholder="" value="" min="0" step="any">
                     </div>
                     <div class="form-element-description">
                         <label for="description" id="description1">Description</label>
@@ -503,67 +503,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
             function clearInputFields() {
                 $('#sr_no').val('');
                 $('#date1').val('');
-                $('#supplier').val('');
+                $('#supplierDropdown').val('');
                 $('#quantity').val('');
                 $('#description').val('');
                 $('#amount').val('');
                 $('#office').val('');
                 $('#vehicle').val('');
                 $('#plate').val('');
-
             }
 
             // Add event listener for single click on table rows
             $('#table_tent1 tbody').on('click', 'tr', function() {
-                // Get the ID from the data-rfq-id attribute of the clicked row
                 var rowId = $(this).data('rfq-id');
-
-                // Check if the clicked row is already selected
                 if ($(this).hasClass('selected')) {
-                    // If it is selected, remove the 'selected' class and clear input fields
                     $(this).removeClass('selected');
                     selectedRowIds4 = selectedRowIds4.filter(id => id !== rowId);
                     if (selectedRowIds4.length === 0) {
                         clearInputFields();
                     }
                 } else {
-                    // Add 'selected' class to the clicked row
                     $(this).addClass('selected');
                     selectedRowIds4.push(rowId);
 
-                    // Get the data from the clicked row
                     var rowData = $(this).find('td').map(function() {
                         return $(this).text();
                     }).get();
 
-                    // Fill the input fields with the data of the first selected row
                     if (selectedRowIds4.length === 1) {
                         $('#sr_no').val(rowData[0]);
                         $('#date1').val(rowData[1]);
-                        $('#supplier').val(rowData[2]);
+                        $('#supplierDropdown').val(rowData[2]);
                         $('#quantity').val(rowData[7]);
                         $('#description').val(rowData[4]);
 
-                        // Remove the currency symbol and commas
                         var amountValue = rowData[8].replace('₱', '').replace(/,/g, '');
-                        console.log('Processed Amount String:', amountValue); // Debugging
-
-                        // Convert the cleaned string to a float
                         var amountNumber = parseFloat(amountValue);
-                        console.log('Processed Amount Number:', amountNumber); // Debugging
-
-                        // Ensure the amountNumber is a valid number
                         if (!isNaN(amountNumber)) {
-                            $('#amount').val(amountNumber); // Set the processed amount value
-                        } else {
-                            console.error('Invalid number:', amountValue);
+                            $('#amount').val(amountNumber);
                         }
 
                         $('#office').val(rowData[3]);
                         $('#vehicle').val(rowData[5]);
                         $('#plate').val(rowData[6]);
 
-                        // Add a change event listener to check the final value set in the input field
                         $('#amount').change(function() {
                             console.log('Amount input value after change:', $(this).val());
                         });
@@ -573,9 +555,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
 
             // Add event listener for the Edit button
             $('[name="save_data2"]').click(function(event) {
-                event.preventDefault(); // Prevent form submission
+                event.preventDefault();
 
-                // Get the data from the input fields
                 var srNo = $('#sr_no').val();
                 var date = $('#date1').val();
                 var quantity = $('#quantity').val();
@@ -584,17 +565,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 var office = $('#office').val();
                 var vehicle = $('#vehicle').val();
                 var plate = $('#plate').val();
-                var supplier = $('#supplier').val();
-
-                // Check if there's a selected row ID
+                var supplier = $('#supplierDropdown').val();
+                console.log('SR No:', srNo);
+                console.log('Date:', date);
+                console.log('Quantity:', quantity);
+                console.log('Description:', description);
+                console.log('Amount:', amount);
+                console.log('Office:', office);
+                console.log('Vehicle:', vehicle);
+                console.log('Plate:', plate);
+                console.log('Supplier:', supplier);
                 if (selectedRowIds4.length === 1) {
                     var selectedRowId4 = selectedRowIds4[0];
-                    // Use AJAX to update the row in the database
                     $.ajax({
-                        url: 'update_row.php', // Change this to the URL of your PHP script that handles the update
+                        url: 'update_row.php',
                         type: 'POST',
                         data: {
-                            id: selectedRowId4, // Pass the selected row ID
+                            id: selectedRowId4,
                             sr_no: srNo,
                             date: date,
                             quantity: quantity,
@@ -606,10 +593,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                             supplier: supplier
                         },
                         success: function(response) {
-                            // Handle success response
                             alert('Row updated successfully.');
-
-                            // Optionally update the row in the table to reflect the changes without reloading
                             var selectedRow = $('#table_tent1 tbody tr[data-rfq-id="' + selectedRowId4 + '"]');
                             selectedRow.find('td:eq(0)').text(srNo);
                             selectedRow.find('td:eq(1)').text(date);
@@ -622,48 +606,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                             selectedRow.find('td:eq(6)').text(plate);
                         },
                         error: function() {
-                            // Handle error response
                             alert('Failed to update row.');
                         }
                     });
                 } else {
-                    // If no row is selected, show an error message
                     alert('No row selected for update or multiple rows selected.');
                 }
             });
 
             // Add event listener for the Delete button
             $('[name="delete_data"]').click(function(event) {
-                event.preventDefault(); // Prevent form submission
+                event.preventDefault();
 
-                // Check if there are selected row IDs
                 if (selectedRowIds4.length > 0) {
-                    // Use AJAX to delete the rows in the database
                     $.ajax({
-                        url: 'delete_row.php', // Change this to the URL of your PHP script that handles the delete
+                        url: 'delete_row.php',
                         type: 'POST',
                         data: {
-                            ids: selectedRowIds4 // Pass the selected row IDs
+                            ids: selectedRowIds4
                         },
                         success: function(response) {
-                            // Handle success response
                             alert('Rows deleted successfully.');
-                            // Clear input fields
                             clearInputFields();
-
-                            // Optionally remove the rows from the table
                             selectedRowIds4.forEach(function(id) {
                                 $('#table_tent1 tbody tr[data-rfq-id="' + id + '"]').remove();
                             });
-                            selectedRowIds4 = []; // Reset the selectedRowIds
+                            selectedRowIds4 = [];
                         },
                         error: function() {
-                            // Handle error response
                             alert('Failed to delete rows.');
                         }
                     });
                 } else {
-                    // If no rows are selected, show an error message
                     alert('No rows selected for deletion.');
                 }
             });

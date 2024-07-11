@@ -41,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="sidebar.css">
-    <link rel="stylesheet" href="bq.css">
+    <link rel="stylesheet" href="BQ.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"> <!-- Corrected path for jQuery UI CSS -->
 
@@ -522,7 +522,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 $('#description1').val('');
                 $('#office').val('');
                 $('#amount').val('');
-                $('#store').val('');
+                $('#supplierDropdown').val('');
             }
 
             // Add event listener for single click on table rows
@@ -553,7 +553,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
 
                     $('#sr_no').val(rowData[0]);
                     $('#date1').val(rowData[1]);
-                    $('#store').val(rowData[2]);
+                    $('#supplierDropdown').val(rowData[2]);
                     $('#quantity').val(rowData[6]);
                     $('#activity').val(rowData[4]);
 
@@ -592,8 +592,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 var amount = $('#amount').val();
                 var requestor = $('#office').val();
                 var description = $('#description1').val();
-                var supplier = $('#store').val();
-
+                var supplier = $('#supplierDropdown').val();
+                console.log('SR No:', srNo);
+                console.log('Date:', date);
+                console.log('Quantity:', quantity);
+                console.log('Description:', activity);
+                console.log('Amount:', amount);
+                console.log('Office:', requestor);
+                console.log('Vehicle:', description);
+                console.log('Supplier:', supplier);
                 // Check if there's a selected row ID
                 if (selectedRowIds4.length === 1) {
                     var selectedRowId4 = selectedRowIds4[0];

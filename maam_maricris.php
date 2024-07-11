@@ -15,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     $description = mysqli_real_escape_string($conn, $_POST['activity']);
     $amount = mysqli_real_escape_string($conn, $_POST['amount']);
     $office = mysqli_real_escape_string($conn, $_POST['office']);
-    $store = mysqli_real_escape_string($conn, $_POST['supplier']);
+    $store = mysqli_real_escape_string($conn, $_POST['store']);
     $total = $quantity * $amount;
     $query = "INSERT INTO Maam_mariecris(`SR_DR`, `date`, `department`, `store`, `activity`, `no_of_pax`, `amount`,`total`) 
               VALUES ('$sr_no', '$date', '$office', '$store', '$description', '$quantity', ' $amount ',' $total ')";
@@ -496,7 +496,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 $('#activity').val('');
                 $('#amount').val('');
                 $('#office').val('');
-                $('#supplier').val('');
+                $('#supplierDropdown').val('');
             }
 
             // Add event listener for single click on table rows
@@ -551,7 +551,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                         }
 
                         $('#office').val(rowData[2]);
-                        $('#supplier').val(rowData[3]);
+                        $('#supplierDropdown').val(rowData[3]);
 
                     }
                 }
@@ -568,7 +568,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                 var activity = $('#activity').val();
                 var amount = $('#amount').val();
                 var office = $('#office').val();
-                var store = $('#supplier').val();
+                var store = $('#supplierDropdown').val();
 
                 // Check if there's a selected row ID
                 if (selectedRowIds4.length === 1) {
