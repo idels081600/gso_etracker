@@ -8,7 +8,7 @@ include 'db_asset.php';
 $start_date = $_GET['start_date'];
 $end_date = $_GET['end_date'];
 
-
+// Validate and sanitize input
 $start_date = $conn->real_escape_string($start_date);
 $end_date = $conn->real_escape_string($end_date);
 
@@ -45,17 +45,20 @@ $data = [];
 while ($row = $result->fetch_assoc()) {
     $data[] = $row;
 
-    // Increment the counter for the location
+    // Increment the counter for the location by the number of tent numbers
     $location = $row['location']; // Assuming 'location' is the column name in your table
+    $tent_no = $row['tent_no']; // Assuming 'tent_no' is the column name in your table
     if (isset($location_counts[$location])) {
-        $location_counts[$location]++;
+        // Count tent numbers (assuming tent_no is comma-separated)
+        $tent_numbers = explode(',', $tent_no);
+        $location_counts[$location] += count($tent_numbers);
     }
 }
 
 // Prepare the final result
 $response = [
     'data' => $data,
-    'event_counts' => $location_counts
+    'location_counts' => $location_counts
 ];
 
 echo json_encode($response);

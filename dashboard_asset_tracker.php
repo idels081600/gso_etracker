@@ -1,12 +1,6 @@
 <?php
 require_once 'db_asset.php';
 require_once 'display_data_asset.php';
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
-    header("location:login_v2.php");
-}
 $result = display_data_dashboard();
 $transpo = display_data_transpo();
 $on_stock = display_tent_status();
@@ -162,13 +156,14 @@ $rfq = display_data_rfq();
                 <ul class="dropdown-menu">
                     <li><a href="tracking.php">Tent</a></li>
                     <li><a href="transpo.php">Transportation</a></li>
+                    <li><a href="pay_track.php">Payables</a></li>
                     <li><a href="rfq_tracking.php">RFQ</a></li>
 
                 </ul>
             </li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
 
     <div class="content">

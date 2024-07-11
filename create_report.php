@@ -25,7 +25,7 @@ $dispatched = display_vehicle_dispatched();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    <title>Create Report</title>
+    <title>Document</title>
 </head>
 
 <body>
@@ -232,7 +232,8 @@ $dispatched = display_vehicle_dispatched();
                     end_date: endDate,
                 },
                 success: function(response) {
-                    var eventCounts = response.event_counts || response.location_count;
+                    console.log(response);
+                    var eventCounts = response.event_counts || response.location_counts; // Corrected 'location_counts'
                     if (eventCounts) {
                         updateChart(eventCounts, chartContainerId);
                     } else {
@@ -240,7 +241,7 @@ $dispatched = display_vehicle_dispatched();
                     }
                 },
                 error: function(error) {
-                    console.error('Error fetching data:', error);
+                    console.error('Error fetching data: ', error); // Corrected parameter name to 'error'
                 }
             });
         }
@@ -291,7 +292,10 @@ $dispatched = display_vehicle_dispatched();
                     "#4db6ac", // Light Teal
                     "#ba68c8", // Light Lavender
                     "#90a4ae", // Light Gray-Blue
-                    "#ff8a65" // Light Coral
+                    "#ff8a65", // Light Coral
+                    "#ffab91", // Light Peach
+                    "#81c784" // Light Lime Green
+
                 ],
                 series: [{
                     name: 'Purpose',
@@ -331,9 +335,13 @@ $dispatched = display_vehicle_dispatched();
                         totalCount += tentNumbers.length;
                     });
 
+                    console.log('Total Count:', totalCount); // Log the total count
+
                     $("#on_fields").text(totalCount);
 
                     finalCount += totalCount;
+                    console.log('Final Count:', finalCount); // Log the final count
+
                     updateOnStockTotal();
                 },
                 error: function(error) {

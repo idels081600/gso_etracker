@@ -26,7 +26,7 @@ $totalCount = 0;
 
 while ($row = $result->fetch_assoc()) {
     $tent_no_array = explode(',', $row['tent_no']);
-    $totalCount += count($tent_no_array);
+    $totalCount += count($tent_no_array); 
     $data[] = $row;
 }
 
