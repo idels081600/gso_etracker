@@ -206,7 +206,7 @@
   <div class="container">
   <a class="navbar-brand" href="login_v2.php">
     <img src="logo.png" alt="Logo" class="logo-img">
-    <span class="logo-text">E-Pass </span>
+    <span class="logo-text">E-CGSO </span>
   </a>
   </div>
 </nav>
