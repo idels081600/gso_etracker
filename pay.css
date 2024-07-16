@@ -70,8 +70,7 @@
 
 .info {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
 }
 
 .supplier_name,
@@ -93,10 +92,10 @@
 
 @keyframes skeleton-loading {
   0% {
-      background-position: 100% 50%;
+    background-position: 100% 50%;
   }
   100% {
-      background-position: -100% 50%;
+    background-position: -100% 50%;
   }
 }
 
@@ -213,15 +212,22 @@
   height: 25px;
   margin-bottom: 0px;
 }
+.last_month_value {
+  transform: translate(px, -55px);
+  color: #6d6d6d;
+  white-space: nowrap;
+  width: auto; /* Adjust width as necessary */
+  font-size: .8rem;
+}
 
 @media only screen and (min-width: 2240px) {
   #search-input {
-      flex: 1; /* Take remaining space */
-      padding: 9px;
-      border: 1.5px solid #8f8d8d;
-      border-radius: 20px;
-      font-size: 16px;
-      transition: border-color 0.3s ease; /* Add transition for smoother effect */
-      translate: 1570px 10px;
+    flex: 1; /* Take remaining space */
+    padding: 9px;
+    border: 1.5px solid #8f8d8d;
+    border-radius: 20px;
+    font-size: 16px;
+    transition: border-color 0.3s ease; /* Add transition for smoother effect */
+    translate: 1570px 10px;
   }
 }

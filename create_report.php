@@ -133,6 +133,30 @@ $dispatched = display_vehicle_dispatched();
 
             </div>
         </div>
+        <div class="payables">
+            <h2 id="payables_label">Payables </h2>
+            <div class="dropdown_menu">
+                <select class="menu" id="sel1" name='typeofbusiness'>
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+            <div class="dropdown_menu1">
+                <input class="menu1" id="sel2" name="typeofbusiness1" type="number" placeholder="Year">
+            </div>
+            <button class="button-5" id="pay_button" role="button">Get Data</button>
+            <div id="bar_payables"></div>
+        </div>
     </div>
 
 </body>
@@ -561,115 +585,7 @@ $dispatched = display_vehicle_dispatched();
 
     });
 </script>
-<!-- 
-<script type="text/javascript">
-    // Initialize the echarts instance based on the prepared dom
-    var myChart3 = echarts.init(document.getElementById('chartContainer3'));
 
-    // Specify the configuration items and data for the chart
-    var option = {
-        tooltip: {
-            trigger: 'item'
-        },
-        color: [
-            "#e57373", // Light Red
-            "#ffb74d", // Light Orange
-            "#fff176", // Light Yellow
-            "#aed581", // Light Green
-            "#64b5f6", // Light Blue
-            // "#9575cd", // Light Purple
-            // "#f06292", // Light Pink
-            // "#4db6ac", // Light Teal
-            // "#ba68c8", // Light Lavender
-            // "#90a4ae", // Light Gray-Blue
-            // "#ff8a65", // Light Coral
-            // "#81c784", // Light Green
-            // "#4fc3f7", // Light Sky Blue
-            // "#ffb3ba", // Light Pinkish Red
-            // "#cfd8dc" // Light Blue Gray
-        ],
-        series: [{
-            name: 'Location',
-            type: 'pie',
-            radius: '50%',
-            data: [{
-                    value: 5,
-                    name: 'Burial Driving Services'
-                },
-                {
-                    value: 20,
-                    name: 'Office Services'
-                },
-                {
-                    value: 36,
-                    name: 'Cargo Services'
-                },
-                {
-                    value: 10,
-                    name: 'Other Services'
-                },
-                {
-                    value: 10,
-                    name: 'Travel Services'
-                }
-                // {
-                //     value: 20,
-                //     name: 'Dampas'
-                // },
-                // {
-                //     value: 20,
-                //     name: 'Manga'
-                // },
-                // {
-                //     value: 20,
-                //     name: 'Mansasa'
-                // },
-                // {
-                //     value: 20,
-                //     name: 'Poblacion I'
-                // },
-                // {
-                //     value: 20,
-                //     name: 'Poblacion II'
-                // },
-                // {
-                //     value: 20,
-                //     name: 'Poblacion III'
-                // },
-                // {
-                //     value: 20,
-                //     name: 'San Isidro'
-                // },
-                // {
-                //     value: 20,
-                //     name: 'Taloto'
-                // },
-                // {
-                //     value: 20,
-                //     name: 'Tiptip'
-                // },
-                // {
-                //     value: 20,
-                //     name: 'Ubujan'
-                // }
-            ],
-            label: {
-                position: 'outside',
-                formatter: '{b}: {c}'
-            },
-            emphasis: {
-                itemStyle: {
-                    shadowBlur: 10,
-                    shadowOffsetX: 0,
-                    shadowColor: 'rgba(0, 0, 0, 0.5)'
-                }
-            }
-        }]
-    };
-
-    // Display the chart using the configuration items and data just specified.
-    myChart3.setOption(option);
-</script> -->
 <script type="text/javascript">
     var myChart3;
     var myChart4;
@@ -749,8 +665,109 @@ $dispatched = display_vehicle_dispatched();
 
     });
 </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        function fetchData(url) {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error("Error:", data.error);
+                        return;
+                    }
+                    if (!Array.isArray(data)) {
+                        console.error("Unexpected data format:", data);
+                        return;
+                    }
 
+                    let suppliersMap = new Map();
 
+                    data.forEach(item => {
+                        if (typeof item === 'object') {
+                            let supplier = item.supplier.toUpperCase().trim();
+                            let total_amount = parseFloat(item.total_amount);
 
+                            if (suppliersMap.has(supplier)) {
+                                let currentAmount = suppliersMap.get(supplier);
+                                suppliersMap.set(supplier, currentAmount + total_amount);
+                            } else {
+                                suppliersMap.set(supplier, total_amount);
+                            }
+                        } else {
+                            let supplier = item.toUpperCase().trim();
+
+                            if (!suppliersMap.has(supplier)) {
+                                suppliersMap.set(supplier, 0);
+                            }
+                        }
+                    });
+
+                    let uniqueSuppliers = Array.from(suppliersMap, ([supplier, total_amount]) => ({
+                        supplier,
+                        total_amount
+                    })).sort((a, b) => b.total_amount - a.total_amount);
+
+                    let chartData = uniqueSuppliers.map(item => ({
+                        name: item.supplier,
+                        amount: item.total_amount
+                    }));
+
+                    var chartDom = document.getElementById('bar_payables');
+                    var myChart = echarts.init(chartDom);
+
+                    var option = {
+                        dataset: [{
+                            dimensions: ['name', 'amount'],
+                            source: chartData
+                        }],
+                        xAxis: {
+                            type: 'category',
+                            axisLabel: {
+                                interval: 0,
+                                rotate: 30
+                            }
+                        },
+                        yAxis: {},
+                        series: [{
+                            type: 'bar',
+                            encode: {
+                                x: 'name',
+                                y: 'amount'
+                            },
+                            label: {
+                                show: true,
+                                position: 'top',
+                                formatter: function(params) {
+                                    return new Intl.NumberFormat('en-US', {
+                                        style: 'currency',
+                                        currency: 'PHP'
+                                    }).format(params.value.amount);
+                                }
+                            }
+                        }]
+                    };
+
+                    myChart.setOption(option);
+
+                    function resizeContainer() {
+                        var chartWidth = myChart.getWidth();
+                        chartDom.style.width = chartWidth + 'px';
+                    }
+
+                    resizeContainer();
+                    window.addEventListener('resize', resizeContainer);
+                })
+                .catch(error => console.error("Fetch error:", error));
+        }
+
+        fetchData('data_sap.php');
+
+        document.getElementById("pay_button").addEventListener("click", function() {
+            let month = document.getElementById("sel1").value;
+            let year = document.getElementById("sel2").value;
+            fetchData(`data_sap_filtered.php?month=${month}&year=${year}`);
+        });
+    });
+</script>
 
 </html>

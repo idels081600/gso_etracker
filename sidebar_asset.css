@@ -61,7 +61,10 @@ body {
   margin-right: 12px; /* Adjust the space for the second list item */
   margin-bottom: 10px;
 }
-
+.sidebar ul li:nth-child(4) a i {
+  margin-right: 12px; /* Adjust the space for the second list item */
+  margin-bottom: 10px;
+}
 
 .sidebar ul li:last-child {
   margin-top: auto; /* Move the last list item to the bottom */
@@ -143,6 +146,10 @@ body {
   transition-delay: 0.5s;
 }
 .dropdown .dropdown-menu.active li:nth-child(3) {
+  opacity: 1;
+  transition-delay: 0.5s;
+}
+.dropdown .dropdown-menu.active li:nth-child(4) {
   opacity: 1;
   transition-delay: 0.5s;
 }

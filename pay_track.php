@@ -45,6 +45,7 @@ $total_amount_bq = get_total_amount_BQ();
                 <ul class="dropdown-menu">
                     <li><a href="tracking.php">Tent</a></li>
                     <li><a href="transpo.php">Transportation</a></li>
+                    <li><a href="pay_track.php">Payables</a></li>
                     <li><a href="rfq_tracking.php">RFQ</a></li>
                 </ul>
             </li>
@@ -182,7 +183,21 @@ $total_amount_bq = get_total_amount_BQ();
     </div>
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script>
+        // JavaScript for dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            var dropdowns = document.querySelectorAll('.dropdown');
+            dropdowns.forEach(function(dropdown) {
+                var dropdownIcon = dropdown.querySelector('.dropdown-icon');
+                var dropdownMenu = dropdown.querySelector('.dropdown-menu');
 
+                dropdown.addEventListener('click', function() {
+                    dropdown.classList.toggle('open');
+                    dropdownMenu.classList.toggle('active');
+                });
+            });
+        });
+    </script>
     <script type="text/javascript">
         $(document).ready(function() {
             $("#date3, #date4").datepicker({
@@ -238,30 +253,9 @@ $total_amount_bq = get_total_amount_BQ();
         document.addEventListener('DOMContentLoaded', function() {
             const supplierList = document.querySelector('.supplier_list');
 
-            let isMouseDown = false;
-            let startX;
-            let scrollLeft;
-
-            supplierList.addEventListener('mousedown', function(event) {
-                isMouseDown = true;
-                startX = event.pageX - supplierList.offsetLeft;
-                scrollLeft = supplierList.scrollLeft;
-            });
-
-            supplierList.addEventListener('mouseup', function() {
-                isMouseDown = false;
-            });
-
-            supplierList.addEventListener('mousemove', function(event) {
-                if (!isMouseDown) return;
-                event.preventDefault();
-                const x = event.pageX - supplierList.offsetLeft;
-                const walk = (x - startX) * 4; // Adjust scroll sensitivity here
-                supplierList.scrollLeft = scrollLeft - walk;
-            });
-
-            supplierList.addEventListener('mouseleave', function() {
-                isMouseDown = false;
+            supplierList.addEventListener('wheel', function(event) {
+                event.preventDefault(); // Prevent default vertical scroll
+                supplierList.scrollLeft += event.deltaY * 5; // Adjust scroll speed as needed
             });
         });
     </script>
@@ -331,88 +325,186 @@ $total_amount_bq = get_total_amount_BQ();
     </script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            fetch('data_sap.php') // Update to the correct path to your PHP script
-                .then(response => response.json())
-                .then(data => {
-                    console.log("Fetched Data:", data); // Log the data to inspect its structure
-                    if (data.error) {
-                        console.error("Error:", data.error);
-                    } else if (Array.isArray(data)) {
-                        console.log("Collected Data:", data);
+            function fetchDataFromSAP() {
+                return fetch('data_sap.php')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Fetched Data from SAP:", data);
+                        if (data.error) {
+                            console.error("Error fetching SAP data:", data.error);
+                            return [];
+                        } else if (Array.isArray(data)) {
+                            let suppliersMap = new Map();
 
-                        // Aggregate total amounts for unique suppliers
-                        let suppliersMap = new Map();
-
-                        data.forEach(item => {
-                            if (typeof item === 'object') {
-                                // If item is an object (from bq or sir_bayong table)
+                            data.forEach(item => {
                                 let supplier = item.supplier.toUpperCase().trim();
                                 let total_amount = parseFloat(item.total_amount);
 
                                 if (suppliersMap.has(supplier)) {
-                                    // If supplier already exists, add to total_amount
                                     let currentAmount = suppliersMap.get(supplier);
                                     suppliersMap.set(supplier, currentAmount + total_amount);
                                 } else {
-                                    // If supplier is new, set total_amount
                                     suppliersMap.set(supplier, total_amount);
                                 }
-                            } else {
-                                // If item is a string (from Maam_mariecris table), handle differently
-                                let supplier = item.toUpperCase().trim();
+                            });
 
-                                if (!suppliersMap.has(supplier)) {
-                                    // Initialize total_amount as 0 for Maam_mariecris suppliers
-                                    suppliersMap.set(supplier, 0);
+                            let uniqueSuppliers = Array.from(suppliersMap, ([supplier, total_amount]) => ({
+                                supplier,
+                                total_amount
+                            }));
+
+                            console.log("Unique Suppliers with Total Amounts:", uniqueSuppliers);
+
+                            return uniqueSuppliers;
+                        } else {
+                            console.error("Unexpected data format from SAP:", data);
+                            return [];
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Fetch error from SAP:", error);
+                        return [];
+                    });
+            }
+
+            function fetchDataFromLastMonth() {
+                return fetch('data_last_month.php')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Fetched Data from Last Month:", data);
+                        if (data.error) {
+                            console.error("Error fetching Last Month data:", data.error);
+                            return [];
+                        } else if (Array.isArray(data)) {
+                            let suppliersMap = new Map();
+
+                            data.forEach(item => {
+                                let supplier = item.supplier.toUpperCase().trim();
+                                let previous_month_amount = parseFloat(item.previous_month_amount);
+
+                                if (suppliersMap.has(supplier)) {
+                                    let currentAmount = suppliersMap.get(supplier);
+                                    suppliersMap.set(supplier, currentAmount + previous_month_amount);
+                                } else {
+                                    suppliersMap.set(supplier, previous_month_amount);
                                 }
-                            }
-                        });
+                            });
 
-                        // Convert Map to array of objects for list display
-                        let uniqueSuppliers = Array.from(suppliersMap, ([supplier, total_amount]) => ({
-                            supplier,
-                            total_amount
-                        }));
+                            let uniqueSuppliers = Array.from(suppliersMap, ([supplier, previous_month_amount]) => ({
+                                supplier,
+                                previous_month_amount
+                            }));
 
-                        console.log("Unique Suppliers:", uniqueSuppliers);
+                            console.log("Unique Suppliers with Last Month Amounts:", uniqueSuppliers);
 
-                        // Update the DOM with the unique suppliers data in list format
-                        let output = document.getElementById('supplierList');
-                        let loadingContainer = document.getElementById('loadingContainer');
+                            return uniqueSuppliers;
+                        } else {
+                            console.error("Unexpected data format from Last Month:", data);
+                            return [];
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Fetch error from Last Month:", error);
+                        return [];
+                    });
+            }
 
-                        // Remove loading UI
-                        loadingContainer.style.display = 'none';
+            function formatNumber(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
 
-                        uniqueSuppliers.forEach(item => {
-                            let li = document.createElement('li');
-                            li.classList.add('supplier_container');
+            function getPreviousMonthName() {
+                const date = new Date();
+                const month = date.getMonth(); // getMonth() returns 0-11
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                return monthNames[month - 1] || "December"; // If month is January, previous month is December
+            }
 
-                            let supplierName = document.createElement('div');
-                            supplierName.classList.add('supplier_name');
-                            supplierName.textContent = item.supplier;
-                            li.appendChild(supplierName);
+            function updateDOM(sapData, lastMonthData) {
+                console.log("SAP Data:", sapData);
+                console.log("Last Month Data:", lastMonthData);
 
-                            let info = document.createElement('div');
-                            info.classList.add('info');
+                let combinedDataMap = new Map();
 
-                            let amount = document.createElement('div');
-                            amount.classList.add('amount');
-                            amount.textContent = `₱${item.total_amount.toFixed(2)}`; // Add peso sign and format amount to two decimal places
-                            info.appendChild(amount);
-
-                            li.appendChild(info);
-                            output.appendChild(li);
-                        });
-
+                sapData.forEach(item => {
+                    let supplier = item.supplier.toUpperCase().trim();
+                    let total_amount = parseFloat(item.total_amount);
+                    if (combinedDataMap.has(supplier)) {
+                        let currentData = combinedDataMap.get(supplier);
+                        currentData.total_amount = total_amount;
+                        combinedDataMap.set(supplier, currentData);
                     } else {
-                        console.error("Unexpected data format:", data);
+                        combinedDataMap.set(supplier, {
+                            supplier,
+                            total_amount,
+                            previous_month_amount: 0
+                        });
                     }
+                });
+
+                lastMonthData.forEach(item => {
+                    let supplier = item.supplier.toUpperCase().trim();
+                    let previous_month_amount = parseFloat(item.previous_month_amount) || 0;
+                    if (combinedDataMap.has(supplier)) {
+                        let currentData = combinedDataMap.get(supplier);
+                        currentData.previous_month_amount = previous_month_amount;
+                        combinedDataMap.set(supplier, currentData);
+                    } else {
+                        combinedDataMap.set(supplier, {
+                            supplier,
+                            total_amount: 0,
+                            previous_month_amount
+                        });
+                    }
+                });
+
+                let combinedDataArray = Array.from(combinedDataMap.values());
+
+                combinedDataArray.sort((a, b) => b.total_amount - a.total_amount);
+
+                let output = document.getElementById('supplierList');
+                output.innerHTML = '';
+
+                const previousMonthName = getPreviousMonthName();
+
+                combinedDataArray.forEach(item => {
+                    let li = document.createElement('li');
+                    li.classList.add('supplier_container');
+
+                    let supplierName = document.createElement('div');
+                    supplierName.classList.add('supplier_name');
+                    supplierName.textContent = item.supplier;
+                    li.appendChild(supplierName);
+
+                    let info = document.createElement('div');
+                    info.classList.add('info');
+
+                    let lastMonthValue = document.createElement('div');
+                    lastMonthValue.classList.add('last_month_value');
+                    lastMonthValue.textContent = `${previousMonthName}: ₱${formatNumber(item.previous_month_amount)}`;
+                    info.appendChild(lastMonthValue);
+
+                    let amount = document.createElement('div');
+                    amount.classList.add('amount');
+                    amount.textContent = `₱${formatNumber(item.total_amount)}`;
+                    info.appendChild(amount);
+
+
+
+                    li.appendChild(info);
+                    output.appendChild(li);
+                });
+            }
+
+            Promise.all([fetchDataFromSAP(), fetchDataFromLastMonth()])
+                .then(([sapData, lastMonthData]) => {
+                    updateDOM(sapData, lastMonthData);
                 })
-                .catch(error => console.error("Fetch error:", error));
+                .catch(error => {
+                    console.error("Failed to fetch data:", error);
+                });
         });
     </script>
-
-
 
 </body>
 

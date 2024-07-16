@@ -257,6 +257,12 @@
   margin-top: 5px;
   translate: 0px -800px;
 }
+#payables_label {
+  margin-left: 5px;
+  font-size: 1.6rem;
+  margin-top: 5px;
+  translate: 0px -800px;
+}
 #datepicker-container1 {
   display: flex;
   gap: 10px;
@@ -441,8 +447,114 @@
   background-color: #298e46;
   box-shadow: rgba(20, 70, 32, 0.2) 0 1px 0 inset;
 }
+.button-5 {
+  appearance: none;
+  background-color: #2ea44f;
+  border: 1px solid rgba(27, 31, 35, 0.15);
+  border-radius: 6px;
+  box-shadow: rgba(27, 31, 35, 0.1) 0 1px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  padding: 6px 16px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  vertical-align: middle;
+  white-space: nowrap;
+  translate: 260px -912px;
+  margin-bottom: -10px;
+}
+
+.button-5:focus:not(:focus-visible):not(.focus-visible) {
+  box-shadow: none;
+  outline: none;
+}
+
+.button-5:hover {
+  background-color: #2c974b;
+}
+
+.button-5:focus {
+  box-shadow: rgba(46, 164, 79, 0.4) 0 0 0 3px;
+  outline: none;
+}
+
+.button-5:disabled {
+  background-color: #94d3a2;
+  border-color: rgba(27, 31, 35, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: default;
+}
+
+.button-4:active {
+  background-color: #298e46;
+  box-shadow: rgba(20, 70, 32, 0.2) 0 1px 0 inset;
+}
 .rfq {
   translate: 0px -800px;
+}
+.payables {
+  translate: 0px -750px;
+}
+#bar_payables {
+  width: 60%;
+  height: 400px; /* Adjust as needed */
+  translate: 0px -780px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 10px; /* Optional: Add padding inside containers */
+  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  translate: 0px -880px;
+}
+.dropdown_menu select {
+  font-size: 16px; /* Increase font size */
+  padding: 8px; /* Add padding */
+  width: 130px; /* Set width */
+  border: 2px solid #ccc; /* Add border */
+  border-radius: 10px; /* Add border radius */
+  background-color: #fff; /* Set background color */
+  color: #333; /* Set text color */
+}
+
+.dropdown_menu select:hover {
+  border-color: #069937; /* Change border color on hover */
+}
+.dropdown_menu {
+  margin-left: 0%;
+  margin-right: 70%;
+  margin-top: 2%;
+  translate: 0px -805px;
+}
+#sel2 {
+  font-size: 16px; /* Increase font size */
+  padding: 8px; /* Add padding */
+  width: 100px; /* Set width */
+  border: 2px solid #ccc; /* Add border */
+  border-radius: 10px; /* Add border radius */
+  background-color: #fff; /* Set background color */
+  color: #333; /* Set text color */
+}
+
+.dropdown_menu1 select:hover {
+  border-color: #069937; /* Change border color on hover */
+}
+.dropdown_menu1 {
+  margin-left: 0%;
+  margin-right: 70%;
+  margin-top: 2%;
+  translate: 135px -875px;
 }
 @media only screen and (max-width: 1440px) and (max-height: 900px) {
   .tent_summary {
@@ -581,6 +693,6 @@
     margin-top: 50px;
     font-size: 1.8rem;
     color: #6d6b6b;
-    translate:55px 180px;
+    translate: 55px 180px;
   }
 }
