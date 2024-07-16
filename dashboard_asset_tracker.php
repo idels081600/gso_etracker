@@ -156,14 +156,14 @@ $rfq = display_data_rfq();
                 <ul class="dropdown-menu">
                     <li><a href="tracking.php">Tent</a></li>
                     <li><a href="transpo.php">Transportation</a></li>
-                    <!-- <li><a href="pay_track.php">Payables</a></li> -->
+                    <li><a href="pay_track.php">Payables</a></li>
                     <li><a href="rfq_tracking.php">RFQ</a></li>
 
                 </ul>
             </li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
 
     <div class="content">

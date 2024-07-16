@@ -82,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transportation Tracker</title>
+    <title>Customizable Sidebar</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="transpo.css">
     <!-- <link rel="stylesheet" href="style_box.css"> -->
@@ -143,12 +143,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                 <ul class="dropdown-menu">
                     <li><a href="tracking.php">Tent</a></li>
                     <li><a href="transpo.php">Transportation</a></li>
+                    <li><a href="pay_track.php">Payables</a></li>
                     <li><a href="rfq_tracking.php">RFQ</a></li>
                 </ul>
             </li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
 
     <div class="content">

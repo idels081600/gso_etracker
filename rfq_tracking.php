@@ -1,12 +1,6 @@
 <?php
 // Include database connection
 include 'db_asset.php';
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
-    header("location:login_v2.php");
-}
 $query = "SELECT * FROM RFQ ";
 $result1 = mysqli_query($conn, $query);
 
@@ -47,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"  && isset($_POST['save_data'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RFQ Tracker</title>
+    <title>Customizable Sidebar</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="tracking_rfq_style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -103,6 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"  && isset($_POST['save_data'])) {
                 <ul class="dropdown-menu">
                     <li><a href="tracking.php">Tent</a></li>
                     <li><a href="transpo.php">Transportation</a></li>
+                    <li><a href="pay_track.php">Payables</a></li>
                     <li><a href="rfq_tracking.php">RFQ</a></li>
                 </ul>
             </li>
@@ -126,37 +121,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"  && isset($_POST['save_data'])) {
                             <div class="form-element">
                                 <div class="form-element1">
                                     <label for="rfqno" id="rfqno-label">RFQ No.</label>
-                                    <input type="text" id="rfqno" name="rfqno" placeholder="" >
+                                    <input type="text" id="rfqno" name="rfqno" placeholder="" required>
                                 </div>
                             </div>
                             <div class="form-element">
                                 <div class="form-element2">
                                     <label for="prno" id="prno-label">PR No.</label>
-                                    <input type="text" id="prno" name="prno" placeholder="" >
+                                    <input type="text" id="prno" name="prno" placeholder="" required>
                                 </div>
                             </div>
                             <div class="form-element">
                                 <div class="form-element3">
                                     <label for="rfqname" id="rfqname-label">RFQ Name</label>
-                                    <input type="text" id="rfqname" name="rfqname" placeholder="" >
+                                    <input type="text" id="rfqname" name="rfqname" placeholder="" required>
                                 </div>
                             </div>
                             <div class="form-element">
                                 <div class="form-element4">
                                     <label for="amount" id="amount-label">Amount</label>
-                                    <input type="text" id="amount" name="amount" placeholder="" >
+                                    <input type="text" id="amount" name="amount" placeholder="" required>
                                 </div>
                             </div>
                             <div class="form-element">
                                 <div class="form-element5">
                                     <label for="requestor" id="requestor-label">Requestor</label>
-                                    <input type="text" id="requestor" name="requestor" placeholder="" >
+                                    <input type="text" id="requestor" name="requestor" placeholder="" required>
                                 </div>
                             </div>
                             <div class="form-element">
                                 <div class="form-element6">
                                     <label for="supplier" id="supplier-label">Supplier</label>
-                                    <input type="text" id="supplier" name="supplier" placeholder="" >
+                                    <input type="text" id="supplier" name="supplier" placeholder="" required>
                                 </div>
                             </div>
                             <button class="button-39" role="button" name="save_data">Submit</button>
