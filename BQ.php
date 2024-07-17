@@ -19,7 +19,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     $supplier = mysqli_real_escape_string($conn, $_POST['supplier']);
     // $total = $quantity * $amount;
     $query = "INSERT INTO bq(`SR_DR`, `date`, `supplier`, `requestor`, `activity`,`description`, `quantity`, `amount`) 
-              VALUES ('$sr_no', '$date', '$supplier','$office', '$description','$activity', '$quantity', ' $amount ')";
+              VALUES ('$sr_no', '$date', '$supplier','$office','$activity','$description', '$quantity', ' $amount ')";
 
     $query_run = mysqli_query($conn, $query);
     if ($query_run) {
@@ -41,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="sidebar.css">
-    <link rel="stylesheet" href="bq.css">
+    <link rel="stylesheet" href="BQ.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"> <!-- Corrected path for jQuery UI CSS -->
 
