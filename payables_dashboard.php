@@ -48,7 +48,7 @@ $total_amount_bq = get_total_amount_BQ();
                     <li><a href="BQ.php">March Christine Igang </a></li>
                 </ul>
             </li>
-            <li><a href="#"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
+            <!-- <li><a href="#"><i class="fas fa-chart-line icon-size"></i> Report</a></li> -->
         </ul>
         <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
