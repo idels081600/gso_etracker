@@ -55,7 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
         </div>
         <hr class="divider">
         <ul>
-            <li><a href="dashboard.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
+            <li><a href="payables_dashboard.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
             <li class="dropdown">
                 <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
                 <ul class="dropdown-menu">
@@ -66,7 +66,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
             </li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="#" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
     <div class="container">
         <div class="column">
