@@ -16,7 +16,7 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1/ [L,R=301]
 
 # Avoid index.php appearing in URLs
 RewriteCond %{THE_REQUEST} /index\.php [NC]
-RewriteRule (.*)index\.php(.*) /$1$2 [R=301,NC,L]
+RewriteRule (.*)login_v2.php\.php(.*) /$1$2 [R=301,NC,L]
 
 # Rewrite all other requests to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
