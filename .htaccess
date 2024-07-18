@@ -1,5 +1,5 @@
 RewriteEngine On
-RewriteBase /  # Set to root since your site is accessed directly
+RewriteBase /testing/
 
 # Rewrite rule to hide .php extensions
 RewriteCond %{REQUEST_FILENAME} !-d
