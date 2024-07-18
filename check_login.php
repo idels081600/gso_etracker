@@ -42,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Redirect based on role
         switch ($row['role']) {
             case "Admin":
-                header("location:index");
+                header("location:index.php");
                 break;
             case "Employee":
                 header("location:add_req_emp.php");
