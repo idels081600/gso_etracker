@@ -21,7 +21,7 @@ RewriteRule (.*)index\.php(.*) /$1$2 [R=301,NC,L]
 # Rewrite all other requests to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.php [L]
+RewriteRule . /login_v2.php [L]
 
 # Prevent directory listing
 Options -Indexes
