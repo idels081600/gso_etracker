@@ -229,7 +229,7 @@ session_start();
       }
     }
   </style>
-  <link rel="canonical" href="https://gso.etracker.tagbilaran.gov.ph/login_v2.php">
+  <link rel="canonical" href="https://gso.etracker.tagbilaran.gov.ph/login_v2">
 </head>
 <nav class="navbar navbar-expand-lg fixed-top">
   <div class="container">
