@@ -5,10 +5,7 @@ if (!isset($_SESSION['username'])) {
     header("location: login_v2.php");
     exit(); // Ensure that the script stops execution after the redirect
 }
-if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SESSION['role'] == 'TCWS Employee') {
-    header("location: login_v2.php");
-    exit(); // Ensure that the script stops execution after the redirect
-}
+
 $on_stock = display_tent_status();
 $longterm = display_tent_status_Longterm();
 $on_field = display_tent_status_Installed();
