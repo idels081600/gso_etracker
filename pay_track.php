@@ -5,6 +5,14 @@ $sir_bayong = display_data_sir_bayong();
 $maam_march = display_data_BQ();
 $maam_cornell = display_data_maam_mariecris();
 $total_amount_bq = get_total_amount_BQ();
+if (!isset($_SESSION['username'])) {
+    header("location: login_v2.php");
+    exit(); // Ensure that the script stops execution after the redirect
+}
+if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SESSION['role'] == 'TCWS Employee') {
+    header("location: login_v2.php");
+    exit(); // Ensure that the script stops execution after the redirect
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

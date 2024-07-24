@@ -2,6 +2,14 @@
 
 require_once 'db_asset.php'; // Assuming this file contains your database connection code
 require_once 'display_data_asset.php';
+if (!isset($_SESSION['username'])) {
+    header("location: login_v2.php");
+    exit(); // Ensure that the script stops execution after the redirect
+}
+if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SESSION['role'] == 'TCWS Employee') {
+    header("location: login_v2.php");
+    exit(); // Ensure that the script stops execution after the redirect
+}
 $result = display_data_transpo();
 $Plate = display_data_vehicle();
 $Drivers = display_data_driver();
