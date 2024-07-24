@@ -15,10 +15,6 @@ $departed_Status = display_vehicle_Departed_status();
 $on_stock_minus_20 = $on_stock -  $longterm;
 $vehicle = display_vehicle_status();
 $rfq = display_data_rfq();
-if (!isset($_SESSION['username'])) {
-    header("location: login_v2.php");
-    exit(); // Ensure that the script stops execution after the redirect
-}
 
 ?>
 <!DOCTYPE html>
