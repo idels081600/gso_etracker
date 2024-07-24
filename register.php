@@ -2,12 +2,43 @@
 require_once 'dbh.php';
 require_once 'functions.php';
 $result = display_users();
+
+session_start();
 if (!isset($_SESSION['username'])) {
     header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
+    exit;
+} else if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SESSION['role'] == 'TCWS Employee') {
     header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Desk Clerk' || $_SESSION['role'] == 'TCWS Employee') {
-    header("location:login_v2.php");
+    exit;
+}
+
+if (isset($_POST['register_user'])) {
+    $username = $_POST['username'];
+    $position = $_POST['position'];
+    $password = $_POST['password'];
+    $name = $_POST['name'];
+    $role = $_POST['role'];
+
+    // Hash the password before storing it in the database
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+    $query = "INSERT INTO `logindb` (`username`, `password`, `name`, `role`,`Position`) VALUES ('$username', '$hashed_password', '$name', '$role','$position')";
+    $query_run = mysqli_query($conn, $query);
+    if ($query_run) {
+?>
+        <div class="alert alert-success alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            <strong>Success!</strong> Account added!.
+        </div>
+    <?php
+    } else {
+    ?>
+        <div class="alert alert-danger alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            <strong>Unsuccessful!</strong> Please try again.
+        </div>
+<?php
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -20,47 +51,32 @@ if (!isset($_SESSION['username'])) {
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
     <title>Register</title>
     <style>
         @media screen and (max-width: 767px) {
-
             #my_label {
                 font-size: 25px;
                 margin-left: 97px;
-
             }
 
             .card {
                 height: 430px;
                 width: 240px;
                 margin: 0 auto 0 20px !important;
-                /* Adjust the margin as needed */
             }
 
             #left-column {
-
                 width: 80% !important;
-
                 max-height: 490px;
-                /* Adjust the maximum height as needed */
-
-
                 margin-left: 44px !important;
                 margin-right: 49px !important;
-
                 background-color: #fff !important;
-                /* Set the background color for the container */
-
                 border-radius: 5px !important;
-                /* Add rounded corners */
                 margin-top: 20px !important;
-                /* Add some space from the top */
                 box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5) !important;
-                /* Add a shadow to the container */
                 margin-bottom: 20px !important;
             }
 
@@ -68,34 +84,25 @@ if (!isset($_SESSION['username'])) {
                 margin-top: 20px !important;
                 width: 90% !important;
                 margin: 0 auto 0 20px !important;
-                /* Adjust the margin as needed */
                 padding: 20px !important;
                 max-height: 600px;
-                /* Adjust the maximum height as needed */
-
-
             }
 
             #input-fields {
                 height: 100% !important;
                 width: 200px;
-
             }
-
         }
 
         body {
             background-color: #f0f0f0;
-            /* Set the background color of the body */
         }
-
 
         .navbar-brand {
             display: flex;
             align-items: center;
         }
 
-        /* Style for the logo image */
         .logo-img {
             border-radius: 50%;
             width: 50px;
@@ -103,16 +110,13 @@ if (!isset($_SESSION['username'])) {
             object-fit: cover;
         }
 
-        /* Style for the "E-Pass Slip" text */
         .logo-text {
             color: white;
             font-weight: bold;
             font-size: 20px;
             margin-left: 10px;
-            /* Add some spacing between the logo and text */
         }
 
-        /* Style for the left column containing the "Add User" form */
         #left-column {
             float: left;
             width: 30%;
@@ -120,55 +124,27 @@ if (!isset($_SESSION['username'])) {
             margin-right: 40px;
             padding: 20px;
             background-color: #fff;
-            /* Set the background color for the container */
             padding: 20px;
-            /* Add some padding to the container */
             border-radius: 5px;
-            /* Add rounded corners */
             margin-top: 20px;
-            /* Add some space from the top */
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-            /* Add a shadow to the container */
         }
 
-        /* Style for the right column containing the table */
         #right-column {
             background-color: white;
             float: left;
             width: 60%;
             padding: 20px;
             background-color: #fff;
-            /* Set the background color for the container */
             padding: 20px;
-            /* Add some padding to the container */
             border-radius: 5px;
-            /* Add rounded corners */
             margin-top: 20px;
-            /* Add some space from the top */
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-            /* Add a shadow to the container */
         }
     </style>
 </head>
 
 <body>
-    <!-- <script type="text/javascript">
-        function loadDoc() {
-            setInterval(function () {
-                var xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function () {
-                    if (this.readyState == 4 && this.status == 200) {
-                        document.getElementById("table").innerHTML = this.responseText;
-
-                    }
-                };
-                xhttp.open("GET", "data_users.php", true);
-                xhttp.send();
-            }, 1000);
-        }
-        loadDoc();
-
-    </script> -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <a class="navbar-brand" href="index.php">
             <img src="logo.png" alt="Logo" class="logo-img">
@@ -183,9 +159,6 @@ if (!isset($_SESSION['username'])) {
                 <li class="nav-item">
                     <a class="nav-link" href="index.php">Home <span class="sr-only">(current)</span></a>
                 </li>
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="add_req.php">Add Request</a>
-                </li> -->
                 <li class="nav-item">
                     <a class="nav-link" href="approved.php">Approved</a>
                 </li>
@@ -198,9 +171,6 @@ if (!isset($_SESSION['username'])) {
                 <li class="nav-item">
                     <a class="nav-link" href="register.php">Register</a>
                 </li>
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner.php">Scan QRcode</a>
-                </li> -->
                 <li class="nav-item">
                     <a class="nav-link" href="logout.php">Logout</a>
                 </li>
@@ -209,47 +179,15 @@ if (!isset($_SESSION['username'])) {
     </nav>
 
     <style>
-        /* Remove the white box on hover */
         .navbar-nav .nav-link {
             background-color: transparent !important;
         }
 
-        /* Change the color of the text on hover */
         .navbar-nav .nav-link:hover {
             background-color: transparent !important;
             color: #fff !important;
-            /* Change the color to your desired hover color */
         }
     </style>
-
-    <?php
-    $conn = mysqli_connect("157.245.193.124", "bryanmysql", 'gsotagbilaran', "my_data");
-    if (isset($_POST['register_user'])) {
-        $username = $_POST['username'];
-        $position = $_POST['position'];
-        $password = $_POST['password'];
-        $name = $_POST['name'];
-        $role = $_POST['role'];
-
-        $query = "INSERT INTO `logindb` (`username`, `password`, `name`, `role`,`Position`) VALUES ('$username', '$password', '$name', '$role','$position')";
-        $query_run = mysqli_query($conn, $query);
-        if ($query_run) {
-    ?>
-            <div class="alert alert-success alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <strong>Success!</strong> Account added!.
-            </div>
-        <?php
-        } else {
-        ?>
-            <div class="alert alert-success alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <strong>Unsuccesful!</strong> Please try again.
-            </div>
-    <?php
-        }
-    }
-    ?>
 
     <div class="container" id="left-column">
         <div class="p-3 rounded shadow">
@@ -271,7 +209,7 @@ if (!isset($_SESSION['username'])) {
                         </div>
                         <div class="form-group">
                             <label for="password">Password</label>
-                            <input type="text" class="form-control" id="position" placeholder="Password" name="password" required>
+                            <input type="password" class="form-control" id="position" placeholder="Password" name="password" required>
                         </div>
                         <div class="mb-3">
                             <div class="form-group">
@@ -296,7 +234,7 @@ if (!isset($_SESSION['username'])) {
             </div>
         </div>
     </div>
-    </div>
+
     <div class="container" id="right-column">
         <div class="p-5 rounded shadow">
             <div class="table-responsive">
@@ -309,38 +247,30 @@ if (!isset($_SESSION['username'])) {
                         <th scope="col">Role</th>
                         <th scope="col">Action</th>
                     </tr>
-                    <tr>
-                        <?php
-                        while ($row = mysqli_fetch_assoc($result)) {
-                        ?>
+                    <?php
+                    while ($row = mysqli_fetch_assoc($result)) {
+                    ?>
+                        <tr>
+                            <td><?php echo $row["Id"]; ?></td>
+                            <td><?php echo $row["username"]; ?></td>
+                            <td><?php echo $row["password"]; ?></td>
+                            <td><?php echo $row["name"]; ?></td>
+                            <td><?php echo $row["role"]; ?></td>
                             <td>
-                                <?php echo $row["Id"]; ?>
+                                <form action="code.php" method="post">
+                                    <input type="hidden" name="id" value="<?php echo $row['Id'] ?>">
+                                    <input type="submit" name="delete" class="btn btn-danger" value="delete">
+                                </form>
                             </td>
-                            <td>
-                                <?php echo $row["username"]; ?>
-                            </td>
-                            <td>
-                                <?php echo $row["password"]; ?>
-                            </td>
-                            <td>
-                                <?php echo $row["name"]; ?>
-                            </td>
-                            <td>
-                                <?php echo $row["role"]; ?>
-                            </td>
-                            <form action="code.php" method="post">
-                                <input type="hidden" name="id" value="<?php echo $row['Id'] ?>">
-                                <td><input type="submit" name="delete" class="btn btn-danger" value="delete"></td>
-                            </form>
-                    </tr>
-
-                <?php
-                        }
-                ?>
+                        </tr>
+                    <?php
+                    }
+                    ?>
                 </table>
             </div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
 </body>
