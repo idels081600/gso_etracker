@@ -14,15 +14,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (is_numeric($input)) {
         // Input is numeric, assume it's an ID
         // Use a prepared statement to fetch the username associated with the ID
-        $sql = "SELECT * FROM logindb WHERE id = ?";
+        $sql = "SELECT * FROM logindb WHERE id = ? AND BINARY password = ?";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "i", $input);
+        mysqli_stmt_bind_param($stmt, "is", $input, $password);
     } else {
         // Input is not numeric, assume it's a username
-        // Use a prepared statement to fetch the user by username
-        $sql = "SELECT * FROM logindb WHERE BINARY username = ?";
+        // Use a prepared statement to fetch the user by username and password
+        $sql = "SELECT * FROM logindb WHERE BINARY username = ? AND BINARY password = ?";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "s", $input);
+        mysqli_stmt_bind_param($stmt, "ss", $input, $password);
     }
 
     // Execute the statement
@@ -34,8 +34,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Fetch the row
     $row = mysqli_fetch_array($result);
 
-    if ($row && password_verify($password, $row['password'])) {
-        // Password is correct, set session variables based on role
+    if ($row) {
+        // User found, set session variables based on role
         $_SESSION['username'] = $row['username'];
         $_SESSION['role'] = $row['role'];
 
