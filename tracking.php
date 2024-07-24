@@ -1,7 +1,11 @@
 <?php
 require_once 'db_asset.php';
 require_once 'display_data_asset.php';
-
+session_start();
+if (!isset($_SESSION['username'])) {
+    header("location: login_v2.php");
+    exit(); // Ensure that the script stops execution after the redirect
+}
 $result = display_data();
 
 if (isset($_POST['save_data'])) {

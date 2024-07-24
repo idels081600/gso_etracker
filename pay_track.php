@@ -5,7 +5,11 @@ $sir_bayong = display_data_sir_bayong();
 $maam_march = display_data_BQ();
 $maam_cornell = display_data_maam_mariecris();
 $total_amount_bq = get_total_amount_BQ();
-
+session_start();
+if (!isset($_SESSION['username'])) {
+    header("location: login_v2.php");
+    exit(); // Ensure that the script stops execution after the redirect
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

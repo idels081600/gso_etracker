@@ -1,11 +1,11 @@
 <?php
 // Include database connection
 include 'db_asset.php';
+session_start();
 if (!isset($_SESSION['username'])) {
     header("location: login_v2.php");
     exit(); // Ensure that the script stops execution after the redirect
 }
-
 $query = "SELECT * FROM RFQ ";
 $result1 = mysqli_query($conn, $query);
 
