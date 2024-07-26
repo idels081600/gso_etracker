@@ -1,11 +1,8 @@
 <?php
 require_once 'db.php'; // Assuming this file contains your database connection code
 require_once 'display_data.php';
+session_start();
 if (!isset($_SESSION['username'])) {
-    header("location: login_v2.php");
-    exit(); // Ensure that the script stops execution after the redirect
-}
-if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SESSION['role'] == 'TCWS Employee') {
     header("location: login_v2.php");
     exit(); // Ensure that the script stops execution after the redirect
 }
