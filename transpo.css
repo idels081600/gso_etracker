@@ -12,9 +12,12 @@
   flex-direction: column; /* Stack child elements vertically */
   align-items: center; /* Center-align child elements horizontally */
 }
-
+#cameraButton,
+#qrButton {
+  translate: 10px -10px;
+}
 .content {
-  background-color: #d9d9d9;
+  background-color: #ebebeb;
   height: 95.7vh;
   padding: 20px;
 }
@@ -690,6 +693,41 @@ th {
   background-color: #298e46;
   box-shadow: rgba(20, 70, 32, 0.2) 0 1px 0 inset;
 }
+.popup3 {
+  position: absolute;
+  top: -150%;
+  left: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1.25);
+  width: 19.5%;
+  height: 65%; /* Default height */
+  backdrop-filter: blur(10px) saturate(148%);
+  -webkit-backdrop-filter: blur(10px) saturate(148%);
+  background-color: rgb(233, 233, 233);
+  border-radius: 12px;
+  border: 1px solid rgba(209, 213, 219, 0.3);
+  transition: top 0ms ease-in-out 200ms, opacity 200ms ease-in-out 0ms,
+    transform 20ms ease-in-out 0ms, height 200ms ease-in-out 0ms;
+  z-index: 999;
+}
+#textField {
+  translate: 35px 10px;
+  height: 20px;
+  width: 250px;
+  position: absolute;
+}
+.popup3.active {
+  top: 50%;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  transition: top 0ms ease-in-out 0ms, opacity 200ms ease-in-out 0ms,
+    transform 20ms ease-in-out 0ms, height 200ms ease-in-out 0ms;
+}
+
+.popup3.shorter {
+  height: 30%; /* Height when QR scanner is active */
+}
+
 .popup3 .close-btn {
   position: absolute;
   top: 10px;
@@ -703,6 +741,7 @@ th {
   border-radius: 15px;
   cursor: pointer;
 }
+
 .overlay {
   position: fixed;
   top: 0;
@@ -721,30 +760,7 @@ th {
   display: block;
   pointer-events: auto; /* Allow pointer events on the overlay */
 }
-.popup3 {
-  position: absolute;
-  top: -150%;
-  left: 50%;
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(1.25);
-  width: 19.5%;
-  height: 65%;
-  backdrop-filter: blur(10px) saturate(148%);
-  -webkit-backdrop-filter: blur(10px) saturate(148%);
-  background-color: rgb(233, 233, 233);
-  border-radius: 12px;
-  border: 1px solid rgba(209, 213, 219, 0.3);
-  transition: top 0ms ease-in-out 200ms, opacity 200ms ease-in-out 0ms,
-    transform 20ms ease-in-out 0ms;
-  z-index: 999;
-}
-.popup3.active {
-  top: 50%;
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-  transition: top 0ms ease-in-out 0ms, opacity 200ms ease-in-out 0ms,
-    transform 20ms ease-in-out 0ms;
-}
+
 #purpose-label {
   position: absolute;
   translate: 430% -335%;
@@ -766,6 +782,7 @@ th {
   padding-right: 10px;
   border-radius: 20px;
   object-fit: cover; /* Ensure video fills the square container */
+  margin-top: 10px;
 }
 
 .popup1 {
@@ -971,5 +988,5 @@ th {
 
   #search-input:hover {
     border-color: #069937; /* Change border color on hover */
-  } 
+  }
 }

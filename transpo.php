@@ -331,8 +331,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                         <div class="popup3" id="popup3">
                             <div class="close-btn">&times;</div>
                             <div class="form1">
-                                <h1 id="label_modal1">Scan Qr Code</h1>
-                                <video id="preview"></video>
+                                <h1 id="label_modal1">Scan QR Code</h1>
+                                <div>
+                                    <button id="cameraButton">Use Camera</button>
+                                    <button id="qrButton">Use QR Scanner</button>
+                                </div>
+                                <video id="preview" style="display:none;"></video>
+                                <input type="text" id="textField" style="display:none;" placeholder="Enter text manually">
                                 <h1 name="text" id="text"></h1>
                             </div>
                         </div>
@@ -406,16 +411,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
         <script>
             document.addEventListener("DOMContentLoaded", function() {
                 let scanner;
+                const video = document.getElementById('preview');
+                const textField = document.getElementById('textField');
+                const popupContainer = document.getElementById('popup3');
+                let alertTimeout;
 
-                // Function to start the scanner
-                function startScanner() {
+                // // Prevent keyboard input in the text field
+                // textField.addEventListener('keydown', function(e) {
+                //     e.preventDefault();
+                // });
+                // textField.addEventListener('keypress', function(e) {
+                //     e.preventDefault();
+                // });
+                // textField.addEventListener('paste', function(e) {
+                //     e.preventDefault();
+                // });
+
+                document.getElementById('cameraButton').addEventListener('click', function() {
+                    textField.style.display = 'none';
+                    video.style.display = 'block';
+                    popupContainer.classList.remove('shorter'); // Reset height for camera
+                    startCamera();
+                });
+
+                document.getElementById('qrButton').addEventListener('click', function() {
+                    video.style.display = 'none';
+                    textField.style.display = 'block';
+                    popupContainer.classList.add('shorter'); // Set shorter height for QR scanner
+                    stopCamera();
+                    textField.focus();
+                });
+
+                function startCamera() {
                     Instascan.Camera.getCameras().then(function(cameras) {
                         if (cameras.length > 0) {
                             scanner = new Instascan.Scanner({
-                                video: document.getElementById('preview')
+                                video: video
                             });
                             scanner.addListener('scan', function(c) {
-                                // Check if the scanned data exists in the database
                                 checkScannedData(c);
                             });
                             scanner.start(cameras[0]);
@@ -427,28 +460,77 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                     });
                 }
 
-                // Function to handle camera permission request
-                function requestCameraPermission() {
-                    navigator.mediaDevices.getUserMedia({
-                        video: true
-                    }).then(function(stream) {
-                        scanner.start(stream);
-                    }).catch(function(error) {
-                        console.error('Camera access denied:', error);
+                function stopCamera() {
+                    if (scanner && typeof scanner.stop === "function") {
+                        scanner.stop();
+                    }
+                }
+
+                function checkScannedData(scannedData) {
+                    clearTimeout(alertTimeout);
+                    if (!scannedData.trim()) return; // Avoid empty scan data
+
+                    $.ajax({
+                        url: 'scan_data.php',
+                        type: 'POST',
+                        data: {
+                            scannedData: scannedData
+                        },
+                        success: function(response) {
+                            if (response === 'exists' || response === 'Arrived') {
+                                document.getElementById('text').textContent = scannedData;
+                                var audio = new Audio('success.mp3');
+                                audio.play();
+                            } else {
+                                document.getElementById('text').textContent = 'ID not found';
+                                var audio = new Audio('error.wav');
+                                audio.play();
+                            }
+                            // Clear and refocus the text field after scan
+                            textField.value = '';
+                            textField.focus();
+                        },
+                        error: function() {
+                            alert('Error checking scanned data');
+                        }
                     });
                 }
 
-                // Start the scanner when the scanner button is clicked
-                document.getElementById('Scanner').addEventListener('click', function() {
-                    if (!scanner) {
-                        startScanner();
-                    } else {
-                        requestCameraPermission();
+                // Listen for input on the text field and trigger scan_data.php
+                textField.addEventListener('input', function() {
+                    const inputText = textField.value.trim();
+                    if (inputText) {
+                        clearTimeout(alertTimeout);
+                        $.ajax({
+                            url: 'scan_data.php',
+                            type: 'POST',
+                            data: {
+                                scannedData: inputText
+                            },
+                            success: function(response) {
+                                if (response === 'exists' || response === 'Arrived') {
+                                    document.getElementById('text').textContent = inputText;
+                                    var audio = new Audio('success.mp3');
+                                    audio.play();
+                                } else {
+                                    document.getElementById('text').textContent = 'ID not found';
+                                    var audio = new Audio('error.wav');
+                                    audio.play();
+                                }
+                                // Clear and refocus the text field after input
+                                textField.value = '';
+                                textField.focus();
+                            },
+                            error: function() {
+                                alert('Error checking scanned data');
+                            }
+                        });
                     }
                 });
 
-                // Function to close the active popup and stop the scanner
+                // Function to close the active popup and refresh the page
                 function closeActivePopup() {
+                    clearTimeout(alertTimeout); // Clear any pending alert timeouts
                     var activePopup = document.querySelector(".popup3.active");
                     if (activePopup) {
                         // Stop the scanner
@@ -457,7 +539,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                         }
 
                         // Stop the video stream
-                        const video = document.getElementById('preview');
                         if (video && video.srcObject) {
                             const stream = video.srcObject;
                             const tracks = stream.getTracks();
@@ -470,6 +551,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                         // Remove active class and hide overlay
                         activePopup.classList.remove("active");
                         document.querySelector(".overlay").style.display = "none";
+
+                        // Refresh the page
+                        location.reload();
                     }
                 }
 
@@ -491,48 +575,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                         closeActivePopup(); // Close the active popup
                     });
                 });
-
-                // Function to handle form submission
-                function handleFormSubmission() {
-                    // Stop the scanner
-                    if (scanner && typeof scanner.stop === "function") {
-                        scanner.stop();
-                    }
-                }
-
-                // Listen for form submission
-                document.querySelector('form').addEventListener('submit', function(e) {
-                    // Call function to handle form submission
-                    handleFormSubmission();
-                });
-
-                // Function to handle scanned data
-                function checkScannedData(scannedData) {
-                    $.ajax({
-                        url: 'scan_data.php',
-                        type: 'POST',
-                        data: {
-                            scannedData: scannedData
-                        },
-                        success: function(response) {
-                            if (response === 'exists' || response === 'Arrived') {
-                                document.getElementById('text').textContent = scannedData;
-                                var audio = new Audio('success.mp3');
-                                audio.play();
-                            } else {
-                                var audio = new Audio('error.wav');
-                                audio.play();
-                                setTimeout(function() {
-                                    alert('Your Request does not exist in the database');
-                                }, 100);
-                            }
-                        },
-                        error: function() {
-                            alert('Error checking scanned data');
-                        }
-                    });
-                }
-
             });
         </script>
 
@@ -686,56 +728,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                 });
 
             });
-
-            function populateForm(data) {
-                // Populate form fields with data
-                document.getElementById('tentno').value = data.tent_no;
-                document.getElementById('tent_no1').value = data.no_of_tents;
-                document.getElementById('datepicker1').value = data.date;
-                document.getElementById('name1').value = data.name;
-                document.getElementById('contact1').value = data.Contact_no;
-                // Populate the purpose dropdown
-                var purposeDropdown = document.getElementById('purpose1');
-                purposeDropdown.innerHTML = ''; // Clear existing options
-                var purposeOptions = ['Wake', 'Birthday', 'Wedding', 'Baptism', 'Personal', 'Private', 'Church', 'School', 'LGU', 'Province']; // Array of purpose options
-                purposeOptions.forEach(function(option) {
-                    var optionElement = document.createElement('option');
-                    optionElement.value = option;
-                    optionElement.textContent = option;
-                    purposeDropdown.appendChild(optionElement);
-                });
-                // Set the selected value
-                purposeDropdown.value = data.purpose;
-
-                var locationDropdown = document.getElementById('Location1');
-                locationDropdown.innerHTML = ''; // Clear existing options
-                var locationOptions = ['Bool', 'Booy', 'Cabawan', 'Cogon', 'Dao', 'Dampas', 'Manga', 'Mansasa', 'Poblacion I', 'Poblacion II', 'Poblacion III', 'San Isidro', 'Taloto', 'Tiptip', 'Ubujan']; // Array of location options
-                locationOptions.forEach(function(option) {
-                    var optionElement = document.createElement('option');
-                    optionElement.value = option;
-                    optionElement.textContent = option;
-                    locationDropdown.appendChild(optionElement);
-                });
-                // Set the selected value
-                locationDropdown.value = data.location;
-
-                document.getElementById('other1').value = data.location;
-                var initialTentNo = parseInt(data.no_of_tents) || 0;
-                clickLimit = initialTentNo;
-
-                // Trigger the input event on #tent_no1 to update the click limit
-                $('#tent_no1').trigger('input');
-
-                // // Update the tent number input field with the initial value
-                // var tentNumbers = $('#tentno').val().split(',').map(Number);
-                // tentNumbers = Array.from({
-                //     length: initialTentNo
-                // }, (_, i) => i + 1); // Populate with numbers 1 to initialTentNo
-                // $('#tentno').val(tentNumbers.join(','));
-
-                // Set initial click limit
-                clickLimit = initialTentNo;
-            }
         </script>
 
 
@@ -885,65 +877,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                     }
                 });
             });
-        </script>
-        <script>
-            // Get the div element with class "boxs"
-            const boxesContainer = document.querySelector('.boxs');
-
-            function updateBoxStatus() {
-                // Make an AJAX request to fetch data from tent_status table
-                var xhr = new XMLHttpRequest();
-                xhr.onreadystatechange = function() {
-                    if (xhr.readyState === XMLHttpRequest.DONE) {
-                        if (xhr.status === 200) {
-                            var data = JSON.parse(xhr.responseText);
-                            // Loop through the data and update boxes based on status
-                            data.forEach(function(item) {
-                                var box = document.getElementById('box_' + item.id); // Assuming item.id is the unique ID of each box
-                                if (box) {
-                                    // Remove all existing classes
-                                    box.className = 'box';
-                                    // Add class based on status
-                                    if (item.Status === 'On Stock') {
-                                        box.classList.add('green');
-                                    } else if (item.Status === 'Installed') {
-                                        box.classList.add('red');
-                                    } else if (item.Status === 'Retrieved') {
-                                        box.classList.add('green');
-                                    } else if (item.Status === 'Retrieval') {
-                                        box.classList.add('orange');
-                                    } else if (item.Status === 'Long Term') {
-                                        box.classList.add('blue');
-                                    }
-                                }
-                            });
-                        } else {
-                            console.error('Error fetching data:', xhr.status);
-                        }
-                    }
-                };
-                xhr.open('GET', 'fetch_tent_status.php', true);
-                xhr.send();
-            }
-
-            // Loop to create 100 boxes
-            for (let i = 1; i <= 100; i++) {
-                // Create a new div element for each box
-                const box = document.createElement('div');
-
-                // Set a class for the box
-                box.className = 'box';
-
-                // Set a unique id for each box (optional)
-                box.id = 'box_' + i;
-
-                // Put the number inside the box
-                box.textContent = i;
-
-                // Append the box to the container
-                boxesContainer.appendChild(box);
-            }
-            updateBoxStatus();
         </script>
 
         <div class="overlay"></div>
