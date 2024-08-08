@@ -840,4 +840,19 @@ tr:hover {
     padding-right: 2%;
     padding-top: 0px;
   }
+  .hoverpopup {
+    display: none;
+    position: absolute;
+    translate: -250px -200px;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+    width: auto; /* Auto width to adapt to content */
+    height: auto; /* Auto height to adapt to content */
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    font-size: 0.7rem;
+  }
 }
