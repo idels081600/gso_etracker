@@ -52,7 +52,7 @@ if (isset($_POST['save_data'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customizable Sidebar</title>
+    <title>Tent Tracker</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="tracking_style.css">
     <link rel="stylesheet" href="style_box.css">
@@ -108,12 +108,12 @@ if (isset($_POST['save_data'])) {
             <li class="dropdown">
                 <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
                 <ul class="dropdown-menu">
-                    <li><a href="tracking.php">Tent</a></li>
-                    <li><a href="transpo.php">Transportation</a></li>
                     <li><a href="pay_track.php">Payables</a></li>
                     <li><a href="rfq_tracking.php">RFQ</a></li>
                 </ul>
             </li>
+            <li><a href="tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
+            <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
         <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
@@ -357,7 +357,7 @@ if (isset($_POST['save_data'])) {
                                                 <select class="status-dropdown" name="status" id="drop_status">
                                                     <option value="" data-id="">Select Status</option>
                                                     <option value="Installed" data-id="<?php echo $row['id']; ?>">Installed</option>
-                                                    <option value="Retrieval" data-id="<?php echo $row['id']; ?>">For Retrieval</option>
+                                                    <option value="For Retrieval" data-id="<?php echo $row['id']; ?>">For Retrieval</option>
                                                     <option value="On Stock" data-id="<?php echo $row['id']; ?>">Retrieved</option>
                                                 </select>
                                             </div>
@@ -368,7 +368,13 @@ if (isset($_POST['save_data'])) {
                                                 <select class="status-dropdown" name="status" id="drop_status">
                                                     <option value="" data-id="">Select Status</option>
                                                     <option value="Installed" data-id="<?php echo $row['id']; ?>" <?php if ($row['status'] == 'Installed') echo 'selected'; ?>>Installed</option>
-                                                    <option value="Retrieval" data-id="<?php echo $row['id']; ?>" <?php if ($row['status'] == 'Retrieval') echo 'selected'; ?>>For Retrieval</option>
+                                                    <option value="For Retrieval" data-id="<?php echo $row['id']; ?>" <?php if ($row['status'] == 'For 
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    Retrieval') echo 'selected'; ?>>For Retrieval</option>
                                                     <option value="On Stock" data-id="<?php echo $row['id']; ?>" <?php if ($row['status'] == 'Retrieved') echo 'selected'; ?>>Retrieved</option>
                                                 </select>
                                             </div>
@@ -1013,7 +1019,7 @@ if (isset($_POST['save_data'])) {
                                     box.classList.add('red');
                                 } else if (item.Status === 'Retrieved') {
                                     box.classList.add('green');
-                                } else if (item.Status === 'Retrieval') {
+                                } else if (item.Status === 'For Retrieval') {
                                     box.classList.add('orange');
                                 } else if (item.Status === 'Long Term') {
                                     box.classList.add('blue');
@@ -1068,9 +1074,11 @@ if (isset($_POST['save_data'])) {
 </script>
 <script>
     $(document).ready(function() {
-        // Function to check and update date colors
+        // Function to check and update date colors and get tent_no and id for red dates
         function updateDateColors() {
             var today = new Date();
+            var redDates = [];
+
             $('.date, .retrieval-date').each(function() {
                 var dateText = $(this).text();
                 var date = new Date(dateText);
@@ -1082,12 +1090,46 @@ if (isset($_POST['save_data'])) {
                 // Apply color based on difference
                 if (diffDays < 0) {
                     $(this).css('color', 'red'); // Date is passed
+
+                    // Get the row and tent_no, id
+                    var row = $(this).closest('tr');
+                    var tent_no = row.find('td:first').text().trim(); // Assuming tent_no is in the first td
+                    var id = row.find('select.status-dropdown').find(':selected').data('id');
+
+                    // Check if tent_no is not empty
+                    if (tent_no !== '') {
+                        // Add to redDates array
+                        redDates.push({
+                            tent_no: tent_no,
+                            id: id
+                        });
+                    }
                 } else if (diffDays === 0) {
                     $(this).css('color', 'orange'); // Today
                 } else {
                     $(this).css('color', ''); // Reset color if date is in the future
                 }
             });
+
+            // Log the redDates array
+            console.log("Red Dates:", redDates);
+
+            // Send redDates to PHP script
+            if (redDates.length > 0) {
+                $.ajax({
+                    type: 'POST',
+                    url: 'update_status_duration.php', // Your PHP script to handle the update
+                    data: {
+                        redDates: JSON.stringify(redDates)
+                    },
+                    success: function(response) {
+                        console.log("Response from server:", response);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("AJAX error:", status, error);
+                    }
+                });
+            }
         }
 
         // Initial call to update colors
@@ -1097,7 +1139,7 @@ if (isset($_POST['save_data'])) {
         setInterval(updateDateColors, 60000); // Update every 1 minute (60000 milliseconds)
     });
 </script>
-
+</script>
 
 
 </html>

@@ -1,6 +1,6 @@
 /* General Styles */
 .content {
-  background-color: #d9d9d9;
+  background-color: #ebebeb;
   height: 95.7vh;
   padding: 20px;
 }
@@ -143,7 +143,6 @@
   background-color: #ffffff;
   height: 55vh;
   width: 100%;
-  border-radius: 15px; /* Adjust the value to control the roundness of the corners */
   margin-top: -1%;
   overflow-y: auto;
 }
@@ -217,10 +216,10 @@
   color: #6d6d6d;
   white-space: nowrap;
   width: auto; /* Adjust width as necessary */
-  font-size: .8rem;
+  font-size: 0.8rem;
 }
 
-@media only screen and (min-width: 2240px) {
+@media all and (min-width: 2240px) {
   #search-input {
     flex: 1; /* Take remaining space */
     padding: 9px;
@@ -229,5 +228,71 @@
     font-size: 16px;
     transition: border-color 0.3s ease; /* Add transition for smoother effect */
     translate: 1570px 10px;
+  }
+}
+
+@media all and (min-width: 1366px) and (max-width: 1740px) and (min-height: 600px) and (max-height: 1000px) {
+  .content {
+    background-color: #ebebeb;
+    height: 92.2vh;
+    padding: 20px;
+  }
+
+  .supplier_list {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 10px;
+    padding: 0;
+    list-style-type: none;
+    overflow-x: auto;
+    scrollbar-width: none; /* Hide scrollbar in Firefox */
+    scroll-snap-type: x mandatory; /* Enable scroll snapping */
+    scroll-behavior: smooth; /* Enable smooth scrolling */
+    margin-top: -10px;
+  }
+  .parent_container_table {
+    background-color: #ffffff;
+    height: 60vh;
+    padding-left: 2%;
+    padding-right: 2%;
+    padding-top: 0%;
+    margin-top: 1%;
+    border-radius: 15px;
+  }
+  .container_pay_table {
+    background-color: #ffffff;
+    height: 50vh;
+    width: 100%;
+  
+    margin-top: -1%;
+    overflow-y: auto;
+  }
+  #pay_table_bayong th,
+  #pay_table_march th,
+  #pay_table_cornell th {
+    background-color: #009532;
+    color: #ffffff;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 1; /* Ensure the sticky headers stay above the table content */
+    border: none; /* Remove any borders from the header cells */
+  }
+
+  #pay_table_bayong th,
+  #pay_table_bayong td,
+  #pay_table_march th,
+  #pay_table_march td,
+  #pay_table_cornell th,
+  #pay_table_cornell td {
+    padding: 1px 5px;
+    font-weight: normal;
+    border: none; /* Remove borders from table cells */
+  }
+
+  #pay_table_bayong td,
+  #pay_table_march td,
+  #pay_table_cornell td {
+    font-size: 0.7rem;
   }
 }

@@ -46,12 +46,12 @@ $dispatched = display_vehicle_dispatched();
             <li class="dropdown">
                 <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
                 <ul class="dropdown-menu">
-                    <li><a href="tracking.php">Tent</a></li>
-                    <li><a href="transpo.php">Transportation</a></li>
                     <li><a href="pay_track.php">Payables</a></li>
                     <li><a href="rfq_tracking.php">RFQ</a></li>
                 </ul>
             </li>
+            <li><a href="tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
+            <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
         <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
@@ -83,14 +83,14 @@ $dispatched = display_vehicle_dispatched();
             <div id="tent_purpose_label">
                 Tent Purpose
             </div>
-            <div id="chartContainer" style="width: 120%;height:140%;"></div>
+            <div id="chartContainer"></div>
         </div>
 
         <div class="pie_tent2">
             <div id="tent_location_label">
                 Tent Location
             </div>
-            <div id="chartContainer2" style="width: 710px;height:550px;"></div>
+            <div id="chartContainer2"></div>
 
         </div>
         <div class="container_vehicle">
@@ -112,14 +112,14 @@ $dispatched = display_vehicle_dispatched();
                 <div id="tent_purpose_label">
                     Type of Request
                 </div>
-                <div id="chartContainer3" style="width: 120%;height:140%;"></div>
+                <div id="chartContainer3"></div>
             </div>
 
             <div class="pie_transpo2">
                 <div id="tent_location_label">
                     Breakdown of Dispatch
                 </div>
-                <div id="chartContainer4" style="width: 710px;height:550px;"></div>
+                <div id="chartContainer4"></div>
 
             </div>
         </div>
@@ -198,18 +198,13 @@ $dispatched = display_vehicle_dispatched();
     var myChart;
     var myChart2;
     var finalCount = 0;
-
     $(document).ready(function() {
         // Initialize datepicker for the first input
         $("#datepicker1").datepicker();
-
-        // Initialize datepicker for the second input
         $("#datepicker2").datepicker();
 
         // Fetch initial data without specifying start and end dates for the first chart
         initialData('pie_initial_data.php', 'chartContainer');
-
-        // Fetch initial data without specifying start and end dates for the second chart
         initialData('pie_initial_data_location.php', 'chartContainer2');
 
         // Click event for the button
@@ -231,7 +226,9 @@ $dispatched = display_vehicle_dispatched();
         });
 
         function formatDate(dateString) {
+            if (!dateString) return null; // Return null if the dateString is empty
             var parts = dateString.split('/');
+            if (parts.length !== 3) return null; // Ensure the date is in the expected format
             return parts[2] + '-' + parts[0] + '-' + parts[1];
         }
 
@@ -244,7 +241,7 @@ $dispatched = display_vehicle_dispatched();
                     if (eventCounts) {
                         updateChart(eventCounts, chartContainerId);
                     } else {
-                        document.getElementById(chartContainerId).innerHTML = "No data available.";
+                        // document.getElementById(chartContainerId).innerHTML = "No data available.";
                     }
                 },
                 error: function(error) {
@@ -254,6 +251,11 @@ $dispatched = display_vehicle_dispatched();
         }
 
         function fetchData(startDate, endDate, reportUrl, chartContainerId) {
+            if (!startDate || !endDate) {
+                document.getElementById(chartContainerId).innerHTML = "Please select valid start and end dates.";
+                return;
+            }
+
             $.ajax({
                 url: reportUrl,
                 method: 'GET',
@@ -312,20 +314,7 @@ $dispatched = display_vehicle_dispatched();
                     trigger: 'item'
                 },
                 color: [
-                    "#e57373", // Light Red
-                    "#ffb74d", // Light Orange
-                    "#fff176", // Light Yellow
-                    "#aed581", // Light Green
-                    "#64b5f6", // Light Blue
-                    "#9575cd", // Light Purple
-                    "#f06292", // Light Pink
-                    "#4db6ac", // Light Teal
-                    "#ba68c8", // Light Lavender
-                    "#90a4ae", // Light Gray-Blue
-                    "#ff8a65", // Light Coral
-                    "#ffab91", // Light Peach
-                    "#81c784" // Light Lime Green
-
+                    "#e57373", "#ffb74d", "#fff176", "#aed581", "#64b5f6", "#9575cd", "#f06292", "#4db6ac", "#ba68c8", "#90a4ae", "#ff8a65", "#ffab91", "#81c784"
                 ],
                 series: [{
                     name: 'Purpose',
@@ -350,6 +339,8 @@ $dispatched = display_vehicle_dispatched();
         }
 
         function fetch_on_field(startDate, endDate) {
+            if (!startDate || !endDate) return;
+
             $.ajax({
                 url: 'fetch_on_field_data.php',
                 method: 'GET',
@@ -361,8 +352,10 @@ $dispatched = display_vehicle_dispatched();
                     var totalCount = 0;
 
                     response.data.forEach(function(row) {
-                        var tentNumbers = row.tent_no.split(',');
-                        totalCount += tentNumbers.length;
+                        if (row.tent_no) {
+                            var tentNumbers = row.tent_no.split(',');
+                            totalCount += tentNumbers.length;
+                        }
                     });
 
                     console.log('Total Count:', totalCount); // Log the total count
@@ -381,6 +374,8 @@ $dispatched = display_vehicle_dispatched();
         }
 
         function fetch_for_retrieval(startDate, endDate) {
+            if (!startDate || !endDate) return;
+
             $.ajax({
                 url: 'fetch_for_retrieval_data.php',
                 method: 'GET',
@@ -392,8 +387,10 @@ $dispatched = display_vehicle_dispatched();
                     var totalCount = 0;
 
                     response.data.forEach(function(row) {
-                        var tentNumbers = row.tent_no.split(',');
-                        totalCount += tentNumbers.length;
+                        if (row.tent_no) {
+                            var tentNumbers = row.tent_no.split(',');
+                            totalCount += tentNumbers.length;
+                        }
                     });
 
                     $("#on_retrievals").text(totalCount);
@@ -411,7 +408,6 @@ $dispatched = display_vehicle_dispatched();
             var on_stock_total = 120 - finalCount - 40;
             $("#on_stocks").text(on_stock_total);
         }
-
     });
 </script>
 

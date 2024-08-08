@@ -45,7 +45,7 @@ while ($row = $result->fetch_assoc()) {
     // Increment the counter for the event type by the number of tent numbers
     $purpose = $row['purpose']; // Assuming 'purpose' is the column name in your table
     $tent_no = $row['tent_no']; // Assuming 'tent_no' is the column name in your table
-    if (isset($event_counts[$purpose])) {
+    if (isset($event_counts[$purpose]) && !empty($tent_no)) {
         $tent_numbers = explode(',', $tent_no); // Split the tent_no string by commas
         $event_counts[$purpose] += count($tent_numbers); // Increment the counter by the number of tent numbers
     }

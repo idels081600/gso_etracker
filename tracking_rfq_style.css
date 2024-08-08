@@ -1,5 +1,5 @@
 .content {
-  background-color: #d9d9d9;
+  background-color: #ebebeb;
   height: 95.7vh;
   padding: 20px;
 }
@@ -70,7 +70,7 @@
 #rfqno,
 #amount,
 #requestor {
-  width: 44%;
+  width: 43%;
   margin-left: 5px;
   height: 25px;
   border-radius: 5px;
@@ -135,11 +135,17 @@
 }
 .table-wrapper {
   position: relative;
-  max-height: 590px; /* Adjust the max height as needed */
-  overflow-y: auto;
-  overflow-x: auto; /* Enable horizontal scrolling */
+  max-height: 670px; /* Adjust the max height as needed */
+  overflow-y: hidden; /* Hide vertical scrollbar */
+  overflow-x: hidden; /* Hide horizontal scrollbar */
   width: 100%; /* Ensure the table wrapper takes full width */
-  translate: 0px -80px ;
+  translate: 0px -55px;
+}
+
+/* Enable scrolling with mouse wheel or touchpad */
+.table-wrapper:hover {
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 .custom-table {
@@ -311,7 +317,7 @@ tr:hover {
   touch-action: manipulation;
   vertical-align: middle;
   white-space: nowrap;
-  translate: 1px -85px;
+  translate: 1px -60px;
 }
 
 .button-3:focus:not(:focus-visible):not(.focus-visible) {
@@ -661,7 +667,6 @@ tr:hover {
   width: 100%;
 }
 
-
 #search-input2 {
   flex: 1; /* Take remaining space */
   padding: 9px;
@@ -671,7 +676,7 @@ tr:hover {
   margin-left: 104%;
   margin-top: 10%;
   transition: border-color 0.3s ease; /* Add transition for smoother effect */
-  translate: 1090px -70px;
+  translate: 1090px -25px;
 }
 
 #search-input2:hover {
@@ -693,7 +698,6 @@ tr:hover {
 #search-input3:hover {
   border-color: #069937; /* Change border color on hover */
 }
-
 
 .button-7 {
   appearance: none;
@@ -719,7 +723,7 @@ tr:hover {
   touch-action: manipulation;
   vertical-align: middle;
   white-space: nowrap;
-  translate: 0px -85px;
+  translate: 0px -60px;
 }
 
 .button-7:focus:not(:focus-visible):not(.focus-visible) {
@@ -772,7 +776,7 @@ tr:hover {
   touch-action: manipulation;
   vertical-align: middle;
   white-space: nowrap;
-  translate: 0px -85px;
+  translate: 0px -60px;
 }
 
 .button-8:focus:not(:focus-visible):not(.focus-visible) {
@@ -799,4 +803,71 @@ tr:hover {
 .button-8:active {
   background-color: #1f3cc0;
   box-shadow: rgba(20, 70, 32, 0.2) 0 1px 0 inset;
+}
+@media all and (min-width: 1366px) and (max-width: 1740px) and (min-height: 600px) and (max-height: 1000px) {
+  .content {
+    background-color: #ebebeb;
+    height: 94.5vh;
+    padding: 20px;
+  }
+  th,
+  td {
+    padding: 2px 5px;
+    font-weight: normal;
+    padding: 8px;
+  }
+  .table-wrapper {
+    position: relative;
+    max-height: 550px; /* Adjust the max height as needed */
+    overflow-y: hidden; /* Hide vertical scrollbar */
+    overflow-x: hidden; /* Hide horizontal scrollbar */
+    width: 100%; /* Ensure the table wrapper takes full width */
+    translate: 0px -55px;
+  }
+  #search-input2 {
+    flex: 1; /* Take remaining space */
+    padding: 9px;
+    border: 1.5px solid #8f8d8d;
+    border-radius: 20px;
+    font-size: 16px;
+    margin-left: 104%;
+    margin-top: 10%;
+    transition: border-color 0.3s ease; /* Add transition for smoother effect */
+    translate: 680px -26px;
+  }
+  #rfqno {
+    transform: translate(-40%, 120%);
+  }
+  #prno {
+    transform: translate(-42%, -50%);
+  }
+  #rfqname {
+    width: 90.4%;
+    margin-left: 5px;
+    height: 25px;
+    border-radius: 5px;
+  }
+  #amount {
+    transform: translate(-40%, 95%);
+  }
+  #requestor {
+    transform: translate(-53%, 95%);
+  }
+  .popup3 {
+    position: absolute;
+    top: -150%;
+    left: 50%;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.25);
+    width: 25%;
+    height: 56%;
+    backdrop-filter: blur(10px) saturate(148%);
+    -webkit-backdrop-filter: blur(10px) saturate(148%);
+    background-color: rgb(233, 233, 233);
+    border-radius: 12px;
+    border: 1px solid rgba(209, 213, 219, 0.3);
+    transition: top 0ms ease-in-out 200ms, opacity 200ms ease-in-out 0ms,
+      transform 20ms ease-in-out 0ms;
+    z-index: 999;
+  }
 }

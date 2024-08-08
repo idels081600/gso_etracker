@@ -87,7 +87,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customizable Sidebar</title>
+    <title>Transportation Tracker</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="transpo.css">
     <!-- <link rel="stylesheet" href="style_box.css"> -->
@@ -146,12 +146,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
             <li class="dropdown">
                 <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
                 <ul class="dropdown-menu">
-                    <li><a href="tracking.php">Tent</a></li>
-                    <li><a href="transpo.php">Transportation</a></li>
                     <li><a href="pay_track.php">Payables</a></li>
                     <li><a href="rfq_tracking.php">RFQ</a></li>
                 </ul>
             </li>
+            <li><a href="tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
+            <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
         <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
@@ -337,7 +337,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                                     <button id="qrButton">Use QR Scanner</button>
                                 </div>
                                 <video id="preview" style="display:none;"></video>
-                                <input type="text" id="textField" style="display:none;" placeholder="Enter text manually">
+                                <input type="text" id="textField" style="display:none;" placeholder="Plate Number">
                                 <h1 name="text" id="text"></h1>
                             </div>
                         </div>

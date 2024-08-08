@@ -3,7 +3,7 @@ require_once "db_asset.php";
 function display_data()
 {
     global $conn;
-    $query = "SELECT * FROM `tent` WHERE `status` IN ('Pending', 'Installed','Retrieval') ORDER BY `id` DESC";
+    $query = "SELECT * FROM `tent` WHERE `status` IN ('Pending', 'Installed','For Retrieval') ORDER BY `id` DESC";
 
     $result = mysqli_query($conn, $query);
     return $result;
@@ -82,7 +82,7 @@ function display_tent_status_Retrieval()
     global $conn;
 
     // Query to get count of 'On Stock' tents
-    $query = "SELECT COUNT(*) AS stock_count FROM `tent_status` WHERE `Status` = 'Retrieval'";
+    $query = "SELECT COUNT(*) AS stock_count FROM `tent_status` WHERE `Status` = 'For Retrieval'";
     $result = mysqli_query($conn, $query);
     if (!$result) {
         die("Query failed: " . mysqli_error($conn));
@@ -288,4 +288,29 @@ function display_vehicle_dispatched()
     error_log("Stock Count: " . $stock_count);
 
     return $stock_count;
+}
+function display_data_transpo_ongrage_hover()
+{
+    global $conn;
+    $query = "SELECT * FROM `Vehicle` WHERE `Status` = 'Stand By' ORDER BY `id` DESC";
+    $result = mysqli_query($conn, $query);
+
+    $data = array();
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = $row;
+    }
+    return json_encode($data);
+}
+
+function display_data_transpo_onfield_hover()
+{
+    global $conn;
+    $query = "SELECT * FROM `Vehicle` WHERE `Status` = 'Departed' ORDER BY `id` DESC";
+    $result = mysqli_query($conn, $query);
+
+    $data = array();
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = $row;
+    }
+    return json_encode($data);
 }

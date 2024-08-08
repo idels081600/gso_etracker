@@ -48,14 +48,21 @@ if (!isset($_SESSION['username'])) {
             <li class="dropdown">
                 <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
                 <ul class="dropdown-menu">
-                    <li><a href="tracking.php">Tent</a></li>
-                    <li><a href="transpo.php">Transportation</a></li>
                     <li><a href="pay_track.php">Payables</a></li>
                     <li><a href="rfq_tracking.php">RFQ</a></li>
                 </ul>
             </li>
+            <li><a href="tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
+            <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
+
+
+
+
+
+
+        
         <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
     <div class="content">

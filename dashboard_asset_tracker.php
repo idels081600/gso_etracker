@@ -15,6 +15,8 @@ $departed_Status = display_vehicle_Departed_status();
 $on_stock_minus_20 = $on_stock -  $longterm;
 $vehicle = display_vehicle_status();
 $rfq = display_data_rfq();
+$hover_data_ongarage = display_data_transpo_ongrage_hover();
+$hover_data_onfield = display_data_transpo_onfield_hover();
 session_start();
 if (!isset($_SESSION['username'])) {
     header("location: login_v2.php");
@@ -31,9 +33,7 @@ if (!isset($_SESSION['username'])) {
     <title>Dashboard</title>
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="main_content.css">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
     <!-- Bootstrap CSS for table -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/css/bootstrap.min.css">
 
@@ -160,13 +160,12 @@ if (!isset($_SESSION['username'])) {
             <li class="dropdown">
                 <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
                 <ul class="dropdown-menu">
-                    <li><a href="tracking.php">Tent</a></li>
-                    <li><a href="transpo.php">Transportation</a></li>
                     <li><a href="pay_track.php">Payables</a></li>
                     <li><a href="rfq_tracking.php">RFQ</a></li>
-
                 </ul>
             </li>
+            <li><a href="tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
+            <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
         <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
@@ -182,16 +181,16 @@ if (!isset($_SESSION['username'])) {
             <div class="container2">
                 <h1 class="tent_label">Tent Details</h1>
                 <div class="meter">
-                    <span style="width: <?php echo display_tent_status(); ?>%"></span>
+                    <span style="width: <?php echo display_tent_status(); ?>%;" data-width="<?php echo display_tent_status(); ?>%"></span>
                 </div>
                 <div class="meter1">
-                    <span style="width: <?php echo display_tent_status_Installed(); ?>%"></span>
+                    <span style="width: <?php echo display_tent_status_Installed(); ?>%;" data-width="<?php echo display_tent_status_Installed(); ?>%"></span>
                 </div>
                 <div class="meter2">
-                    <span style="width: <?php echo display_tent_status_Retrieval(); ?>%"></span>
+                    <span style="width: <?php echo display_tent_status_Retrieval(); ?>%;" data-width="<?php echo display_tent_status_Retrieval(); ?>%"></span>
                 </div>
                 <div class="meter3">
-                    <span style="width: <?php echo display_tent_status_Longterm(); ?>%"></span>
+                    <span style="width: <?php echo display_tent_status_Longterm(); ?>%;" data-width="<?php echo display_tent_status_Longterm(); ?>%"></span>
                 </div>
                 <!-- Content for container 2 -->
                 <div class="row1">
@@ -215,10 +214,10 @@ if (!isset($_SESSION['username'])) {
             <div class="container4">
                 <h1 class="tent_label">Transportation Details</h1>
                 <div class="meter">
-                    <span style="width: <?php echo $vehicle; ?>%"></span>
+                    <span style="width: <?php echo $vehicle; ?>%;" data-width="<?php echo $vehicle; ?>%"></span>
                 </div>
                 <div class="meter1">
-                    <span style="width: <?php echo $departed_Status; ?>%"></span>
+                    <span style="width: <?php echo $departed_Status; ?>%;" data-width="<?php echo $departed_Status; ?>%"></span>
                 </div>
                 <!-- <div class="meter2">
                     <span style="width: 23%"></span>
@@ -233,6 +232,7 @@ if (!isset($_SESSION['username'])) {
                     <!-- <h1 id="on_retrieval">23</h1>
                     <h1 id="long_term_use">20</h1> -->
                 </div>
+                <div id="hoverpopup" class="hoverpopup">This is the popup content</div>
                 <div class="row2">
                     <h1 id="label5">On Garage</h1>
                     <h1 id="label6">On Field</h1>
@@ -426,7 +426,97 @@ if (!isset($_SESSION['username'])) {
                     });
                 };
             </script>
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    const spans = document.querySelectorAll('.meter > span, .meter1 > span, .meter2 > span, .meter3 > span');
+                    spans.forEach(span => {
+                        const finalWidth = span.getAttribute('data-width');
+                        span.style.setProperty('--final-width', finalWidth);
+                    });
+                });
+            </script>
+            <script>
+                document.addEventListener("DOMContentLoaded", () => {
+                    const onGarage = document.getElementById("on_garage");
+                    const onField = document.getElementById("on_field_transpo");
+                    const popup = document.getElementById("hoverpopup");
 
+                    // Parse the JSON data from PHP
+                    const hoverDataGarage = JSON.parse('<?php echo $hover_data_ongarage; ?>');
+                    const hoverDataField = JSON.parse('<?php echo $hover_data_onfield; ?>');
+
+                    const showPopup = (hoverData, rect) => {
+                        // Clear previous content
+                        popup.innerHTML = '';
+
+                        // Add header row
+                        const header = document.createElement('div');
+                        header.className = 'vehicle-header';
+                        header.innerHTML = `<span class="vehicle-plate">Plate Number</span> <span class="vehicle-name">Vehicle</span>`;
+                        popup.appendChild(header);
+
+                        // Build the popup content based on hoverData
+                        hoverData.forEach(vehicle => {
+                            const div = document.createElement('div');
+                            div.className = 'vehicle-info';
+                            div.innerHTML = `<span class="vehicle-plate">${vehicle.Plate_No}</span> <span class="vehicle-name">${vehicle.Name}</span>`;
+                            popup.appendChild(div);
+                        });
+
+                        // Adjust the size of the popup based on the content
+                        popup.style.width = "auto";
+                        popup.style.height = "auto";
+
+                        // Position the popup
+                        popup.style.top = `${rect.bottom + window.scrollY}px`;
+                        popup.style.left = `${rect.left + window.scrollX}px`;
+                        popup.style.display = "block";
+                        setTimeout(() => {
+                            popup.style.opacity = "1";
+                        }, 10); // slight delay to trigger the transition
+                    };
+
+                    const hidePopup = () => {
+                        popup.style.opacity = "0";
+                        setTimeout(() => {
+                            popup.style.display = "none";
+                        }, 300); // match the duration of the opacity transition
+                    };
+
+                    onGarage.addEventListener("mouseover", () => {
+                        const rect = onGarage.getBoundingClientRect();
+                        showPopup(hoverDataGarage, rect);
+                    });
+
+                    onGarage.addEventListener("mouseout", (e) => {
+                        if (!popup.contains(e.relatedTarget)) {
+                            hidePopup();
+                        }
+                    });
+
+                    onField.addEventListener("mouseover", () => {
+                        const rect = onField.getBoundingClientRect();
+                        showPopup(hoverDataField, rect);
+                    });
+
+                    onField.addEventListener("mouseout", (e) => {
+                        if (!popup.contains(e.relatedTarget)) {
+                            hidePopup();
+                        }
+                    });
+
+                    popup.addEventListener("mouseover", () => {
+                        popup.style.opacity = "1";
+                        popup.style.display = "block";
+                    });
+
+                    popup.addEventListener("mouseout", (e) => {
+                        if (!onGarage.contains(e.relatedTarget) && !onField.contains(e.relatedTarget)) {
+                            hidePopup();
+                        }
+                    });
+                });
+            </script>
 
         </div>
 

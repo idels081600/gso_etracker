@@ -95,19 +95,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"  && isset($_POST['save_data'])) {
             <span class="user-name1">Poliquit Estelito Jr.</span>
         </div>
         <hr class="divider">
-        <ul>
-            <li><a href="dashboard_asset_tracker.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
-            <li class="dropdown">
-                <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
-                <ul class="dropdown-menu">
-                    <li><a href="tracking.php">Tent</a></li>
-                    <li><a href="transpo.php">Transportation</a></li>
-                    <li><a href="pay_track.php">Payables</a></li>
-                    <li><a href="rfq_tracking.php">RFQ</a></li>
-                </ul>
-            </li>
-            <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
-        </ul>
+        <div class="sidebar">
+            <div class="logo">
+                <img src="logo.png" alt="Logo">
+                <span class="role">Admin</span>
+                <span class="user-name">Chris John Rener Torralba</span>
+            </div>
+            <hr class="divider">
+            <ul>
+                <li><a href="dashboard_asset_tracker.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
+                <li class="dropdown">
+                    <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="pay_track.php">Payables</a></li>
+                        <li><a href="rfq_tracking.php">RFQ</a></li>
+                    </ul>
+                </li>
+                <li><a href="tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
+                <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
+                <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
+            </ul>
+            <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        </div>
 
         <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
@@ -117,7 +126,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"  && isset($_POST['save_data'])) {
         <h1>RFQ Tracking</h1>
         <div class="row">
             <div class="container2">
-                <h1 class="name1">Office Clerk</h1>
                 <div class="add_container">
                     <div class="popup3" id="popup3">
                         <div class="close-btn">&times;</div>

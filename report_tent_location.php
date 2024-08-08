@@ -48,7 +48,7 @@ while ($row = $result->fetch_assoc()) {
     // Increment the counter for the location by the number of tent numbers
     $location = $row['location']; // Assuming 'location' is the column name in your table
     $tent_no = $row['tent_no']; // Assuming 'tent_no' is the column name in your table
-    if (isset($location_counts[$location])) {
+    if (isset($location_counts[$location]) && !empty($tent_no)) {
         // Count tent numbers (assuming tent_no is comma-separated)
         $tent_numbers = explode(',', $tent_no);
         $location_counts[$location] += count($tent_numbers);
