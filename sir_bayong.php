@@ -29,7 +29,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     $date = mysqli_real_escape_string($conn, date('Y-m-d', strtotime($_POST['date'])));
     $quantity = mysqli_real_escape_string($conn, $_POST['quantity']);
     $description = mysqli_real_escape_string($conn, $_POST['description']);
-    $amount = mysqli_real_escape_string($conn, $_POST['amount']);
+
+    // Check if amount is empty, if so, assign 0
+    $amount = isset($_POST['amount']) && $_POST['amount'] !== '' ? mysqli_real_escape_string($conn, $_POST['amount']) : 0;
+
     $office = mysqli_real_escape_string($conn, $_POST['office']);
     $vehicle = mysqli_real_escape_string($conn, $_POST['vehicle']);
     $plate = mysqli_real_escape_string($conn, $_POST['plate']);
