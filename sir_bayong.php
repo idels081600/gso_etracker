@@ -1,12 +1,19 @@
 <?php
+// Enable error reporting for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require_once 'db.php'; // Assuming this file contains your database connection code
 require_once 'display_data.php';
 session_start();
+
 if (!isset($_SESSION['username'])) {
     header("location: login_v2.php");
     exit(); // Ensure that the script stops execution after the redirect
 }
 
+// Fetch data for the page
 $result = display_data_sir_bayong();
 $result2 = display_data_sir_bayong_print();
 $total_amount = 0;
@@ -14,7 +21,10 @@ $display_payment = display_data_sir_bayong_payments();
 while ($row = mysqli_fetch_assoc($result)) {
     $total_amount += $row["Amount"];
 }
+
+// Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
+    // Escape user inputs for security
     $sr_no = mysqli_real_escape_string($conn, $_POST['sr_no']);
     $date = mysqli_real_escape_string($conn, date('Y-m-d', strtotime($_POST['date'])));
     $quantity = mysqli_real_escape_string($conn, $_POST['quantity']);
@@ -24,21 +34,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     $vehicle = mysqli_real_escape_string($conn, $_POST['vehicle']);
     $plate = mysqli_real_escape_string($conn, $_POST['plate']);
     $supplier = mysqli_real_escape_string($conn, $_POST['supplier']);
+
+    // Prepare the SQL query
     $query = "INSERT INTO sir_bayong(`SR_DR`, `Date`, `Supplier`, `Quantity`, `Description`, `Amount`, `Office`, `Vehicle`, `Plate` ) 
               VALUES ('$sr_no', '$date', '$supplier', '$quantity', '$description', '$amount', '$office', '$vehicle', '$plate')";
 
-    $query_run = mysqli_query($conn, $query);
-    if ($query_run) {
+    // Execute the query and check for success
+    if (mysqli_query($conn, $query)) {
         header("Location: sir_bayong.php");
         exit();
     } else {
-        header("Location: sir_bayong.php");
-        exit();
+        // Output any SQL error
+        echo "Error: " . mysqli_error($conn);
     }
 }
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
