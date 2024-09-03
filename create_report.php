@@ -58,7 +58,7 @@ $dispatched = display_vehicle_dispatched();
     </div>
     <div class="content">
         <h1>Generate Report</h1>
-        <div class="container_tent">
+        <div class="container_tent"> 
             <h2 id="tent_label">Tent Installation</h2>
             <button class="button-2" id="addButton" role="button">Get Data</button>
             <div id="datepicker-container" class="datepicker-container">
