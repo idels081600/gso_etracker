@@ -133,7 +133,7 @@ if (!isset($_SESSION['username'])) {
             });
         });
     </script>
-
+    
 
     <style>
         .status-cell {
@@ -175,11 +175,11 @@ if (!isset($_SESSION['username'])) {
         <h1>Welcome Back!</h1>
         <div class="row">
             <div class="container1">
-                <h1 class="tent_label">Tent On Stock Status</h1>
+                <h1 class="tent_label">Available Tent</h1>
                 <div role="progressbar1" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="--value:<?php echo $on_stock_percent; ?> "></div>
             </div>
             <div class="container2">
-                <h1 class="tent_label">Tent Details</h1>
+                <h1 class="tent_label">Tent Status</h1>
                 <div class="meter">
                     <span style="width: <?php echo display_tent_status(); ?>%;" data-width="<?php echo display_tent_status(); ?>%"></span>
                 </div>
@@ -200,19 +200,19 @@ if (!isset($_SESSION['username'])) {
                     <h1 id="long_term_use"><?php echo $longterm; ?></h1>
                 </div>
                 <div class="row2">
-                    <h1 id="label1">On Stock</h1>
+                    <h1 id="label1">Available</h1>
                     <h1 id="label2">On Field</h1>
-                    <h1 id="label3">Retrieval</h1>
+                    <h1 id="label3">For Retrieval</h1>
                     <h1 id="label4">Long Term </h1>
                 </div>
             </div>
             <div class="container3">
-                <h1 class="tent_label">Transportation On Garage Status</h1>
+                <h1 class="tent_label">Available Vehicle</h1>
                 <div role="progressbar2" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="--value: <?php echo $vehicle; ?> "></div>
                 <!-- Content for container 2 -->
             </div>
             <div class="container4">
-                <h1 class="tent_label">Transportation Details</h1>
+                <h1 class="tent_label">Transportation Status</h1>
                 <div class="meter">
                     <span style="width: <?php echo $vehicle; ?>%;" data-width="<?php echo $vehicle; ?>%"></span>
                 </div>
@@ -232,9 +232,9 @@ if (!isset($_SESSION['username'])) {
                     <!-- <h1 id="on_retrieval">23</h1>
                     <h1 id="long_term_use">20</h1> -->
                 </div>
-                <div id="hoverpopup" class="hoverpopup">This is the popup content</div>
+                <div id="hoverpopup" class="hoverpopup"></div>
                 <div class="row2">
-                    <h1 id="label5">On Garage</h1>
+                    <h1 id="label5">Available</h1>
                     <h1 id="label6">On Field</h1>
                     <!-- <h1 id="label7">Driver</h1>
                     <h1 id="label8">Long Term </h1>111 -->

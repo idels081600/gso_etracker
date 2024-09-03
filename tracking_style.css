@@ -1,6 +1,6 @@
 .content {
   background-color: #ebebeb;
-  height: 95.7vh;
+  height: 95.8vh;
   padding: 20px;
 }
 .boxContainer {
@@ -11,19 +11,100 @@
   padding: 10px;
 }
 
+.tally_list {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 0.5%;
+  padding: 0;
+  margin: 0;
+  list-style-type: none;
+  justify-content: start; /* Align items to the left */
+  align-items: start; /* Ensure items are aligned to the top if they overflow */
+}
+.on_field,
+.available,
+.for_retrieval,
+.long_term {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #505050;
+  z-index: 1;
+}
+#on_stocks_value {
+  color: rgb(43, 194, 83);
+  font-size: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%; /* Ensure the element takes up the full height of its container */
+  text-align: center; /* Center text inside the element */
+  translate: none; /* Remove translate to avoid offset issues */
+  padding: 0; /* Ensure no additional padding affects centering */
+  margin-top: 1%;
+}
+#on_field_value {
+  color: rgb(218, 105, 0);
+  font-size: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%; /* Ensure the element takes up the full height of its container */
+  text-align: center; /* Center text inside the element */
+  translate: none; /* Remove translate to avoid offset issues */
+  padding: 0; /* Ensure no additional padding affects centering */
+  margin-top: 1%;
+}
+#for_retrieval_value {
+  color: rgb(241, 8, 8);
+  font-size: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%; /* Ensure the element takes up the full height of its container */
+  text-align: center; /* Center text inside the element */
+  translate: none; /* Remove translate to avoid offset issues */
+  padding: 0; /* Ensure no additional padding affects centering */
+  margin-top: 1%;
+}
+#long_term_value {
+  color: rgb(11, 94, 218);
+  font-size: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%; /* Ensure the element takes up the full height of its container */
+  text-align: center; /* Center text inside the element */
+  translate: none; /* Remove translate to avoid offset issues */
+  padding: 0; /* Ensure no additional padding affects centering */
+  margin-top: 1%;
+}
+.tally {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 1rem; /* Use relative units for padding */
+  border-radius: 0.5rem; /* Use relative units for border-radius */
+  min-width: 150px; /* Adjusted minimum width for responsiveness */
+  width: 12vw; /* Use viewport width for responsive sizing */
+  height: 110px; /* Fixed height; adjust as needed */
+  color: #000; /* Text color for better contrast */
+  display: flex;
+  flex-direction: column;
+  margin-top: 0%;
+}
 .container_table {
   background-color: #ffffff;
-  height: 85vh;
+  height: 70vh;
   width: 100%;
   border-radius: 15px; /* Adjust the value to control the roundness of the corners */
   margin-top: 1%;
-  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  /* box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
   -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59); */
 }
 
 .table-container {
-  max-height: 650px; /* Set the maximum height of the container */
+  max-height: 540px; /* Set the maximum height of the container */
   overflow-y: auto; /* Enable vertical scrolling */
 }
 
@@ -42,10 +123,14 @@ th {
   z-index: 1; /* Ensure the sticky headers stay above the table content */
 }
 
-th,
+th {
+  padding: 10px 10px;
+  font-weight: normal;
+}
 td {
   padding: 10px 10px;
   font-weight: normal;
+  font-size: 0.8rem;
 }
 /* .table_tent tbody tr:nth-of-type(even) {
   background-color: #f3f3f3;
@@ -1012,12 +1097,12 @@ th {
   th {
     padding: 4px 4px;
     font-weight: normal;
-    font-size: 0.82rem;
+    font-size: 0.7rem;
   }
   td {
-    padding: 9px 9px;
+    padding: 1px 2px;
     font-weight: normal;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
   }
   .container_table_content {
     padding-top: 1%;
@@ -1147,7 +1232,7 @@ th {
     display: inline-block;
     font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial,
       sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-    font-size: 0.9rem;
+    font-size: 0.7rem;
     font-weight: 600;
     line-height: 20px;
     padding: 6px 16px;
@@ -1161,6 +1246,7 @@ th {
     white-space: nowrap;
     margin-left: 1.5%;
     margin-right: 0%;
+    translate: 0% 10%;
   }
 
   .button-2:focus:not(:focus-visible):not(.focus-visible) {
@@ -1290,24 +1376,23 @@ th {
     cursor: pointer;
   }
   .table-container {
-    max-height: 520px; /* Set the maximum height of the container */
+    max-height: 380px; /* Set the maximum height of the container */
     overflow-y: auto; /* Enable vertical scrolling */
   }
   .content {
     background-color: #ebebeb;
     height: 92.1vh;
     padding: 20px;
-
   }
   .container_table {
     background-color: #ffffff;
-    height: 83vh;
+    height: 62vh;
     width: 100%;
     border-radius: 15px; /* Adjust the value to control the roundness of the corners */
     margin-top: 1%;
-    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    /* box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
     -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59); */
   }
   #tent_no-label1 {
     color: rgb(22, 22, 22);
@@ -1486,5 +1571,16 @@ th {
     border: 0.5px solid rgb(110, 110, 110);
     position: absolute;
     translate: 79% 815%;
+  }
+  #search-input {
+    flex: 1; /* Take remaining space */
+    padding: 5px;
+    border: 1.5px solid #8f8d8d;
+    border-radius: 20px;
+    font-size: 16px;
+    margin-left: 70%;
+    margin-right: 2%;
+    margin-top: 1%;
+    transition: border-color 0.3s ease; /* Add transition for smoother effect */
   }
 }

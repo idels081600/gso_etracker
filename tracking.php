@@ -1,6 +1,10 @@
 <?php
 require_once 'db_asset.php';
 require_once 'display_data_asset.php';
+$on_stock = display_tent_status();
+$on_field = display_tent_status_Installed();
+$on_retrieval = display_tent_status_Retrieval();
+$longterm = display_tent_status_Longterm();
 session_start();
 if (!isset($_SESSION['username'])) {
     header("location: login_v2.php");
@@ -121,14 +125,45 @@ if (isset($_POST['save_data'])) {
 
     <div class="content">
 
-        <h1>Tent Inventory</h1>
-        <?php if (isset($_SESSION['toastMsg'])) { ?>
-            <div id="showMsg"> <?= $_SESSION['toastMsg']; ?></div>
-        <?php } ?>
+        <h1>Tent</h1>
+        <ul class="tally_list" id="tallyList">
+            <li class="tally" id="on_standby">
+                <div class="available">Available</div>
+                <div class="info">
+                    <div class="amount skeleton-loader">
+                        <h1 id="on_stocks_value"><?php echo $on_stock; ?></h1>
+                    </div>
+                </div>
+            </li>
+            <li class="tally" id="tallyList">
+                <div class="on_field"> On Field</div>
+                <div class="info">
+                    <div class="amount skeleton-loader">
+                        <h1 id="on_field_value"><?php echo $on_field; ?></h1>
+                    </div>
+                </div>
+            </li>
+            <li class="tally" id="tallyList">
+                <div class="for_retrieval"> For Retrieval</div>
+                <div class="info">
+                    <div class="amount skeleton-loader">
+                        <h1 id="for_retrieval_value"><?php echo $on_retrieval; ?></h1>
+                    </div>
+                </div>
+            </li>
+            <li class="tally" id="tallyList">
+                <div class="long_term"> Long Term</div>
+                <div class="info">
+                    <div class="amount skeleton-loader">
+                        <h1 id="long_term_value"><?php echo $longterm; ?></h1>
+                    </div>
+                </div>
+            </li>
+        </ul>
         <div class="container_table">
             <div class="column">
                 <!-- <button class="button-3" role="button">Scanner</button> -->
-                <button class="button-2" id="addButton" role="button">Add</button>
+                <button class="button-2" id="addButton" role="button">Install Tent</button>
                 <!-- <button class="button-4" id="UpdateButton" role="button">Update Status</button> -->
                 <!-- <div class="dropdown_menu">
                     <select class="menu" id="sel1" name='typeofbusiness'>
@@ -358,7 +393,7 @@ if (isset($_POST['save_data'])) {
                                                     <option value="" data-id="">Select Status</option>
                                                     <option value="Installed" data-id="<?php echo $row['id']; ?>">Installed</option>
                                                     <option value="For Retrieval" data-id="<?php echo $row['id']; ?>">For Retrieval</option>
-                                                    <option value="On Stock" data-id="<?php echo $row['id']; ?>">Retrieved</option>
+                                                    <option value="Retrieved" data-id="<?php echo $row['id']; ?>">Retrieved</option>
                                                 </select>
                                             </div>
                                         </td>
@@ -367,26 +402,24 @@ if (isset($_POST['save_data'])) {
                                             <div class="form-element">
                                                 <select class="status-dropdown" name="status" id="drop_status">
                                                     <option value="" data-id="">Select Status</option>
-                                                    <option value="Installed" data-id="<?php echo $row['id']; ?>" <?php if ($row['status'] == 'Installed') echo 'selected'; ?>>Installed</option>
-                                                    <option value="For Retrieval" data-id="<?php echo $row['id']; ?>" <?php if ($row['status'] == 'For 
-                                                    
-                                                    
-                                                    
-                                                    
-                                                    
-                                                    Retrieval') echo 'selected'; ?>>For Retrieval</option>
-                                                    <option value="On Stock" data-id="<?php echo $row['id']; ?>" <?php if ($row['status'] == 'Retrieved') echo 'selected'; ?>>Retrieved</option>
+                                                    <option value="Installed" data-id="<?php echo $row['id']; ?>" <?php echo ($row['status'] == 'Installed') ? 'selected' : ''; ?>>Installed</option>
+                                                    <option value="For Retrieval" data-id="<?php echo $row['id']; ?>" <?php echo ($row['status'] == 'For Retrieval') ? 'selected' : ''; ?>>For Retrieval</option>
+                                                    <option value="Retrieved" data-id="<?php echo $row['id']; ?>" <?php echo ($row['status'] == 'Retrieved') ? 'selected' : ''; ?>>Retrieved</option>
                                                 </select>
                                             </div>
                                         </td>
                                     <?php endif; ?>
-
                                     <td>
                                         <button class="button-4 viewButton" data-id="<?php echo $row['id']; ?>" role="button">Edit</button>
                                         <button class="button-5 deleteButton" data-id="<?php echo $row['id']; ?>" role="button">Delete</button>
                                     </td>
                                 </tr>
+                                <script>
+                                    // Debugging: log the status for each row to ensure it's correct
+                                    console.log("Row ID:", <?php echo $row['id']; ?>, "Status:", "<?php echo $row['status']; ?>");
+                                </script>
                             <?php } ?>
+
                         </tbody>
                     </table>
                 </div>
@@ -699,7 +732,7 @@ if (isset($_POST['save_data'])) {
                                         box.classList.add('red');
                                     } else if (item.Status === 'Retrieved') {
                                         box.classList.add('green');
-                                    } else if (item.Status === 'Retrieval') {
+                                    } else if (item.Status === 'For Retrieval') {
                                         box.classList.add('orange');
                                     } else if (item.Status === 'Long Term') {
                                         box.classList.add('blue');
@@ -1083,31 +1116,38 @@ if (isset($_POST['save_data'])) {
                 var dateText = $(this).text();
                 var date = new Date(dateText);
 
-                // Calculate difference in days
-                var timeDiff = date.getTime() - today.getTime();
-                var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                // Get the row and check if a dropdown value is selected
+                var row = $(this).closest('tr');
+                var selectedOption = row.find('select.status-dropdown').find(':selected').val();
 
-                // Apply color based on difference
-                if (diffDays < 0) {
-                    $(this).css('color', 'red'); // Date is passed
+                if (selectedOption) { // Proceed only if there is a selected value
+                    // Calculate difference in days
+                    var timeDiff = date.getTime() - today.getTime();
+                    var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
-                    // Get the row and tent_no, id
-                    var row = $(this).closest('tr');
-                    var tent_no = row.find('td:first').text().trim(); // Assuming tent_no is in the first td
-                    var id = row.find('select.status-dropdown').find(':selected').data('id');
+                    // Apply color based on difference
+                    if (diffDays < 0) {
+                        $(this).css('color', 'red'); // Date is passed
 
-                    // Check if tent_no is not empty
-                    if (tent_no !== '') {
-                        // Add to redDates array
-                        redDates.push({
-                            tent_no: tent_no,
-                            id: id
-                        });
+                        // Get tent_no and id
+                        var tent_no = row.find('td:first').text().trim(); // Assuming tent_no is in the first td
+                        var id = row.find('select.status-dropdown').find(':selected').data('id');
+
+                        // Check if tent_no is not empty
+                        if (tent_no !== '') {
+                            // Add to redDates array
+                            redDates.push({
+                                tent_no: tent_no,
+                                id: id
+                            });
+                        }
+                    } else if (diffDays === 0) {
+                        $(this).css('color', 'orange'); // Today
+                    } else {
+                        $(this).css('color', ''); // Reset color if date is in the future
                     }
-                } else if (diffDays === 0) {
-                    $(this).css('color', 'orange'); // Today
                 } else {
-                    $(this).css('color', ''); // Reset color if date is in the future
+                    $(this).css('color', ''); // Reset color if no value is selected
                 }
             });
 
@@ -1139,6 +1179,7 @@ if (isset($_POST['save_data'])) {
         setInterval(updateDateColors, 60000); // Update every 1 minute (60000 milliseconds)
     });
 </script>
+
 </script>
 
 

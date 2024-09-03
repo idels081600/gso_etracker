@@ -71,7 +71,7 @@ if (!isset($_SESSION['username'])) {
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <a class="navbar-brand" href="index_r.php">
             <img src="logo.png" alt="Logo" class="logo-img">
-            <span class="logo-text">E-Pass </span>
+            <span class="logo-text">E-Pass Slip </span>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -123,6 +123,44 @@ if (!isset($_SESSION['username'])) {
             background-color: transparent !important;
             color: #fff !important;
             /* Change the color to your desired hover color */
+        }
+
+        .form-control-static {
+            margin-left: 10px;
+            /* Adjust this value to control the spacing between label and value */
+            display: inline-block;
+        }
+
+        label {
+            margin-bottom: 5px;
+            /* Space between the label and the value */
+            font-weight: bold;
+            /* Make labels bold for better readability */
+        }
+
+        .container .mb-3 {
+            margin-bottom: 15px;
+            /* Adjust the space between different form groups */
+            display: flex;
+            align-items: center;
+        }
+
+        .container .mb-3 label {
+            width: 150px;
+            /* Fixed width for labels */
+            margin-right: 20px;
+            /* Space between label and value */
+        }
+
+        .container .mb-3 p.form-control-static {
+            flex-grow: 1;
+            /* Take up the remaining space */
+            margin-bottom: 0;
+            /* Remove any default margin */
+        }
+
+        .container {
+            height: 550px;
         }
     </style>
 
@@ -196,8 +234,8 @@ if (!isset($_SESSION['username'])) {
                                             <?php echo $data['typeofbusiness']; ?>
                                         </p>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="time_ret">Time of Actual Return</label>
+                                    <div class="mb-3">
+                                        <label for="time_ret">Time of Actual Return: </label>
                                         <p class="form-control-static">
                                             <?php echo date('g:i A', strtotime($data['time_returned'])); ?>
 

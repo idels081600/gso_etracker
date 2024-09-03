@@ -25,9 +25,7 @@
   width: 280px;
   border-radius: 10px;
   padding: 10px; /* Optional: Add padding inside containers */
-  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+
 }
 .rfq_summary {
   background-color: #ffffff;
@@ -35,9 +33,7 @@
   width: 280px;
   border-radius: 10px;
   padding: 10px; /* Optional: Add padding inside containers */
-  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+ 
   translate: 0px -790px;
 }
 .tent_purpose {
@@ -112,9 +108,7 @@
   width: 600px;
   border-radius: 10px;
   padding: 10px; /* Optional: Add padding inside containers */
-  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+
   position: relative;
   translate: 310px -420px;
 }
@@ -124,9 +118,7 @@
   width: 620px;
   border-radius: 10px;
   padding: 10px; /* Optional: Add padding inside containers */
-  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+
   position: relative;
   translate: 940px -840px;
 }
@@ -338,9 +330,6 @@
   width: 280px;
   border-radius: 10px;
   padding: 10px; /* Optional: Add padding inside containers */
-  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
   translate: 0px -800px;
 }
 #dispatch {
@@ -359,7 +348,7 @@
   color: rgb(43, 194, 83);
   translate: 40px -285px;
   font-size: 7rem;
-  translate: 27% -50%;
+  translate: 14% -50%;
 }
 #rfq_value {
   color: rgb(43, 194, 83);
@@ -373,9 +362,6 @@
   width: 600px;
   border-radius: 10px;
   padding: 10px; /* Optional: Add padding inside containers */
-  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
   position: relative;
   translate: 310px -1220px;
 }
@@ -385,9 +371,6 @@
   width: 620px;
   border-radius: 10px;
   padding: 10px; /* Optional: Add padding inside containers */
-  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
   position: relative;
   translate: 940px -1640px;
 }
@@ -521,9 +504,6 @@
   background-color: #ffffff;
   border-radius: 10px;
   padding: 10px; /* Optional: Add padding inside containers */
-  box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-  -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
   translate: 0px -880px;
 }
 .dropdown_menu select {
@@ -571,9 +551,6 @@
     width: 120px;
     border-radius: 10px;
     padding: 10px; /* Optional: Add padding inside containers */
-    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
   }
   .pie_tent {
     background-color: #ffffff;
@@ -581,9 +558,6 @@
     width: 490px;
     border-radius: 10px;
     padding: 10px; /* Optional: Add padding inside containers */
-    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
     position: relative;
     translate: 155px -420px;
   }
@@ -593,9 +567,6 @@
     width: 490px;
     border-radius: 10px;
     padding: 10px; /* Optional: Add padding inside containers */
-    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
     position: relative;
     translate: 680px -840px;
   }
@@ -659,9 +630,6 @@
     width: 120px;
     border-radius: 10px;
     padding: 10px; /* Optional: Add padding inside containers */
-    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
     translate: 0px -800px;
   }
   .pie_transpo {
@@ -670,9 +638,6 @@
     width: 490px;
     border-radius: 10px;
     padding: 10px; /* Optional: Add padding inside containers */
-    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
     position: relative;
     translate: 155px -1220px;
   }
@@ -682,9 +647,6 @@
     width: 490px;
     border-radius: 10px;
     padding: 10px; /* Optional: Add padding inside containers */
-    box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
-    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
     position: relative;
     translate: 680px -1640px;
   }

@@ -1,9 +1,11 @@
 <?php
 require_once 'db.php'; // Assuming this file contains your database connection code
 require_once 'display_data.php';
+require_once('vendor/autoload.php');
+
+// Fetch data
 $result = display_data_sir_bayong_print();
 $payment = display_data_sir_bayong_payments();
-require_once('vendor/autoload.php'); 
 
 $paymentNames = array(); // Array to store payment names
 $paymentAmounts = array(); // Array to store payment amounts
@@ -14,6 +16,18 @@ foreach ($payment as $row) {
     $paymentAmounts[] = $row['amount'];
 }
 
+// Debugging: Log the result data to a file
+$logFile = 'debug_log.txt';
+$logData = '';
+
+mysqli_data_seek($result, 0); // Reset the result pointer
+while ($row = mysqli_fetch_assoc($result)) {
+    $logData .= print_r($row, true) . "\n";
+}
+
+// Write log data to file
+file_put_contents($logFile, $logData);
+
 // Create a new PDF instance
 $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
@@ -23,7 +37,6 @@ $pdf->SetAuthor('Your Name');
 $pdf->SetTitle('Invoice');
 $pdf->SetSubject('Invoice Document');
 $pdf->SetKeywords('TCPDF, PDF, invoice');
-
 
 // Set header and footer fonts
 $pdf->setHeaderFont(array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
@@ -123,7 +136,7 @@ td {
 // Calculate total amount
 $totalAmount = 0;
 
-mysqli_data_seek($result, 0);
+mysqli_data_seek($result, 0); // Reset the result pointer
 while ($row = mysqli_fetch_assoc($result)) {
     $html .= '<tr data-id="' . $row['id'] . '">
                 <td>' . $row["SR_DR"] . '</td>

@@ -314,3 +314,104 @@ function display_data_transpo_onfield_hover()
     }
     return json_encode($data);
 }
+function get_top_5_vehicle_counts()
+{
+    global $conn;
+
+    // Query to get the top 5 most used vehicles, their usage counts, and their plate numbers
+    $query = "
+        SELECT Vehicle, Plate_no, COUNT(*) as Count
+        FROM Transportation
+        GROUP BY Vehicle, Plate_no
+        ORDER BY Count DESC
+        LIMIT 5
+    ";
+
+    $result = mysqli_query($conn, $query);
+
+    if (!$result) {
+        die('Query Failed: ' . mysqli_error($conn));
+    }
+
+    $data = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = [
+            'vehicle' => $row['Vehicle'],
+            'plate_no' => $row['Plate_no'],
+            'count' => $row['Count']
+        ];
+    }
+
+    return $data;
+}
+function get_daily_dispatch_counts()
+{
+    global $conn; // Ensure $conn is your database connection variable
+
+    // Get the start and end dates of the current week (Monday to Friday)
+    $startOfWeek = date('Y-m-d', strtotime('monday this week'));
+    $endOfWeek = date('Y-m-d', strtotime('friday this week'));
+
+    // Prepare SQL query to get data for Monday to Friday grouped by day
+    $query = "
+        SELECT 
+            DATE_FORMAT(Date, '%W') AS day_name,
+            COUNT(*) AS count
+        FROM Transportation
+        WHERE Date BETWEEN ? AND ?
+          AND DATE_FORMAT(Date, '%W') IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+        GROUP BY day_name
+        ORDER BY FIELD(day_name, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+    ";
+
+    // Prepare statement
+    if ($stmt = $conn->prepare($query)) {
+        // Bind parameters
+        $stmt->bind_param("ss", $startOfWeek, $endOfWeek);
+
+        // Execute statement
+        $stmt->execute();
+
+        // Get the result
+        $result = $stmt->get_result();
+
+        // Fetch all data
+        $data = $result->fetch_all(MYSQLI_ASSOC);
+
+        // Close statement
+        $stmt->close();
+
+        // Map data to ensure all weekdays are included
+        $weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        $dayCounts = array_fill_keys($weekdays, 0); // Initialize all weekdays with zero count
+
+        foreach ($data as $row) {
+            $dayCounts[$row['day_name']] = $row['count'];
+        }
+
+        // Return the data
+        return $dayCounts;
+    } else {
+        // Handle query preparation error
+        return ['error' => 'Query preparation failed'];
+    }
+}
+
+function display_requestors() {
+    global $conn;
+    $query = "SELECT requestor FROM requestingParty";
+    $result = mysqli_query($conn, $query);
+    
+    if (!$result) {
+        die("Query failed: " . mysqli_error($conn));
+    }
+    
+    $requestors = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $requestors[] = $row['requestor'];
+    }
+    
+    return $requestors;
+}
+
+?>

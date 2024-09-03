@@ -8,7 +8,7 @@ if (!isset($_SESSION['username'])) {
 }
 
 // Check the user role and perform additional redirection if needed
-if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESSION['role'] == 'TCWS Employee' ) {
+if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SESSION['role'] == 'TCWS Employee') {
     header("location: login_v2.php");
     exit(); // Ensure that the script stops execution after the redirect
 }
@@ -27,7 +27,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESS
         integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.14.0/firebase-app-compat.js"></script>
@@ -56,7 +55,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESS
 
     body {
         background-color: #f0f0f0;
-        /* Set the background color of the body */
     }
 
     .navbar-brand {
@@ -64,7 +62,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESS
         align-items: center;
     }
 
-    /* Style for the logo image */
     .logo-img {
         border-radius: 50%;
         width: 50px;
@@ -72,26 +69,33 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESS
         object-fit: cover;
     }
 
-    /* Style for the "E-Pass Slip" text */
     .logo-text {
         color: white;
         font-weight: bold;
         font-size: 20px;
         margin-left: 10px;
-        /* Add some spacing between the logo and text */
     }
 
     .container {
         background-color: #fff;
-        /* Set the background color for the container */
         padding: 20px;
-        /* Add some padding to the container */
         border-radius: 5px;
-        /* Add rounded corners */
         margin-top: 20px;
-        /* Add some space from the top */
         box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-        /* Add a shadow to the container */
+    }
+
+    /* Sticky header CSS */
+    .table-responsive {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 1;
+        box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
     }
 </style>
 
@@ -99,7 +103,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESS
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <a class="navbar-brand" href="index_r.php">
             <img src="logo.png" alt="Logo" class="logo-img">
-            <span class="logo-text">E-Pass </span>
+            <span class="logo-text">E-Pass Slip </span>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -114,24 +118,12 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESS
                 <li class="nav-item">
                     <a class="nav-link" href="add_req_r.php">Add Request</a>
                 </li>
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="approved_tcws.php">Approved</a>
-                </li> -->
                 <li class="nav-item">
                     <a class="nav-link" href="declined_r.php">Declined Request</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="track_emp_r.php">Track Employees</a>
                 </li>
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="register.php">Register</a>
-                </li> -->
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner.php">Scan QRcode</a>
-                </li> -->
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_dept_r.php">Arrival</a>
-                </li> -->
                 <li class="nav-item">
                     <a class="nav-link" href="qrcode_scanner_desk_r.php">Scanner</a>
                 </li>
@@ -143,26 +135,22 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESS
     </nav>
 
     <style>
-        /* Remove the white box on hover */
         .navbar-nav .nav-link {
             background-color: transparent !important;
         }
 
-        /* Change the color of the text on hover */
         .navbar-nav .nav-link:hover {
             background-color: transparent !important;
             color: #fff !important;
-            /* Change the color to your desired hover color */
         }
     </style>
-
     <script type="text/javascript">
         function loadDoc() {
-            setInterval(function () {
+            setInterval(function() {
                 var xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function () {
+                xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
-                        document.getElementById("table").innerHTML = this.responseText;
+                        document.getElementById("table-body").innerHTML = this.responseText;
                     }
                 };
                 xhttp.open("GET", "data_r.php", true);
@@ -170,50 +158,56 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESS
             }, 1000);
         }
         loadDoc();
-
     </script>
+
     <div class="container">
         <h2 id="pen_label">Pending Request</h2>
         <div class="p-5 rounded shadow">
             <div class="table-responsive">
                 <table class="table .table-hover" id="table">
-                    <tr>
-                        <th scope="col">Name</th>
-                        <th scope="col">Position</th>
-                        <th scope="col">Destination</th>
-                        <th scope="col">Type of Request</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Action</th>
-                    </tr>
-                    <tr>
-                        <?php
-                        while ($row = mysqli_fetch_assoc($result)) {
-                            ?>
-                            <td>
-                                <?php echo $row["name"]; ?>
-                            </td>
-                            <td>
-                                <?php echo $row["position"]; ?>
-                            </td>
-                            <td>
-                                <?php echo $row["destination"]; ?>
-                            </td>
-                            <td>
-                                <?php echo $row["typeofbusiness"]; ?>
-                            </td>
-                            <td>
-                                <?php echo $row["Status"]; ?>
-                            </td>
-                            <td> <a href="view_r.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a></td>
+                    <thead>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Position</th>
+                            <th scope="col">Destination</th>
+                            <th scope="col">Type of Request</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Action</th>
                         </tr>
-                        <?php
-                        }
-                        ?>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <?php
+                            while ($row = mysqli_fetch_assoc($result)) {
+                            ?>
+                                <td>
+                                    <?php echo $row["name"]; ?>
+                                </td>
+                                <td>
+                                    <?php echo $row["position"]; ?>
+                                </td>
+                                <td>
+                                    <?php echo $row["destination"]; ?>
+                                </td>
+                                <td>
+                                    <?php echo $row["typeofbusiness"]; ?>
+                                </td>
+                                <td>
+                                    <?php echo $row["Status"]; ?>
+                                </td>
+                                <td> <a href="view_r.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a></td>
+                        </tr>
+                    <?php
+                            }
+                    ?>
+                    </tbody>
+
                 </table>
             </div>
         </div>
     </div>
-        <script>
+
+    <script>
         var firebaseConfig = {
             apiKey: "AIzaSyBdJEBddNuHGPyYW_NQ3D8VFpeQdfXOS2M",
             authDomain: "push-notification-4469d.firebaseapp.com",
@@ -234,11 +228,13 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk'||$_SESS
             $.ajax({
                 url: 'store_token.php',
                 type: 'POST',
-                data: { token: token },
-                success: function (response) {
+                data: {
+                    token: token
+                },
+                success: function(response) {
                     console.log('Token stored successfully:', response);
                 },
-                error: function () {
+                error: function() {
                     console.error('Error storing token');
                 }
             });

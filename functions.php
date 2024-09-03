@@ -120,3 +120,11 @@ function display_users()
     $result = mysqli_query($conn, $query);
     return $result;
 }
+
+function display_request()
+{
+    global $conn, $username; // Add $username as a global variable
+    $query = "SELECT * FROM `request` WHERE `Status` = 'Pending' AND `Role` = 'Employee' ORDER BY `id` DESC";
+    $result = mysqli_query($conn, $query);
+    return $result;
+}

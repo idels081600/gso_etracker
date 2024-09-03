@@ -2,6 +2,12 @@
 
 require_once 'db_asset.php'; // Assuming this file contains your database connection code
 require_once 'display_data_asset.php';
+$weekly_dispatch = get_daily_dispatch_counts();
+$top_vehicles = get_top_5_vehicle_counts();
+$ongarage = display_vehicle_ongarage();
+$departed = display_vehicle_departed();
+$hover_data_ongarage = display_data_transpo_ongrage_hover();
+$hover_data_onfield = display_data_transpo_onfield_hover();
 session_start();
 if (!isset($_SESSION['username'])) {
     header("location: login_v2.php");
@@ -10,13 +16,15 @@ if (!isset($_SESSION['username'])) {
 $result = display_data_transpo();
 $Plate = display_data_vehicle();
 $Drivers = display_data_driver();
-
+$requestor_data = display_requestors();
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     $plate_no = mysqli_real_escape_string($conn, $_POST['plate_no']);
     $name = mysqli_real_escape_string($conn, $_POST['name']);
     $driver = mysqli_real_escape_string($conn, $_POST['driver']);
     $date = mysqli_real_escape_string($conn, date('Y-m-d', strtotime($_POST['datepicker'])));
     $purpose = mysqli_real_escape_string($conn, $_POST['purpose']);
+    $requestor = mysqli_real_escape_string($conn, $_POST['comboInput']);
+
     $location = "";
 
     // Check if "other" input is not empty
@@ -27,21 +35,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
         $location = mysqli_real_escape_string($conn, $_POST['Location']);
     }
 
-    $query = "INSERT INTO Transportation(Plate_no, Date, Vehicle, Driver, Purpose, Location, Status, Status1) 
-              VALUES ('$plate_no', '$date','$name', '$driver', '$purpose', '$location', 'Stand By','Stand By')";
+    // Insert the new requestor into the requestingParty table
+    $insertRequestorQuery = "INSERT INTO requestingParty (requestor) VALUES ('$requestor')";
+    mysqli_query($conn, $insertRequestorQuery);
+
+    // Insert the main data into the Transportation table
+    $query = "INSERT INTO Transportation(Plate_no, Date, Requestor, Vehicle, Driver, Purpose, Location, Status, Status1) 
+              VALUES ('$plate_no', '$date','$requestor','$name', '$driver', '$purpose', '$location', 'Stand By','Stand By')";
 
     // Execute the query
     $query_run = mysqli_query($conn, $query);
     if ($query_run) {
-
         header("Location: transpo.php");
         exit();
     } else {
-
         header("Location: transpo.php");
         exit();
     }
 }
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_vehicle'])) {
     $plate_no = mysqli_real_escape_string($conn, $_POST['plate_no1']);
     $vehicle = mysqli_real_escape_string($conn, $_POST['type_vehicle']);
@@ -98,6 +110,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- jQuery -->
 
 
@@ -138,7 +151,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
         <div class="logo">
             <img src="logo.png" alt="Logo">
             <span class="role">Admin</span>
-            <span class="user-name">Rene Art Cagulada</span>
+            <span class="user-name">Reyna Bumaat</span>
         </div>
         <hr class="divider">
         <ul>
@@ -163,12 +176,57 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
         <?php if (isset($_SESSION['toastMsg'])) { ?>
             <div id="showMsg"> <?= $_SESSION['toastMsg']; ?></div>
         <?php } ?>
+        <div id="hoverpopup" class="hoverpopup"></div>
+        <ul class="tally_list" id="tallyList">
+            <li class="tally" id="on_standby">
+                <div class="standby">Available</div>
+                <div class="info">
+                    <div class="available_cont">
+                        <h1 id="on_stocks"><?php echo $ongarage; ?></h1>
+                    </div>
+                </div>
+            </li>
+            <li class="tally" id="tallyList">
+                <div class="on_trip"> On Field</div>
+                <div class="info">
+                    <div class="amount skeleton-loader">
+                        <h1 id="on_field"><?php echo $departed; ?></h1>
+                    </div>
+                </div>
+            </li>
+        </ul>
+        <ul class="supplier_list" id="supplierList">
+            <li class="supplier_container" id="tripsContainer">
+                <div class="trips_day">Dispatch per Day</div>
+                <div class="info">
+                    <div class="chart-container">
+                        <canvas id="tripsPerDayChart"></canvas>
+                    </div>
+                </div>
+            </li>
+            <li class="supplier_container2" id="vehicleUtilizationContainer">
+                <div class="Vehicle_utilization"> Top 5 Used Vehicle</div>
+                <div class="info">
+                    <div class="chart-container">
+                        <canvas id="vehicleUtilizationChart"></canvas>
+                    </div>
+                </div>
+            </li>
+            <li class="supplier_container1" id="supplierNameContainer">
+                <div class="under_repair"> Under Repair Vehicles</div>
+                <div class="info">
+                    <div class="amount skeleton-loader"></div>
+                </div>
+            </li>
+            <!-- Additional list items will be dynamically added -->
+        </ul>
+
         <div class="container_table">
             <div class="column">
                 <!-- <button class="button-3" role="button">Scanner</button> -->
-                <button class="button-2" id="addButton" role="button">Add</button>
-                <button class="button-4" id="Scanner" role="button">Scanner</button>
-                <button class="button-3" id="addVehicle" role="button">Add Data</button>
+                <button class="button-2" id="addButton" role="button">Dispatch</button>
+                <button class="button-4" id="Scanner" role="button">Scan</button>
+                <button class="button-3" id="addVehicle" role="button">Add Vehicle/Driver</button>
                 <!-- <div class="dropdown_menu">
                     <select class="menu" id="sel1" name='typeofbusiness'>
                         <option>Tent</option>
@@ -266,10 +324,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                                     <option value="Within Tagbilaran">Within Tagbilaran</option>
                                 </select>
                             </div>
-                            <!-- <div class="form-element-other">
-                                <label for="other" id="other-label">Specify Location (outside Tagbilaran)</label>
-                                <input type="text" id="other" placeholder="" name="other">
-                            </div> -->
+                            <div class="autocomplete-container">
+                                <label id="requestor-label">Requestor</label>
+                                <input type="text" id="comboInput" name="comboInput" placeholder="Enter value or select from list">
+                                <div id="suggestions" class="suggestions"></div>
+                            </div>
                             <button class="button-39" role="button" name="save_data">Submit</button>
                         </form>
                     </div>
@@ -346,8 +405,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                         <table id="table_tent" class="table_tent">
                             <thead>
                                 <tr>
-                                    <th>Plate No.</th>
                                     <th>Date</th>
+                                    <th>Requestor</th>
+                                    <th>Plate No.</th>
                                     <th>Type of Vehicle</th>
                                     <th>Driver</th>
                                     <th>Purpose</th>
@@ -360,8 +420,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                             <tbody>
                                 <?php while ($row = mysqli_fetch_assoc($result)) { ?>
                                     <tr>
-                                        <td><?php echo $row["Plate_no"]; ?></td>
                                         <td><?php echo $row["Date"]; ?></td>
+                                        <td><?php echo $row["Requestor"]; ?></td>
+                                        <td><?php echo $row["Plate_no"]; ?></td>
                                         <td><?php echo $row["Vehicle"]; ?></td>
                                         <td><?php echo $row["Driver"]; ?></td>
                                         <td><?php echo $row["Purpose"]; ?></td>
@@ -889,6 +950,268 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
 <script>
     $(document).ready(function() {
         $("#datepicker").datepicker();
+    });
+</script>
+<script>
+    // Example data; replace these with your PHP data
+    const vehicleData = <?php echo json_encode($top_vehicles); ?>;
+    const weeklyDispatchData = <?php echo json_encode($weekly_dispatch); ?>;
+
+    const Utils = {
+        numbers: () => vehicleData.map(v => v.count), // Extract counts from vehicleData
+        plates: () => vehicleData.map(v => v.plate_no), // Extract plate numbers from vehicleData
+        CHART_COLORS: [
+            'rgba(255, 99, 132, 0.2)',
+            'rgba(255, 159, 64, 0.2)',
+            'rgba(255, 205, 86, 0.2)',
+            'rgba(75, 192, 192, 0.2)',
+            'rgba(54, 162, 235, 0.2)'
+        ],
+        BORDER_COLORS: [
+            'rgb(255, 99, 132)',
+            'rgb(255, 159, 64)',
+            'rgb(255, 205, 86)',
+            'rgb(75, 192, 192)',
+            'rgb(54, 162, 235)'
+        ]
+    };
+
+    window.onload = function() {
+        // Prepare data for line chart
+        const lineChartData = {
+            labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+            datasets: [{
+                label: 'Number of Dispatch',
+                data: [
+                    weeklyDispatchData['Monday'] || 0,
+                    weeklyDispatchData['Tuesday'] || 0,
+                    weeklyDispatchData['Wednesday'] || 0,
+                    weeklyDispatchData['Thursday'] || 0,
+                    weeklyDispatchData['Friday'] || 0
+                ],
+                borderColor: Utils.BORDER_COLORS[4],
+                backgroundColor: Utils.CHART_COLORS[4],
+                pointStyle: 'rectRot',
+                pointRadius: 10,
+                pointHoverRadius: 15
+            }]
+        };
+
+        const lineChartConfig = {
+            type: 'line',
+            data: lineChartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                aspectRatio: 2.3,
+                plugins: {
+                    legend: {
+                        labels: {
+                            usePointStyle: true,
+                        },
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            autoSkip: true,
+                            maxRotation: 0, // Prevent label rotation
+                            minRotation: 0
+                        }
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        };
+
+        // Render the line chart in the 'tripsPerDayChart' canvas
+        const tripsPerDayCtx = document.getElementById('tripsPerDayChart').getContext('2d');
+        new Chart(tripsPerDayCtx, lineChartConfig);
+
+        // Bar Chart Data and Config
+        const barChartData = {
+            labels: Utils.plates(), // Plate numbers as labels
+            datasets: [{
+                label: '', // Set label explicitly to an empty string
+                data: Utils.numbers(), // Number of times each vehicle was used
+                backgroundColor: Utils.CHART_COLORS.slice(0, Utils.numbers().length),
+                borderColor: Utils.BORDER_COLORS.slice(0, Utils.numbers().length),
+                borderWidth: 1
+            }]
+        };
+        const barChartConfig = {
+            type: 'bar',
+            data: barChartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                aspectRatio: 1.1,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false // Disable the legend
+                    }
+                }
+            }
+        };
+
+        // Render the bar chart in the 'vehicleUtilizationChart' canvas
+        const vehicleUtilizationCtx = document.getElementById('vehicleUtilizationChart').getContext('2d');
+        new Chart(vehicleUtilizationCtx, barChartConfig);
+    };
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const onGarage = document.getElementById("on_stocks");
+        const onField = document.getElementById("on_field");
+        const popup = document.getElementById("hoverpopup");
+
+        // Parse the JSON data from PHP
+        const hoverDataGarage = JSON.parse('<?php echo $hover_data_ongarage; ?>');
+        const hoverDataField = JSON.parse('<?php echo $hover_data_onfield; ?>');
+
+        const showPopup = (hoverData, rect) => {
+            // Clear previous content
+            popup.innerHTML = '';
+
+            // Add header row
+            const header = document.createElement('div');
+            header.className = 'vehicle-header';
+            header.innerHTML = `<span class="vehicle-plate">Plate Number</span> <span class="vehicle-name">Vehicle</span>`;
+            popup.appendChild(header);
+
+            // Build the popup content based on hoverData
+            hoverData.forEach(vehicle => {
+                const div = document.createElement('div');
+                div.className = 'vehicle-info';
+                div.innerHTML = `<span class="vehicle-plate">${vehicle.Plate_No}</span> <span class="vehicle-name">${vehicle.Name}</span>`;
+                popup.appendChild(div);
+            });
+
+            // Adjust the size of the popup based on the content
+            popup.style.width = "auto";
+            popup.style.height = "auto";
+
+            // Position the popup
+            popup.style.top = `${rect.bottom + window.scrollY}px`;
+            popup.style.left = `${rect.left + window.scrollX}px`;
+            popup.style.display = "block";
+            setTimeout(() => {
+                popup.style.opacity = "1";
+            }, 10); // slight delay to trigger the transition
+        };
+
+        const hidePopup = () => {
+            popup.style.opacity = "0";
+            setTimeout(() => {
+                popup.style.display = "none";
+            }, 300); // match the duration of the opacity transition
+        };
+
+        onGarage.addEventListener("mouseover", () => {
+            const rect = onGarage.getBoundingClientRect();
+            showPopup(hoverDataGarage, rect);
+        });
+
+        onGarage.addEventListener("mouseout", (e) => {
+            if (!popup.contains(e.relatedTarget)) {
+                hidePopup();
+            }
+        });
+
+        onField.addEventListener("mouseover", () => {
+            const rect = onField.getBoundingClientRect();
+            showPopup(hoverDataField, rect);
+        });
+
+        onField.addEventListener("mouseout", (e) => {
+            if (!popup.contains(e.relatedTarget)) {
+                hidePopup();
+            }
+        });
+
+        popup.addEventListener("mouseover", () => {
+            popup.style.opacity = "1";
+            popup.style.display = "block";
+        });
+
+        popup.addEventListener("mouseout", (e) => {
+            if (!onGarage.contains(e.relatedTarget) && !onField.contains(e.relatedTarget)) {
+                hidePopup();
+            }
+        });
+    });
+</script>
+<script>
+    // Convert PHP array to JavaScript array and log it to the console
+    const requestorData = <?php echo json_encode($requestor_data); ?>;
+    console.log('Requestor Data:', requestorData);
+</script>
+
+
+<script>
+    let debounceTimeout;
+
+    document.getElementById('comboInput').addEventListener('input', function() {
+        clearTimeout(debounceTimeout);
+
+        const query = this.value;
+
+        // Check if the input is empty, and hide suggestions if it is
+        if (query === '') {
+            document.getElementById('suggestions').innerHTML = '';
+            document.getElementById('suggestions').style.display = 'none';
+            return;
+        }
+
+        debounceTimeout = setTimeout(() => {
+            fetch('fetch_requestors.php?query=' + encodeURIComponent(query))
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(requestors => {
+                    // Debug: Check the response in the console
+                    console.log('Requestors:', requestors);
+
+                    const suggestionsDiv = document.getElementById('suggestions');
+                    suggestionsDiv.innerHTML = '';
+
+                    if (requestors.length > 0) {
+                        suggestionsDiv.style.display = 'block';
+                        requestors.forEach(requestor => {
+                            const item = document.createElement('div');
+                            item.className = 'suggestion-item';
+                            item.textContent = requestor;
+                            item.onclick = function() {
+                                document.getElementById('comboInput').value = requestor;
+                                suggestionsDiv.innerHTML = '';
+                                suggestionsDiv.style.display = 'none';
+                            };
+                            suggestionsDiv.appendChild(item);
+                        });
+                    } else {
+                        suggestionsDiv.style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Fetch error:', error));
+        }, 300); // Debounce delay in milliseconds
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.autocomplete-container')) {
+            document.getElementById('suggestions').style.display = 'none';
+        }
     });
 </script>
 

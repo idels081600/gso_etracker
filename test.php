@@ -4,56 +4,118 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>Auto-Suggestions</title>
   <style>
-    #bottone5 {
-      align-items: center;
-      background-color: #FFFFFF;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      border-radius: .25rem;
-      box-shadow: rgba(0, 0, 0, 0.02) 0 1px 3px 0;
-      box-sizing: border-box;
-      color: rgba(0, 0, 0, 0.85);
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    .autocomplete-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    input[type="text"] {
+      padding: 5px;
+      width: 220px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .suggestions {
+      position: absolute;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: white;
+      width: 220px;
+      z-index: 1000;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .suggestion-item {
+      padding: 5px;
       cursor: pointer;
-      display: inline-flex;
-      font-family: system-ui, -apple-system, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
-      font-size: 16px;
-      font-weight: 600;
-      justify-content: center;
-      line-height: 1.25;
-      min-height: 3rem;
-      padding: calc(.875rem - 1px) calc(1.5rem - 1px);
-      text-decoration: none;
-      transition: all 250ms;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
-      vertical-align: baseline;
-      width: auto;
     }
 
-    #bottone5:hover,
-    #bottone5:focus {
-      border-color: rgba(0, 0, 0, 0.15);
-      box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
-      color: rgba(0, 0, 0, 0.65);
-    }
-
-    #bottone5:hover {
-      transform: translateY(-1px);
-    }
-
-    #bottone5:active {
-      background-color: #F0F0F1;
-      border-color: rgba(0, 0, 0, 0.15);
-      box-shadow: rgba(0, 0, 0, 0.06) 0 2px 4px;
-      color: rgba(0, 0, 0, 0.65);
-      transform: translateY(0);
+    .suggestion-item:hover {
+      background: #f0f0f0;
     }
   </style>
 </head>
 
 <body>
-  <button id="bottone5">Copy</button>
+  <div class="autocomplete-container">
+    <label for="comboInput">Select or Enter Value:</label>
+    <input type="text" id="comboInput" name="comboInput" placeholder="Enter value or select from list">
+    <div id="suggestions" class="suggestions"></div>
+  </div>
+
+  <script>
+    let debounceTimeout;
+
+    document.getElementById('comboInput').addEventListener('input', function() {
+      clearTimeout(debounceTimeout);
+
+      const query = this.value;
+
+      // Check if the input is empty, and hide suggestions if it is
+      if (query === '') {
+        document.getElementById('suggestions').innerHTML = '';
+        document.getElementById('suggestions').style.display = 'none';
+        return;
+      }
+
+      debounceTimeout = setTimeout(() => {
+        fetch('fetch_requestors.php?query=' + encodeURIComponent(query))
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then(requestors => {
+            // Debug: Check the response in the console
+            console.log('Requestors:', requestors);
+
+            const suggestionsDiv = document.getElementById('suggestions');
+            suggestionsDiv.innerHTML = '';
+
+            if (requestors.length > 0) {
+              suggestionsDiv.style.display = 'block';
+              requestors.forEach(requestor => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = requestor;
+                item.onclick = function() {
+                  document.getElementById('comboInput').value = requestor;
+                  suggestionsDiv.innerHTML = '';
+                  suggestionsDiv.style.display = 'none';
+                };
+                suggestionsDiv.appendChild(item);
+              });
+            } else {
+              suggestionsDiv.style.display = 'none';
+            }
+          })
+          .catch(error => console.error('Fetch error:', error));
+      }, 300); // Debounce delay in milliseconds
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!event.target.closest('.autocomplete-container')) {
+        document.getElementById('suggestions').style.display = 'none';
+      }
+    });
+  </script>
 </body>
+
 </html>

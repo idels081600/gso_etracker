@@ -69,7 +69,7 @@ $dispatched = display_vehicle_dispatched();
                 <div id="tent_summary_label">
                     Tent Summary
                 </div>
-                <h2 id="stock">On Stock</h2>
+                <h2 id="stock">Available</h2>
                 <h2 id="field">On Field</h2>
                 <h2 id="retrieval">Retrieval</h2>
                 <h2 id="long">Long Term</h2>

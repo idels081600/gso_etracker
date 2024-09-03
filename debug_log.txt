@@ -1,0 +1,28 @@
+Array
+(
+    [id] => 289
+    [SR_DR] =>  00561850
+    [Date] => 2024-08-01
+    [Supplier] => BQ BUILDERWARE
+    [Office] => GSO
+    [Description] =>  Shark Basin and Others
+    [Vehicle] =>  
+    [Plate] =>  
+    [Quantity] => 6
+    [Amount] => 2548
+)
+
+Array
+(
+    [id] => 288
+    [SR_DR] =>  00521684
+    [Date] => 2024-08-01
+    [Supplier] => BQ BUILDERWARE
+    [Office] => GSO
+    [Description] => Davies Tile Red and Others
+    [Vehicle] =>  
+    [Plate] =>  
+    [Quantity] => 4
+    [Amount] => 26360
+)
+

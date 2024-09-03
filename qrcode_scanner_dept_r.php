@@ -41,6 +41,8 @@
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
             margin-left: auto;
             margin-right: auto;
+            width: 40%;
+            height: 220px;
         }
 
         .navbar-nav .nav-link {
@@ -72,38 +74,36 @@
             margin-top: 10%;
         }
 
-        #textrow {
-            margin-top: 30px;
-            text-align: center;
-        }
-
         #texthead {
-            font-size: 40px;
-            text-align: center;
-            margin-left: 15%;
+            font-size: 2rem;
+            translate: -58% 190%;
         }
 
         #text {
-            font-size: 80px;
-            text-align: center;
-            margin-top: 10%;
-            margin-left: -20%;
+            font-size: 4rem;
+            translate: 17% 68%;
         }
 
         #label {
             font-size: 30px;
             text-align: center;
             margin-top: 10px;
-            margin-left: -10%;
+            translate: 25% 0%;
         }
 
         #arrivalButton {
             background-color: #28a745;
-            margin-left: 180px;
+            translate: 210% 155%;
         }
 
         #departureButton {
             background-color: #dc3545;
+            translate: 160% 155%;
+        }
+
+        #barcodeInput {
+            width: 110%;
+            margin-left: 10%;
         }
 
         @media screen and (max-width: 600px) {
@@ -136,7 +136,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <a class="navbar-brand" href="index_r.php">
             <img src="logo.png" alt="Logo" class="logo-img">
-            <span class="logo-text">E-Pass</span>
+            <span class="logo-text">E-Pass Slip </span>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -167,7 +167,7 @@
     </nav>
     <div class="container">
         <div class="col-md-8 square-video-container">
-            <h3 id="label">Scan your barcode here </h3>
+            <h3 id="label">Scan Qr Code</h3>
             <input type="text" id="barcodeInput" placeholder="Scan barcode here" class="form-control" autofocus>
         </div>
 
@@ -178,13 +178,13 @@
             <a href="qrcode_scanner_desk_r.php">
                 <button type="button" class="btn btn-primary" id="departureButton">Out</button>
             </a>
-            <h2 id="texthead">Welcome Back!</h2>
-            <h1 name="text" id="text"></h1>
             <form method="post" action="">
                 <!-- <button id="submit" name="approve_req_depart" >Submit</button> -->
             </form>
         </div>
         <!-- Error message container -->
+        <h2 id="texthead">Welcome Back!</h2>
+        <h1 name="text" id="text"></h1>
         <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
     </div>
     <script>
