@@ -150,7 +150,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
-                        document.getElementById("table").innerHTML = this.responseText;
+                        document.getElementById("table-body").innerHTML = this.responseText;
                     }
                 };
                 xhttp.open("GET", "data_r.php", true);
@@ -175,7 +175,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                             <th scope="col">Action</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="table-body">
                         <tr>
                             <?php
                             while ($row = mysqli_fetch_assoc($result)) {
