@@ -202,6 +202,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     ?>
                     </tbody>
 
+
                 </table>
             </div>
         </div>

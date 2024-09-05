@@ -3,7 +3,8 @@
 require_once 'dbh.php';
 require_once 'functions.php';
 $result = display_emp_status_r();
-
+$data = display_total_pass_slip();
+$total_count = $data['count'];
 if (!isset($_SESSION['username'])) {
   header("location:login_v2.php");
   exit();
@@ -51,23 +52,58 @@ if (isset($_POST['delete_all'])) {
       #my_label {
         font-size: 25px;
         margin-left: 97px;
-        margin-left: 100px !important;
         margin-bottom: 0px;
       }
 
       .container {
-        height: 70%;
         width: 95%;
       }
 
       #btns {
-        margin-left: 240px !important;
         flex-direction: row;
-        align-items: left;
-        padding: 0px;
-        margin-bottom: -20px !important;
+        /* Stack the buttons vertically on smaller screens */
+        justify-content: flex-end;
+        /* Ensure buttons align to the right */
+        margin-left: 0 !important;
+        /* Remove fixed margin */
       }
+
+      #btns a,
+      #btns button {
+        margin: 5px 0;
+        /* Add margin for better spacing */
+      }
+
+      /* Adjust the font size for smaller screens */
+      .table td,
+      .table th {
+        font-size: 14px;
+        /* Adjust font size for better readability */
+      }
+
+
+
     }
+
+    .container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      margin-top: 20px;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+      max-width: 100%;
+      /* Ensures the container doesn't overflow */
+    }
+
+    #btns {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-left: auto;
+      margin-right: 0;
+      /* Align buttons to the right side */
+    }
+
 
     body {
       background-color: #f0f0f0;
@@ -110,12 +146,14 @@ if (isset($_POST['delete_all'])) {
     }
 
     .table-container {
+      overflow-x: auto;
       max-height: 640px;
       overflow-y: auto;
       position: relative;
     }
 
     .table thead th {
+      white-space: nowrap;
       position: sticky;
       top: 0;
       background-color: #f8f9fa;
@@ -162,25 +200,25 @@ if (isset($_POST['delete_all'])) {
     <div class="row">
       <div class="col-md-9">
         <h2 id="my_label">My Employees</h2>
+        <h5 id="total_tally">Total Pass Slips: <?php echo $total_count; ?></h5>
       </div>
       <div class="col-md-3">
-        <div class="input-group mb-4 mt-5" style="display: flex; align-items: left;">
-          <div class="form-outline">
-            <div class="input-group-append" id="btns" style="margin-left: 100px; display: flex; align-items: center;">
-              <a href="export_r.php" class="btn btn-success btn-sm" style="margin: 5px;">Export</a>
-              <form method="post" action="">
-                <button type="submit" name="delete_all" class="btn btn-danger btn-sm" onclick="confirmDelete()">Delete</button>
-                <input type="hidden" name="confirm" id="confirm" value="no">
-                <input type="submit" name="delete" style="display: none;">
-              </form>
-            </div>
+        <div class="input-group mb-4 mt-5">
+          <div class="input-group-append d-flex justify-content-end" id="btns">
+            <a href="export_r.php" class="btn btn-success btn-sm mr-2">Export</a>
+            <form method="post" action="">
+              <button type="submit" name="delete_all" class="btn btn-danger btn-sm" onclick="confirmDelete()">Delete</button>
+              <input type="hidden" name="confirm" id="confirm" value="no">
+              <input type="submit" name="delete" style="display: none;">
+            </form>
           </div>
         </div>
       </div>
+
     </div>
 
     <div class="p-5 rounded shadow">
-      <div class="table-container table-responsive">
+      <div class="table-container table-responsive"> <!-- Added table-responsive class -->
         <table class="table table-hover" id="table">
           <thead>
             <tr>
@@ -209,6 +247,7 @@ if (isset($_POST['delete_all'])) {
         </table>
       </div>
     </div>
+
   </div>
 
   <script>

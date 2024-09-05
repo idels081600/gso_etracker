@@ -128,3 +128,20 @@ function display_request()
     $result = mysqli_query($conn, $query);
     return $result;
 }
+function display_total_pass_slip()
+{
+    global $conn, $username; // Add $username as a global variable
+
+    // Query to get the rows with Status 'Done' and Role 'Employee'
+    $query = "SELECT * FROM `request` WHERE `Status` = 'Done' AND `Role` = 'Employee' ORDER BY `id` DESC";
+    $result = mysqli_query($conn, $query);
+
+    // Count the number of rows returned
+    $total_count = mysqli_num_rows($result);
+
+    // Return both the result set and the total count
+    return [
+        'result' => $result,    // The result set
+        'count' => $total_count // Total number of rows
+    ];
+}
