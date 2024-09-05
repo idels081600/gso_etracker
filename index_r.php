@@ -155,7 +155,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                 };
                 xhttp.open("GET", "data_r.php", true);
                 xhttp.send();
-            }, 5000);
+            }, 1000);
         }
         loadDoc();
     </script>
