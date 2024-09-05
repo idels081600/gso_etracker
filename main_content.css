@@ -28,7 +28,6 @@
   width: 100%;
   border-radius: 15px; /* Adjust the value to control the roundness of the corners */
   margin-top: 1%;
-  
 }
 @keyframes progress {
   0% {
@@ -217,7 +216,12 @@
   font-size: 43%;
   margin-top: -6%;
 }
-#label1,#label2,#label3,#label4,#label5,#label6{
+#label1,
+#label2,
+#label3,
+#label4,
+#label5,
+#label6 {
   font-size: 0.75rem;
 }
 #label1 {
@@ -463,6 +467,21 @@ tr:hover {
 
 @media only screen and (min-width: 2240px) and (-webkit-min-device-pixel-ratio: 2),
   only screen and (min-width: 2240px) and (min-resolution: 192dpi) {
+  .table-container1 {
+    max-height: 570px; /* Set the maximum height of the container */
+    overflow-y: auto; /* Enable vertical scrolling */
+  }
+
+  .container_table {
+    background-color: #ffffff;
+    height: 55vh;
+    width: 100%;
+    border-radius: 15px; /* Adjust the value to control the roundness of the corners */
+    margin-top: 1%;
+    /* box-shadow: -6px 5px 5px 0px rgba(46, 46, 46, 0.59);
+      -webkit-box-shadow: -6px 5px 5px 0px rgba(46, 46, 46, 0.59);
+      -moz-box-shadow: -6px 5px 5px 0px rgba(46, 46, 46, 0.59); */
+  }
   [role="progressbar"] {
     --percentage: var(--value);
     --primary: #249737;
@@ -506,11 +525,11 @@ tr:hover {
   }
   #on_garage {
     color: rgb(43, 194, 83);
-    translate: 10px 145px;
+    translate: -10px 145px;
   }
   #on_field_transpo {
     color: rgb(218, 105, 0);
-    translate: -235px 145px;
+    translate: -255px 145px;
     cursor: pointer;
   }
   #label5 {

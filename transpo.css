@@ -3,7 +3,6 @@
   font-size: 14px;
   width: 100%;
 }
-
 .popup_container {
   max-width: 800px; /* Adjust the maximum width as per your design */
   margin: 0 auto; /* Center the container horizontally */
@@ -122,8 +121,8 @@
   flex-direction: column;
   margin-top: 0%;
 }
-.available_cont{
- cursor: pointer;
+.available_cont {
+  cursor: pointer;
 }
 #on_stocks {
   color: rgb(43, 194, 83);
@@ -1595,5 +1594,100 @@ th {
     border: 0.5px solid rgb(110, 110, 110);
     position: absolute;
     translate: 101% 80%;
+  }
+}
+
+@media only screen and (min-width: 2240px) and (-webkit-min-device-pixel-ratio: 2),
+  only screen and (min-width: 2240px) and (min-resolution: 192dpi) {
+  .table-container {
+    max-height: 42vh; /* Set the maximum height of the container */
+    overflow-y: auto; /* Enable vertical scrolling */
+    width: 106.5%;
+    margin-left: -45px;
+    margin-top: 1%;
+  }
+
+  .supplier_container {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 1rem; /* Use relative units for padding */
+    border-radius: 0.5rem; /* Use relative units for border-radius */
+    min-width: 150px; /* Adjusted minimum width for responsiveness */
+    width: 30vw; /* Use viewport width for responsive sizing */
+    height: 15vh; /* Fixed height; adjust as needed */
+    color: #000; /* Text color for better contrast */
+    display: flex;
+    flex-direction: column;
+    margin-top: 23.5%;
+  }
+  .tally {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 1rem; /* Use relative units for padding */
+    border-radius: 0.5rem; /* Use relative units for border-radius */
+    min-width: 150px; /* Adjusted minimum width for responsiveness */
+    width: 14vw; /* Use viewport width for responsive sizing */
+    height: 10vh; /* Fixed height; adjust as needed */
+    color: #000; /* Text color for better contrast */
+    display: flex;
+    flex-direction: column;
+  }
+  .tally_list {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 0.5%;
+    padding: 0;
+    margin-top: 0.5%;
+    list-style-type: none;
+    justify-content: start; /* Align items to the left */
+    align-items: start; /* Ensure items are aligned to the top if they overflow */
+  }
+  .supplier_container2 {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 1rem; /* Use relative units for padding */
+    border-radius: 0.5rem; /* Use relative units for border-radius */
+    min-width: 150px; /* Adjusted minimum width for responsiveness */
+    width: 30vw; /* Use viewport width for responsive sizing */
+    height: 28.5vh; /* Fixed height; adjust as needed */
+    color: #000; /* Text color for better contrast */
+    display: flex;
+    flex-direction: column;
+    margin-left: 1.3%;
+    margin-top: 0%;
+  }
+  .supplier_container1 {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 1rem; /* Use relative units for padding */
+    border-radius: 0.5rem; /* Use relative units for border-radius */
+    min-width: 350px; /* Adjusted minimum width for responsiveness */
+    width: 22.5vw; /* Use viewport width for responsive sizing */
+    height: 28.5vh; /* Fixed height; adjust as needed */
+    color: #000; /* Text color for better contrast */
+    display: flex;
+    flex-direction: column;
+    margin-top: 0%;
+    margin-left: 3.5%;
+  }
+  .supplier_list {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 0;
+    padding: 0;
+    translate: 0% -36%;
+    list-style-type: none;
+    justify-content: start; /* Align items to the left */
+    align-items: start; /* Ensure items are aligned to the top if they overflow */
+  }
+  .container_table {
+    background-color: #ffffff;
+    height: 54vh;
+    width: 100%;
+    border-radius: 15px; /* Adjust the value to control the roundness of the corners */
+    margin-top: -6.6%;
+    /* box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -webkit-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59);
+    -moz-box-shadow: -6px 5px 5px 0px rgba(0, 0, 0, 0.59); */
   }
 }
