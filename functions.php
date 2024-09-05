@@ -132,8 +132,8 @@ function display_total_pass_slip()
 {
     global $conn, $username; // Add $username as a global variable
 
-    // Query to get the rows with Status 'Done' and Role 'Employee'
-    $query = "SELECT * FROM `request` WHERE `Status` = 'Done' AND `Role` = 'Employee' ORDER BY `id` DESC";
+    // Query to get the rows where Status is either 'Done' or 'Approved' and Role is 'Employee'
+    $query = "SELECT * FROM `request` WHERE `Status` IN ('Done', 'Approved') AND `Role` = 'Employee' ORDER BY `id` DESC";
     $result = mysqli_query($conn, $query);
 
     // Count the number of rows returned
