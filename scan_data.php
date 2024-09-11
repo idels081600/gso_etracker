@@ -1,7 +1,6 @@
 <?php
 session_start();
 require_once 'db_asset.php';
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if the last scanned time is stored in the session
     if (isset($_SESSION['last_scan_time'])) {
@@ -12,9 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time_diff = $current_time - $last_scan_time;
 
         // Check if the time difference is less than 10 seconds
-        if ($time_diff < 10) {
+        if ($time_diff < 5) {
             // If less than 10 seconds, output a message indicating that the user needs to wait before scanning again
-            echo 'scan_limit_exceeded';
+            echo 'Wait for 5 seconds';
             exit; // Exit the script to prevent further processing
         }
     }
@@ -26,21 +25,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $currentTime = date("H:i");
 
     // Query to check if the scanned data exists in the request table
-    $query = "SELECT * FROM Transportation WHERE Plate_no = '$scannedData' AND Status IN ('Stand By', 'Departed') ORDER BY id DESC";
+    $query = "SELECT * FROM Transportation WHERE Plate_no = '$scannedData' AND Status IN ('Stand By', 'Departed') ORDER BY FIELD(Status, 'Departed', 'Stand By'), id DESC";
     $result = mysqli_query($conn, $query);
 
     if ($result && mysqli_num_rows($result) > 0) {
-        $row = mysqli_fetch_assoc($result);
-        $status = $row['Status'];
+        while ($row = mysqli_fetch_assoc($result)) {
+            $status = $row['Status'];
 
+            if ($status === 'Departed') {
+                // Always prioritize updating the 'Departed' status first
+                $update_query = "UPDATE Transportation 
+                                 SET Arrival = NOW(), 
+                                     Status = 'Arrived',
+                                     Status1 = 'Arrived'
+                                 WHERE Plate_no = '$scannedData' 
+                                 AND Status = 'Departed' 
+                                 ORDER BY id DESC 
+                                 LIMIT 1";
+                $update_result = mysqli_query($conn, $update_query);
+
+                if ($update_result) {
+                    // Update the Status column in the Vehicle table
+                    $update_vehicle_query = "UPDATE Vehicle 
+                                             SET Status = 'Stand By' 
+                                             WHERE Plate_no = '$scannedData'";
+                    $update_vehicle_result = mysqli_query($conn, $update_vehicle_query);
+
+                    if ($update_vehicle_result) {
+                        // Store the current time in the session after successfully updating the status
+                        $_SESSION['last_scan_time'] = time();
+                        echo 'Arrived';
+                    } else {
+                        echo 'update_vehicle_error: ' . mysqli_error($conn);
+                    }
+                } else {
+                    echo 'update_error: ' . mysqli_error($conn);
+                }
+                exit; // Stop after processing the Departed status
+            }
+        }
+
+        // If no 'Departed' entry was found or updated, handle the 'Stand By' status next
         if ($status === 'Stand By') {
-            // Scanned data exists in the database and status is 'Stand By'
-            // Update the Status column to 'Departed' in the Transportation table
             $update_query = "UPDATE Transportation 
                              SET Departure = NOW(), 
                                  Status = 'Departed',
                                  Status1 = 'Departed'
                              WHERE Plate_no = '$scannedData' 
+                             AND Status = 'Stand By' 
                              ORDER BY id DESC 
                              LIMIT 1";
             $update_result = mysqli_query($conn, $update_query);
@@ -55,44 +87,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($update_vehicle_result) {
                     // Store the current time in the session after successfully updating the status
                     $_SESSION['last_scan_time'] = time();
-                    // Status updated successfully in both tables
                     echo 'exists';
                 } else {
-                    // Error updating status in Vehicle table
                     echo 'update_vehicle_error: ' . mysqli_error($conn);
                 }
             } else {
-                // Error updating status in Transportation table
-                echo 'update_error: ' . mysqli_error($conn);
-            }
-        } elseif ($status === 'Departed') {
-            // echo 'departed';
-            $update_query = "UPDATE Transportation 
-            SET Arrival = NOW(), 
-                Status = 'Arrived',
-                Status1 = 'Arrived'
-            WHERE Plate_no = '$scannedData' 
-            ORDER BY id DESC 
-            LIMIT 1";
-            $update_result = mysqli_query($conn, $update_query);
-            if ($update_result) {
-                // Update the Status column in the Vehicle table
-                $update_vehicle_query = "UPDATE Vehicle 
-                                         SET Status = 'Stand By' 
-                                         WHERE Plate_no = '$scannedData'";
-                $update_vehicle_result = mysqli_query($conn, $update_vehicle_query);
-
-                if ($update_vehicle_result) {
-                    // Store the current time in the session after successfully updating the status
-                    $_SESSION['last_scan_time'] = time();
-                    // Status updated successfully in both tables
-                    echo 'Arrived';
-                } else {
-                    // Error updating status in Vehicle table
-                    echo 'update_vehicle_error: ' . mysqli_error($conn);
-                }
-            } else {
-                // Error updating status in Transportation table
                 echo 'update_error: ' . mysqli_error($conn);
             }
         }
