@@ -303,7 +303,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
 
                             <div class="form-element-Location">
                                 <label for="Location" id="Location-label">Location</label>
-                                <select id="Location" name="Location">
+                                <select id="Location" name="Location" required>
                                     <option value="">Select Location</option>
                                     <option value="Bool">Bool</option>
                                     <option value="Booy">Booy</option>
@@ -326,7 +326,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                             </div>
                             <div class="autocomplete-container">
                                 <label id="requestor-label">Requestor</label>
-                                <input type="text" id="comboInput" name="comboInput" placeholder="Enter value or select from list">
+                                <input type="text" id="comboInput" name="comboInput" placeholder="Enter value or select from list" required>
                                 <div id="suggestions" class="suggestions"></div>
                             </div>
                             <button class="button-39" role="button" name="save_data">Submit</button>
