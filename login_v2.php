@@ -16,6 +16,9 @@ session_start();
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 
   <style>
+    .container_logo{
+      translate: 50% 0%;
+    }
     body {
       background-color: #f0f0f0;
     }
@@ -36,6 +39,8 @@ session_start();
       margin: 0;
       padding: 0;
       background-color: rgba(0, 0, 0, 0.1);
+      border-image: fill 0 linear-gradient(#00000040, #00000000);
+
     }
 
     .background-overlay {
@@ -133,6 +138,7 @@ session_start();
       font-weight: bold;
       font-size: 24px;
       line-height: 40px;
+
     }
 
     .logo-img {
@@ -232,7 +238,7 @@ session_start();
   <link rel="canonicalize" href="https://gso.etracker.tagbilaran.gov.ph">
 </head>
 <nav class="navbar navbar-expand-lg fixed-top">
-  <div class="container">
+  <div class="container_logo">
     <a class="navbar-brand" href="login_v2.php">
       <img src="logo.png" alt="Logo" class="logo-img">
       <span class="logo-text">E-CGSO </span>
