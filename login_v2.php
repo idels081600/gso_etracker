@@ -16,9 +16,10 @@ session_start();
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 
   <style>
-    .container_logo{
+    .container_logo {
       translate: 70% 0%;
     }
+
     body {
       background-color: #f0f0f0;
     }
@@ -152,6 +153,7 @@ session_start();
       .background-div {
         display: none;
         /* Hide the desktop background */
+        border-image: fill 0 linear-gradient(#00000040, #00000000);
       }
 
       .background-div-mobile {
