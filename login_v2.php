@@ -17,7 +17,7 @@ session_start();
 
   <style>
     .container_logo{
-      translate: 50% 0%;
+      translate: 60% 0%;
     }
     body {
       background-color: #f0f0f0;
