@@ -21,7 +21,7 @@ function display_tent_status()
     global $conn;
 
     // Query to get count of 'On Stock' tents
-    $query = "SELECT COUNT(*) AS stock_count FROM `tent_status` WHERE `Status` = 'On Stock'";
+    $query = "SELECT COUNT(*) AS stock_count FROM `tent_status` WHERE `Status` = 'Retrieved'";
     $result = mysqli_query($conn, $query);
     if (!$result) {
         die("Query failed: " . mysqli_error($conn));
