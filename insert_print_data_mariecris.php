@@ -2,59 +2,60 @@
 // Include your database connection file
 require 'db.php';
 
-// Check if IDs are received via POST
-if (isset($_POST['ids'])) {
-    // Get the IDs from the POST request
-    $selectedIDs = $_POST['ids'];
+// Check if data is received via POST
+if (isset($_POST['data'])) {
+    // Decode the JSON data sent via POST
+    $tableData = json_decode($_POST['data'], true);
 
-    // Prepare a placeholder string for the IN clause
-    $placeholders = rtrim(str_repeat('?, ', count($selectedIDs)), ', ');
+    // Check if tableData is valid
+    if (!is_array($tableData) || count($tableData) === 0) {
+        echo json_encode(["status" => "error", "message" => "No valid data received."]);
+        exit;
+    }
 
-    // Prepare SQL statement to search for data based on the selected IDs in the sir_bayong table
-    $stmt = $conn->prepare("SELECT SR_DR, date, department, store, activity, no_of_pax, amount,total FROM Maam_mariecris WHERE id IN ($placeholders)");
+    // Prepare SQL statement for inserting data into Maam_mariecris_print table
+    $insertStmt = $conn->prepare("INSERT INTO Maam_mariecris_print (SR_DR, date, department, store, activity, no_of_pax, amount, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
-    // Bind parameters to the prepared statement
-    $types = str_repeat('i', count($selectedIDs)); // Assuming IDs are integers
-    $stmt->bind_param($types, ...$selectedIDs);
+    // Check if the statement was prepared successfully
+    if (!$insertStmt) {
+        echo json_encode(["status" => "error", "message" => "Failed to prepare insert statement."]);
+        exit;
+    }
 
-    // Execute the prepared statement
-    $stmt->execute();
+    // Loop through each row of the received data and insert into the Maam_mariecris_print table
+    foreach ($tableData as $row) {
+        // Remove peso sign (₱) and any commas from the amount and total fields
+        $amount = str_replace(['₱', ','], '', $row['amount']);
+        $total = str_replace(['₱', ','], '', $row['total']);
 
-    // Get the result set
-    $result = $stmt->get_result();
-
-    // Prepare SQL statement for inserting data into sir_bayong_print table
-    $insertStmt = $conn->prepare("INSERT INTO Maam_mariecris_print (SR_DR, date, department, store, activity, no_of_pax, amount,total) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-
-    // Loop through each row of the result set and insert into the sir_bayong_print table
-    while ($row = $result->fetch_assoc()) {
-        // Check if the data already exists in sir_bayong_print table
+        // Check if the data already exists in Maam_mariecris_print table
         $checkStmt = $conn->prepare("SELECT COUNT(*) FROM Maam_mariecris_print WHERE SR_DR = ? AND date = ? AND department = ? AND store = ? AND activity = ? AND no_of_pax = ? AND amount = ? AND total = ?");
-        $checkStmt->bind_param("ssssssis", $row['SR_DR'], $row['date'], $row['department'], $row['store'], $row['activity'], $row['no_of_pax'], $row['amount'], $row['total']);
+        $checkStmt->bind_param("ssssssis", $row['SR_DR'], $row['date'], $row['department'], $row['store'], $row['activity'], $row['no_of_pax'], $amount, $total);
         $checkStmt->execute();
         $checkStmt->bind_result($count);
         $checkStmt->fetch();
         $checkStmt->close();
 
-        // If the data doesn't exist, insert it into the sir_bayong_print table
+        // If the data doesn't exist, insert it into the Maam_mariecris_print table
         if ($count == 0) {
             // Bind parameters to the prepared statement
-            $insertStmt->bind_param("ssssssis", $row['SR_DR'], $row['date'], $row['department'], $row['store'], $row['activity'], $row['no_of_pax'], $row['amount'], $row['total']);
+            $insertStmt->bind_param("ssssssis", $row['SR_DR'], $row['date'], $row['department'], $row['store'], $row['activity'], $row['no_of_pax'], $amount, $total);
 
             // Execute the prepared statement to insert data
-            $insertStmt->execute();
+            if (!$insertStmt->execute()) {
+                echo json_encode(["status" => "error", "message" => "Insert failed for data: " . $row['SR_DR']]);
+            }
         }
     }
 
-    // Close the prepared statements
-    $stmt->close();
+    // Close the prepared statement
     $insertStmt->close();
 
     // Return success message
     echo json_encode(["status" => "success", "message" => "Data successfully added to print."]);
 } else {
-    // Return error message if no IDs are received
-    echo json_encode(["status" => "error", "message" => "No IDs received."]);
+    // Return error message if no data is received
+    echo json_encode(["status" => "error", "message" => "No data received."]);
 }
 
 // Close the database connection

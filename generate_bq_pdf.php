@@ -14,8 +14,8 @@ foreach ($payment as $row) {
     $paymentAmounts[] = $row['amount'];
 }
 
-// Create a new PDF instance
-$pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+// Create a new PDF instance with landscape orientation
+$pdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
 // Set document information
 $pdf->SetCreator(PDF_CREATOR);
@@ -23,7 +23,6 @@ $pdf->SetAuthor('Your Name');
 $pdf->SetTitle('Invoice');
 $pdf->SetSubject('Invoice Document');
 $pdf->SetKeywords('TCPDF, PDF, invoice');
-
 
 // Set header and footer fonts
 $pdf->setHeaderFont(array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
@@ -33,12 +32,12 @@ $pdf->setFooterFont(array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
 $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
 
 // Set margins
-$pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
-$pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
-$pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+$pdf->SetMargins(10, 10, 10); // Adjusted margins for landscape
+$pdf->SetHeaderMargin(10);
+$pdf->SetFooterMargin(10);
 
 // Set auto page breaks
-$pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+$pdf->SetAutoPageBreak(TRUE, 15);
 
 // Set image scale factor
 $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
@@ -67,85 +66,64 @@ $invoiceDetails = '
 
 $pdf->writeHTML($invoiceDetails, true, false, true, false, '');
 
-// Add table with items
+// Define the table header in a reusable variable (copied from the first script)
+$tableHeader = '
+<thead>
+    <tr>
+        <th style="width:14.3%; background-color: #009532; color: #ffffff;">SR/DR</th>
+        <th style="width:14.3%; background-color: #009532; color: #ffffff;">Date</th>
+        <th style="width:14.3%; background-color: #009532; color: #ffffff;">Department</th>
+        <th style="width:14.3%; background-color: #009532; color: #ffffff;">Activity</th>
+        <th style="width:14.3%; background-color: #009532; color: #ffffff;">Description</th>
+        <th style="width:14.3%; background-color: #009532; color: #ffffff;">Quantity</th>
+        <th style="width:14.3%; background-color: #009532; color: #ffffff;">Amount</th>
+    </tr>
+</thead>';
+
+// Start the table body
 $html = '
 <style>
-.table-container1 {
-    position: relative;
-    max-height: 590px;
-    overflow-y: auto;
-    overflow-x: auto;
-    width: 100%;
-}
-
-.table_tent1 {
-    border-collapse: collapse;
-    width: 100%;
-    margin-top: 20px;
-}
-
-th {
-    background-color: #009532;
-    color: #ffffff;
-    text-align: left;
-    padding: 8px;
-}
-
 th, td {
     font-weight: normal;
-    font-size: 11px;
+    font-size: 10px;
     border: 1px solid #dddddd;
     padding: 8px;
 }
-
-td {
-    text-align: left;
-}
 </style>
 
-<div class="table-container1">
-    <table id="table_tent1" class="table_tent1">
-        <thead>
-            <tr>
-            <th>SR/DR</th>
-            <th>Date</th>
-            <th>Department</th>
-            <th>Activity</th>
-            <th>Description</th>
-            <th>Quantity</th>
-            <th>Amount</th>
-            </tr>
-        </thead>
-        <tbody>';
+<table cellspacing="0" cellpadding="5" border="1">';
+
+// Add the header
+$html .= $tableHeader . '<tbody>';
 
 // Calculate total amount
 $totalAmount = 0;
-
 mysqli_data_seek($result, 0);
+
+// Loop through each row of data
 while ($row = mysqli_fetch_assoc($result)) {
-    $html .= '<tr data-id="' . $row['id'] . '">
-    <td>' . $row["SR_DR"] . '</td>
-    <td>' . $row["date"] . '</td>
-    <td>' . $row["requestor"] . '</td>
-    <td>' . $row["activity"] . '</td>
-    <td>' . $row["description"] . '</td>
-    <td>' . $row["quantity"] . '</td>
-    <td>₱' . number_format($row["amount"], 2) . '</td>
+    $html .= '<tr>
+                <td>' . $row["SR_DR"] . '</td>
+                <td>' . $row["date"] . '</td>
+                <td>' . $row["requestor"] . '</td>
+                <td>' . $row["activity"] . '</td>
+                <td>' . $row["description"] . '</td>
+                <td>' . $row["quantity"] . '</td>
+                <td>₱' . number_format($row["amount"], 2) . '</td>
             </tr>';
     $totalAmount += $row["amount"];
 }
 
 // Add payment details to HTML
 $html .= '<tr>
-<td colspan="6" style="font-weight: bold;">Payment Details</td>
-<td style="font-weight: bold;">Amount</td>
-</tr>';
+            <td colspan="7" style="font-weight: bold;">Payment Details</td>
+          </tr>';
 
 foreach ($paymentNames as $key => $paymentName) {
     $html .= '<tr>
-    <td colspan="6">' . $paymentName . '</td>
-    <td>₱' . number_format($paymentAmounts[$key], 2) . '</td>
-</tr>';
+                <td colspan="6">' . $paymentName . '</td>
+                <td>₱' . number_format($paymentAmounts[$key], 2) . '</td>
+              </tr>';
 }
 
 // Calculate final total amount
@@ -167,11 +145,10 @@ $html .= '<tr>
             <td style="font-weight: bold;">₱' . number_format($finalTotalAmount, 2) . '</td>
           </tr>';
 
-$html .= '</tbody>
-          </table>
-        </div>';
+$html .= '</tbody></table>';
 
+// Write the remaining part of the table
 $pdf->writeHTML($html, true, false, true, false, '');
 
 // Close and output PDF document
-$pdf->Output('sample.pdf', 'I');
+$pdf->Output('sample_bq_landscape.pdf', 'I');

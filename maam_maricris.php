@@ -186,6 +186,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
         <div class="popup5" id="popup5">
             <div class="close-btn">&times;</div>
             <button id="delete_print" class="button-47">Delete</button>
+            <button id="delete_print_all" class="button-48">Delete All</button>
             <div class="payment_container">
                 <table id="table_print" class="table_print">
                     <thead>
@@ -201,27 +202,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-                        // Reset the result pointer and re-fetch the rows to display them
-                        mysqli_data_seek($result2, 0);
-                        while ($row = mysqli_fetch_assoc($result2)) { ?>
-                            <tr class="clickable-row3" data-rfq-id="<?php echo $row['id']; ?>"> <!-- Add data-rfq-id attribute with the row's ID -->
-                                <td><?php echo $row["SR_DR"]; ?></td>
-                                <td><?php echo $row["date"]; ?></td>
-                                <td><?php echo $row["department"]; ?></td>
-                                <td><?php echo $row["store"]; ?></td>
-                                <td><?php echo $row["activity"]; ?></td>
-                                <td><?php echo $row["no_of_pax"]; ?></td>
-                                <td><?php echo '₱' . number_format($row["amount"], 2); ?></td>
-                                <td><?php echo $row["total"]; ?></td>
-                            </tr>
-                        <?php } ?>
+
                     </tbody>
 
                 </table>
             </div>
         </div>
-
     </div>
     <div class="container_table">
         <input type="text" id="date4" name="date4" placeholder="Start..">
@@ -427,39 +413,50 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
 
                 return selectedIDs;
             }
-
-            // Add click event listener to the addtoprint button
             $("#addtoprint").on("click", function() {
-                var selectedIDs = getSelectedIDs(); // Get the IDs of the currently selected rows
+                var tableData = [];
 
-                // Log the selected IDs to the console
-                console.log("Selected IDs:", selectedIDs);
+                // Collect all visible rows from the table_tent1 and extract their data
+                $("#table_tent1 tbody tr:visible").each(function() {
+                    var rowData = {
+                        SR_DR: $(this).find('td:eq(0)').text(),
+                        date: $(this).find('td:eq(1)').text(),
+                        department: $(this).find('td:eq(2)').text(),
+                        store: $(this).find('td:eq(3)').text(),
+                        activity: $(this).find('td:eq(4)').text(),
+                        no_of_pax: $(this).find('td:eq(5)').text(),
+                        amount: $(this).find('td:eq(6)').text(),
+                        total: $(this).find('td:eq(7)').text()
+                    };
+                    tableData.push(rowData);
+                });
 
-                // Check if selectedIDs has data
-                if (selectedIDs.length === 0) {
-                    console.log("No data to send.");
+                // Check if there's data in the table
+                if (tableData.length === 0) {
                     alert("No data to send.");
                     return;
                 }
 
-                // Send the IDs to the server via AJAX
-                $.ajax({
-                    type: "POST",
-                    url: "insert_print_data_mariecris.php", // Update with the file that handles data insertion
-                    data: {
-                        ids: selectedIDs // Send the IDs array to the server
-                    },
-                    success: function(response) {
-                        alert("Data successfully added to print.");
-
-                        // Reload the page after successful data upload
-                        location.reload();
-                    },
-                    error: function() {
+                // Send the data to the server via AJAX
+                $.post("insert_print_data_mariecris.php", {
+                        data: JSON.stringify(tableData) // Send the data as a JSON string
+                    })
+                    .done(function(response) {
+                        response = JSON.parse(response); // Parse the JSON response if necessary
+                        console.log("Server Response:", response); // Log the server response
+                        if (response.status === "success") {
+                            alert(response.message); // Display success message
+                            location.reload(); // Reload the page after success
+                        } else {
+                            alert(response.message); // Display failure message
+                        }
+                    })
+                    .fail(function(jqXHR, textStatus, errorThrown) {
+                        console.error("AJAX Error:", textStatus, errorThrown); // Log detailed error information
                         alert("An error occurred while adding data to print.");
-                    }
-                });
+                    });
             });
+
 
 
             // Function to add click event listeners to table rows
@@ -1007,6 +1004,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     });
 </script>
 <script>
+    document.getElementById('delete_print_all').addEventListener('click', function() {
+        if (confirm('Are you sure you want to delete all records?')) {
+            // Send request to server to delete all records
+            fetch('delete_all_print_maam_maricris.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: 'action=delete_all'
+                })
+                .then(response => response.text())
+                .then(data => {
+                    if (data === 'success') {
+                        alert('All records deleted successfully.');
+                        location.reload(); // Reload the page to refresh the table
+                    } else {
+                        alert('Error deleting records.');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    });
+</script>
+<script>
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelector("#save_supplier").addEventListener("click", function(event) {
             event.preventDefault(); // Prevent default form submission
@@ -1100,6 +1121,53 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
         });
     });
 </script>
+<script>
+    $(document).ready(function() {
+        // Trigger to open popup5 and fetch data
+        $("#view_print").on("click", function() {
+            // Show the popup immediately
+            $("#popup5").show();
 
+            // Introduce a delay of 1 second before fetching the data
+            setTimeout(function() {
+                // Fetch data from the server after 1 second
+                $.ajax({
+                    url: 'fetch_print_data_mariecris.php', // URL to fetch data
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        // Clear the existing table body
+                        $("#table_print tbody").empty();
+
+                        // Loop through the data and append rows to the table
+                        data.forEach(function(row) {
+                            $("#table_print tbody").append(`
+                        <tr class="clickable-row3" data-rfq-id="${row.id}">
+                            <td>${row.SR_DR}</td>
+                            <td>${row.date}</td>
+                            <td>${row.department}</td>
+                            <td>${row.store}</td>
+                            <td>${row.activity}</td>
+                            <td>${row.no_of_pax}</td>
+                            <td>₱${parseFloat(row.amount).toFixed(2)}</td>
+                            <td>${row.total}</td>
+                        </tr>
+                    `);
+                        });
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error("Error fetching data:", textStatus, errorThrown);
+                        alert("Failed to load data.");
+                    }
+                });
+            }, 1000); // 1 second delay
+        });
+
+        // Close the popup
+        $(".close-btn").on("click", function() {
+            $("#popup5").hide();
+        });
+    });
+</script>
 
 </html>

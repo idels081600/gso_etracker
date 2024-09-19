@@ -581,7 +581,7 @@ tr:hover {
 }
 .payment_container {
   position: relative;
-  max-height: 340px; /* Adjust the max height as needed */
+  max-height: 660px; /* Adjust the max height as needed */
   overflow-y: auto;
   width: 90%; /* Ensure the table wrapper takes full width */
   margin-left: 17px;
@@ -660,11 +660,11 @@ td {
 .popup5 {
   position: absolute;
   top: -150%;
-  left: 20%;
+  left: 50%;
   opacity: 0;
   transform: translate(-50%, -50%) scale(1.25);
-  width: 30%;
-  height: 45%;
+  width: 60%;
+  height: 80%;
   backdrop-filter: blur(10px) saturate(148%);
   -webkit-backdrop-filter: blur(10px) saturate(148%);
   background-color: rgb(233, 233, 233);
@@ -717,7 +717,6 @@ td {
   touch-action: manipulation;
   width: 90%;
 }
-
 .button-47 {
   position: absolute;
   background-color: #aa1d13;
@@ -740,9 +739,32 @@ td {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  width: 20%;
+  width: 10%;
 }
-
+.button-48 {
+  position: absolute;
+  background-color: #aa1d13;
+  border: 1px solid #aa1d13;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 15px;
+  text-align: center;
+  transform: translate(140%, 40%);
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 10%;
+}
 .clickable-row3 {
   cursor: pointer;
 }

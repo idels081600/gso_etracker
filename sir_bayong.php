@@ -203,6 +203,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
         <div class="popup5" id="popup5">
             <div class="close-btn">&times;</div>
             <button id="delete_print" class="button-47">Delete</button>
+            <button id="delete_print_all" class="button-48">Delete All</button>
             <div class="payment_container">
                 <table id="table_print" class="table_print">
                     <thead>
@@ -219,22 +220,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-                        // Reset the result pointer and re-fetch the rows to display them
-                        mysqli_data_seek($result2, 0);
-                        while ($row = mysqli_fetch_assoc($result2)) { ?>
-                            <tr class="clickable-row3" data-rfq-id="<?php echo $row['id']; ?>"> <!-- Add data-rfq-id attribute with the row's ID -->
-                                <td><?php echo $row["SR_DR"]; ?></td>
-                                <td><?php echo $row["Date"]; ?></td>
-                                <td><?php echo $row["Supplier"]; ?></td>
-                                <td><?php echo $row["Office"]; ?></td>
-                                <td><?php echo $row["Description"]; ?></td>
-                                <td><?php echo $row["Vehicle"]; ?></td>
-                                <td><?php echo $row["Plate"]; ?></td>
-                                <td><?php echo $row["Quantity"]; ?></td>
-                                <td><?php echo '₱' . number_format($row["Amount"], 2); ?></td>
-                            </tr>
-                        <?php } ?>
+
                     </tbody>
 
                 </table>
@@ -449,40 +435,51 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
 
                 return selectedIDs;
             }
-
-            $("#addtoprint").on("click", function() {
-                var selectedIDs = getSelectedIDs(); // Get the IDs of the currently selected rows
-
-                // Log the selected IDs to the console
-                console.log("Selected IDs:", selectedIDs);
-
-                // Check if selectedIDs has data
-                if (selectedIDs.length === 0) {
-                    console.log("No data to send.");
-                    alert("No data to send.");
-                    return;
-                }
-
-                // Send the IDs to the server via AJAX
-                $.post("insert_print_data.php", {
-                        ids: selectedIDs
-                    })
-                    .done(function(response) {
-                        console.log("Server Response:", response); // Log the server response
-                        // Check if the response indicates success
-                        if (response.success) {
-                            alert(response.message); // Display success message
-                            location.reload(); // Reload the page
-                        } else {
-                            alert(response.message); // Display failure message
-                        }
-                    })
-                    .fail(function(jqXHR, textStatus, errorThrown) {
-                        console.error("AJAX Error:", textStatus, errorThrown); // Log detailed error information
-                        alert("An error occurred while adding data to print.");
+            $(document).ready(function() {
+                // Function to handle adding all the displayed data to print
+                $("#addtoprint").on("click", function() {
+                    // Collect all visible rows from the table_tent1 and extract their data
+                    var tableData = [];
+                    $("#table_tent1 tbody tr:visible").each(function() {
+                        var rowData = {
+                            SR_DR: $(this).find('td:eq(0)').text(),
+                            Date: $(this).find('td:eq(1)').text(),
+                            Supplier: $(this).find('td:eq(2)').text(),
+                            Office: $(this).find('td:eq(3)').text(),
+                            Description: $(this).find('td:eq(4)').text(),
+                            Vehicle: $(this).find('td:eq(5)').text(),
+                            Plate: $(this).find('td:eq(6)').text(),
+                            Quantity: $(this).find('td:eq(7)').text(),
+                            Amount: $(this).find('td:eq(8)').text()
+                        };
+                        tableData.push(rowData);
                     });
-            });
 
+                    // Check if there's data in the table
+                    if (tableData.length === 0) {
+                        alert("No data to send.");
+                        return;
+                    }
+
+                    // Send the data to the server via AJAX
+                    $.post("insert_print_data.php", {
+                            data: JSON.stringify(tableData) // Send the data as a JSON string
+                        })
+                        .done(function(response) {
+                            console.log("Server Response:", response); // Log the server response
+                            if (response.success) {
+                                alert(response.message); // Display success message
+                                location.reload(); // Reload the page
+                            } else {
+                                alert(response.message); // Display failure message
+                            }
+                        })
+                        .fail(function(jqXHR, textStatus, errorThrown) {
+                            console.error("AJAX Error:", textStatus, errorThrown); // Log detailed error information
+                            alert("An error occurred while adding data to print.");
+                        });
+                });
+            });
 
 
             // Function to add click event listeners to table rows
@@ -904,6 +901,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     });
 </script>
 <script>
+    document.getElementById('delete_print_all').addEventListener('click', function() {
+        if (confirm('Are you sure you want to delete all records?')) {
+            // Send request to server to delete all records
+            fetch('delete_all_print.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: 'action=delete_all'
+                })
+                .then(response => response.text())
+                .then(data => {
+                    if (data === 'success') {
+                        alert('All records deleted successfully.');
+                        location.reload(); // Reload the page to refresh the table
+                    } else {
+                        alert('Error deleting records.');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    });
+</script>
+<script>
     let selectedRfqIds1 = [];
 
     function addRowClickEventListeners() {
@@ -1103,7 +1124,56 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
         populateSuppliersDropdown();
     });
 </script>
+<script>
+    $(document).ready(function() {
+        // Trigger to open popup5 and fetch data
+        $("#view_print").on("click", function() {
+            // Show the popup immediately
+            $("#popup5").show();
 
+            // Introduce a delay of 1 second before fetching the data
+            setTimeout(function() {
+                // Fetch data from the server after 1 second
+                $.ajax({
+                    url: 'fetch_print_data_bayong.php', // URL to fetch data
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        // Clear the existing table body
+                        $("#table_print tbody").empty();
+
+                        // Loop through the data and append rows to the table
+                        data.forEach(function(row) {
+                            $("#table_print tbody").append(`
+                        <tr class="clickable-row3" data-rfq-id="${row.id}">
+                            <td>${row.SR_DR}</td>
+                            <td>${row.Date}</td>
+                            <td>${row.Supplier}</td>
+                            <td>${row.Office}</td>
+                            <td>${row.Description}</td>
+                            <td>${row.Vehicle}</td>
+                              <td>${row.Plate}</td>
+                              <td>${row.Quantity}</td>
+                            <td>₱${parseFloat(row.Amount).toFixed(2)}</td>
+                            
+                        </tr>
+                    `);
+                        });
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error("Error fetching data:", textStatus, errorThrown);
+                        alert("Failed to load data.");
+                    }
+                });
+            }, 1000); // 1 second delay
+        });
+
+        // Close the popup
+        $(".close-btn").on("click", function() {
+            $("#popup5").hide();
+        });
+    });
+</script>
 
 
 </html>

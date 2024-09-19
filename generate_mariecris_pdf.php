@@ -2,7 +2,7 @@
 require_once 'db.php'; // Assuming this file contains your database connection code
 require_once 'display_data.php';
 $result = display_data_maam_mariecris_print();
-$payment =  display_data_Maam_mariecris_payments();
+$payment = display_data_Maam_mariecris_payments();
 require_once('vendor/autoload.php');
 
 $paymentNames = array(); // Array to store payment names
@@ -14,8 +14,8 @@ foreach ($payment as $row) {
     $paymentAmounts[] = $row['amount'];
 }
 
-// Create a new PDF instance
-$pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+// Create a new PDF instance with landscape orientation
+$pdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
 // Set document information
 $pdf->SetCreator(PDF_CREATOR);
@@ -23,7 +23,6 @@ $pdf->SetAuthor('Your Name');
 $pdf->SetTitle('Invoice');
 $pdf->SetSubject('Invoice Document');
 $pdf->SetKeywords('TCPDF, PDF, invoice');
-
 
 // Set header and footer fonts
 $pdf->setHeaderFont(array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
@@ -33,12 +32,12 @@ $pdf->setFooterFont(array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
 $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
 
 // Set margins
-$pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
-$pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
-$pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+$pdf->SetMargins(10, 10, 10); // Adjusted margins for landscape
+$pdf->SetHeaderMargin(10);
+$pdf->SetFooterMargin(10);
 
 // Set auto page breaks
-$pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+$pdf->SetAutoPageBreak(TRUE, 15);
 
 // Set image scale factor
 $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
@@ -67,64 +66,44 @@ $invoiceDetails = '
 
 $pdf->writeHTML($invoiceDetails, true, false, true, false, '');
 
-// Add table with items
+// Define the table header in a reusable variable
+$tableHeader = '
+<thead>
+    <tr>
+        <th style="width:12.5%; background-color: #009532; color: #ffffff;">SR/DR</th>
+        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Date</th>
+        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Quantity</th>
+        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Description</th>
+        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Office</th>
+        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Vehicle</th>
+        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Plate</th>
+        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Amount</th>
+    </tr>
+</thead>';
+
+// Start the table body
 $html = '
 <style>
-.table-container1 {
-    position: relative;
-    max-height: 590px;
-    overflow-y: auto;
-    overflow-x: auto;
-    width: 100%;
-}
-
-.table_tent1 {
-    border-collapse: collapse;
-    width: 100%;
-    margin-top: 20px;
-}
-
-th {
-    background-color: #009532;
-    color: #ffffff;
-    text-align: left;
-    padding: 8px;
-}
-
 th, td {
     font-weight: normal;
-    font-size: 11px;
+    font-size: 10px;
     border: 1px solid #dddddd;
     padding: 8px;
 }
-
-td {
-    text-align: left;
-}
 </style>
 
-<div class="table-container1">
-    <table id="table_tent1" class="table_tent1">
-        <thead>
-            <tr>
-                <th>SR/DR</th>
-                <th>Date</th>
-                <th>Quantity</th>
-                <th>Description</th>
-                <th>Office</th>
-                <th>Vehicle</th>
-                <th>Plate</th>
-                <th>Amount</th>
-            </tr>
-        </thead>
-        <tbody>';
+<table cellspacing="0" cellpadding="5" border="1">';
+
+// Add the header
+$html .= $tableHeader . '<tbody>';
 
 // Calculate total amount
 $totalAmount = 0;
-
 mysqli_data_seek($result, 0);
+
+// Loop through each row of data
 while ($row = mysqli_fetch_assoc($result)) {
-    $html .= '<tr data-id="' . $row['id'] . '">
+    $html .= '<tr>
                 <td>' . $row["SR_DR"] . '</td>
                 <td>' . $row["date"] . '</td>
                 <td>' . $row["department"] . '</td>
@@ -135,6 +114,14 @@ while ($row = mysqli_fetch_assoc($result)) {
                 <td>₱' . number_format($row["total"], 2) . '</td>
             </tr>';
     $totalAmount += $row["total"];
+
+    // Check for page break and repeat the header if necessary
+    if (($pdf->getY() + 10) > $pdf->getPageHeight() - PDF_MARGIN_BOTTOM) {
+        $html .= '</tbody></table>';
+        $pdf->writeHTML($html, true, false, true, false, '');
+        $pdf->AddPage();
+        $html = '<table cellspacing="0" cellpadding="5" border="1">' . $tableHeader . '<tbody>';
+    }
 }
 
 // Add payment details to HTML
@@ -168,11 +155,10 @@ $html .= '<tr>
             <td style="font-weight: bold;">₱' . number_format($finalTotalAmount, 2) . '</td>
           </tr>';
 
-$html .= '</tbody>
-          </table>
-        </div>';
+$html .= '</tbody></table>';
 
+// Write the remaining part of the table
 $pdf->writeHTML($html, true, false, true, false, '');
 
 // Close and output PDF document
-$pdf->Output('sample.pdf', 'I');
+$pdf->Output('sample_landscape.pdf', 'I');
