@@ -35,6 +35,9 @@ if (isset($_POST['data'])) {
         // Remove the peso sign (₱) and any commas from the Amount field
         $Amount = str_replace(['₱', ','], '', $row['Amount']);
 
+        // Log the data being inserted
+        error_log("Inserting Data: SR_DR: $SR_DR, Date: $Date, Supplier: $Supplier, Office: $Office, Description: $Description, Vehicle: $Vehicle, Plate: $Plate, Quantity: $Quantity, Amount: $Amount");
+
         // Execute the insert statement for each row
         $stmt->execute();
     }

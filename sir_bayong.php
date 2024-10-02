@@ -228,11 +228,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
         </div>
     </div>
     <div class="container_table">
-        <input type="text" id="date4" name="date4" placeholder="Start.." value=" ">
-        <input type="text" id="date3" name="date3" placeholder="End.." value=" ">
+        <input type="text" id="date4" name="date4" placeholder="Start...">
+        <input type="text" id="date3" name="date3" placeholder="End...">
         <button class="button-50" id="add_supplier">Add Supplier</button>
+        <button class="button-51" id="filter">Filter</button>
         <input type="text" id="search-input" placeholder="Search...">
-        <input type="number" id="deductions" name="deductions" placeholder=" Payments.." value=" ">
+        <select id="supplier-select" name="supplier">
+            <option value="">Select Supplier</option>
+            <?php
+            // Assuming you have a list of suppliers from the database
+            $suppliers_query = "SELECT name FROM Supplier"; // Update with your actual query and table name
+            $suppliers_result = mysqli_query($conn, $suppliers_query);
+
+            while ($row = mysqli_fetch_assoc($suppliers_result)) {
+                echo '<option value="' . $row['name'] . '">' . $row['name'] . '</option>';
+            }
+            ?>
+        </select>
+
         <div class="table-container1">
             <table id="table_tent1" class="table_tent1">
                 <thead>
@@ -253,7 +266,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                     // Reset the result pointer and re-fetch the rows to display them
                     mysqli_data_seek($result, 0);
                     while ($row = mysqli_fetch_assoc($result)) { ?>
-                        <tr class="clickable-row" data-rfq-id="<?php echo $row['id']; ?>"> <!-- Add data-rfq-id attribute with the row's ID -->
+                        <tr class="clickable-row" data-rfq-id="<?php echo $row['id']; ?>">
                             <td><?php echo $row["SR_DR"]; ?></td>
                             <td><?php echo $row["Date"]; ?></td>
                             <td><?php echo $row["Supplier"]; ?></td>
@@ -266,7 +279,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                         </tr>
                     <?php } ?>
                 </tbody>
-
             </table>
         </div>
     </div>
@@ -285,7 +297,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
 
         });
     </script>
+    <script>
+        document.getElementById("filter").addEventListener("click", function() {
+            // Get the selected date range
+            var startDateInput = document.getElementById('date4').value;
+            var endDateInput = document.getElementById('date3').value;
 
+            // Convert input values to Date objects if they are set
+            var startDate = startDateInput ? new Date(startDateInput) : null;
+            var endDate = endDateInput ? new Date(endDateInput) : null;
+
+            // Get the selected supplier
+            var selectedSupplier = document.getElementById("supplier-select").value.toLowerCase();
+
+            // Get all table rows
+            var tableRows = document.querySelectorAll("#table_tent1 tbody tr");
+
+            // Loop through each row and filter
+            tableRows.forEach(function(row) {
+                // Get the row's date and supplier values
+                var rowDate = new Date(row.cells[1].textContent); // Assuming date is in the 2nd column
+                var rowSupplier = row.cells[2].textContent.toLowerCase(); // Assuming supplier is in the 3rd column
+
+                // Check if the row date falls within the range
+                var dateInRange = (!startDate || rowDate >= startDate) && (!endDate || rowDate <= endDate);
+
+                // Check if the supplier matches or if no supplier is selected
+                var supplierMatch = !selectedSupplier || rowSupplier === selectedSupplier;
+
+                // Display the row only if both conditions are met
+                if (dateInRange && supplierMatch) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        });
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -316,68 +364,68 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     </script>
     <script>
         $(document).ready(function() {
-            // Function to perform search
             var date4Input = document.getElementById('date4');
             var date3Input = document.getElementById('date3');
+            var input = document.getElementById('search-input');
+            var table = document.getElementById('table_tent1');
+            var totalAmountElement = document.getElementById('total-amount');
+            var deductionsInput = document.getElementById('deductions');
+            var rows = table.getElementsByTagName('tr');
 
-            date4Input.addEventListener('change', filterTable);
-            date3Input.addEventListener('change', filterTable);
-
-            function filterTable() {
+            // Unified filter function that combines both date filtering and search filtering
+            function applyFilters() {
                 var start = new Date(date4Input.value);
                 var end = new Date(date3Input.value);
+                var searchFilter = input.value.toLowerCase();
 
                 var tableRows = document.querySelectorAll('#table_tent1 tbody tr');
 
                 tableRows.forEach(function(row) {
-                    var rowDate = new Date(row.cells[1].textContent); // Assuming date is in the second column
-                    if (rowDate >= start && rowDate <= end) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
+                    var rowDate = new Date(row.cells[1].textContent);
+                    var rowVisible = true;
+
+                    // Apply date range filter
+                    if (date4Input.value && date3Input.value) {
+                        if (rowDate < start || rowDate > end) {
+                            rowVisible = false;
+                        }
                     }
+
+                    // Apply search filter
+                    if (rowVisible && searchFilter) {
+                        rowVisible = false;
+                        for (var i = 0; i < row.cells.length; i++) {
+                            var cellText = row.cells[i].textContent.toLowerCase();
+                            if (cellText.indexOf(searchFilter) > -1) {
+                                rowVisible = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Show or hide the row based on the filters
+                    row.style.display = rowVisible ? '' : 'none';
                 });
 
+                // Update total amount after applying filters
                 updateTotalAmount();
             }
 
-
-            function loadInitialData() {
-                // AJAX request to fetch initial data of the table
-                $.ajax({
-                    type: "GET",
-                    url: "initial_data_mariecris.php", // Update with the file that fetches initial data
-                    success: function(response) {
-                        $("#table_tent1 tbody").html(response);
-                        updateTotalAmount(); // Update the total amount after loading initial data
-                        addRowClickEventListeners(); // Add row click event listeners
-                    }
-                });
-            }
-
-            var input = document.getElementById('search-input');
-            var table = document.getElementById('table_tent1');
-            var totalAmountElement = document.getElementById('total-amount');
-            var deductionsInput = document.getElementById('deductions'); // Get the deductions input field
-            var rows = table.getElementsByTagName('tr');
-
+            // Update the total amount displayed in the table
             function updateTotalAmount() {
                 let totalAmount = 0;
 
-                // Loop through all visible table rows (excluding the first row which contains <th> elements)
                 for (var i = 1; i < rows.length; i++) {
-                    if (rows[i].style.display !== 'none') { // Check if the row is visible
-                        var amountCell = rows[i].getElementsByTagName('td')[8]; // Get the cell containing the amount
-                        var amount = parseFloat(amountCell.textContent.replace('₱', '').replace(/,/g, '')) || 0; // Parse the amount
-                        totalAmount += amount; // Add the amount to the total
+                    if (rows[i].style.display !== 'none') {
+                        var amountCell = rows[i].getElementsByTagName('td')[8];
+                        var amount = parseFloat(amountCell.textContent.replace('₱', '').replace(/,/g, '')) || 0;
+                        totalAmount += amount;
                     }
                 }
 
-                // Subtract deductions
-                const deductions = parseFloat(deductionsInput.value.replace(/,/g, '')) || 0; // Get the deductions value from the input field
+                const deductions = parseFloat(deductionsInput.value.replace(/,/g, '')) || 0;
                 totalAmount -= deductions;
 
-                // Format the total amount with currency format
                 const formattedTotalAmount = new Intl.NumberFormat('en-PH', {
                     style: 'currency',
                     currency: 'PHP',
@@ -385,62 +433,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                     maximumFractionDigits: 2
                 }).format(totalAmount);
 
-                // Update the total amount element
                 totalAmountElement.textContent = `Total Amount: ${formattedTotalAmount}`;
             }
-            // Add event listener to the search input
-            input.addEventListener('input', function() {
-                var filter = input.value.toLowerCase(); // Convert input to lowercase for case-insensitive search
 
-                // Loop through all table rows (excluding the first row which contains <th> elements)
-                for (var i = 1; i < rows.length; i++) {
-                    var cells = rows[i].getElementsByTagName('td'); // Get all cells in the current row
-
-                    // Hide the row if the search input doesn't match any cell value
-                    var rowVisible = false; // Assume the row is hidden by default
-                    for (var j = 0; j < cells.length; j++) {
-                        var cellText = cells[j].textContent.toLowerCase(); // Get the cell text in lowercase
-                        if (cellText.indexOf(filter) > -1) { // Check if the search input is found in the cell text
-                            rowVisible = true; // Set rowVisible to true if the search input is found
-                            break; // Exit the loop since the input is found in this row
-                        }
-                    }
-
-                    // Toggle the row's display property based on rowVisible
-                    rows[i].style.display = rowVisible ? '' : 'none'; // Show the row if rowVisible is true, otherwise hide it
-                }
-
-                // Update the total amount after filtering
-                updateTotalAmount();
-            });
-
-            // Add event listener to the deductions input field to update the total amount
-            deductionsInput.addEventListener('input', updateTotalAmount);
-
-            // Listen to changes in date fields
-            $("#date4, #date3").on('change input', function() {
-                filterTable();
-            });
-
-            function getSelectedIDs() {
-                var selectedIDs = [];
-
-                // Loop through all visible and selected table rows (excluding the first row which contains <th> elements)
-                for (var i = 1; i < rows.length; i++) {
-                    if ($(rows[i]).hasClass('selected-row')) { // Check if the row is selected
-                        var id = $(rows[i]).data('rfq-id'); // Get the ID of the selected row
-                        selectedIDs.push(id); // Add the ID to the selectedIDs array
-                    }
-                }
-
-                return selectedIDs;
+            // Add event listeners to the inputs, checking if they exist
+            if (date4Input) {
+                date4Input.addEventListener('change', applyFilters);
             }
-            $(document).ready(function() {
-                // Function to handle adding all the displayed data to print
-                $("#addtoprint").on("click", function() {
-                    // Collect all visible rows from the table_tent1 and extract their data
-                    var tableData = [];
-                    $("#table_tent1 tbody tr:visible").each(function() {
+            if (date3Input) {
+                date3Input.addEventListener('change', applyFilters);
+            }
+            if (input) {
+                input.addEventListener('input', applyFilters);
+            }
+            if (deductionsInput) {
+                deductionsInput.addEventListener('input', updateTotalAmount);
+            }
+
+            // Function to handle adding all the displayed data to print
+            $("#addtoprint").on("click", function() {
+                var tableData = [];
+
+                // Iterate through all visible rows in the table
+                $("#table_tent1 tbody tr").each(function() {
+                    if ($(this).is(':visible')) {
                         var rowData = {
                             SR_DR: $(this).find('td:eq(0)').text(),
                             Date: $(this).find('td:eq(1)').text(),
@@ -453,62 +469,48 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
                             Amount: $(this).find('td:eq(8)').text()
                         };
                         tableData.push(rowData);
-                    });
-
-                    // Check if there's data in the table
-                    if (tableData.length === 0) {
-                        alert("No data to send.");
-                        return;
                     }
+                });
 
-                    // Send the data to the server via AJAX
-                    $.post("insert_print_data.php", {
-                            data: JSON.stringify(tableData) // Send the data as a JSON string
-                        })
-                        .done(function(response) {
-                            console.log("Server Response:", response); // Log the server response
-                            if (response.success) {
-                                alert(response.message); // Display success message
-                                location.reload(); // Reload the page
-                            } else {
-                                alert(response.message); // Display failure message
-                            }
-                        })
-                        .fail(function(jqXHR, textStatus, errorThrown) {
-                            console.error("AJAX Error:", textStatus, errorThrown); // Log detailed error information
-                            alert("An error occurred while adding data to print.");
-                        });
+                if (tableData.length === 0) {
+                    console.warn("No data to send."); // Log warning if no data
+                    alert("No data to send.");
+                    return;
+                }
+
+                console.log("Data to send:", JSON.stringify(tableData)); // Log the data being sent
+
+                // Send the data to the server using AJAX
+                $.ajax({
+                    type: "POST",
+                    url: "insert_print_data.php",
+                    data: {
+                        data: JSON.stringify(tableData)
+                    },
+                    dataType: "json",
+                    success: function(response) {
+                        console.log("Server Response:", response);
+                        if (response.success) {
+                            alert(response.message);
+                            // location.reload(); // Uncomment to reload the page
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error("AJAX Error:", textStatus, errorThrown);
+                        alert("An error occurred while adding data to print.");
+                    }
                 });
             });
 
-
-            // Function to add click event listeners to table rows
-            let selectedRfqIds = [];
-
-            function addRowClickEventListeners() {
-                $(".clickable-row").on("click", function() {
-                    // Toggle the selected class on the clicked row
-                    $(this).toggleClass('selected-row'); // Toggle the selected-row class on click
-
-                    // Get the RFQ ID of the clicked row
-                    let rfqId = $(this).data('rfq-id');
-
-                    // If the row is selected, add its RFQ ID to the array; otherwise, remove it
-                    if ($(this).hasClass('selected-row')) {
-                        selectedRfqIds.push(rfqId);
-                    } else {
-                        selectedRfqIds = selectedRfqIds.filter(id => id !== rfqId);
-                    }
-                });
-            }
+            // Open PDF generation on button click
             document.getElementById("submitBtn").addEventListener("click", function() {
                 window.open("generate_pdf.php", "_blank");
             });
-
-            // Initial setup to add row click event listeners
-            addRowClickEventListeners();
         });
     </script>
+
     <script>
         $(document).ready(function() {
             // Variable to store the IDs of the selected rows
