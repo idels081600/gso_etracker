@@ -656,7 +656,35 @@ td {
 .selected-row2 {
   background-color: #d3d3d3; /* Light grey background to indicate selection */
 }
-
+#supplier-select {
+  height: 39px;
+  translate: -160% 15%;
+}
+.button-51 {
+  position: absolute;
+  background-color: #13aa52;
+  border: 1px solid #13aa52;
+  border-radius: 9px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Akzidenz Grotesk BQ Medium", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  outline: none;
+  outline: 0;
+  padding: 10px 10px;
+  text-align: center;
+  transform: translate(295%, 25%);
+  transition: transform 150ms, box-shadow 150ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 8%;
+  height: 6%;
+}
 .popup5 {
   position: absolute;
   top: -150%;
