@@ -1,13 +1,3 @@
-<?php
-// Include your database connection code here
-include 'dbh.php';
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
-    header("location:login_v2.php");
-}
-?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -28,7 +18,6 @@ if (!isset($_SESSION['username'])) {
 <style>
     body {
         background-color: #f0f0f0;
-        /* Set the background color of the body */
     }
 
     .navbar-brand {
@@ -36,7 +25,6 @@ if (!isset($_SESSION['username'])) {
         align-items: center;
     }
 
-    /* Style for the logo image */
     .logo-img {
         border-radius: 50%;
         width: 50px;
@@ -44,95 +32,36 @@ if (!isset($_SESSION['username'])) {
         object-fit: cover;
     }
 
-    /* Style for the "E-Pass Slip" text */
     .logo-text {
         color: white;
         font-weight: bold;
         font-size: 20px;
         margin-left: 10px;
-        /* Add some spacing between the logo and text */
     }
 
     .container {
         background-color: #fff;
-        /* Set the background color for the container */
         padding: 20px;
-        /* Add some padding to the container */
         border-radius: 5px;
-        /* Add rounded corners */
         margin-top: 20px;
-        /* Add some space from the top */
         box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-        /* Add a shadow to the container */
         margin-left: auto;
         margin-right: auto;
     }
 
-    /* Remove the white box on hover */
-    .navbar-nav .nav-link {
-        background-color: transparent !important;
-    }
-
-    /* Change the color of the text on hover */
-    .navbar-nav .nav-link:hover {
-        background-color: transparent !important;
-        color: #fff !important;
-        /* Change the color to your desired hover color */
-    }
-
     #submit {
         background-color: #4caf50;
-        /* Green background color */
         color: white;
-        /* White text color */
         padding: 6px 20px;
-        /* Padding for better appearance */
         border: none;
-        /* No border */
         border-radius: 5px;
-        /* Rounded corners */
         cursor: pointer;
-        /* Cursor on hover */
         margin-left: 10%;
-    }
-
-    #requestCameraPermission {
-        background-color: #4caf50;
-        /* Green background color */
-        color: white;
-        /* White text color */
-        padding: 10px 20px;
-        /* Padding for better appearance */
-        border: none;
-        /* No border */
-        border-radius: 5px;
-        /* Rounded corners */
-        cursor: pointer;
-        /* Cursor on hover */
-        margin-top: 10%;
-    }
-
-    #textrow {
-        margin-top: 30px;
-        text-align: center;
-    }
-
-    #texthead {
-        font-size: 40px;
-        /* Adjust font size as needed */
-        text-align: center;
-    }
-
-    #text {
-        font-size: 80px;
-        text-align: center;
-        margin-top: 10%;
-        margin-left: -5%;
     }
 
     .square-video-container {
         position: relative;
-        width: 90%;
+        width: 100%;
         padding-bottom: 50%;
         overflow: hidden;
         margin-left: auto;
@@ -141,57 +70,45 @@ if (!isset($_SESSION['username'])) {
 
     #preview {
         position: absolute;
-        width: 70%;
-        height: 70%;
+        width: 100%;
+        height: 100%;
         object-fit: cover;
-        margin-left: 8%;
     }
 
-    #label {
-        font-size: 30px;
+    .form-group {
+        margin-top: 20px;
         text-align: center;
+    }
+
+    #textField {
+        width: 100%;
+        padding: 10px;
+        font-size: 18px;
+    }
+
+    #texthead {
+        margin-left: 10%;
+    }
+
+    #text {
+        margin-left: 15%;
+    }
+
+    #errorMessage {
+        color: red;
+        font-weight: bold;
+        text-align: center;
+        display: none;
         margin-top: 10px;
-        margin-left: -10%;
-        /* Add or adjust margin-top as needed */
     }
 
     @media screen and (max-width: 600px) {
-        #textrow {
-            margin-top: 10px;
-        }
-
-        #label {
-            font-size: 18px;
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        #texthead {
-            font-size: 20px;
-            /* Adjust font size as needed */
-            text-align: center;
-        }
-
-        #text {
-            font-size: 30px;
-            margin-top: 10%;
-            margin-left: 1%;
-        }
-
-        .square-video-container {
-            width: 80%;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
         #preview {
-            width: 90%;
-                height: 90%;
-            margin-left: 1%;
+            width: 100%;
+            height: 100%;
         }
     }
 </style>
-
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
@@ -199,118 +116,93 @@ if (!isset($_SESSION['username'])) {
             <img src="logo.png" alt="Logo" class="logo-img">
             <span class="logo-text">E-Pass</span>
         </a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="nav navbar-nav navbar-right">
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="index.php">Home <span class="sr-only">(current)</span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="add_req.php">Add Request</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="approved.php">Approved</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="decline.php">Declined Request</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="track_emp.php">Track Employees</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="register.php">Register</a>
-                </li> -->
-                <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_dept.php">Arrival</a>
-                </li>
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_desk.php">Departure</a>
-                </li> -->
-                <li class="nav-item">
-                    <a class="nav-link" href="logout.php">Logout</a>
-                </li>
-            </ul>
-        </div>
     </nav>
     <div class="container">
-        <div class="col-md-8 square-video-container">
-            <h3 id="label">Place your QR here </h3>
+        <div class="square-video-container">
+            <h3 id="label">Place your QR code here</h3>
             <video id="preview"></video>
-
         </div>
+
+        <!-- Text Field to display QR Code value -->
+        <div class="form-group">
+            <label for="textField">Scanned or Input QR Code:</label>
+            <input type="text" id="textField" class="form-control">
+        </div>
+
         <div class="row" id="textrow">
-            <h2 id="texthead">Welcome Back,</h2>
+            <h2 id="texthead">Welcome Back!</h2>
             <h1 name="text" id="text"></h1>
-            <form method="post" action="">
-                <!-- <button id="submit" name="approve_req_depart" >Submit</button> -->
-            </form>
         </div>
     </div>
+    <div id="errorMessage">Your Request does not exist in the database.</div>
+
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+        document.addEventListener("DOMContentLoaded", function() {
+            let scanner = new Instascan.Scanner({
+                video: document.getElementById('preview')
+            });
 
-            function requestCameraPermission() {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function (stream) {
-                        scanner.start(stream);
-                    })
-                    .catch(function (error) {
-                        console.error('Camera access denied:', error);
-                    });
-            }
-
-            Instascan.Camera.getCameras().then(function (cameras) {
+            Instascan.Camera.getCameras().then(function(cameras) {
                 if (cameras.length > 0) {
                     scanner.start(cameras[0]);
                 } else {
-                    alert('No cameras found');
+                    displayError("No cameras found");
                 }
-            }).catch(function (e) {
+            }).catch(function(e) {
                 console.error(e);
+                displayError("Error initializing the camera");
             });
 
-            // Listen for form submission
-            document.querySelector('form').addEventListener('submit', function (e) {
-                e.preventDefault(); // Prevent the default form submission
+            scanner.addListener('scan', function(scannedData) {
+                document.getElementById('textField').value = scannedData;
+                document.getElementById('text').textContent = scannedData;
+
+                var audio = new Audio('qrcode.mp3');
+                audio.play();
+
+                checkQRCode(scannedData);
             });
 
-            scanner.addListener('scan', function (c) {
-                // Check if the scanned data exists in the database
-                checkScannedData(c);
+            document.getElementById('textField').addEventListener('input', function() {
+                let inputValue = this.value;
+                document.getElementById('text').textContent = inputValue;
+                checkQRCode(inputValue);
             });
 
-            function checkScannedData(scannedData) {
-                // You can use AJAX to check if the scanned data exists in the database
-                // I'll provide a simplified example using jQuery for this purpose
-
+            function checkQRCode(qrCode) {
                 $.ajax({
-                    url: 'code_dept.php', // Create a separate PHP file to handle the database check
+                    url: 'code_dept.php',
                     type: 'POST',
-                    data: { scannedData: scannedData },
-                    success: function (response) {
-                        if (response === 'exists') {
-                            // Scanned data exists in the database, proceed with update and display
-                            document.getElementById('text').textContent = scannedData;
-
-                            // Play a sound
-                            var audio = new Audio('qrcode.mp3'); // Replace 'path/to/sound.mp3' with the actual path to your sound file
-                            audio.play();
-                        } else {
-                            alert('Your Request does not exist in the database');
+                    data: {
+                        scannedData: qrCode
+                    },
+                    success: function(response) {
+                        if (response !== 'exists') {
+                            // Show error message and clear input
+                            displayError('Your Request does not exist in the database');
+                            document.getElementById('textField').value = '';
+                            document.getElementById('text').textContent = '';
                         }
                     },
-                    error: function () {
-                        alert('Error checking scanned data');
+                    error: function() {
+                        displayError('Error checking scanned data');
                     }
                 });
             }
+
+            function displayError(message) {
+                var errorMessage = document.getElementById('errorMessage');
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+
+                // Hide the error message after 3 seconds
+                setTimeout(function() {
+                    errorMessage.style.display = 'none';
+                }, 3000);
+            }
         });
     </script>
+
 </body>
 
 </html>
