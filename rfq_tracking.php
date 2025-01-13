@@ -164,7 +164,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"  && isset($_POST['save_data'])) {
                             <div class="form-element">
                                 <div class="form-element6">
                                     <label for="supplier" id="supplier-label">Supplier</label>
-                                    <input type="text" id="supplier" name="supplier" placeholder="" required>
+                                    <input type="text" id="supplier" name="supplier" placeholder="" >
                                 </div>
                             </div>
                             <button class="button-39" role="button" name="save_data">Submit</button>
