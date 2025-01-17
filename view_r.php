@@ -253,11 +253,17 @@ if (!isset($_SESSION['username'])) {
             </div>
         </div>
     </div>
-
-
-
-
     </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Focus on the 'esttime' input field when the page loads
+            const esttimeInput = document.getElementById("esttime");
+            if (esttimeInput) {
+                esttimeInput.focus();
+            }
+        });
+    </script>
+
     <script>
         // Add an event listener to the dropdown
         document.getElementById("sel1").addEventListener("change", function() {
@@ -324,21 +330,20 @@ if (!isset($_SESSION['username'])) {
             }
         });
     </script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-    // Add event listener for the Enter key
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-            // Check if the event target is an input field
-            if (!event.target.tagName || event.target.tagName.toLowerCase() !== 'input') {
-                // Simulate a click on the approve button
-                document.querySelector('[name="approve_req_r"]').click();
-            }
-        }
-    });
-});
-
-</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listener for the Enter key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    // Check if the event target is an input field
+                    if (!event.target.tagName || event.target.tagName.toLowerCase() !== 'input') {
+                        // Simulate a click on the approve button
+                        document.querySelector('[name="approve_req_r"]').click();
+                    }
+                }
+            });
+        });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
