@@ -6,7 +6,6 @@
   padding: 0 20px;
   width: 100%;
 }
-
 .month-dropdown {
   display: flex;
   justify-content: center;
@@ -41,22 +40,46 @@
   font-size: 1.2em;
   color: #333;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.3s ease;
   overflow: visible;
 }
-
 /* General styling for events */
-.calendar-days .leave-event,
 .calendar-days .cto-event {
-  background-color: #2b2c2b;
-  color: #e0f7fa;
+  background-color: #dc3545;
+  color: #ffffff;
   padding: 5px;
   margin: 2px 0;
   border-radius: 4px;
   font-size: 0.6em;
   text-align: center;
-  transition: all 0.3s ease; /* Smooth transition for all changes */
-  opacity: 1; /* Events are visible by default */
+  transition: all 0.3s ease;
+  opacity: 1;
+}
+
+/* SPL events - Green */
+.calendar-days .leave-event[data-type="SPL"] {
+  background-color: #28a745;
+  color: #ffffff;
+  padding: 5px;
+  margin: 2px 0;
+  border-radius: 4px;
+  font-size: 0.6em;
+  text-align: center;
+  transition: all 0.3s ease;
+  opacity: 1;
+}
+
+/* FL events - Orange */
+.calendar-days .leave-event[data-type="FL"] {
+  background-color: #fd7e14;
+  color: #ffffff;
+  padding: 5px;
+  margin: 2px 0;
+  border-radius: 4px;
+  font-size: 0.6em;
+  text-align: center;
+  transition: all 0.3s ease;
+  opacity: 1;
 }
 
 /* Hover effect on the current day - expand event */

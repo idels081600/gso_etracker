@@ -3,7 +3,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const monthSelect = document.getElementById("monthSelect");
   const yearSelect = document.getElementById("yearSelect");
 
-  // Fetch both Leave and CTO data
   Promise.all([
     fetch("get_leave_events.php").then((response) => response.json()),
     fetch("get_cto_events.php").then((response) => response.json()),
@@ -39,24 +38,25 @@ document.addEventListener("DOMContentLoaded", function () {
         const calendarGrid = document.createElement("div");
         calendarGrid.classList.add("calendar-days");
 
+        // Empty cells for days before start of month
         for (let i = 0; i < startDay; i++) {
           const emptyCell = document.createElement("div");
           calendarGrid.appendChild(emptyCell);
         }
 
+        // Create calendar days
         for (let day = 1; day <= daysInMonth; day++) {
           const dayCell = document.createElement("div");
           dayCell.classList.add("day");
           dayCell.textContent = day;
 
-          // Display Leave events with categories (SPL, FL)
+          // Display Leave events
           if (leaveEvents[year] && leaveEvents[year][currentMonth]) {
             const leaveForDay = leaveEvents[year][currentMonth].filter(
               (event) => event.day == day
             );
 
             if (leaveForDay.length > 0) {
-              // Add title for categorization (SPL, FL)
               const leaveCategoryTitle = document.createElement("div");
               leaveCategoryTitle.classList.add("leave-category-title");
               dayCell.appendChild(leaveCategoryTitle);
@@ -64,6 +64,7 @@ document.addEventListener("DOMContentLoaded", function () {
               leaveForDay.forEach((event) => {
                 const leaveDiv = document.createElement("div");
                 leaveDiv.classList.add("leave-event");
+                leaveDiv.setAttribute("data-type", event.type);
                 leaveDiv.textContent = `${event.type}: ${event.name}`;
                 dayCell.appendChild(leaveDiv);
               });
@@ -92,7 +93,7 @@ document.addEventListener("DOMContentLoaded", function () {
         calendarElement.appendChild(calendarGrid);
       }
 
-      // Modify year selection range (2025 to 2050)
+      // Set up year selection
       for (let year = 2025; year <= 2050; year++) {
         const yearOption = document.createElement("option");
         yearOption.value = year;
@@ -106,6 +107,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       yearSelect.value = currentYear;
 
+      // Event listeners for month/year selection
       monthSelect.addEventListener("change", function () {
         generateCalendar(
           parseInt(monthSelect.value),
@@ -199,20 +201,21 @@ function subtractCredit(id) {
 
 $(document).ready(function () {
   $("#leaveModal .btn-primary").click(function () {
-    // Get values from the modal inputs
+    // Disable button to prevent double submission
+    $(this).prop("disabled", true);
+
     var leaveTitle = $("#leaveTitle").val();
     var leaveName = $("#leaveName").val();
     var leaveDates = $("#leaveDates").val();
 
-    // Validate the inputs (basic validation)
     if (leaveTitle === "" || leaveName === "" || leaveDates === "") {
       alert("All fields are required.");
+      $(this).prop("disabled", false);
       return;
     }
 
-    // Send data to the PHP script using AJAX
     $.ajax({
-      url: "save_leave.php", // PHP file to handle saving the data
+      url: "save_leave.php",
       type: "POST",
       data: {
         title: leaveTitle,
@@ -220,66 +223,69 @@ $(document).ready(function () {
         dates: leaveDates,
       },
       success: function (response) {
-        // Handle the response (success message or error)
-        alert(response);
-        $("#leaveModal").modal("hide"); // Close the modal
-        // Optionally, clear the form fields
+        if (response.trim() === "success") {
+          $("#leaveModal").modal("hide");
+          alert("Leave saved successfully!");
+          location.reload();
+        } else if (response.includes("already exists")) {
+          alert("This leave record already exists");
+        } else {
+          alert(response);
+        }
+        $("#leaveModal .btn-primary").prop("disabled", false);
         $("#leaveTitle").val("");
         $("#leaveName").val("");
         $("#leaveDates").val("");
       },
       error: function () {
         alert("Error saving data. Please try again.");
+        $("#leaveModal .btn-primary").prop("disabled", false);
       },
     });
   });
 });
 
 $(document).ready(function () {
-  $("#ctoModal .btn-primary").click(function () {
-    // Get values from the modal inputs
+  $("#saveCtoBtn").click(function () {
+    // Disable the submit button immediately
+    $(this).prop("disabled", true);
+
     var ctoTitle = $("#ctoTitle").val();
     var ctoName = $("#ctoName").val();
     var ctoDates = $("#ctoDates").val();
-    var ctoRemarks = $("#ctoRemarks").val();
 
-    // Validate the inputs (basic validation)
-    if (
-      ctoTitle === "" ||
-      ctoName === "" ||
-      ctoDates === "" ||
-      ctoRemarks === ""
-    ) {
+    if (ctoTitle === "" || ctoName === "" || ctoDates === "") {
       alert("All fields are required.");
+      $(this).prop("disabled", false);
       return;
     }
 
-    // Send data to the PHP script using AJAX
     $.ajax({
-      url: "save_cto.php", // PHP file to handle saving the data
+      url: "save_cto.php",
       type: "POST",
       data: {
         title: ctoTitle,
         name: ctoName,
         dates: ctoDates,
-        remarks: ctoRemarks,
       },
       success: function (response) {
-        // Handle the response (success message or error)
-        alert(response);
-        $("#ctoModal").modal("hide"); // Close the modal
-        // Optionally, clear the form fields
-        $("#ctoTitle").val("");
-        $("#ctoName").val("");
-        $("#ctoDates").val("");
-        $("#ctoRemarks").val("");
+        if (response.trim() === "success") {
+          $("#ctoModal").modal("hide");
+          alert("CTO saved successfully");
+          location.reload();
+        } else {
+          alert(response);
+          $("#saveCtoBtn").prop("disabled", false);
+        }
       },
       error: function () {
         alert("Error saving data. Please try again.");
+        $("#saveCtoBtn").prop("disabled", false);
       },
     });
   });
 });
+
 //saving credit
 document
   .getElementById("ctoCreditSearch")

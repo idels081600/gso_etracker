@@ -1,36 +1,37 @@
 <?php
-// Include your database connection (which uses mysqli)
 require_once 'leave_db.php';
 
-// Check if the POST request contains the necessary data
 if (isset($_POST['title']) && isset($_POST['name']) && isset($_POST['dates'])) {
     $leaveTitle = $_POST['title'];
     $leaveName = $_POST['name'];
-    $leaveDates = $_POST['dates'];  // Store dates as VARCHAR
+    $leaveDates = $_POST['dates'];
 
-    // Prepare SQL to insert data into the leave_reg table (exclude remark and status columns)
-    $sql = "INSERT INTO leave_reg (title,name, dates) VALUES (?,?, ?)";
+    // Check for existing leave entry
+    $checkDuplicate = "SELECT id FROM leave_reg WHERE title = ? AND name = ? AND dates = ?";
+    $checkStmt = mysqli_prepare($conn, $checkDuplicate);
+    mysqli_stmt_bind_param($checkStmt, "sss", $leaveTitle, $leaveName, $leaveDates);
+    mysqli_stmt_execute($checkStmt);
+    mysqli_stmt_store_result($checkStmt);
 
-    // Use mysqli prepare statement
-    if ($stmt = mysqli_prepare($conn, $sql)) {
-        // Bind parameters (s for string type)
-        mysqli_stmt_bind_param($stmt, "sss",   $leaveTitle, $leaveName, $leaveDates);
-
-        // Execute the query and check if it was successful
-        if (mysqli_stmt_execute($stmt)) {
-            echo "Leave saved successfully!";
-        } else {
-            echo "Error saving leave: " . mysqli_error($conn);
-        }
-
-        // Close the prepared statement
-        mysqli_stmt_close($stmt);
+    if (mysqli_stmt_num_rows($checkStmt) > 0) {
+        echo "This leave record already exists";
     } else {
-        echo "Error preparing statement: " . mysqli_error($conn);
+        $sql = "INSERT INTO leave_reg (title, name, dates) VALUES (?, ?, ?)";
+
+        if ($stmt = mysqli_prepare($conn, $sql)) {
+            mysqli_stmt_bind_param($stmt, "sss", $leaveTitle, $leaveName, $leaveDates);
+
+            if (mysqli_stmt_execute($stmt)) {
+                echo "success";
+            } else {
+                echo "Error saving leave: " . mysqli_error($conn);
+            }
+            mysqli_stmt_close($stmt);
+        }
     }
+    mysqli_stmt_close($checkStmt);
 } else {
-    echo "Missing data.";
+    echo "Missing required fields";
 }
 
-// Close the database connection
 mysqli_close($conn);
