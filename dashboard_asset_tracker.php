@@ -133,7 +133,7 @@ if (!isset($_SESSION['username'])) {
             });
         });
     </script>
-    
+
 
     <style>
         .status-cell {
@@ -157,6 +157,9 @@ if (!isset($_SESSION['username'])) {
         <hr class="divider">
         <ul>
             <li><a href="dashboard_asset_tracker.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
+            <li>
+                <a href="cto_approval.php" id="secure-link"><i class="fas fa-calendar icon-size"></i> Leave Management</a>
+            </li>
             <li class="dropdown">
                 <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
                 <ul class="dropdown-menu">
