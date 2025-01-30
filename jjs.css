@@ -1,0 +1,400 @@
+html,
+body {
+  font-family: "DM Sans", sans-serif;
+  scrollbar-width: none;
+  height: 100%;
+  margin: 0;
+}
+
+.card-title {
+  font-weight: 700;
+  color: #0f0f0f; /* Corrected hex color */
+  font-size: 0.9rem;
+}
+
+.card-text {
+  font-weight: 400;
+  color: #333333; /* Example color for card text, optional */
+}
+.header_text {
+  font-weight: bold;
+  font-size: 1.375rem;
+  margin-left: 10%;
+}
+.card-img {
+  object-fit: cover;
+  height: 100%;
+}
+
+.scrollable-container {
+  max-height: 400px; /* Set a fixed height */
+  overflow-y: scroll; /* Enable scrolling */
+  scrollbar-width: none; /* For Firefox - hide scrollbar */
+}
+.scrollable-container::-webkit-scrollbar {
+  display: none; /* Hide scrollbar */
+}
+.scrollable-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+}
+
+.scrollable-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+.header_text {
+  position: sticky; /* Make it stick to the top */
+  z-index: 10; /* Ensure it stays above other content */
+  background-color: white; /* Add a background color to avoid overlapping with other elements */
+}
+.fw-bold {
+  margin-bottom: -25px;
+}
+.order_container {
+  width: 100%; /* Full width of the screen */
+  height: calc(
+    100vh - 400px
+  ); /* Adjust to fill remaining viewport below any header (adjust the 100px as needed) */
+  padding: 10px; /* Add some inner spacing */
+  border: 1px solid #aaa; /* Border style */
+  border-radius: 15px;
+  background-color: #ffffff; /* Light background */
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  margin: 0; /* No external margins */
+  overflow-y: auto; /* Enable scrolling if content overflows */
+  scrollbar-width: none;
+  z-index: 1; /* Set a neutral z-index */
+}
+
+.order_header {
+  margin-bottom: 1px;
+}
+
+.card-title {
+  font-size: 1rem;
+  text-align: center; /* Align the title centrally */
+}
+#cat_details {
+  color: #ffffff;
+  flex-grow: 1; /* Fill remaining space */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Center-align text */
+}
+#cat_details p {
+  font-size: 0.8rem; /* Scale text slightly smaller for smaller screens */
+  margin: 2px 0;
+}
+.card-title_details {
+  font-size: 1.2rem;
+}
+.card-custom {
+  background-color: #12162d;
+  color: #17c37b;
+  height: auto; /* Allow cards to grow dynamically */
+  min-height: 13rem; /* Ensure minimum height */
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Distribute content evenly */
+  padding: 10px; /* Add padding inside the card */
+}
+.card-custom p {
+  color: black; /* Default black color for the card title */
+  transition: color 0.3s ease;
+}
+
+.card-custom.active {
+  background-color: #17c37b;
+  color: white; /* Change color for cat_details to white */
+}
+
+.card-custom.active p {
+  color: white; /* Change card title to white when active */
+}
+
+.card-custom:hover {
+  background-color: #14a96c; /* Slightly darker green on hover */
+  color: white; /* Change color for cat_details to white */
+}
+
+.card-custom:hover p {
+  color: white; /* Change card title to white on hover */
+}
+.card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Align title and details */
+  height: 100%;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap; /* Ensure proper wrapping on smaller screens */
+}
+.col-6 {
+  flex: 1 1 50%; /* Each card takes up 50% of the row */
+  max-width: 50%;
+  box-sizing: border-box;
+}
+.no_pax {
+  margin-bottom: 20px;
+}
+.input-group {
+  margin-bottom: 20% !important;
+}
+.btn-checkout {
+  background-color: rgba(141, 226, 191, 0.5) !important; /* Transparent green */
+  color: #16ba75 !important;
+  border-radius: 23px !important; /* Ensure border-radius is applied */
+  padding: 10px 20px !important;
+  font-size: 16px !important;
+  border: none !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+  transition: background-color 0.3s ease !important;
+  width: 129px;
+  border-color: #16ba75 !important;
+}
+
+.btn-checkout:hover {
+  background-color: rgba(
+    22,
+    186,
+    117,
+    0.8
+  ) !important; /* Darker transparent green on hover */
+  color: white !important;
+}
+.btn-order {
+  background-color: rgba(141, 226, 191, 0.5) !important; /* Transparent green */
+  color: #16ba75 !important;
+  border-radius: 23px !important; /* Ensure border-radius is applied */
+  padding: 10px 20px !important;
+  font-size: 16px !important;
+  border: none !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+  transition: background-color 0.3s ease !important;
+  width: 129px;
+  border-color: #16ba75 !important;
+}
+
+.btn-order:hover {
+  background-color: rgba(
+    22,
+    186,
+    117,
+    0.8
+  ) !important; /* Darker transparent green on hover */
+  color: white !important;
+}
+@media (max-width: 576px) {
+  .scrollable-container {
+    max-height: 400px; /* Set a fixed height */
+    overflow-y: scroll; /* Enable scrolling */
+    scrollbar-width: none; /* For Firefox - hide scrollbar */
+  }
+
+  .scrollable-container::-webkit-scrollbar {
+    display: none; /* Hide scrollbar */
+  }
+
+  .scrollable-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+  }
+
+  .scrollable-container::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+
+  .col-6 {
+    flex: 1 1 100%; /* Full width on extra small screens */
+    max-width: 100%;
+  }
+  #cat_details {
+    color: #ffffff;
+    flex-grow: 1; /* Fill remaining space */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Center-align text */
+  }
+
+  #cat_details p {
+    font-size: 0.75rem; /* Adjust font size for very small screens */
+  }
+
+  .card-title {
+    font-size: 1rem; /* Slightly reduce card title size */
+  }
+
+  .dropdown_men select {
+    font-size: 0.9rem; /* Adjust font size of the dropdown */
+    border-radius: 26px;
+  }
+  .note-title {
+    font-size: 18px;
+  }
+
+  #note_details {
+    font-size: 0.8rem;
+    color: #8a959e;
+  }
+  .pax_details {
+    padding: 0;
+    margin-bottom: -10px;
+    color: #8a959e !important;
+  }
+  .order_text {
+    color: #8a959e !important;
+  }
+  .btn-order {
+    background-color: rgba(
+      141,
+      226,
+      191,
+      0.5
+
+    ) !important; /* Transparent green */
+    color: #000000 !important;
+    border-radius: 23px !important; /* Ensure border-radius is applied */
+    padding: 10px 20px !important;
+    font-size: 16px !important;
+    border: none !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+    transition: background-color 0.3s ease !important;
+    width: 129px;
+    border-color: #16ba75 !important;
+  }
+
+  .btn-order:hover {
+    background-color: rgba(
+      22,
+      186,
+      117,
+      0.8
+    ) !important; /* Darker transparent green on hover */
+    color: white !important;
+  }
+}
+
+/*success modal*/
+.modal#statusSuccessModal .modal-content,
+.modal#statusErrorsModal .modal-content {
+  border-radius: 30px;
+}
+
+.modal#statusSuccessModal .modal-content svg,
+.modal#statusErrorsModal .modal-content svg {
+  width: 100px;
+  display: block;
+  margin: 0 auto;
+}
+
+.modal#statusSuccessModal .modal-content .path,
+.modal#statusErrorsModal .modal-content .path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 0;
+}
+
+.modal#statusSuccessModal .modal-content .path.circle,
+.modal#statusErrorsModal .modal-content .path.circle {
+  -webkit-animation: dash 0.9s ease-in-out;
+  animation: dash 0.9s ease-in-out;
+}
+
+.modal#statusSuccessModal .modal-content .path.line,
+.modal#statusErrorsModal .modal-content .path.line {
+  stroke-dashoffset: 1000;
+  -webkit-animation: dash 0.95s 0.35s ease-in-out forwards;
+  animation: dash 0.95s 0.35s ease-in-out forwards;
+}
+
+.modal#statusSuccessModal .modal-content .path.check,
+.modal#statusErrorsModal .modal-content .path.check {
+  stroke-dashoffset: -100;
+  -webkit-animation: dash-check 0.95s 0.35s ease-in-out forwards;
+  animation: dash-check 0.95s 0.35s ease-in-out forwards;
+}
+
+@-webkit-keyframes dash {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dash {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@-webkit-keyframes dash {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dash {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@-webkit-keyframes dash-check {
+  0% {
+    stroke-dashoffset: -100;
+  }
+
+  100% {
+    stroke-dashoffset: 900;
+  }
+}
+
+@keyframes dash-check {
+  0% {
+    stroke-dashoffset: -100;
+  }
+
+  100% {
+    stroke-dashoffset: 900;
+  }
+}
+
+.box00 {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+}
+.menu-section {
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.section-title {
+  color: #333;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.menu-section:last-child {
+  border-bottom: none;
+}
