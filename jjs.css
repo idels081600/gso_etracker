@@ -255,7 +255,6 @@ body {
       226,
       191,
       0.5
-
     ) !important; /* Transparent green */
     color: #000000 !important;
     border-radius: 23px !important; /* Ensure border-radius is applied */
@@ -278,7 +277,6 @@ body {
     color: white !important;
   }
 }
-
 /*success modal*/
 .modal#statusSuccessModal .modal-content,
 .modal#statusErrorsModal .modal-content {
@@ -397,4 +395,23 @@ body {
 
 .menu-section:last-child {
   border-bottom: none;
+}
+.logout-item {
+  color: #fff;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.logout-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #17c37b;
+}
+
+.icon-size {
+  font-size: 20px;
+  margin-right: 10px;
 }
