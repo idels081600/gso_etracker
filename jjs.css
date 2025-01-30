@@ -256,7 +256,7 @@ body {
       191,
       0.5
     ) !important; /* Transparent green */
-    color: #000000 !important;
+    color: #e7e7e7 !important;
     border-radius: 23px !important; /* Ensure border-radius is applied */
     padding: 10px 20px !important;
     font-size: 16px !important;
