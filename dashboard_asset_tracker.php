@@ -160,6 +160,10 @@ if (!isset($_SESSION['username'])) {
             <li>
                 <a href="cto_approval.php" id="secure-link"><i class="fas fa-calendar icon-size"></i> Leave Management</a>
             </li>
+            <li>
+                <a href="jjs_order.php" id="secure-link"><i class="fas fa-shopping-cart icon-size"></i> JJs Menu</a>
+            </li>
+
             <li class="dropdown">
                 <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
                 <ul class="dropdown-menu">
