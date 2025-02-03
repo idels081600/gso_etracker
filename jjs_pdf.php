@@ -1,6 +1,5 @@
 <?php
-header('Content-Type: application/pdf');
-require('fpdf/fpdf.php');
+require('fpdf/fpdf.php'); // Ensure the FPDF library is correctly included
 
 class OrderSlip extends FPDF
 {
@@ -14,10 +13,10 @@ class OrderSlip extends FPDF
         $this->Image('logo.png', 0.5, 0.3, 1); // Adjusted logo size and position
 
         $this->SetFont('Arial', 'B', 14); // Reduced font size
-        $this->Cell(0, 0.3, utf8_decode('ORDER SLIP'), 0, 1, 'C');
+        $this->Cell(0, 0.3, 'ORDER SLIP', 0, 1, 'C');
         $this->SetFont('Arial', '', 8); // Smaller font for header text
-        $this->Cell(0, 0.2, utf8_decode('Republic of the Philippines'), 0, 1, 'C');
-        $this->Cell(0, 0.2, utf8_decode('City Government of Tagbilaran'), 0, 1, 'C');
+        $this->Cell(0, 0.2, 'Republic of the Philippines', 0, 1, 'C');
+        $this->Cell(0, 0.2, 'City Government of Tagbilaran', 0, 1, 'C');
 
         $this->Ln(0.2);
     }
@@ -30,16 +29,22 @@ class OrderSlip extends FPDF
     }
 }
 
-$pdf = new OrderSlip();
 $data = json_decode(file_get_contents('php://input'), true);
 
+if (!$data) {
+    header('HTTP/1.1 400 Bad Request');
+    echo json_encode(['error' => 'Invalid input data']);
+    exit;
+}
+
+$pdf = new OrderSlip();
 $pdf->AddPage();
 
 // Order details header
 $pdf->SetFont('Arial', 'B', 10);
 $pdf->Cell(2, 0.3, 'Date: ' . date('F d, Y', strtotime($data['date'])), 0, 0);
-$pdf->Cell(4, 0.3, 'Activity: ' . utf8_decode($data['activity']), 0, 1);
-$pdf->Cell(0, 0.3, 'P.O/ITB No.: ' . utf8_decode($data['poItb']), 0, 1);
+$pdf->Cell(4, 0.3, 'Activity: ' . $data['activity'], 0, 1);
+$pdf->Cell(0, 0.3, 'P.O/ITB No.: ' . $data['poItb'], 0, 1);
 $pdf->Ln(0.1);
 
 // Orders section
@@ -47,16 +52,15 @@ $grandTotal = 0;
 foreach ($data['orders'] as $order) {
     $pdf->SetFillColor(240, 240, 240);
     $pdf->SetFont('Arial', 'B', 11);
-    $pdf->Cell(0, 0.25, 'Category: ' . utf8_decode(str_replace(' Menu', '', $order['modalTitle'])), 0, 1);
+    $pdf->Cell(0, 0.25, 'Category: ' . str_replace(' Menu', '', $order['modalTitle']), 0, 1);
     $pdf->SetFont('Arial', 'B', 10);
-    $pdf->Cell(0, 0.25, 'Selected Package: ' . utf8_decode($order['packageTitle']), 1, 1, 'L', true);
+    $pdf->Cell(0, 0.25, 'Selected Package: ' . $order['packageTitle'], 1, 1, 'L', true);
 
     // Package details
     $pdf->SetFont('Arial', '', 9);
     $pdf->Cell(0, 0.2, 'Package Includes:', 0, 1);
     foreach ($order['catDetails'] as $detail) {
-        $cleanDetail = mb_convert_encoding($detail, 'ISO-8859-1', 'UTF-8');
-        $cleanDetail = str_replace('•', '-', $cleanDetail);
+        $cleanDetail = str_replace('•', '-', $detail);
         $pdf->Cell(0.4, 0.2, '', 0, 0);
         $pdf->Cell(0, 0.2, '- ' . trim($cleanDetail), 0, 1);
     }
@@ -64,8 +68,7 @@ foreach ($data['orders'] as $order) {
     if (!empty($order['selections'])) {
         $pdf->Cell(0, 0.2, 'Selected Items:', 0, 1);
         foreach ($order['selections'] as $selection) {
-            $cleanSelection = mb_convert_encoding($selection, 'ISO-8859-1', 'UTF-8');
-            $cleanSelection = str_replace('•', '-', $cleanSelection);
+            $cleanSelection = str_replace('•', '-', $selection);
             $pdf->Cell(0.4, 0.2, '', 0, 0);
             $pdf->Cell(0, 0.2, '- ' . trim($cleanSelection), 0, 1);
         }
@@ -101,4 +104,6 @@ $pdf->Cell(4, 0.2, 'Ordered by: _________________', 0, 0, 'C');
 $pdf->SetXY($pdf->GetX(), $pdf->GetY());
 $pdf->MultiCell(4, 0.2, "Approved by:\nCHRIS JOHN RENER TORRALBA\n", 0, 'C');
 
+// Output the PDF as a download
 $pdf->Output('I', 'OrderSlip.pdf');
+exit;

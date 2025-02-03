@@ -439,40 +439,34 @@ document.getElementById("orderForm").addEventListener("submit", function (e) {
     orders: orders,
   };
 
-fetch("jjs_pdf.php", {
+  fetch("jjs_pdf.php", {
     method: "POST",
     headers: {
-        "Content-Type": "application/json",
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(formData),
-})
-.then(async response => {
-    const contentType = response.headers.get("content-type");
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.log("Server response:", errorText);
-        throw new Error(`Server error: ${response.status}`);
-    }
-    if (!contentType || !contentType.includes("application/pdf")) {
-        console.log("Invalid content type:", contentType);
-        throw new Error("Invalid response format");
-    }
-    return response.blob();
-})
-.then((blob) => {
-    const url = window.URL.createObjectURL(blob);
-    const newWindow = window.open(url, '_blank');
-    if (!newWindow) console.log("Popup blocked - PDF generation successful but display blocked");
-    window.URL.revokeObjectURL(url);
-})
-.catch((error) => {
-    console.log("Full error details:", error);
-    alert("PDF Generation Issue - Check server logs for details");
-});  bootstrap.Modal.getInstance(document.getElementById("orderModal")).hide();
-  function cleanText(text) {
-    return text
-      .replace(/[^\w\s\(\)\/\-\.,]/g, "") // Keeps alphanumeric, spaces, parentheses, forward slashes, hyphens, periods, commas
-      .replace(/\s+/g, " ") // Replaces multiple spaces with single space
-      .trim();
-  }
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.blob(); // Handle the response as a Blob
+    })
+    .then((blob) => {
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank"); // Open the PDF in a new tab
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      alert("Failed to process order. Please try again.");
+    });
+
+  bootstrap.Modal.getInstance(document.getElementById("orderModal")).hide();
 });
+
+function cleanText(text) {
+  return text
+    .replace(/[^\w\s\(\)\/\-\.,]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
