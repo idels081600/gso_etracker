@@ -11,7 +11,7 @@
     <link href="jjs.css" rel="stylesheet">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
 <body>
@@ -36,7 +36,7 @@
         <div class="header_text text-left mb-3 ">
             <h2 class="fw-bold" style="margin-left: -27px;">Choose Category</h2>
         </div>
-        <div class="container mt-5 scrollable-container">
+        <div class="container mt-4  scrollable-container">
             <div class="row g-2">
                 <!-- Card 1 -->
                 <div class="col-6">
@@ -47,48 +47,50 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Card 2 -->
                 <div class="col-6">
                     <div class="card shadow-sm border-0 rounded-4 overflow-hidden" data-bs-toggle="modal" data-bs-target="#pack_plate_Modal">
-                        <img src="pack_plated.jpg" class="card-img" alt="Logo">
+                        <img src="pack_plated.jpg" class="card-img" alt="Packed or Plated">
                         <div class="card-img-overlay d-flex flex-column justify-content-end bg-dark bg-opacity-50 p-3">
                             <h5 class="card-title text-white fw-bold">Packed or Plated</h5>
                         </div>
                     </div>
                 </div>
+                <!-- Card 3 -->
                 <div class="col-6">
                     <div class="card shadow-sm border-0 rounded-4 overflow-hidden" data-bs-toggle="modal" data-bs-target="#outCatering_Modal">
-                        <img src="cater-out.jpg" class="card-img" alt="Logo">
+                        <img src="cater-out.jpg" class="card-img" alt="Out Catering">
                         <div class="card-img-overlay d-flex flex-column justify-content-end bg-dark bg-opacity-50 p-3">
                             <h5 class="card-title text-white fw-bold">Out Catering</h5>
                         </div>
                     </div>
                 </div>
+                <!-- Card 4 -->
                 <div class="col-6">
                     <div class="card shadow-sm border-0 rounded-4 overflow-hidden" data-bs-toggle="modal" data-bs-target="#inCatering_Modal">
-                        <img src="live-in.jpg" class="card-img" alt="Logo">
+                        <img src="live-in.jpg" class="card-img" alt="Live-in Package">
                         <div class="card-img-overlay d-flex flex-column justify-content-end bg-dark bg-opacity-50 p-3">
                             <h5 class="card-title text-white fw-bold">Live-in Package</h5>
                         </div>
                     </div>
                 </div>
+                <!-- Card 5 -->
                 <div class="col-6">
                     <div class="card shadow-sm border-0 rounded-4 overflow-hidden" data-bs-toggle="modal" data-bs-target="#live_out_Catering_Modal">
-                        <img src="out-cater.jpg" class="card-img" alt="Logo">
+                        <img src="out-cater.jpg" class="card-img" alt="Live-Out Package">
                         <div class="card-img-overlay d-flex flex-column justify-content-end bg-dark bg-opacity-50 p-3">
                             <h5 class="card-title text-white fw-bold">Live-Out Package</h5>
                         </div>
                     </div>
                 </div>
-
-                <!-- More cards... -->
+                <!-- More cards if needed -->
             </div>
         </div>
-        <div class="container mt-3 order_container" style="width: 24rem; height: 19rem; border-radius:10px;">
-            <h2 class="fw-bold order_header mt-2 ">Your Order</h2>
-
+        <div class="container mt-3 order_container">
+            <div class="fw-bold order_header mt-2">Your Order</div>
+            <div id="orderList" class="order-cards-container"></div>
         </div>
+
     </div>
     <div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -166,7 +168,7 @@
                         <div class="col-6 dropdown_men">
                             <div class="input-group mb-3">
                                 <select class="form-select" id="inputGroupSelectSpaghettiBami">
-                                    <option selected>Choose Spaghetti or Bam-i...</option>
+                                    <option selected disabled>Choose Spaghetti or Bam-i...</option>
                                     <option value="1">Spaghetti</option>
                                     <option value="2">Bam-i Guisado</option>
                                 </select>
@@ -177,7 +179,7 @@
                         <div class="col-6 dropdown_men">
                             <div class="input-group mb-3">
                                 <select class="form-select" id="inputGroupSelectDrinks">
-                                    <option selected>Choose Soft Drinks (Sakto) or Bottled Water...</option>
+                                    <option selected disabled>Choose Soft Drinks (Sakto) or Bottled Water...</option>
                                     <option value="1">Soft Drinks (Sakto)</option>
                                     <option value="2">Bottled Water</option>
                                 </select>
@@ -360,7 +362,7 @@
                                     <div id="pax_details">
                                         <p>price</p>
                                     </div>
-                                    <h5 class="pax-title">₱230.00/pax</h5>
+                                    <h5 class="pax-title"></h5>
                                 </div>
                             </div>
                             <div class="col-6 d-flex justify-content-end">
@@ -584,7 +586,7 @@
                                     <div class="pax_details">
                                         <p>price</p>
                                     </div>
-                                    <h5 class="pax-title">₱230.00/pax</h5>
+                                    <h5 class="pax-title"></h5>
                                 </div>
                             </div>
                             <div class="col-6 d-flex justify-content-end">
@@ -901,7 +903,7 @@
                                 <div id="pax_details">
                                     <p>price</p>
                                 </div>
-                                <h5 class="pax-title">₱230.00/pax</h5>
+                                <h5 class="pax-title"></h5>
                             </div>
                         </div>
                         <div class="col-6 d-flex justify-content-end">
@@ -1157,7 +1159,7 @@
                                     <div id="pax_details">
                                         <p>price</p>
                                     </div>
-                                    <h5 class="pax-title">₱230.00/pax</h5>
+                                    <h5 class="pax-title"></h5>
                                 </div>
                             </div>
                             <div class="col-6 d-flex justify-content-end">
@@ -1223,7 +1225,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="jjs.js"></script>
 </body>
 

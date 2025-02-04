@@ -167,22 +167,20 @@ function createOrder(orderData, type) {
   attachOrderControls(uniqueId);
   toggleOrderNowButton();
 }
-
 function generateOrderHTML(uniqueId, orderData, type) {
   let orderContent = `
-    <div class="card mt-4" id="${uniqueId}" style="width: 20rem; margin-left:5%;">
+    <div class="card order-card d-inline-block mx-2" id="${uniqueId}">
       <div class="card-body">
-        <h5 class="card-title mb-0">${orderData.title}</h5>
-        <p class="text-muted small mb-2">${orderData.modalTitle}</p>
+        <h5 class="card-title mb-0 editable" contenteditable="true">${orderData.title}</h5>
+        <p class="text-muted small mb-2 editable" contenteditable="true">${orderData.modalTitle}</p>
         <ul class="card-text order_text">`;
 
   orderData.details.forEach((detail) => {
-    orderContent += `<li>${detail.textContent}</li>`;
+    orderContent += `<li class="editable" contenteditable="true">${detail.textContent}</li>`;
   });
 
   orderContent += `</ul>`;
   orderContent += generateSelectionsHTML(type, orderData.selections);
-
   orderContent += `
         <div class="d-flex align-items-center mt-3">
           <button class="btn btn-outline-secondary btn-sm decrement-pax" type="button">-</button>
@@ -470,3 +468,14 @@ function cleanText(text) {
     .replace(/\s+/g, " ")
     .trim();
 }
+document.addEventListener("DOMContentLoaded", function () {
+  const scrollableContainer = document.querySelector(".scrollable-container");
+
+  scrollableContainer.addEventListener("wheel", function (event) {
+    event.preventDefault(); // Prevent vertical scroll
+    this.scrollBy({
+      left: event.deltaY, // Move horizontally
+      behavior: "smooth", // Smooth scrolling effect
+    });
+  });
+});

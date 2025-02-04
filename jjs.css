@@ -1,3 +1,6 @@
+/* =======================
+   Global (Base) Styles
+   ======================= */
 html,
 body {
   font-family: "DM Sans", sans-serif;
@@ -6,171 +9,204 @@ body {
   margin: 0;
 }
 
+/* Card Titles & Text */
 .card-title {
   font-weight: 700;
   color: #0f0f0f; /* Corrected hex color */
-  font-size: 0.9rem;
+  font-size: 1rem;
+  text-align: center; /* Align title centrally */
 }
 
 .card-text {
   font-weight: 400;
-  color: #333333; /* Example color for card text, optional */
+  color: #333333;
 }
+
+/* Header */
 .header_text {
   font-weight: bold;
   font-size: 1.375rem;
   margin-left: 10%;
+  position: sticky; /* Make it stick to the top */
+  z-index: 10;
+  background-color: white;
 }
+
+/* Images */
 .card-img {
   object-fit: cover;
   height: 100%;
 }
 
+/* Updated Global CSS for .scrollable-container (Row Layout) */
 .scrollable-container {
-  max-height: 400px; /* Set a fixed height */
-  overflow-y: scroll; /* Enable scrolling */
-  scrollbar-width: none; /* For Firefox - hide scrollbar */
-}
-.scrollable-container::-webkit-scrollbar {
-  display: none; /* Hide scrollbar */
-}
-.scrollable-container::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 4px;
+  display: flex; /* Use flexbox for layout */
+  flex-direction: row; /* Align items in a row */
+  gap: 10px; /* Optional: add spacing between items */
+  overflow-x: scroll; /* Enable horizontal scrolling */
+  overflow-y: hidden; /* Hide vertical scrollbar */
+  scrollbar-width: none; /* Firefox: Hide scrollbar */
 }
 
-.scrollable-container::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.7);
+.scrollable-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera: Hide scrollbar */
 }
-.header_text {
-  position: sticky; /* Make it stick to the top */
-  z-index: 10; /* Ensure it stays above other content */
-  background-color: white; /* Add a background color to avoid overlapping with other elements */
-}
-.fw-bold {
-  margin-bottom: -25px;
-}
+
+/* Order Container */
 .order_container {
-  width: 100%; /* Full width of the screen */
-  height: calc(
-    100vh - 400px
-  ); /* Adjust to fill remaining viewport below any header (adjust the 100px as needed) */
-  padding: 10px; /* Add some inner spacing */
-  border: 1px solid #aaa; /* Border style */
+  width: 80%;
+  max-width: 1000px;
+  height: auto;
+  padding: 15px;
+  border: 1px solid #aaa;
   border-radius: 15px;
-  background-color: #ffffff; /* Light background */
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-  margin: 0; /* No external margins */
-  overflow-y: auto; /* Enable scrolling if content overflows */
+  background-color: #ffffff;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  margin: auto;
+  overflow-y: auto;
   scrollbar-width: none;
-  z-index: 1; /* Set a neutral z-index */
+  z-index: 1;
 }
 
 .order_header {
-  margin-bottom: 1px;
+  font-size: 1.5rem;
+  text-align: center;
+  margin-bottom: 15px; /* Creates space below "Your Order" */
 }
 
-.card-title {
-  font-size: 1rem;
-  text-align: center; /* Align the title centrally */
-}
-#cat_details {
-  color: #ffffff;
-  flex-grow: 1; /* Fill remaining space */
+.order-cards-container {
   display: flex;
-  flex-direction: column;
-  justify-content: center; /* Center-align text */
+  flex-wrap: wrap; /* Ensures cards wrap in a row */
+  justify-content: center; /* Centers the cards */
+  gap: 10px; /* Adds space between cards */
 }
-#cat_details p {
-  font-size: 0.8rem; /* Scale text slightly smaller for smaller screens */
-  margin: 2px 0;
+
+.order-card {
+  width: 18.4rem;
+  margin-bottom: 10px; /* Prevents overlap */
 }
-.card-title_details {
-  font-size: 1.2rem;
+
+.order_header {
+  font-size: 1.5rem;
+  text-align: center;
+  margin-bottom: 15px; /* Creates space below "Your Order" */
 }
+
+.order-cards-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  overflow-x: auto;
+  gap: 1rem;
+  padding: 1rem;
+  white-space: nowrap;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.order-card {
+  min-width: 300px;
+  flex: 0 0 auto;
+}
+
+.editable {
+  border: 1px dashed transparent;
+}
+
+.editable:focus {
+  border: 1px dashed #007bff;
+  outline: none;
+}
+.scrollable-container {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 10px;
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 10px; /* Ensures smooth alignment */
+  scroll-behavior: smooth; /* Enable smooth scrolling */
+}
+
+.scrollable-container::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome, Safari, Opera */
+}
+
+.scrollable-container > * {
+  scroll-snap-align: start;
+  flex: 0 0 auto; /* Prevents items from stretching */
+}
+
+/* Card Custom Styles */
 .card-custom {
   background-color: #12162d;
   color: #17c37b;
-  height: auto; /* Allow cards to grow dynamically */
-  min-height: 13rem; /* Ensure minimum height */
+  height: auto; /* Allow card to grow dynamically */
+  min-height: 13rem; /* Ensure a minimum height */
   border: none;
   cursor: pointer;
   transition: background-color 0.3s ease, color 0.3s ease;
   display: flex;
   flex-direction: column;
   justify-content: space-between; /* Distribute content evenly */
-  padding: 10px; /* Add padding inside the card */
+  padding: 10px;
+  /* Optional: set a fixed width to help control the row layout */
+  flex: 0 0 300px; /* Cards will have a fixed width of 300px */
+  box-sizing: border-box;
 }
 .card-custom p {
-  color: black; /* Default black color for the card title */
+  color: black;
   transition: color 0.3s ease;
 }
-
 .card-custom.active {
   background-color: #17c37b;
-  color: white; /* Change color for cat_details to white */
+  color: white;
 }
-
 .card-custom.active p {
-  color: white; /* Change card title to white when active */
+  color: white;
 }
-
 .card-custom:hover {
-  background-color: #14a96c; /* Slightly darker green on hover */
-  color: white; /* Change color for cat_details to white */
+  background-color: #14a96c;
+  color: white;
+}
+.card-custom:hover p {
+  color: white;
 }
 
-.card-custom:hover p {
-  color: white; /* Change card title to white on hover */
-}
+/* Card Body */
 .card-body {
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* Align title and details */
+  justify-content: space-between;
   height: 100%;
 }
-
-.row {
-  display: flex;
-  flex-wrap: wrap; /* Ensure proper wrapping on smaller screens */
+.scrollable-container .row {
+  flex-wrap: nowrap; /* Prevent cards from wrapping to a new line */
+  gap: 10px; /* Optional: spacing between cards */
 }
-.col-6 {
-  flex: 1 1 50%; /* Each card takes up 50% of the row */
-  max-width: 50%;
+
+.scrollable-container .col-6 {
+  flex: 0 0 auto; /* Prevent flex items from growing/shrinking */
+  width: 300px; /* Set a fixed width for each card (adjust as needed) */
   box-sizing: border-box;
 }
+/* Other Elements */
 .no_pax {
   margin-bottom: 20px;
 }
 .input-group {
   margin-bottom: 20% !important;
 }
-.btn-checkout {
-  background-color: rgba(141, 226, 191, 0.5) !important; /* Transparent green */
-  color: #16ba75 !important;
-  border-radius: 23px !important; /* Ensure border-radius is applied */
-  padding: 10px 20px !important;
-  font-size: 16px !important;
-  border: none !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
-  transition: background-color 0.3s ease !important;
-  width: 129px;
-  border-color: #16ba75 !important;
-}
 
-.btn-checkout:hover {
-  background-color: rgba(
-    22,
-    186,
-    117,
-    0.8
-  ) !important; /* Darker transparent green on hover */
-  color: white !important;
-}
+/* Buttons */
+.btn-checkout,
 .btn-order {
   background-color: rgba(141, 226, 191, 0.5) !important; /* Transparent green */
   color: #16ba75 !important;
-  border-radius: 23px !important; /* Ensure border-radius is applied */
+  border-radius: 23px !important;
   padding: 10px 20px !important;
   font-size: 16px !important;
   border: none !important;
@@ -179,136 +215,45 @@ body {
   width: 129px;
   border-color: #16ba75 !important;
 }
-
+.btn-checkout:hover,
 .btn-order:hover {
   background-color: rgba(
     22,
     186,
     117,
     0.8
-  ) !important; /* Darker transparent green on hover */
+  ) !important; /* Darker green on hover */
   color: white !important;
 }
-@media (max-width: 576px) {
-  .scrollable-container {
-    max-height: 400px; /* Set a fixed height */
-    overflow-y: scroll; /* Enable scrolling */
-    scrollbar-width: none; /* For Firefox - hide scrollbar */
-  }
 
-  .scrollable-container::-webkit-scrollbar {
-    display: none; /* Hide scrollbar */
-  }
-
-  .scrollable-container::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 4px;
-  }
-
-  .scrollable-container::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(0, 0, 0, 0.7);
-  }
-
-  .col-6 {
-    flex: 1 1 100%; /* Full width on extra small screens */
-    max-width: 100%;
-  }
-  #cat_details {
-    color: #ffffff;
-    flex-grow: 1; /* Fill remaining space */
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Center-align text */
-  }
-
-  #cat_details p {
-    font-size: 0.75rem; /* Adjust font size for very small screens */
-  }
-
-  .card-title {
-    font-size: 1rem; /* Slightly reduce card title size */
-  }
-
-  .dropdown_men select {
-    font-size: 0.9rem; /* Adjust font size of the dropdown */
-    border-radius: 26px;
-  }
-  .note-title {
-    font-size: 18px;
-  }
-
-  #note_details {
-    font-size: 0.8rem;
-    color: #8a959e;
-  }
-  .pax_details {
-    padding: 0;
-    margin-bottom: -10px;
-    color: #8a959e !important;
-  }
-  .order_text {
-    color: #8a959e !important;
-  }
-  .btn-order {
-    background-color: rgba(
-      141,
-      226,
-      191,
-      0.5
-    ) !important; /* Transparent green */
-    color: #e7e7e7 !important;
-    border-radius: 23px !important; /* Ensure border-radius is applied */
-    padding: 10px 20px !important;
-    font-size: 16px !important;
-    border: none !important;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
-    transition: background-color 0.3s ease !important;
-    width: 129px;
-    border-color: #16ba75 !important;
-  }
-
-  .btn-order:hover {
-    background-color: rgba(
-      22,
-      186,
-      117,
-      0.8
-    ) !important; /* Darker transparent green on hover */
-    color: white !important;
-  }
-}
-/*success modal*/
+/* Other Global Elements (modals, menus, etc.) */
+/* Success Modal */
 .modal#statusSuccessModal .modal-content,
 .modal#statusErrorsModal .modal-content {
   border-radius: 30px;
 }
-
 .modal#statusSuccessModal .modal-content svg,
 .modal#statusErrorsModal .modal-content svg {
   width: 100px;
   display: block;
   margin: 0 auto;
 }
-
 .modal#statusSuccessModal .modal-content .path,
 .modal#statusErrorsModal .modal-content .path {
   stroke-dasharray: 1000;
   stroke-dashoffset: 0;
 }
-
 .modal#statusSuccessModal .modal-content .path.circle,
 .modal#statusErrorsModal .modal-content .path.circle {
   -webkit-animation: dash 0.9s ease-in-out;
   animation: dash 0.9s ease-in-out;
 }
-
 .modal#statusSuccessModal .modal-content .path.line,
 .modal#statusErrorsModal .modal-content .path.line {
   stroke-dashoffset: 1000;
   -webkit-animation: dash 0.95s 0.35s ease-in-out forwards;
   animation: dash 0.95s 0.35s ease-in-out forwards;
 }
-
 .modal#statusSuccessModal .modal-content .path.check,
 .modal#statusErrorsModal .modal-content .path.check {
   stroke-dashoffset: -100;
@@ -320,81 +265,48 @@ body {
   0% {
     stroke-dashoffset: 1000;
   }
-
   100% {
     stroke-dashoffset: 0;
   }
 }
-
 @keyframes dash {
   0% {
     stroke-dashoffset: 1000;
   }
-
   100% {
     stroke-dashoffset: 0;
   }
 }
-
-@-webkit-keyframes dash {
-  0% {
-    stroke-dashoffset: 1000;
-  }
-
-  100% {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes dash {
-  0% {
-    stroke-dashoffset: 1000;
-  }
-
-  100% {
-    stroke-dashoffset: 0;
-  }
-}
-
 @-webkit-keyframes dash-check {
   0% {
     stroke-dashoffset: -100;
   }
-
   100% {
     stroke-dashoffset: 900;
   }
 }
-
 @keyframes dash-check {
   0% {
     stroke-dashoffset: -100;
   }
-
   100% {
     stroke-dashoffset: 900;
   }
 }
 
-.box00 {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-}
+/* Menu & Logout */
 .menu-section {
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 1px solid #eee;
 }
-
+.menu-section:last-child {
+  border-bottom: none;
+}
 .section-title {
   color: #333;
   margin-bottom: 10px;
   font-weight: bold;
-}
-
-.menu-section:last-child {
-  border-bottom: none;
 }
 .logout-item {
   color: #fff;
@@ -405,13 +317,75 @@ body {
   border-radius: 6px;
   transition: all 0.3s ease;
 }
-
 .logout-item:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: #17c37b;
 }
-
 .icon-size {
   font-size: 20px;
   margin-right: 10px;
+}
+#cat_details p {
+  font-size: 1rem;
+  margin: 0.2rem 0; /* reduces vertical spacing between paragraphs */
+  line-height: 1.2; /* adjust as needed for your design */
+}
+
+/* =======================
+      Mobile-Specific Overrides
+      (screens 576px and below)
+      ======================= */
+@media (max-width: 576px) {
+  /* Make columns full width on mobile */
+  .col-6 {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  /* Adjust text sizes if needed */
+  #cat_details p {
+    font-size: 0.75rem;
+    margin: 0;
+    line-height: 1; /* or another value that suits your design */
+  }
+
+  /* Optional: adjust header size on mobile */
+  .header_text {
+    font-size: 1.25rem;
+  }
+
+  /* Scrollable container styles for mobile */
+  .scrollable-container {
+    max-height: 400px; /* Set a fixed height for mobile if needed */
+    overflow-y: scroll; /* Enable vertical scrolling */
+    scrollbar-width: none; /* Hide scrollbar in Firefox */
+  }
+
+  .scrollable-container::-webkit-scrollbar {
+    display: none; /* Hide scrollbar in Chrome, Safari, Opera */
+  }
+
+  .scrollable-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+  }
+
+  .scrollable-container::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+  .order_container {
+    width: 24rem; /* Updated width */
+    height: 27rem; /* Updated height */
+    padding: 10px;
+    border: 1px solid #aaa;
+    border-radius: 10px; /* Updated border-radius */
+    background-color: #ffffff;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    z-index: 1;
+  }
+
+  /* Add any additional mobile-only style adjustments here */
 }
