@@ -628,7 +628,7 @@ document.getElementById("exportPDF").addEventListener("click", function () {
   window.location.href = "export_leave_report.php"; // Replace with your PHP script path
 });
 //security
-const PASSWORD = "123"; // Replace with your password
+const PASSWORD = "gso2025"; // Replace with your password
 const ACCESS_KEY = "userAccessGranted";
 
 // Show modal if user hasn't accessed
