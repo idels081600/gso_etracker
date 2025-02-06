@@ -109,5 +109,6 @@ $pdf->printTableHeader(); // Table header
 $pdf->printTableRows($sql_personal); // Print rows for Personal Business
 
 // Output the PDF
-$filename = 'pass_slip_' . date('Y-m-d') . '.pdf';
-$pdf->Output($filename, 'I');
+$filename = 'pass_slip_' . date('Y-m-d', strtotime('-1 day')) . '.pdf';
+$pdf->Output($filename, 'D');
+
