@@ -86,10 +86,34 @@
                 <!-- More cards if needed -->
             </div>
         </div>
-        <div class="container mt-3 order_container">
+        <div class="container-fluid mt-3 order_container">
             <div class="fw-bold order_header mt-2">Your Order</div>
-            <div id="orderList" class="order-cards-container"></div>
+            <div class="order-container-wrapper">
+                <div id="orderList" class="order-cards-container"></div>
+                    
+                <div class="orderNow-container">
+                    <div class="fw-bold details_header mt-1">Enter Details</div>
+                    <form id="orderForm" class="mt-4">
+                        <div class="mb-3">
+                            <label for="orderDate" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="orderDate" name="orderDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="orderActivity" class="form-label">Activity</label>
+                            <input type="text" class="form-control" id="orderActivity" name="orderActivity" placeholder="Enter Activity" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="orderPoItb" class="form-label">P.O / ITB No.</label>
+                            <input type="text" class="form-control" id="orderPoItb" name="orderPoItb" placeholder="Enter P.O / ITB" required>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Generate Order Slip</button>
+                        </div>
+                    </form>
+                </div>
+            </div>                                                                                                  
         </div>
+
 
     </div>
     <div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
@@ -131,6 +155,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <h5 class="Choices-title" style="text-align: left;">Choose one only</h5>
+                    </div>
                     <div class="row g-2">
                         <!-- First Card -->
                         <div class="col-6">
@@ -190,12 +217,12 @@
                         <span class="input-group-text" id="inputGroup-sizing-sm">No. of Pax</span>
                         <input type="text" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-sm">
                     </div>
-                    <div class="notebody">
+                    <!-- <div class="notebody">
                         <h5 class="note-title">Note</h5>
                         <div id="note_details">
                             <p>Review your order</p>
                         </div>
-                    </div>
+                    </div> -->
                     <div class="modal-footer">
                         <div class="row g-2 d-flex justify-content-between align-items-center w-100">
                             <div class="col-6">
@@ -347,12 +374,12 @@
                     </div>
 
                     <!-- Note Section -->
-                    <div class="notebody">
+                    <!-- <div class="notebody">
                         <h5 class="note-title">Note</h5>
                         <div id="note_details">
                             <p>Review your order</p>
                         </div>
-                    </div>
+                    </div> -->
 
                     <!-- Footer Section -->
                     <div class="modal-footer">
@@ -460,7 +487,7 @@
                     <div class="row g-2">
                         <div class="col-6 dropdown_men">
                             <div class="input-group mb-1">
-                                <select class="form-select" id="rice_menu_select">
+                                <select class="form-select" id="rice_out_select">
                                     <option selected>Choose Rice...</option>
                                     <option value="1">Plain Rice</option>
                                 </select>
@@ -469,7 +496,7 @@
                         <!-- Second Dropdown -->
                         <div class="col-6 dropdown_men">
                             <div class="input-group mb-1">
-                                <select class="form-select" id="drinks_menu_select">
+                                <select class="form-select" id="drinks_out_select">
                                     <option selected>Choose Iced Tea or SoftDrinks...</option>
                                     <option value="1">SoftDrinks in Glass</option>
                                     <option value="2">Iced Tea</option>
@@ -478,7 +505,7 @@
                         </div>
                         <div class="col-6 dropdown_men">
                             <div class="input-group mb-1">
-                                <select class="form-select" id="pork_menu_select">
+                                <select class="form-select" id="pork_out_select">
                                     <option selected>Choose Pork...</option>
                                     <option value="1">Pork with Sweet and Sour Sauce</option>
                                     <option value="2">Pork Afritada</option>
@@ -492,7 +519,7 @@
                         </div>
                         <div class="col-6 dropdown_men">
                             <div class="input-group mb-1">
-                                <select class="form-select" id="chicken_menu_select">
+                                <select class="form-select" id="chicken_out_select">
                                     <option selected>Choose Chicken...</option>
                                     <option value="1">Buttered Chicken</option>
                                     <option value="2">Chicken Kalderita</option>
@@ -505,7 +532,7 @@
                         </div>
                         <div class="col-6 dropdown_men">
                             <div class="input-group mb-1">
-                                <select class="form-select" id="beef_menu_select">
+                                <select class="form-select" id="beef_out_select">
                                     <option selected>Choose Beef...</option>
                                     <option value="1">Beef Calderita</option>
                                     <option value="2">Beef Ampalaya</option>
@@ -518,7 +545,7 @@
                         </div>
                         <div class="col-6 dropdown_men">
                             <div class="input-group mb-1">
-                                <select class="form-select" id="fish_menu_select">
+                                <select class="form-select" id="fish_out_select">
                                     <option selected>Choose Fish...</option>
                                     <option value="1">Fish Fillet w/ Sweet n Sour</option>
                                     <option value="2">Fish Fillet w/ Toase Sauce</option>
@@ -530,7 +557,7 @@
                         </div>
                         <div class="col-6 dropdown_men">
                             <div class="input-group mb-1">
-                                <select class="form-select" id="vegetable_menu_select">
+                                <select class="form-select" id="vegetable_out_select">
                                     <option selected>Choose Vegetable...</option>
                                     <option value="1">Chopsuey</option>
                                     <option value="2">Mixed Vegetables in Oyster Sauce</option>
@@ -541,7 +568,7 @@
                         </div>
                         <div class="col-6 dropdown_men">
                             <div class="input-group mb-1">
-                                <select class="form-select" id="noodle_menu_select">
+                                <select class="form-select" id="noodle_out_select">
                                     <option selected>Choose Noodles...</option>
                                     <option value="1">Bam-i Guisado</option>
                                     <option value="2">Bihon Guisado</option>
@@ -552,7 +579,7 @@
                         </div>
                         <div class="col-6 dropdown_men">
                             <div class="input-group mb-3">
-                                <select class="form-select" id="dessert_menu_select">
+                                <select class="form-select" id="dessert_out_select">
                                     <option selected>Choose Dessert...</option>
                                     <option value="1">Brownies</option>
                                     <option value="2">Maja Blanca</option>
@@ -612,7 +639,7 @@
                         <div class="col-8">
                             <div class="card card-custom mb-3 clickable-card" style=" border-radius: 20px ;">
                                 <div class="card-body">
-                                    <h5 class="card-title">₱1,850.00/Head</h5>
+                                    <h5 class="card-title">₱1850.00/Head</h5>
                                     <div id="cat_details">
                                         <p>Break Fast = ₱250.00</p>
                                         <p>Lunch = ₱350.00</p>

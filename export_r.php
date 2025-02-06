@@ -48,7 +48,7 @@ class PDF extends FPDF
         $this->Cell(80, 10, 'Purpose', 1, 0, 'C', true);
         $this->Cell(21, 10, 'TimeDept', 1, 0, 'C', true);
         $this->Cell(20, 10, 'EstTime', 1, 0, 'C', true);
-        $this->Cell(28, 10, 'TypeofBusiness', 1, 0, 'C', true);
+        $this->Cell(28, 10, 'Date', 1, 0, 'C', true);
         $this->Cell(20, 10, 'TimeRet', 1, 0, 'C', true);
         $this->Cell(40, 10, 'Confirmed By', 1, 0, 'C', true);
         $this->Cell(50, 10, 'Remarks', 1, 0, 'C', true);
@@ -68,7 +68,7 @@ class PDF extends FPDF
             $purpose = $row->purpose;
             $timedept = date("h:i A", strtotime($row->timedept)); // Format the time for TimeDept
             $esttime = date("h:i A", strtotime($row->esttime)); // Format the time for EstTime
-            $typeofbusiness = $row->typeofbusiness;
+            $date = $row->date;
             $time_returned = date("h:i A", strtotime($row->time_returned));
             $confirmed_by = $row->confirmed_by;
             $remarks = $row->remarks;
@@ -81,7 +81,7 @@ class PDF extends FPDF
             $this->Cell(80, 15, $purpose, 1);
             $this->Cell(21, 15, $timedept, 1);
             $this->Cell(20, 15, $esttime, 1);
-            $this->Cell(28, 15, $typeofbusiness, 1);
+            $this->Cell(28, 15, $date, 1);
             $this->Cell(20, 15, $time_returned, 1);
             $this->Cell(40, 15, $confirmed_by, 1);
 

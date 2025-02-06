@@ -187,7 +187,7 @@ if (isset($_POST['delete_all'])) {
           <div class="form-outline">
             <div class="input-group-append" id="btns" style="margin-left: 100px; display: flex; align-items: center;">
               <!-- Export Button -->
-              <a href="export.php" class="btn btn-success btn-sm" style="margin: 5px;">Export</a>
+              <a href="export_tcws.php" class="btn btn-success btn-sm" style="margin: 5px;">Export</a>
               <!-- Delete Form -->
               <form method="post" action="">
                 <button type="submit" name="delete_all" class="btn btn-danger btn-sm" onclick="confirmDelete()">Delete</button>

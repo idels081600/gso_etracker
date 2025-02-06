@@ -100,9 +100,15 @@ $pdf->Ln(0.3);
 
 // Signature lines
 $pdf->SetFont('Arial', '', 9);
-$pdf->Cell(4, 0.2, 'Ordered by: _________________', 0, 0, 'C');
+$pdf->Cell(3, 1.3, 'Ordered by: _________________', 0, 0, 'C');
 $pdf->SetXY($pdf->GetX(), $pdf->GetY());
-$pdf->MultiCell(4, 0.2, "Approved by:\nCHRIS JOHN RENER TORRALBA\n", 0, 'C');
+$pdf->MultiCell(7, 0.2, "Approved by:\n\n\n", 0, 'C');
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->MultiCell(13, 0.2, "CHRIS JOHN RENER TORRALBA, Ph.D.\n", 0, 'C');
+$pdf->SetFont('Arial', '', 9);
+$pdf->MultiCell(13, 0.2, "CGDH I- CGSO\n", 0, 'C');
+
+
 
 // Output the PDF as a download
 $pdf->Output('I', 'OrderSlip.pdf');

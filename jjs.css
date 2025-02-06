@@ -54,21 +54,32 @@ body {
 
 /* Order Container */
 .order_container {
-  width: 80%;
-  max-width: 1000px;
+  width: 100%;
   height: auto;
   padding: 15px;
-  border: 1px solid #aaa;
   border-radius: 15px;
   background-color: #ffffff;
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
   margin: auto;
   overflow-y: auto;
   scrollbar-width: none;
   z-index: 1;
 }
+.orderNow-container {
+  width: 20rem;
+  float: right;
+  margin: 0 auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 
 .order_header {
+  font-size: 1.5rem;
+  float: left;
+  margin-bottom: 15px; /* Creates space below "Your Order" */
+}
+.details_header {
   font-size: 1.5rem;
   text-align: center;
   margin-bottom: 15px; /* Creates space below "Your Order" */
@@ -82,10 +93,11 @@ body {
 }
 
 .order-card {
-  width: 18.4rem;
-  margin-bottom: 10px; /* Prevents overlap */
+  width: 90%; /* Full width of container */
+  max-width: 700px; /* Maximum width */
+  margin: 0 auto 1rem auto; /* Center the card with bottom margin */
+  flex: 0 0 auto;
 }
-
 .order_header {
   font-size: 1.5rem;
   text-align: center;
@@ -175,14 +187,24 @@ body {
 .card-custom:hover p {
   color: white;
 }
+.card_cart {
+  width: 58rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  height: auto;
+}
 
-/* Card Body */
-.card-body {
+.card_cart .card-body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100%;
+  padding: 1.5rem;
+  width: 100%; /* Set to any specific value like 300px, 50%, etc */
+  max-width: 800px; /* Optional: adds an upper limit */
+  margin: 0 auto; /* Optional: centers the container if smaller than parent */
 }
+
 .scrollable-container .row {
   flex-wrap: nowrap; /* Prevent cards from wrapping to a new line */
   gap: 10px; /* Optional: spacing between cards */
@@ -326,43 +348,60 @@ body {
   margin-right: 10px;
 }
 #cat_details p {
-  font-size: 1rem;
-  margin: 0.2rem 0; /* reduces vertical spacing between paragraphs */
+  font-size: 0.8rem;
+  margin: 0.7rem 0; /* reduces vertical spacing between paragraphs */
   line-height: 1.2; /* adjust as needed for your design */
 }
 
-/* =======================
-      Mobile-Specific Overrides
-      (screens 576px and below)
-      ======================= */
 @media (max-width: 576px) {
-  /* Make columns full width on mobile */
+  .mobile-order-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+  }
+
+  .mobile-order-button .btn-order {
+    background-color: #17c37b;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-weight: 600;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, background-color 0.2s ease;
+  }
+
+  .mobile-order-button .btn-order:hover {
+    background-color: #14a96c;
+    transform: translateY(-2px);
+  }
+
+  .mobile-order-button .btn-order:active {
+    transform: translateY(0);
+  }
   .col-6 {
     flex: 1 1 100%;
     max-width: 100%;
   }
 
-  /* Adjust text sizes if needed */
   #cat_details p {
     font-size: 0.75rem;
     margin: 0;
-    line-height: 1; /* or another value that suits your design */
+    line-height: 1;
   }
 
-  /* Optional: adjust header size on mobile */
   .header_text {
     font-size: 1.25rem;
   }
 
-  /* Scrollable container styles for mobile */
   .scrollable-container {
-    max-height: 400px; /* Set a fixed height for mobile if needed */
-    overflow-y: scroll; /* Enable vertical scrolling */
-    scrollbar-width: none; /* Hide scrollbar in Firefox */
+    max-height: 400px;
+    overflow-y: scroll;
+    scrollbar-width: none;
   }
 
   .scrollable-container::-webkit-scrollbar {
-    display: none; /* Hide scrollbar in Chrome, Safari, Opera */
+    display: none;
   }
 
   .scrollable-container::-webkit-scrollbar-thumb {
@@ -373,12 +412,13 @@ body {
   .scrollable-container::-webkit-scrollbar-thumb:hover {
     background-color: rgba(0, 0, 0, 0.7);
   }
+
   .order_container {
-    width: 24rem; /* Updated width */
-    height: 27rem; /* Updated height */
+    width: 24rem;
+    height: 27rem;
     padding: 10px;
     border: 1px solid #aaa;
-    border-radius: 10px; /* Updated border-radius */
+    border-radius: 10px;
     background-color: #ffffff;
     box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
     margin: 0;
@@ -386,6 +426,21 @@ body {
     scrollbar-width: none;
     z-index: 1;
   }
+  .card_cart {
+    width: 21.2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    height: auto;
+  }
 
-  /* Add any additional mobile-only style adjustments here */
+  .card_cart .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.5rem;
+    width: 100%; /* Set to any specific value like 300px, 50%, etc */
+    max-width: 800px; /* Optional: adds an upper limit */
+    margin: 0 auto; /* Optional: centers the container if smaller than parent */
+  }
 }
