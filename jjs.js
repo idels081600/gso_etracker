@@ -422,8 +422,15 @@ function showSuccessModal() {
   setTimeout(() => statusSuccessModal.hide(), 1000);
 }
 // Add this to your existing JavaScript file
-document.getElementById("orderForm").addEventListener("submit", function (e) {
+// Function to determine which form to use based on screen size
+function handleOrderSubmission(e) {
   e.preventDefault();
+
+  // Get the appropriate form based on screen width
+  const form =
+    window.innerWidth <= 576
+      ? document.getElementById("modalOrderForm")
+      : document.getElementById("orderForm");
 
   const orders = Array.from(orderContainer.querySelectorAll(".card_cart")).map(
     (card) => {
@@ -445,9 +452,9 @@ document.getElementById("orderForm").addEventListener("submit", function (e) {
   );
 
   const formData = {
-    date: document.getElementById("orderDate").value,
-    activity: cleanText(document.getElementById("orderActivity").value),
-    poItb: cleanText(document.getElementById("orderPoItb").value),
+    date: form.querySelector("#orderDate").value,
+    activity: cleanText(form.querySelector("#orderActivity").value),
+    poItb: cleanText(form.querySelector("#orderPoItb").value),
     orders: orders,
   };
 
@@ -473,8 +480,19 @@ document.getElementById("orderForm").addEventListener("submit", function (e) {
       alert("Failed to process order. Please try again.");
     });
 
-  bootstrap.Modal.getInstance(document.getElementById("orderModal")).hide();
-});
+  // Close modal if on mobile
+  if (window.innerWidth <= 576) {
+    bootstrap.Modal.getInstance(document.getElementById("orderModal")).hide();
+  }
+}
+
+// Add event listeners to both forms
+document
+  .getElementById("orderForm")
+  .addEventListener("submit", handleOrderSubmission);
+document
+  .getElementById("modalOrderForm")
+  .addEventListener("submit", handleOrderSubmission);
 
 function cleanText(text) {
   return text

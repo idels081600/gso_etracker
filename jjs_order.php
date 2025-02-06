@@ -90,7 +90,6 @@
             <div class="fw-bold order_header mt-2">Your Order</div>
             <div class="order-container-wrapper">
                 <div id="orderList" class="order-cards-container"></div>
-
                 <div class="orderNow-container">
                     <div class="fw-bold details_header mt-1">Enter Details</div>
                     <form id="orderForm" class="mt-4">
@@ -124,7 +123,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="orderForm">
+                    <form id="modalOrderForm">
                         <div class="mb-3">
                             <label for="orderDate" class="form-label">Date</label>
                             <input type="date" class="form-control" id="orderDate" name="orderDate" required>

@@ -358,7 +358,6 @@ body {
   color: #6c757d;
   font-style: italic;
 }
-
 @media (max-width: 576px) {
   .mobile-order-button {
     position: fixed;
