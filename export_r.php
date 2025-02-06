@@ -1,14 +1,14 @@
 <?php
 require_once 'dbh.php';
 require_once "fpdf/fpdf.php";
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Desk Clerk') {
-    header("location:login_v2.php");
-}
+// session_start();
+// if (!isset($_SESSION['username'])) {
+//     header("location:login_v2.php");
+// } else if ($_SESSION['role'] == 'Employee') {
+//     header("location:login_v2.php");
+// } else if ($_SESSION['role'] == 'Desk Clerk') {
+//     header("location:login_v2.php");
+// }
 
 // Query for Official Business
 $result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' ORDER BY id";
