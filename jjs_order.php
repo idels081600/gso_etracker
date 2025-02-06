@@ -90,7 +90,7 @@
             <div class="fw-bold order_header mt-2">Your Order</div>
             <div class="order-container-wrapper">
                 <div id="orderList" class="order-cards-container"></div>
-                    
+
                 <div class="orderNow-container">
                     <div class="fw-bold details_header mt-1">Enter Details</div>
                     <form id="orderForm" class="mt-4">
@@ -111,7 +111,7 @@
                         </div>
                     </form>
                 </div>
-            </div>                                                                                                  
+            </div>
         </div>
 
 

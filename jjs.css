@@ -351,6 +351,12 @@ body {
   font-size: 0.8rem;
   margin: 0.7rem 0; /* reduces vertical spacing between paragraphs */
   line-height: 1.2; /* adjust as needed for your design */
+  color: #505050;
+}
+.text-muted.small {
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-style: italic;
 }
 
 @media (max-width: 576px) {
@@ -385,9 +391,10 @@ body {
   }
 
   #cat_details p {
-    font-size: 0.75rem;
-    margin: 0;
-    line-height: 1;
+    font-size: 0.8rem;
+    margin: 0.7rem 0; /* reduces vertical spacing between paragraphs */
+    line-height: 1.2; /* adjust as needed for your design */
+    color: #505050;
   }
 
   .header_text {
@@ -427,7 +434,7 @@ body {
     z-index: 1;
   }
   .card_cart {
-    width: 21.2rem;
+    width: 23.4rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border: 1px solid #ddd;
     border-radius: 8px;
