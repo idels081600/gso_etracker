@@ -108,6 +108,10 @@ $pdf->MultiCell(13, 0.2, "CHRIS JOHN RENER TORRALBA, Ph.D.\n", 0, 'C');
 $pdf->SetFont('Arial', '', 9);
 $pdf->MultiCell(13, 0.2, "CGDH I- CGSO\n", 0, 'C');
 
+// Add date prepared at the bottom
+$pdf->Ln(0.5); // Add some spacing
+$pdf->Cell(10, 0.05, 'Date Prepared: ' . date('m/d/Y'), 0, 1, 'L');
+
 
 
 // Output the PDF as a download
