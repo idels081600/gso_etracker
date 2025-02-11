@@ -11,11 +11,11 @@ require_once "fpdf/fpdf.php";
 // }
 
 // Query for Official Business
-$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND role = 'Employee' ORDER BY id";
+$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND Role = 'Employee' ORDER BY id";
 $sql_official = $conn->query($result_official);
 
 // Query for Personal Business
-$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND role = 'Employee' ORDER BY id";
+$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND Role = 'Employee' ORDER BY id";
 $sql_personal = $conn->query($result_personal);
 
 class PDF extends FPDF
