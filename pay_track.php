@@ -1,15 +1,103 @@
 <?php
 require_once "display_data_sap.php";
 require_once "db_payables.php";
-$sir_bayong = display_data_sir_bayong();
-$maam_march = display_data_BQ();
-$maam_cornell = display_data_maam_mariecris();
-$total_amount_bq = get_total_amount_BQ();
+
 session_start();
+
+$password = "payables_gso2024"; // Change this to your desired password
+$accessGranted = false;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['password']) && $_POST['password'] === $password) {
+        $accessGranted = true;
+    }
+}
+
 if (!isset($_SESSION['username'])) {
     header("location: login_v2.php");
     exit(); // Ensure that the script stops execution after the redirect
 }
+
+if (!$accessGranted) {
+    // Display the password modal
+?>
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="pay.css">
+        <title>Access Required</title>
+        <style>
+            /* Modal styles */
+            .modal {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.7);
+                z-index: 1000;
+            }
+
+            .modal-content {
+                background-color: white;
+                padding: 20px;
+                border-radius: 5px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+                width: 300px;
+                text-align: center;
+            }
+
+            .modal-content input {
+                width: 80%;
+                padding: 10px;
+                margin: 10px 0;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+            }
+
+            .modal-content button {
+                padding: 10px 15px;
+                border: none;
+                background-color: #007BFF;
+                color: white;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+
+            .modal-content button:hover {
+                background-color: #0056b3;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="modal">
+            <div class="modal-content">
+                <h1>Enter Password to Access</h1>
+                <form method="POST" action="">
+                    <input type="password" name="password" placeholder="Password" required>
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+        </div>
+    </body>
+
+    </html>
+<?php
+    exit(); // Stop further execution if access is not granted
+}
+
+// If access is granted, continue to load the data
+$sir_bayong = display_data_sir_bayong();
+$maam_march = display_data_BQ();
+$maam_cornell = display_data_maam_mariecris();
+$total_amount_bq = get_total_amount_BQ();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -62,7 +150,7 @@ if (!isset($_SESSION['username'])) {
 
 
 
-        
+
         <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
     <div class="content">
