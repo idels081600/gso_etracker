@@ -287,6 +287,7 @@ if (!isset($_SESSION['username'])) {
                                     <option>TCWS Division Head</option>
                                     <option>SAP</option>
                                     <option>ASSET</option>
+                                    <option>TENT INSTALLERS</option>
                                 </select>
                             </div>
                         </div>

@@ -71,6 +71,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "ASSET":
                 header("location:dashboard_asset_tracker.php");
                 break;
+                case "TENT INSTALLERS":
+                    header("location:tent_installers.php");
+                    break;
             default:
                 header("location:login_v2.php");
                 break;
