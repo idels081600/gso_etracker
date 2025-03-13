@@ -292,6 +292,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                                     <option value="Cargo Services">Cargo Services</option>
                                     <option value="Other Services">Other Services</option>
                                     <option value="Travel Services">Travel Services</option>
+                                    <option value="Travel Services">City Hall Compound</option>
                                 </select>
                             </div>
 
