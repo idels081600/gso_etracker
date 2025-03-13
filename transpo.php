@@ -292,7 +292,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                                     <option value="Cargo Services">Cargo Services</option>
                                     <option value="Other Services">Other Services</option>
                                     <option value="Travel Services">Travel Services</option>
-                                    <option value="Travel Services">City Hall Compound</option>
                                 </select>
                             </div>
 
@@ -323,6 +322,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
                                     <option value="Ubujan">Ubujan</option>
                                     <option value="Outside Tagbilaran">Outside Tagbilaran</option>
                                     <option value="Within Tagbilaran">Within Tagbilaran</option>
+                                    <option value="City Hall Compound">City Hall Compound</option>
                                 </select>
                             </div>
                             <div class="autocomplete-container">
