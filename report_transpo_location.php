@@ -31,7 +31,8 @@ $location_counts = [
     'Tiptip' => 0,
     'Ubujan' => 0,
     'Outside Tagbilaran' => 0,
-    'Within Tagbilaran' => 0
+    'Within Tagbilaran' => 0,
+    'City Hall Compound' => 0,
 ];
 
 // Build the query based on the input
