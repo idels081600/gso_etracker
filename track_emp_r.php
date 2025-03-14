@@ -15,18 +15,31 @@ if (!isset($_SESSION['username'])) {
 
 if (isset($_POST['delete_all'])) {
   if ($_POST['confirm'] == 'yes') {
-    $sql = "DELETE FROM request WHERE Role = 'Employee'";
+    // First backup the data
+    $backup_sql = "INSERT INTO request_backup SELECT * FROM request WHERE DATE(date) = CURDATE() AND Role = 'Employee'";
+    mysqli_query($conn, $backup_sql);
+
+    $sql = "DELETE FROM request";
     if (mysqli_query($conn, $sql)) {
-      header("Location: track_emp_r.php");
-      exit(0);
-    } else {
+      $_SESSION['show_undo'] = true;
       header("Location: track_emp_r.php");
       exit(0);
     }
-  } else {
-    header("Location: track_emp_r.php");
-    exit(0);
   }
+}
+
+// Handle undo action
+if (isset($_POST['undo_delete'])) {
+  $restore_sql = "INSERT INTO request 
+  SELECT * FROM request_backup 
+  WHERE DATE(date) = CURDATE() 
+  AND Role = 'Employee' 
+  ORDER BY id DESC";
+  mysqli_query($conn, $restore_sql);
+  mysqli_query($conn, "TRUNCATE TABLE request_backup");
+  unset($_SESSION['show_undo']);
+  header("Location: track_emp_r.php");
+  exit(0);
 }
 ?>
 <!doctype html>
@@ -203,13 +216,15 @@ if (isset($_POST['delete_all'])) {
         <h5 id="total_tally">Total Pass Slips: <?php echo $total_count; ?></h5>
       </div>
       <div class="col-md-3">
-        <div class="input-group mb-4 mt-5">
-          <div class="input-group-append d-flex justify-content-end" id="btns">
-            <a href="export_r.php" class="btn btn-success btn-sm mr-2">Export</a>
-            <form method="post" action="">
+        <div class="input-group mb-4 mt-5" style="display: flex; align-items: left;">
+          <div class="input-group-append" id="btns" style="margin-left: 0px; display: flex; align-items: center;">
+            <a href="export.php" class="btn btn-success btn-sm" style="margin: 5px;">Export</a>
+            <form method="post" action="" style="margin-right: 5px;">
               <button type="submit" name="delete_all" class="btn btn-danger btn-sm" onclick="confirmDelete()">Delete</button>
               <input type="hidden" name="confirm" id="confirm" value="no">
-              <input type="submit" name="delete" style="display: none;">
+            </form>
+            <form method="post" action="">
+              <button type="submit" name="undo_delete" class="btn btn-warning btn-sm">Undo Delete</button>
             </form>
           </div>
         </div>
