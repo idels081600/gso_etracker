@@ -19,7 +19,7 @@ if (isset($_POST['delete_all'])) {
     $backup_sql = "INSERT INTO request_backup SELECT * FROM request WHERE DATE(date) = CURDATE() AND Role = 'Employee'";
     mysqli_query($conn, $backup_sql);
 
-    $sql = "DELETE FROM request";
+    $sql = "DELETE FROM request WHERE role = 'Employee'";
     if (mysqli_query($conn, $sql)) {
       $_SESSION['show_undo'] = true;
       header("Location: track_emp_r.php");
