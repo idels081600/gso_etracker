@@ -43,13 +43,36 @@ if (!isset($_SESSION['username'])) {
                     <?php
                     require_once 'db_asset.php';
 
-                    $query = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no 
-                          FROM tent t 
-                          WHERE t.status IN ('Pending', 'Installed', 'For Retrieval', 'Retrieved')";
-                    $result = mysqli_query($conn, $query);
+                    // First fetch Pending status
+                    $query_pending = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no 
+                     FROM tent t 
+                     WHERE t.status = 'Pending'";
+                    $result_pending = mysqli_query($conn, $query_pending);
 
-                    if (mysqli_num_rows($result) > 0) {
-                        while ($row = mysqli_fetch_assoc($result)) {
+                    // Then fetch Installed status
+                    $query_installed = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no 
+                       FROM tent t 
+                       WHERE t.status = 'Installed'";
+                    $result_installed = mysqli_query($conn, $query_installed);
+
+                    // Finally fetch Retrieved status
+                    $query_retrieved = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no 
+                       FROM tent t 
+                       WHERE t.status = 'Retrieved'";
+                    $result_retrieved = mysqli_query($conn, $query_retrieved);
+
+                    // For Retrieval status (keeping this as it was in your original query)
+                    $query_for_retrieval = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no 
+                           FROM tent t 
+                           WHERE t.status = 'For Retrieval'";
+                    $result_for_retrieval = mysqli_query($conn, $query_for_retrieval);
+
+                    $total_rows = mysqli_num_rows($result_pending) + mysqli_num_rows($result_installed) +
+                        mysqli_num_rows($result_retrieved) + mysqli_num_rows($result_for_retrieval);
+
+                    if ($total_rows > 0) {
+                        // Display Pending records first
+                        while ($row = mysqli_fetch_assoc($result_pending)) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
@@ -57,18 +80,90 @@ if (!isset($_SESSION['username'])) {
                             echo "<td>" . htmlspecialchars($row['tent_no']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['status']) . "</td>";
                             echo '<td class="text-right">
-                            <button class="btn btn-primary"
-                                data-toggle="modal"
-                                data-target="#editModal"
-                                data-id="' . htmlspecialchars($row['id']) . '"
-                                data-name="' . htmlspecialchars($row['name']) . '"
-                                data-address="' . htmlspecialchars($row['location']) . '"
-                                data-contact="' . htmlspecialchars($row['contact_no']) . '"
-                                data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
-                                 data-status="' . htmlspecialchars($row['status']) . '">
-                                Edit
-                            </button>
-                        </td>';
+                <button class="btn btn-primary"
+                    data-toggle="modal"
+                    data-target="#editModal"
+                    data-id="' . htmlspecialchars($row['id']) . '"
+                    data-name="' . htmlspecialchars($row['name']) . '"
+                    data-address="' . htmlspecialchars($row['location']) . '"
+                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
+                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
+                    data-status="' . htmlspecialchars($row['status']) . '">
+                    Edit
+                </button>
+            </td>';
+                            echo "</tr>";
+                        }
+
+                        // Then display Installed records
+                        while ($row = mysqli_fetch_assoc($result_installed)) {
+                            echo "<tr>";
+                            echo "<td>" . htmlspecialchars($row['name']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['location']) . "</td>";
+                            // echo "<td>" . htmlspecialchars($row['contact_no']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['tent_no']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['status']) . "</td>";
+                            echo '<td class="text-right">
+                <button class="btn btn-primary"
+                    data-toggle="modal"
+                    data-target="#editModal"
+                    data-id="' . htmlspecialchars($row['id']) . '"
+                    data-name="' . htmlspecialchars($row['name']) . '"
+                    data-address="' . htmlspecialchars($row['location']) . '"
+                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
+                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
+                    data-status="' . htmlspecialchars($row['status']) . '">
+                    Edit
+                </button>
+            </td>';
+                            echo "</tr>";
+                        }
+
+                        // Display For Retrieval records
+                        while ($row = mysqli_fetch_assoc($result_for_retrieval)) {
+                            echo "<tr>";
+                            echo "<td>" . htmlspecialchars($row['name']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['location']) . "</td>";
+                            // echo "<td>" . htmlspecialchars($row['contact_no']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['tent_no']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['status']) . "</td>";
+                            echo '<td class="text-right">
+                <button class="btn btn-primary"
+                    data-toggle="modal"
+                    data-target="#editModal"
+                    data-id="' . htmlspecialchars($row['id']) . '"
+                    data-name="' . htmlspecialchars($row['name']) . '"
+                    data-address="' . htmlspecialchars($row['location']) . '"
+                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
+                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
+                    data-status="' . htmlspecialchars($row['status']) . '">
+                    Edit
+                </button>
+            </td>';
+                            echo "</tr>";
+                        }
+
+                        // Finally display Retrieved records
+                        while ($row = mysqli_fetch_assoc($result_retrieved)) {
+                            echo "<tr>";
+                            echo "<td>" . htmlspecialchars($row['name']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['location']) . "</td>";
+                            // echo "<td>" . htmlspecialchars($row['contact_no']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['tent_no']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['status']) . "</td>";
+                            echo '<td class="text-right">
+                <button class="btn btn-primary"
+                    data-toggle="modal"
+                    data-target="#editModal"
+                    data-id="' . htmlspecialchars($row['id']) . '"
+                    data-name="' . htmlspecialchars($row['name']) . '"
+                    data-address="' . htmlspecialchars($row['location']) . '"
+                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
+                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
+                    data-status="' . htmlspecialchars($row['status']) . '">
+                    Edit
+                </button>
+            </td>';
                             echo "</tr>";
                         }
                     } else {
@@ -76,6 +171,7 @@ if (!isset($_SESSION['username'])) {
                     }
                     ?>
                 </tbody>
+
             </table>
         </div>
     </div>
@@ -168,7 +264,7 @@ if (!isset($_SESSION['username'])) {
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="tent_installers.js"></script>
-   
+
 </body>
 
 </html>
