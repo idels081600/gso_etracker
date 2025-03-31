@@ -1,0 +1,65 @@
+:root {
+    --sidebar-width: 250px;
+    --card-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    position: fixed;
+    background: #039a00;
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    z-index: 1000;
+    color: #ffffff;
+  }
+  
+  .sidebar .role {
+    color: #ffffff;
+    font-weight: 500;
+  }
+  
+  .sidebar .user-name {
+    color: #ffffff;
+    opacity: 0.9;
+  }
+  
+  .sidebar ul li a {
+    color: #ffffff;
+    text-decoration: none;
+  }
+  
+  .sidebar ul li a:hover {
+    color: #e0e0e0;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .sidebar .logout-item {
+    color: #ffffff;
+  }
+  
+  .dropdown-menu li a {
+
+
+    
+    color: #039a00;
+    background: #ffffff;
+  }
+  
+  .main-content {
+    margin-left: var(--sidebar-width);
+    padding: 20px;
+  }
+  
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 100%;
+      height: auto;
+      position: relative;
+    }
+  
+    .main-content {
+      margin-left: 0;
+    }
+  }
+  
