@@ -306,7 +306,7 @@ $(document).ready(function () {
 $("#deleteAllPrint").click(function () {
   if (confirm("Are you sure you want to delete all print records?")) {
     $.ajax({
-      url: "delete_all_print_bq.php",
+      url: "delete_all_print_BQ.php",
       type: "POST",
       success: function (response) {
         let result = JSON.parse(response);
