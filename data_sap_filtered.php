@@ -1,29 +1,15 @@
 <?php
-$servername = "157.245.193.124";
-$username = "bryanmysql";
-$password = "gsotagbilaran";
-$dbname = "SAP";
+require_once 'db_payables.php';
 
-$conn = mysqli_connect($servername, $username, $password, $dbname);
-
-if (!$conn) {
-    echo json_encode(['error' => 'Connection failed: ' . mysqli_connect_error()]);
-    exit();
-}
-
-$conn->set_charset("utf8mb4");
-
-$month = isset($_GET['month']) ? (int)$_GET['month'] : 0;
-$year = isset($_GET['year']) ? (int)$_GET['year'] : 0;
-
-$suppliers = [];
-
-if ($month > 0 && $year > 0) {
-    $date_start = "$year-$month-01";
-    $date_end = date("Y-m-t", strtotime($date_start));
-
-    // Query to fetch unique suppliers and their total amounts from bq table
-    $sql = "SELECT DISTINCT supplier, SUM(amount) AS total_amount
+// Check if date parameters are provided
+if (isset($_GET['date_start']) && isset($_GET['date_end'])) {
+    $date_start = mysqli_real_escape_string($conn, $_GET['date_start']);
+    $date_end = mysqli_real_escape_string($conn, $_GET['date_end']);
+    
+    $suppliers = [];
+    
+    // Query to fetch unique suppliers from bq table with their total amount
+    $sql = "SELECT supplier AS supplier, SUM(amount) AS total_amount
             FROM bq
             WHERE DATE(date) BETWEEN '$date_start' AND '$date_end'
             GROUP BY supplier";
@@ -40,7 +26,7 @@ if ($month > 0 && $year > 0) {
         exit();
     }
 
-    // Query to fetch unique suppliers and their total amounts from sir_bayong table
+    // Query to fetch unique suppliers from sir_bayong table
     $sql = "SELECT Supplier, SUM(Amount) AS total_amount
             FROM sir_bayong
             WHERE DATE(Date) BETWEEN '$date_start' AND '$date_end'
@@ -76,12 +62,30 @@ if ($month > 0 && $year > 0) {
         exit();
     }
 } else {
-    echo json_encode(['error' => 'Invalid month or year provided']);
+    echo json_encode(['error' => 'Invalid date range provided']);
     exit();
 }
 
-$uniqueSuppliers = array_values(array_unique($suppliers, SORT_REGULAR));
+// Combine suppliers with the same name (case-insensitive)
+$uniqueSuppliers = [];
+$supplierMap = [];
+
+foreach ($suppliers as $supplier) {
+    $key = strtoupper(trim($supplier['supplier']));
+    
+    if (!isset($supplierMap[$key])) {
+        $supplierMap[$key] = [
+            'supplier' => $key,
+            'total_amount' => 0
+        ];
+    }
+    
+    $supplierMap[$key]['total_amount'] += $supplier['total_amount'];
+}
+
+$uniqueSuppliers = array_values($supplierMap);
 
 echo json_encode($uniqueSuppliers);
 
 $conn->close();
+?>

@@ -1,18 +1,31 @@
 <?php
-include 'db.php'; // Include your database connection file
+require_once 'db.php';
 
-if (isset($_POST['rfq_ids']) && !empty($_POST['rfq_ids'])) {
-    $rfqIds = $_POST['rfq_ids'];
-    $ids = implode(',', array_map('intval', $rfqIds)); // Ensure all values are integers
+// Set proper content type for JSON response
+header('Content-Type: application/json');
 
-    $query = "DELETE FROM Maam_mariecris_payments WHERE id IN ($ids)";
-    if ($conn->query($query) === TRUE) {
-        echo 'success';
+if(isset($_POST['po_number'])) {
+    $po_number = mysqli_real_escape_string($conn, $_POST['po_number']);
+    
+    // Delete the payment record
+    $delete_query = "DELETE FROM Maam_mariecris_payments WHERE po = '$po_number'";
+    $delete_result = mysqli_query($conn, $delete_query);
+    
+    if ($delete_result) {
+        echo json_encode([
+            'success' => true,
+            'message' => 'Payment deleted successfully'
+        ]);
     } else {
-        echo 'error';
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error deleting payment: ' . mysqli_error($conn)
+        ]);
     }
-
-    $conn->close();
 } else {
-    echo 'error';
+    echo json_encode([
+        'success' => false,
+        'message' => 'Missing PO number'
+    ]);
 }
+?>

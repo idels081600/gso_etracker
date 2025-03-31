@@ -1,28 +1,23 @@
 <?php
 require_once 'db.php'; // Assuming this file contains your database connection code
-require_once 'display_data.php';
-$result = display_data_maam_mariecris_print();
-$payment = display_data_Maam_mariecris_payments();
+require_once 'display_data.php'; // Adjust this to your actual display data file
 require_once('vendor/autoload.php');
 
-$paymentNames = array(); // Array to store payment names
-$paymentAmounts = array(); // Array to store payment amounts
+// Fetch data
+$result = display_data_maam_mariecris_print();
+$payment = display_data_Maam_mariecris_payments();
 
-// Loop through each payment and store payment name and amount
-foreach ($payment as $row) {
-    $paymentNames[] = $row['name'];
-    $paymentAmounts[] = $row['amount'];
-}
+$paymentNames = array(); // Array to store payment names
 
 // Create a new PDF instance with landscape orientation
 $pdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
 // Set document information
 $pdf->SetCreator(PDF_CREATOR);
-$pdf->SetAuthor('Your Name');
-$pdf->SetTitle('Invoice');
-$pdf->SetSubject('Invoice Document');
-$pdf->SetKeywords('TCPDF, PDF, invoice');
+$pdf->SetAuthor('GSO');
+$pdf->SetTitle('Maam Maricris Summary');
+$pdf->SetSubject('Maam Maricris Summary Document');
+$pdf->SetKeywords('TCPDF, PDF, summary, maricris');
 
 // Set header and footer fonts
 $pdf->setHeaderFont(array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
@@ -58,64 +53,73 @@ $pdf->AddPage();
 // Set font
 $pdf->SetFont('dejavusans', '', 11);
 
-// Add invoice details
-$invoiceDetails = '
-<h1>Summary</h1>
+// Add summary details
+$summaryDetails = '
+<h1>Maam Maricris Summary</h1>
 <table cellspacing="0" cellpadding="2">
 </table>';
 
-$pdf->writeHTML($invoiceDetails, true, false, true, false, '');
+$pdf->writeHTML($summaryDetails, true, false, true, false, '');
 
-// Define the table header in a reusable variable
+// Define the table header in a reusable variable with adjusted widths
 $tableHeader = '
 <thead>
     <tr>
-        <th style="width:12.5%; background-color: #009532; color: #ffffff;">SR/DR</th>
-        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Date</th>
-        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Quantity</th>
-        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Description</th>
-        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Office</th>
-        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Vehicle</th>
-        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Plate</th>
-        <th style="width:12.5%; background-color: #009532; color: #ffffff;">Amount</th>
+        <th style="width:8%; background-color: #009532; color: #ffffff;">SR/DR</th>
+        <th style="width:8%; background-color: #009532; color: #ffffff;">Date</th>
+        <th style="width:10%; background-color: #009532; color: #ffffff;">Department</th>
+        <th style="width:10%; background-color: #009532; color: #ffffff;">Store</th>
+        <th style="width:20%; background-color: #009532; color: #ffffff;">Activity</th>
+        <th style="width:6%; background-color: #009532; color: #ffffff;">No. of Pax</th>
+        <th style="width:7%; background-color: #009532; color: #ffffff;">PO No.</th>
+        <th style="width:8%; background-color: #009532; color: #ffffff;">Remarks</th>
+        <th style="width:10%; background-color: #009532; color: #ffffff;">Amount</th>
+        <th style="width:10%; background-color: #009532; color: #ffffff;">Total</th>
     </tr>
 </thead>';
 
-// Start the table body
+// Start the table body with adjusted cell styling
 $html = '
 <style>
 th, td {
     font-weight: normal;
     font-size: 10px;
     border: 1px solid #dddddd;
-    padding: 8px;
+    padding: 6px;
+    vertical-align: middle;
 }
 </style>
 
-<table cellspacing="0" cellpadding="5" border="1">';
+<table cellspacing="0" cellpadding="4" border="1">';
 
 // Add the header
 $html .= $tableHeader . '<tbody>';
 
-// Calculate total amount
+// Calculate total amount, excluding paid items
 $totalAmount = 0;
 mysqli_data_seek($result, 0);
 
-// Loop through each row of data
+// Loop through each row of data with adjusted cell structure
 while ($row = mysqli_fetch_assoc($result)) {
-    $html .= '<tr>
-                <td>' . $row["SR_DR"] . '</td>
-                <td>' . $row["date"] . '</td>
-                <td>' . $row["department"] . '</td>
-                <td>' . $row["store"] . '</td>
-                <td>' . $row["activity"] . '</td>
-                <td>' . $row["no_of_pax"] . '</td>
-                <td>₱' . number_format($row["amount"], 2) . '</td>
-                <td>₱' . number_format($row["total"], 2) . '</td>
-            </tr>';
-    $totalAmount += $row["total"];
+    // Only add to total if remarks is not 'paid' (case insensitive)
+    if (strtolower($row["remarks"]) !== 'paid') {
+        $totalAmount += $row["total"];
+    }
 
-    // Check for page break and repeat the header if necessary
+    $html .= '<tr>
+                <td style="width:8%;">' . $row["SR_DR"] . '</td>
+                <td style="width:8%;">' . $row["date"] . '</td>
+                <td style="width:10%;">' . $row["department"] . '</td>
+                <td style="width:10%;">' . $row["store"] . '</td>
+                <td style="width:20%;">' . $row["activity"] . '</td>
+                <td style="width:6%; text-align: center;">' . $row["no_of_pax"] . '</td>
+                <td style="width:7%;">' . $row["PO_no"] . '</td>
+                <td style="width:8%;">' . $row["remarks"] . '</td>
+                <td style="width:10%; text-align: right;">₱' . number_format($row["amount"], 2) . '</td>
+                <td style="width:10%; text-align: right;">₱' . number_format($row["total"], 2) . '</td>
+            </tr>';
+
+    // Check for page break and repeat header if necessary
     if (($pdf->getY() + 10) > $pdf->getPageHeight() - PDF_MARGIN_BOTTOM) {
         $html .= '</tbody></table>';
         $pdf->writeHTML($html, true, false, true, false, '');
@@ -124,34 +128,54 @@ while ($row = mysqli_fetch_assoc($result)) {
     }
 }
 
-// Add payment details to HTML
 $html .= '<tr>
-            <td colspan="8" style="font-weight: bold;">Payment Details</td>
+            <td colspan="9" style="font-weight: bold;">Payment Details</td>
           </tr>';
 
-foreach ($paymentNames as $key => $paymentName) {
-    $html .= '<tr>
-                <td colspan="7">' . $paymentName . '</td>
-                <td>₱' . number_format($paymentAmounts[$key], 2) . '</td>
-              </tr>';
+// Reset the result pointer
+mysqli_data_seek($result, 0);
+
+// Get unique PO details
+$processed_pos = array();
+while ($row = mysqli_fetch_assoc($result)) {
+    if (!empty($row['PO_no']) && !empty($row['PO_amount']) && !in_array($row['PO_no'], $processed_pos)) {
+        $html .= '<tr>
+                    <td colspan="9">PO No.: ' . $row['PO_no'] . '</td>
+                    <td style="font-weight: bold;">₱' . number_format($row['PO_amount'], 2) . '</td>
+                  </tr>';
+        $processed_pos[] = $row['PO_no'];
+    }
 }
 
-// Calculate final total amount
-$finalTotalAmount = $totalAmount - array_sum($paymentAmounts);
+// Reset pointer to get all PO amounts
+mysqli_data_seek($result, 0);
+
+// Initialize array to store PO amounts
+$poAmounts = array();
+
+// Collect all unique PO amounts
+while ($row = mysqli_fetch_assoc($result)) {
+    if (!empty($row['PO_amount']) && !empty($row['PO_no'])) {
+        $poAmounts[$row['PO_no']] = $row['PO_amount'];
+    }
+}
+
+// Calculate final total amount using array_sum
+$finalTotalAmount = array_sum($poAmounts) - $totalAmount;
 
 // Add total amount rows
 $html .= '<tr>
-            <td colspan="7" style="text-align: right; font-weight: bold;">Total Amount:</td>
+            <td colspan="9" style="text-align: right; font-weight: bold;">Total Amount:</td>
             <td style="font-weight: bold;">₱' . number_format($totalAmount, 2) . '</td>
           </tr>';
 
 $html .= '<tr>
-            <td colspan="7" style="text-align: right; font-weight: bold;">Total Payments:</td>
-            <td style="font-weight: bold;">₱' . number_format(array_sum($paymentAmounts), 2) . '</td>
+            <td colspan="9" style="text-align: right; font-weight: bold;">Total Payments:</td>
+            <td style="font-weight: bold;">₱' . number_format(array_sum($poAmounts), 2) . '</td>
           </tr>';
 
 $html .= '<tr>
-            <td colspan="7" style="text-align: right; font-weight: bold;">Final Total Amount:</td>
+            <td colspan="9" style="text-align: right; font-weight: bold;">Final Total Amount:</td>
             <td style="font-weight: bold;">₱' . number_format($finalTotalAmount, 2) . '</td>
           </tr>';
 
@@ -161,4 +185,4 @@ $html .= '</tbody></table>';
 $pdf->writeHTML($html, true, false, true, false, '');
 
 // Close and output PDF document
-$pdf->Output('sample_landscape.pdf', 'I');
+$pdf->Output('maricris_summary.pdf', 'I');

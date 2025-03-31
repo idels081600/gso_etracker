@@ -4,8 +4,8 @@ require_once 'display_data.php';
 require_once('vendor/autoload.php');
 
 // Fetch data
-$result = display_data_bq_print();
-$payment = display_data_bq_payments();
+$result = display_data_sir_bayong_print();
+$payment = display_data_sir_bayong_payments();
 
 $paymentNames = array(); // Array to store payment names
 
@@ -15,9 +15,9 @@ $pdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 // Set document information
 $pdf->SetCreator(PDF_CREATOR);
 $pdf->SetAuthor('Your Name');
-$pdf->SetTitle('BQ Summary');
-$pdf->SetSubject('BQ Summary Document');
-$pdf->SetKeywords('TCPDF, PDF, BQ, summary');
+$pdf->SetTitle('Invoice');
+$pdf->SetSubject('Invoice Document');
+$pdf->SetKeywords('TCPDF, PDF, invoice');
 
 // Set header and footer fonts
 $pdf->setHeaderFont(array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
@@ -55,7 +55,7 @@ $pdf->SetFont('dejavusans', '', 11);
 
 // Add invoice details
 $invoiceDetails = '
-<h1>BQ Summary</h1>
+<h1>Summary</h1>
 <table cellspacing="0" cellpadding="2">
 </table>';
 
@@ -67,15 +67,19 @@ $tableHeader = '
     <tr>
         <th style="width:8%; background-color: #009532; color: #ffffff;">SR/DR</th>
         <th style="width:8%; background-color: #009532; color: #ffffff;">Date</th>
-        <th style="width:10%; background-color: #009532; color: #ffffff;">Department/Requestor</th>
-        <th style="width:10%; background-color: #009532; color: #ffffff;">Activity</th>
-        <th style="width:12%; background-color: #009532; color: #ffffff;">Description</th>
-        <th style="width:10%; background-color: #009532; color: #ffffff;">Supplier</th>
+        <th style="width:12%; background-color: #009532; color: #ffffff;">Supplier</th>
         <th style="width:6%; background-color: #009532; color: #ffffff;">Quantity</th>
-        <th style="width:8%; background-color: #009532; color: #ffffff;">Amount</th>
-        <th style="width:7%; background-color: #009532; color: #ffffff;">PO No.</th>
-        <th style="width:8%; background-color: #009532; color: #ffffff;">PO Amount</th>
+        <th style="width:15%; background-color: #009532; color: #ffffff;">Description</th>
+        <th style="width:10%; background-color: #009532; color: #ffffff;">Office</th>
+        <th style="width:10%; background-color: #009532; color: #ffffff;">Vehicle</th>
+        <th style="width:8%; background-color: #009532; color: #ffffff;">Plate</th>
+         <th style="width:7%; background-color: #009532; color: #ffffff;">PO No.</th>
         <th style="width:8%; background-color: #009532; color: #ffffff;">Remarks</th>
+
+
+
+
+        <th style="width:8%; background-color: #009532; color: #ffffff;">Amount</th>
     </tr>
 </thead>';
 
@@ -104,21 +108,21 @@ mysqli_data_seek($result, 0);
 while ($row = mysqli_fetch_assoc($result)) {
     // Only add to total if remarks is not 'paid' (case insensitive)
     if (strtolower($row["remarks"]) !== 'paid') {
-        $totalAmount += $row["amount"];
+        $totalAmount += $row["Amount"];
     }
 
     $html .= '<tr>
                 <td style="width:8%;">' . $row["SR_DR"] . '</td>
-                <td style="width:8%;">' . $row["date"] . '</td>
-                <td style="width:10%;">' . $row["requestor"] . '</td>
-                <td style="width:10%;">' . $row["activity"] . '</td>
-                <td style="width:12%;">' . $row["description"] . '</td>
-                <td style="width:10%;">' . $row["supplier"] . '</td>
-                <td style="width:6%; text-align: center;">' . $row["quantity"] . '</td>
-                <td style="width:8%; text-align: right;">₱' . number_format($row["amount"], 2) . '</td>
-                <td style="width:7%;">' . $row["PO_no"] . '</td>
-                <td style="width:8%; text-align: right;">₱' . number_format($row["PO_amount"], 2) . '</td>
+                <td style="width:8%;">' . $row["Date"] . '</td>
+                <td style="width:12%;">' . $row["Supplier"] . '</td>
+                <td style="width:6%; text-align: center;">' . $row["Quantity"] . '</td>
+                <td style="width:15%;">' . $row["Description"] . '</td>
+                <td style="width:10%;">' . $row["Office"] . '</td>
+                <td style="width:10%;">' . $row["Vehicle"] . '</td>
+                <td style="width:8%;">' . $row["Plate"] . '</td>
+                 <td style="width:7%;">' . $row["PO_no"] . '</td>
                 <td style="width:8%;">' . $row["remarks"] . '</td>
+                <td style="width:8%; text-align: right;">₱' . number_format($row["Amount"], 2) . '</td>
             </tr>';
 
     // Check for page break and repeat header if necessary
@@ -142,9 +146,8 @@ $processed_pos = array();
 while ($row = mysqli_fetch_assoc($result)) {
     if (!empty($row['PO_no']) && !empty($row['PO_amount']) && !in_array($row['PO_no'], $processed_pos)) {
         $html .= '<tr>
-                    <td colspan="9">PO No.: ' . $row['PO_no'] . '</td>
+                    <td colspan="10">PO No.: ' . $row['PO_no'] . '</td>
                     <td style="font-weight: bold;">₱' . number_format($row['PO_amount'], 2) . '</td>
-                    <td></td>
                   </tr>';
         $processed_pos[] = $row['PO_no'];
     }
@@ -188,4 +191,4 @@ $html .= '</tbody></table>';
 $pdf->writeHTML($html, true, false, true, false, '');
 
 // Close and output PDF document
-$pdf->Output('bq_summary.pdf', 'I');
+$pdf->Output('sample.pdf', 'I');

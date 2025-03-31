@@ -1,19 +1,13 @@
 <?php
-include 'db.php'; // Include your database connection file
+require_once 'db.php';
 
-if (isset($_POST['rfq_ids']) && !empty($_POST['rfq_ids'])) {
-    $rfqIds = $_POST['rfq_ids'];
-    $ids = implode(',', array_map('intval', $rfqIds)); // Ensure all values are integers
-
-    $query = "DELETE FROM bq_print WHERE id IN ($ids)";
-    if ($conn->query($query) === TRUE) {
-        echo 'success';
-    } else {
-        echo 'error';
-    }
-
-    $conn->close();
+if(isset($_POST['id'])) {
+    $id = intval($_POST['id']);
+    $query = "DELETE FROM bq_print WHERE id = $id";
+    $result = mysqli_query($conn, $query);
+    
+    echo json_encode(['success' => $result]);
 } else {
-    echo 'error';
+    echo json_encode(['success' => false]);
 }
 ?>
