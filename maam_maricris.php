@@ -147,6 +147,8 @@ if ($result && mysqli_num_rows($result) > 0) {
                             <label for="paymentDropdown" class="form-label">Payment Order</label>
                             <select class="form-select" id="paymentDropdown" name="payment">
                                 <option value="">Select Payment Order</option>
+                                <option value="delete_payment" style="background-color: #ffcccc; color: #000; font-weight: bold;">Delete Payment</option>
+
                                 <?php
                                 // Modified query to only select POs with positive balance
                                 $po_query = "SELECT po, amount, balance FROM Maam_mariecris_payments WHERE balance > 0 ORDER BY id DESC";
@@ -160,6 +162,7 @@ if ($result && mysqli_num_rows($result) > 0) {
                                 ?>
                             </select>
                         </div>
+
 
 
                         <!-- Added Remarks field -->
@@ -228,7 +231,7 @@ if ($result && mysqli_num_rows($result) > 0) {
                                 <tr>
                                     <th>SR/DR</th>
                                     <th>Date</th>
-                                    <th>Department/Requestor</th>
+                                    <th style="width: 10px;">Department/Requestor</th>
                                     <th>Store</th>
                                     <th style="width: 250px;">Activity</th> <!-- Added width here -->
                                     <th>No. of PAX</th>
@@ -236,6 +239,7 @@ if ($result && mysqli_num_rows($result) > 0) {
                                     <th>Total</th>
                                     <th>PO_no</th>
                                     <th>PO_amount</th>
+                                    <th>Balance</th>
                                     <th>Remarks</th>
                                     <th>Actions</th>
                                 </tr>
@@ -257,6 +261,7 @@ if ($result && mysqli_num_rows($result) > 0) {
                                             <td>₱<?php echo number_format($row["total"] ?? 0, 2); ?></td>
                                             <td><?php echo htmlspecialchars($row["PO_no"] ?? ''); ?></td>
                                             <td>₱<?php echo number_format($row["PO_amount"] ?? 0, 2); ?></td>
+                                            <td>₱<?php echo number_format($row["remaining_balance"] ?? 0, 2); ?></td>
                                             <td><?php echo htmlspecialchars($row["remarks"] ?? ''); ?></td>
                                             <td>
                                                 <button class="btn btn-warning btn-sm edit-btn" data-id="<?php echo $row['id']; ?>"><i class="fas fa-edit"></i></button>
