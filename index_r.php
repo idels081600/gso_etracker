@@ -285,7 +285,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                 <div class="form-group mb-3">
                                     <label for="sel1">Status:</label>
                                     <select class="form-control" id="sel1" name="status" required>
-                                        <option value="Approved">Approved</option>
                                         <option value="Partially Approved">Partially Approved</option>
                                     </select>
                                 </div>
