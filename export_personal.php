@@ -1,0 +1,118 @@
+<?php
+require_once 'dbh.php';
+require_once "fpdf/fpdf.php";
+session_start();
+
+if (!isset($_SESSION['username'])) {
+    header("location:login_v2.php");
+} else if ($_SESSION['role'] == 'Employee') {
+    header("location:login_v2.php");
+} else if ($_SESSION['role'] == 'Desk Clerk') {
+    header("location:login_v2.php");
+}
+
+// Query for Personal Business only
+$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND confirmed_by = 'CAGULADA RENE ART' ORDER BY id";
+$sql_personal = $conn->query($result_personal);
+
+class PDF extends FPDF
+{
+    var $printedHeader = false;
+
+    function Header()
+    {
+        if (!$this->printedHeader) {
+            $this->SetFont('Arial', 'B', 14);
+            $this->Cell(0, 10, 'Personal Business Request Summary', 0, 1, 'C');
+            $this->Ln(10);
+            $this->printedHeader = true;
+        }
+    }
+
+    function printTableHeader()
+    {
+        // Set fill color to green (RGB: 0, 128, 0)
+        $this->SetFillColor(0, 128, 0);
+        $this->SetTextColor(255, 255, 255); // Set text color to white
+
+        // Set font for table header
+        $this->SetFont('Arial', 'B', 9);
+
+        // Define header cells with green background
+        $this->Cell(10, 10, 'ID', 1, 0, 'C', true);
+        $this->Cell(45, 10, 'Name', 1, 0, 'C', true);
+        $this->Cell(60, 10, 'Destination', 1, 0, 'C', true);
+        $this->Cell(80, 10, 'Purpose', 1, 0, 'C', true);
+        $this->Cell(21, 10, 'TimeDept', 1, 0, 'C', true);
+        $this->Cell(20, 10, 'EstTime', 1, 0, 'C', true);
+        $this->Cell(28, 10, 'Date', 1, 0, 'C', true);
+        $this->Cell(20, 10, 'TimeRet', 1, 0, 'C', true);
+        $this->Cell(40, 10, 'Confirmed By', 1, 0, 'C', true);
+        $this->Cell(50, 10, 'Remarks', 1, 0, 'C', true);
+        $this->Ln();
+
+        // Reset text color to black for table content
+        $this->SetTextColor(0, 0, 0);
+    }
+
+    function printTableRows($sql)
+    {
+        $this->SetFont('Arial', '', 10); // Set font size for all data except remarks
+        
+        $rowCount = 0; // Initialize row counter
+        
+        while ($row = $sql->fetch_object()) {
+            $rowCount++; // Increment row counter
+            
+            $id = $row->id;
+            $name = $row->name;
+            $destination = $row->dest2;
+            $purpose = $row->purpose;
+            $timedept = date("h:i A", strtotime($row->timedept)); // Format the time for TimeDept
+            $esttime = date("h:i A", strtotime($row->esttime)); // Format the time for EstTime
+            $date = $row->date;
+            $time_returned = date("h:i A", strtotime($row->time_returned));
+            $confirmed_by = $row->confirmed_by;
+            $remarks = $row->remarks;
+
+            $this->Cell(10, 15, $id, 1, 0, 'C');
+            $this->SetFont('Arial', '', 9);
+            $this->Cell(45, 15, $name, 1);
+            $this->SetFont('Arial', '', 8);
+            $this->Cell(60, 15, $destination, 1);
+            $this->Cell(80, 15, $purpose, 1);
+            $this->Cell(21, 15, $timedept, 1);
+            $this->Cell(20, 15, $esttime, 1);
+            $this->Cell(28, 15, $date, 1);
+            $this->Cell(20, 15, $time_returned, 1);
+            $this->Cell(40, 15, $confirmed_by, 1);
+
+            $this->SetFont('Arial', '', 8); // Set font size for remarks
+            $this->MultiCell(50, 15, $remarks, 1, 'L'); // Use MultiCell for the Remarks column to allow text wrapping
+        }
+        
+        return $rowCount; // Return the number of rows printed
+    }
+}
+
+$pdf = new PDF();
+$pdf->AddPage('L', array(215.9, 400)); // Landscape orientation
+
+// Personal Business Section
+$pdf->SetFont('Arial', 'B', 12);
+$pdf->Cell(0, 10, 'Personal Business', 0, 1, 'L'); // Section Title
+$pdf->printTableHeader(); // Table header
+$rowCount = $pdf->printTableRows($sql_personal); // Print rows for Personal Business
+
+// Add a summary at the end
+$pdf->Ln(10);
+$pdf->SetFont('Arial', 'B', 10);
+$pdf->Cell(0, 10, "Total Personal Business Requests: $rowCount", 0, 1, 'L');
+
+// Add date of report generation
+$pdf->SetFont('Arial', 'I', 8);
+$pdf->Cell(0, 10, "Report generated on: " . date('F j, Y, g:i a'), 0, 1, 'R');
+
+// Output the PDF
+$filename = 'personal_pass_slip_' . date('Y-m-d') . '.pdf';
+$pdf->Output($filename, 'I');
