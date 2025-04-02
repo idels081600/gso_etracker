@@ -545,6 +545,7 @@ $(document).ready(function () {
     }
   });
 });
+// Add event listener for the Generate PDF button
 $(document).ready(function () {
   // Existing code...
 
