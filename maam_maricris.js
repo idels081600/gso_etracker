@@ -545,3 +545,17 @@ $(document).ready(function () {
     }
   });
 });
+$(document).ready(function () {
+  // Existing code...
+
+  // Handle Generate PDF button click
+  $("#confirmPdf").on("click", function () {
+    // Close the modal
+    $("#reviewPdfModal").modal("hide");
+
+    // Open the generate_mariecris_pdf.php in a new tab/window
+    window.open("generate_mariecris_pdf.php", "_blank");
+  });
+
+  // Existing code...
+});
