@@ -621,6 +621,75 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             xhr.send('ids=' + JSON.stringify(ids));
         }
     </script>
+    <script>
+        // More aggressive approach for Bootstrap modal
+        document.addEventListener('DOMContentLoaded', function() {
+            // Function to focus on the esttime input
+            function focusOnEsttime() {
+                const esttimeInput = document.getElementById('esttime');
+                if (esttimeInput) {
+                    console.log('Focusing on esttime input');
+                    setTimeout(() => {
+                        esttimeInput.focus();
+                    }, 500); // Delay to ensure modal is fully rendered
+                }
+            }
+
+            // Multiple ways to detect when the modal is shown
+
+            // 1. Bootstrap event
+            $('#acceptModal').on('shown.bs.modal', focusOnEsttime);
+
+            // 2. Click event on the button that opens the modal
+            document.getElementById('acceptAllBtn')?.addEventListener('click', function() {
+                console.log('Accept All button clicked');
+                setTimeout(focusOnEsttime, 700); // Delay to ensure modal is shown
+            });
+
+            // 3. Mutation observer to detect when modal becomes visible
+            const modalElement = document.getElementById('acceptModal');
+            if (modalElement) {
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.attributeName === 'class' &&
+                            modalElement.classList.contains('show')) {
+                            console.log('Modal shown detected by observer');
+                            focusOnEsttime();
+                        }
+                    });
+                });
+
+                observer.observe(modalElement, {
+                    attributes: true
+                });
+            }
+
+            // Global key handler for Enter key when modal is visible
+            document.addEventListener('keydown', function(event) {
+                const modal = document.getElementById('acceptModal');
+                if (modal &&
+                    (modal.classList.contains('show') || modal.style.display === 'block') &&
+                    event.key === 'Enter') {
+
+                    // Don't trigger for textareas
+                    if (event.target.tagName.toLowerCase() === 'textarea') {
+                        return;
+                    }
+
+                    console.log('Global Enter key handler triggered');
+                    event.preventDefault();
+
+                    // Get the approve button and click it
+                    const approveBtn = document.getElementById('approveAllBtn');
+                    if (approveBtn) {
+                        approveBtn.click();
+                    }
+                }
+            });
+
+            console.log('Enhanced Bootstrap modal handlers initialized');
+        });
+    </script>
 
 
 </body>
