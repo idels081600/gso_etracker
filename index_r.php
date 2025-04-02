@@ -145,23 +145,69 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
         }
     </style>
     <script type="text/javascript">
+        // Store checkbox states
+        let checkboxStates = {};
+
+        function saveCheckboxStates() {
+            // Clear previous states first to handle removed checkboxes
+            checkboxStates = {};
+
+            const checkboxes = document.querySelectorAll('input[name="selected[]"]');
+            checkboxes.forEach(checkbox => {
+                // Save the current state (checked or unchecked)
+                checkboxStates[checkbox.value] = checkbox.checked;
+            });
+
+            // For debugging
+            console.log("Saved states:", checkboxStates);
+        }
+
+        function restoreCheckboxStates() {
+            const checkboxes = document.querySelectorAll('input[name="selected[]"]');
+            checkboxes.forEach(checkbox => {
+                if (checkboxStates[checkbox.value] !== undefined) {
+                    checkbox.checked = checkboxStates[checkbox.value];
+                }
+            });
+
+            // For debugging
+            console.log("Restored states:", checkboxStates);
+        }
+
+        // Add event listeners to checkboxes to save state when they change
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.name === 'selected[]') {
+                saveCheckboxStates();
+            }
+        }, true);
+
         function loadDoc() {
             setInterval(function() {
+                // Save current checkbox states before AJAX call
+                saveCheckboxStates();
+
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
                         document.getElementById("table-body").innerHTML = this.responseText;
+                        // Restore checkbox states after content is updated
+                        setTimeout(restoreCheckboxStates, 10); // Small delay to ensure DOM is updated
                     }
                 };
                 xhttp.open("GET", "data_r.php", true);
                 xhttp.send();
             }, 1000);
         }
+
         loadDoc();
     </script>
 
     <div class="container">
-        <h2 id="pen_label">Pending Request</h2>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 id="pen_label">Pending Request</h2>
+            <button id="acceptAllBtn" class="btn btn-success" data-toggle="modal" data-target="#acceptModal">Accept All Selected</button>
+        </div>
+
         <div class="p-5 rounded shadow">
             <div class="table-responsive">
                 <table class="table .table-hover" id="table">
@@ -195,54 +241,389 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                 <td>
                                     <?php echo $row["Status"]; ?>
                                 </td>
-                                <td> <a href="view_r.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a></td>
+                                <td>
+                                    <a href="view_r.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a>
+                                    <input type="checkbox" name="selected[]" value="<?= $row['id']; ?>" class="form-check-input ml-2">
+                                </td>
                         </tr>
                     <?php
                             }
                     ?>
                     </tbody>
-
-
                 </table>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="acceptModal" tabindex="-1" role="dialog" aria-labelledby="acceptModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="acceptModalLabel">Accept Selected Requests</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>You are about to accept the following requests:</p>
+                    <div id="selectedRequestsList" class="mb-4">
+                        <!-- Selected requests will be listed here -->
+                    </div>
+
+                    <form id="batchApprovalForm" action="" method="POST">
+                        <input type="hidden" name="selected_ids" id="selected_ids_input">
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h4>Batch Approval Details</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group mb-3">
+                                    <label for="esttime">Estimated Time</label>
+                                    <input type="time" class="form-control" id="esttime" name="esttime" min="08:00" max="18:00" required>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="sel1">Status:</label>
+                                    <select class="form-control" id="sel1" name="status" required>
+                                        <option value="Approved">Approved</option>
+                                        <option value="Partially Approved">Partially Approved</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="sel2">Confirmed By:</label>
+                                    <select class="form-control" id="sel2" name="confirmed_by" required>
+                                        <option>CAGULADA RENE ART</option>
+                                        <option>CASAS RUBY</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h4>Selected Requests Details</h4>
+                            </div>
+                            <div class="card-body">
+                                <div id="detailedRequestsList">
+                                    <!-- Detailed request information will be loaded here -->
+                                    <div class="text-center">
+                                        <div class="spinner-border" role="status">
+                                            <span class="sr-only">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <!-- Update the button to submit the form directly -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" form="batchApprovalForm" name="approve_multiple_req" id="approveAllBtn" class="btn btn-success">
+                        <span id="approveButtonText">Approve All</span>
+                        <span id="loadingSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    </button>
+                </div>
+
+
             </div>
         </div>
     </div>
 
     <script>
-        var firebaseConfig = {
-            apiKey: "AIzaSyBdJEBddNuHGPyYW_NQ3D8VFpeQdfXOS2M",
-            authDomain: "push-notification-4469d.firebaseapp.com",
-            databaseURL: "https://push-notification-4469d-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "push-notification-4469d",
-            storageBucket: "push-notification-4469d.appspot.com",
-            messagingSenderId: "3251430231",
-            appId: "1:3251430231:web:aea52a61992765cf511412",
-            measurementId: "G-V236DTMQ4E"
-        };
-        firebase.initializeApp(firebaseConfig);
+        document.getElementById('acceptAllBtn').addEventListener('click', function(e) {
+            // Get all checked checkboxes
+            const selectedCheckboxes = document.querySelectorAll('input[name="selected[]"]:checked');
 
-        // Get FCM token
-        firebase.messaging().getToken().then((token) => {
-            console.log("FCM Token:", token);
+            if (selectedCheckboxes.length === 0) {
+                e.preventDefault(); // Prevent modal from opening
+                alert('Please select at least one request to accept.');
+                return;
+            }
 
-            // Send the token to your server using jQuery AJAX
-            $.ajax({
-                url: 'store_token.php',
-                type: 'POST',
-                data: {
-                    token: token
-                },
-                success: function(response) {
-                    console.log('Token stored successfully:', response);
-                },
-                error: function() {
-                    console.error('Error storing token');
-                }
+            // Collect all selected IDs and names
+            const selectedIds = [];
+            const selectedNames = [];
+
+            selectedCheckboxes.forEach(checkbox => {
+                const row = checkbox.closest('tr');
+                const name = row.cells[0].textContent.trim();
+                selectedIds.push(checkbox.value);
+                selectedNames.push(name);
             });
-        }).catch((error) => {
-            console.error("Error getting FCM token:", error);
+
+            // Display selected requests in the modal
+            const listContainer = document.getElementById('selectedRequestsList');
+            listContainer.innerHTML = '<ul class="list-group">';
+
+            selectedNames.forEach((name, index) => {
+                listContainer.innerHTML += `<li class="list-group-item">${name} (ID: ${selectedIds[index]})</li>`;
+            });
+
+            listContainer.innerHTML += '</ul>';
+
+            // Store selected IDs in the hidden input
+            document.getElementById('selected_ids_input').value = JSON.stringify(selectedIds);
+
+            // Load detailed information for each selected request
+            loadDetailedRequestInfo(selectedIds);
+        });
+
+        function loadDetailedRequestInfo(ids) {
+            const detailedListContainer = document.getElementById('detailedRequestsList');
+
+            // Create a request to fetch detailed information
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'get_request_details.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+            xhr.onreadystatechange = function() {
+                if (this.readyState === 4 && this.status === 200) {
+                    detailedListContainer.innerHTML = this.responseText;
+                }
+            };
+
+            xhr.send('ids=' + JSON.stringify(ids));
+        }
+
+        document.getElementById('confirmAcceptBtn').addEventListener('click', function() {
+            // Validate form
+            const esttime = document.getElementById('esttime').value;
+            const status = document.getElementById('sel1').value;
+            const confirmedBy = document.getElementById('sel2').value;
+
+            if (!esttime || !status || !confirmedBy) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            // Submit the form
+            document.getElementById('batchApprovalForm').submit();
         });
     </script>
+    <!-- Add JavaScript for form validation and submission -->
+    <!-- Add JavaScript for form validation and submission -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get references to form elements
+            const batchApprovalForm = document.getElementById('batchApprovalForm');
+            const approveAllBtn = document.getElementById('approveAllBtn');
+            const selectedIdsInput = document.getElementById('selected_ids_input');
+
+            // Only add event listeners if elements exist
+            if (batchApprovalForm) {
+                batchApprovalForm.addEventListener('submit', function(e) {
+                    e.preventDefault(); // Prevent default form submission
+
+                    // Get form fields
+                    const esttime = document.getElementById('esttime').value;
+                    const status = document.getElementById('sel1').value;
+                    const confirmedBy = document.getElementById('sel2').value;
+                    const selectedIds = selectedIdsInput ? selectedIdsInput.value : '[]';
+
+                    console.log("Form submission - Selected IDs:", selectedIds);
+                    console.log("Form submission - Status:", status);
+                    console.log("Form submission - Confirmed By:", confirmedBy);
+                    console.log("Form submission - Est Time:", esttime);
+
+                    // Validate form fields
+                    if (!esttime) {
+                        alert('Please enter an estimated time.');
+                        return false;
+                    }
+
+                    if (!status) {
+                        alert('Please select a status.');
+                        return false;
+                    }
+
+                    if (!confirmedBy) {
+                        alert('Please select who confirmed this request.');
+                        return false;
+                    }
+
+                    if (!selectedIds || selectedIds === '[]') {
+                        alert('No requests selected for approval.');
+                        return false;
+                    }
+
+                    // Show loading state
+                    if (approveAllBtn) {
+                        const buttonText = document.getElementById('approveButtonText');
+                        const spinner = document.getElementById('loadingSpinner');
+
+                        approveAllBtn.disabled = true;
+                        if (buttonText) buttonText.textContent = 'Processing...';
+                        if (spinner) spinner.classList.remove('d-none');
+                    }
+
+                    // Submit the form using AJAX
+                    const formData = new FormData(this);
+
+                    // Log the form data being sent
+                    console.log("FormData entries:");
+                    for (let pair of formData.entries()) {
+                        console.log(pair[0] + ': ' + pair[1]);
+                    }
+
+                    fetch('bulk_accept.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => {
+                            console.log("Response status:", response.status);
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.text();
+                        })
+                        .then(data => {
+                            // Log the response
+                            console.log("Response data:", data);
+
+                            // Success - show message and redirect
+                            alert('Requests approved successfully!');
+                            window.location.href = 'index_r.php';
+                        })
+                        .catch(error => {
+                            // Error handling
+                            console.error('Error:', error);
+                            alert('There was an error processing your request. Please try again.');
+
+                            // Reset button state
+                            if (approveAllBtn) {
+                                approveAllBtn.disabled = false;
+                                const buttonText = document.getElementById('approveButtonText');
+                                const spinner = document.getElementById('loadingSpinner');
+                                if (buttonText) buttonText.textContent = 'Approve All';
+                                if (spinner) spinner.classList.add('d-none');
+                            }
+                        });
+                });
+            }
+
+            // Additional validation when the Approve All button is clicked directly
+            if (approveAllBtn) {
+                approveAllBtn.addEventListener('click', function() {
+                    // This is a backup validation in case the form submission event doesn't trigger
+                    const esttime = document.getElementById('esttime');
+                    const status = document.getElementById('sel1');
+                    const confirmedBy = document.getElementById('sel2');
+
+                    if ((!esttime || !esttime.value) ||
+                        (!status || !status.value) ||
+                        (!confirmedBy || !confirmedBy.value)) {
+                        alert('Please fill in all required fields.');
+                        return false;
+                    }
+                });
+            }
+
+            // Function to update the selected IDs input
+            function updateSelectedIds() {
+                if (selectedIdsInput) {
+                    const checkboxes = document.querySelectorAll('input[name="selected[]"]:checked');
+                    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+                    console.log("Updated selected IDs:", selectedIds);
+                    selectedIdsInput.value = JSON.stringify(selectedIds);
+                }
+            }
+
+            // Add event listeners to all checkboxes
+            document.addEventListener('change', function(e) {
+                if (e.target && e.target.name === 'selected[]') {
+                    updateSelectedIds();
+                }
+            });
+
+            // Initialize selected IDs on page load
+            updateSelectedIds();
+
+            // Add event listener to the Accept All button that opens the modal
+            const acceptAllBtn = document.getElementById('acceptAllBtn');
+            if (acceptAllBtn) {
+                acceptAllBtn.addEventListener('click', function(e) {
+                    // Get all checked checkboxes
+                    const selectedCheckboxes = document.querySelectorAll('input[name="selected[]"]:checked');
+                    console.log("Accept All clicked - Selected checkboxes:", selectedCheckboxes.length);
+
+                    if (selectedCheckboxes.length === 0) {
+                        e.preventDefault(); // Prevent modal from opening
+                        alert('Please select at least one request to accept.');
+                        return;
+                    }
+
+                    // Collect all selected IDs and names
+                    const selectedIds = [];
+                    const selectedNames = [];
+
+                    selectedCheckboxes.forEach(checkbox => {
+                        const row = checkbox.closest('tr');
+                        if (row && row.cells && row.cells[0]) {
+                            const name = row.cells[0].textContent.trim();
+                            selectedIds.push(checkbox.value);
+                            selectedNames.push(name);
+                        }
+                    });
+
+                    console.log("Selected IDs:", selectedIds);
+                    console.log("Selected Names:", selectedNames);
+
+                    // Display selected requests in the modal
+                    const listContainer = document.getElementById('selectedRequestsList');
+                    if (listContainer) {
+                        listContainer.innerHTML = '<ul class="list-group">';
+
+                        selectedNames.forEach((name, index) => {
+                            listContainer.innerHTML += `<li class="list-group-item">${name} (ID: ${selectedIds[index]})</li>`;
+                        });
+
+                        listContainer.innerHTML += '</ul>';
+                    }
+
+                    // Store selected IDs in the hidden input
+                    if (selectedIdsInput) {
+                        selectedIdsInput.value = JSON.stringify(selectedIds);
+                        console.log("Set selected_ids_input value:", selectedIdsInput.value);
+                    }
+
+                    // Load detailed information for each selected request
+                    if (typeof loadDetailedRequestInfo === 'function') {
+                        loadDetailedRequestInfo(selectedIds);
+                    }
+                });
+            }
+        });
+
+        // Function to load detailed request info (defined outside to be accessible)
+        function loadDetailedRequestInfo(ids) {
+            console.log("Loading detailed info for IDs:", ids);
+            const detailedListContainer = document.getElementById('detailedRequestsList');
+            if (!detailedListContainer) return;
+
+            // Create a request to fetch detailed information
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'get_request_details.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+            xhr.onreadystatechange = function() {
+                if (this.readyState === 4) {
+                    console.log("XHR status:", this.status);
+                    if (this.status === 200) {
+                        detailedListContainer.innerHTML = this.responseText;
+                    } else {
+                        console.error("Error loading request details:", this.statusText);
+                        detailedListContainer.innerHTML = '<div class="alert alert-danger">Error loading request details</div>';
+                    }
+                }
+            };
+
+            xhr.send('ids=' + JSON.stringify(ids));
+        }
+    </script>
+
+
 </body>
 
 </html>
