@@ -115,4 +115,4 @@ $pdf->Cell(0, 10, "Report generated on: " . date('F j, Y, g:i a'), 0, 1, 'R');
 
 // Output the PDF
 $filename = 'personal_pass_slip_' . date('Y-m-d') . '.pdf';
-$pdf->Output($filename, 'I');
+$pdf->Output($filename, 'D');
