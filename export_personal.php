@@ -3,13 +3,13 @@ require_once 'dbh.php';
 require_once "fpdf/fpdf.php";
 session_start();
 
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Desk Clerk') {
-    header("location:login_v2.php");
-}
+// if (!isset($_SESSION['username'])) {
+//     header("location:login_v2.php");
+// } else if ($_SESSION['role'] == 'Employee') {
+//     header("location:login_v2.php");
+// } else if ($_SESSION['role'] == 'Desk Clerk') {
+//     header("location:login_v2.php");
+// }
 
 // Query for Personal Business only
 $result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND confirmed_by = 'CAGULADA RENE ART' ORDER BY id";
