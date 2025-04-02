@@ -51,7 +51,7 @@ $(document).ready(function () {
     var poValue = $("#paymentDropdown").val() || $("#current_po").val();
 
     $.ajax({
-      url: "/gso_test/update_record_maricris.php",
+      url: "update_record_maricris.php",
       type: "POST",
       data: {
         id: currentId,
