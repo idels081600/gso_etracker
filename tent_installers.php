@@ -223,7 +223,7 @@ if (!isset($_SESSION['username'])) {
                         </div>
                         <div class="form-group">
                             <label for="tentNumber">Tent Number</label>
-                            <input type="text" class="form-control" id="tentNumber" placeholder="Enter tent number">
+                            <input type="text" class="form-control" id="tentNumber" placeholder="Enter tent number" required>
                         </div>
                         <div class="text-right">
                             <button type="submit" class="btn btn-success">Save Changes</button>
