@@ -35,6 +35,7 @@ if (!isset($_SESSION['username'])) {
                         <th>Address</th>
                         <!-- <th>Contact</th> -->
                         <th class="tent-no-column">Tent No.</th>
+                        <th>Date</th>
                         <th>Status</th>
                         <th>Action</th>
                     </tr>
@@ -44,27 +45,27 @@ if (!isset($_SESSION['username'])) {
                     require_once 'db_asset.php';
 
                     // First fetch Pending status
-                    $query_pending = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no 
-                     FROM tent t 
-                     WHERE t.status = 'Pending'";
+                    $query_pending = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date 
+                 FROM tent t 
+                 WHERE t.status = 'Pending'";
                     $result_pending = mysqli_query($conn, $query_pending);
 
                     // Then fetch Installed status
-                    $query_installed = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no 
-                       FROM tent t 
-                       WHERE t.status = 'Installed'";
+                    $query_installed = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date 
+                    FROM tent t 
+                    WHERE t.status = 'Installed'";
                     $result_installed = mysqli_query($conn, $query_installed);
 
                     // Finally fetch Retrieved status
-                    $query_retrieved = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no 
-                       FROM tent t 
-                       WHERE t.status = 'Retrieved'";
+                    $query_retrieved = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date 
+                   FROM tent t 
+                   WHERE t.status = 'Retrieved'";
                     $result_retrieved = mysqli_query($conn, $query_retrieved);
 
                     // For Retrieval status (keeping this as it was in your original query)
-                    $query_for_retrieval = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no 
-                           FROM tent t 
-                           WHERE t.status = 'For Retrieval'";
+                    $query_for_retrieval = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date 
+                       FROM tent t 
+                       WHERE t.status = 'For Retrieval'";
                     $result_for_retrieval = mysqli_query($conn, $query_for_retrieval);
 
                     $total_rows = mysqli_num_rows($result_pending) + mysqli_num_rows($result_installed) +
@@ -76,72 +77,78 @@ if (!isset($_SESSION['username'])) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            // echo "<td>" . htmlspecialchars($row['contact_no']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['tent_no']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['date']) . "</td>"; // Add this line to display the date
                             echo "<td>" . htmlspecialchars($row['status']) . "</td>";
                             echo '<td class="text-right">
-                <button class="btn btn-primary"
-                    data-toggle="modal"
-                    data-target="#editModal"
-                    data-id="' . htmlspecialchars($row['id']) . '"
-                    data-name="' . htmlspecialchars($row['name']) . '"
-                    data-address="' . htmlspecialchars($row['location']) . '"
-                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
-                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
-                    data-status="' . htmlspecialchars($row['status']) . '">
-                    Edit
-                </button>
-            </td>';
+                                <button class="btn btn-primary"
+                                    data-toggle="modal"
+                                    data-target="#editModal"
+                                    data-id="' . htmlspecialchars($row['id']) . '"
+                                    data-name="' . htmlspecialchars($row['name']) . '"
+                                    data-address="' . htmlspecialchars($row['location']) . '"
+                                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
+                                    data-date="' . htmlspecialchars($row['date']) . '"
+                                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
+                                    data-status="' . htmlspecialchars($row['status']) . '">
+                                    Edit
+                                </button>
+                            </td>';
                             echo "</tr>";
                         }
+
 
                         // Then display Installed records
                         while ($row = mysqli_fetch_assoc($result_installed)) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            // echo "<td>" . htmlspecialchars($row['contact_no']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['tent_no']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['date']) . "</td>"; // Added date column
                             echo "<td>" . htmlspecialchars($row['status']) . "</td>";
                             echo '<td class="text-right">
-                <button class="btn btn-primary"
-                    data-toggle="modal"
-                    data-target="#editModal"
-                    data-id="' . htmlspecialchars($row['id']) . '"
-                    data-name="' . htmlspecialchars($row['name']) . '"
-                    data-address="' . htmlspecialchars($row['location']) . '"
-                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
-                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
-                    data-status="' . htmlspecialchars($row['status']) . '">
-                    Edit
-                </button>
-            </td>';
+                                <button class="btn btn-primary"
+                                    data-toggle="modal"
+                                    data-target="#editModal"
+                                    data-id="' . htmlspecialchars($row['id']) . '"
+                                    data-name="' . htmlspecialchars($row['name']) . '"
+                                    data-address="' . htmlspecialchars($row['location']) . '"
+                                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
+                                    data-date="' . htmlspecialchars($row['date']) . '"  
+                                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
+                                    data-status="' . htmlspecialchars($row['status']) . '">
+                                    Edit
+                                </button>
+                            </td>';
                             echo "</tr>";
                         }
+
 
                         // Display For Retrieval records
                         while ($row = mysqli_fetch_assoc($result_for_retrieval)) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            // echo "<td>" . htmlspecialchars($row['contact_no']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['tent_no']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['date']) . "</td>"; // Added date column
                             echo "<td>" . htmlspecialchars($row['status']) . "</td>";
                             echo '<td class="text-right">
-                <button class="btn btn-primary"
-                    data-toggle="modal"
-                    data-target="#editModal"
-                    data-id="' . htmlspecialchars($row['id']) . '"
-                    data-name="' . htmlspecialchars($row['name']) . '"
-                    data-address="' . htmlspecialchars($row['location']) . '"
-                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
-                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
-                    data-status="' . htmlspecialchars($row['status']) . '">
-                    Edit
-                </button>
-            </td>';
+                                <button class="btn btn-primary"
+                                    data-toggle="modal"
+                                    data-target="#editModal"
+                                    data-id="' . htmlspecialchars($row['id']) . '"
+                                    data-name="' . htmlspecialchars($row['name']) . '"
+                                    data-address="' . htmlspecialchars($row['location']) . '"
+                                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
+                                    data-date="' . htmlspecialchars($row['date']) . '"
+                                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
+                                    data-status="' . htmlspecialchars($row['status']) . '">
+                                    Edit
+                                </button>
+                            </td>';
                             echo "</tr>";
                         }
+
 
                         // Finally display Retrieved records
                         while ($row = mysqli_fetch_assoc($result_retrieved)) {
@@ -149,21 +156,23 @@ if (!isset($_SESSION['username'])) {
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
                             // echo "<td>" . htmlspecialchars($row['contact_no']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['date']) . "</td>"; // Added date column
                             echo "<td>" . htmlspecialchars($row['tent_no']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['status']) . "</td>";
                             echo '<td class="text-right">
-                <button class="btn btn-primary"
-                    data-toggle="modal"
-                    data-target="#editModal"
-                    data-id="' . htmlspecialchars($row['id']) . '"
-                    data-name="' . htmlspecialchars($row['name']) . '"
-                    data-address="' . htmlspecialchars($row['location']) . '"
-                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
-                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
-                    data-status="' . htmlspecialchars($row['status']) . '">
-                    Edit
-                </button>
-            </td>';
+                                <button class="btn btn-primary"
+                                    data-toggle="modal"
+                                    data-target="#editModal"
+                                    data-id="' . htmlspecialchars($row['id']) . '"
+                                    data-name="' . htmlspecialchars($row['name']) . '"
+                                    data-address="' . htmlspecialchars($row['location']) . '"
+                                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
+                                    data-date="' . htmlspecialchars($row['date']) . '"
+                                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
+                                    data-status="' . htmlspecialchars($row['status']) . '">
+                                    Edit
+                                </button>
+                            </td>';
                             echo "</tr>";
                         }
                     } else {
