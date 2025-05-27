@@ -340,6 +340,12 @@
   font-size: 14px;
   width: 100%;
 }
+.tent-no-column {
+  width: 50px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
 .table_transportation {
   border-collapse: collapse;
   font-size: 14px;
