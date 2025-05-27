@@ -142,8 +142,6 @@ if (!isset($_SESSION['username'])) {
             color: inherit;
         }
     </style>
-
-
 </head>
 
 <body>
@@ -172,6 +170,7 @@ if (!isset($_SESSION['username'])) {
                 </ul>
             </li>
             <li><a href="tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
+           <li><a href="motorpool_admin.php"><i class="fas fa-wrench icon-size"></i> Motorpool</a></li>
             <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
@@ -188,7 +187,7 @@ if (!isset($_SESSION['username'])) {
             <div class="container2">
                 <h1 class="tent_label">Tent Status</h1>
                 <div class="meter">
-                    <span style="width: <?php echo display_tent_status(); ?>%;" data-width="<?php echo display_tent_status(); ?>%"></span>
+                    <span style="width: <?php echo min(display_tent_status(), 100); ?>%;" data-width="<?php echo min(display_tent_status(), 100); ?>%"></span>
                 </div>
                 <div class="meter1">
                     <span style="width: <?php echo display_tent_status_Installed(); ?>%;" data-width="<?php echo display_tent_status_Installed(); ?>%"></span>
@@ -269,7 +268,7 @@ if (!isset($_SESSION['username'])) {
                     <table id="table_tent1" class="table_tent1" style="display: table;">
                         <thead>
                             <tr>
-                                <th>Tent No.</th>
+                                <th class="tent-no-column">Tent No.</th>
                                 <th>Date</th>
                                 <th>Name</th>
                                 <th>Contact Number</th>
@@ -282,7 +281,7 @@ if (!isset($_SESSION['username'])) {
                         <tbody>
                             <?php while ($row = mysqli_fetch_assoc($result)) { ?>
                                 <tr>
-                                    <td><?php echo $row["tent_no"]; ?></td>
+                                    <td class="tent-no-column"><?php echo $row["tent_no"]; ?></td>
                                     <td><?php echo $row["date"]; ?></td>
                                     <td><?php echo $row["name"]; ?></td>
                                     <td><?php echo $row["Contact_no"]; ?></td>
@@ -302,7 +301,7 @@ if (!isset($_SESSION['username'])) {
                                         case 'On Stock':
                                             $status_class = 'green';
                                             break;
-                                            // Add more cases if needed
+                                        // Add more cases if needed
                                         default:
                                             // Default action (if any)
                                             break;
@@ -313,6 +312,7 @@ if (!isset($_SESSION['username'])) {
                             <?php } ?>
                         </tbody>
                     </table>
+
 
                     <table id="table_transportation" class="table_transportation" style="display: none;">
                         <thead>
@@ -352,7 +352,7 @@ if (!isset($_SESSION['username'])) {
                                         case 'Arrived':
                                             $status_class = 'blue';
                                             break;
-                                            // Add more cases if needed
+                                        // Add more cases if needed
                                         default:
                                             // Default action (if any)
                                             break;
@@ -401,7 +401,7 @@ if (!isset($_SESSION['username'])) {
                                         case 'CGSO-Head':
                                             $status_class = 'blue';
                                             break;
-                                            // Add more cases if needed
+                                        // Add more cases if needed
                                         default:
                                             // Default action (if any)
                                             break;
