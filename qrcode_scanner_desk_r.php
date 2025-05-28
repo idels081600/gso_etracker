@@ -164,7 +164,7 @@
 
         <!-- Greeting Text -->
         <div class="text-center mb-3">
-            <h2 id="texthead" class="fw-semibold">Welcome Back!</h2>
+            <h2 id="texthead" class="fw-semibold">Stand By</h2>
             <h1 id="text" aria-live="polite" aria-atomic="true" class="display-6"></h1>
         </div>
 
@@ -223,7 +223,7 @@
                             } else if (response.status === "exists") {
                                 textHead.textContent = "Take Care!";
                             } else {
-                                textHead.textContent = "Welcome Back!";
+                                textHead.textContent = "Stand By";
                             }
 
                             textDisplay.textContent = name;
