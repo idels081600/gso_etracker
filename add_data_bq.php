@@ -36,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_data'])) {
     mysqli_stmt_bind_param($stmt, "ssssssdsssd", $sr_no, $date, $supplier, $quantity, $description, $activity, $amount, $office, $remarks, $payment, $po_amount);
    
     if (mysqli_stmt_execute($stmt)) {
-        header("Location: bq.php");
+        header("Location: BQ.php");
         exit();
     } else {
         $error = "Error: " . mysqli_error($conn);
