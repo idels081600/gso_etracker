@@ -834,7 +834,7 @@ if (isset($_POST['save_data'])) {
 
                 // Dynamically generate 102 boxes
                 var boxesContainer = document.querySelector('.boxContainer');
-                for (var i = 1; i <= 120; i++) {
+                for (var i = 1; i <= 200; i++) {
                     var box = document.createElement('div');
                     box.classList.add('box');
                     box.setAttribute('data-box', i);
