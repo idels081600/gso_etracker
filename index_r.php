@@ -331,7 +331,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             </div>
         </div>
     </div>
-
     <script>
         document.getElementById('acceptAllBtn').addEventListener('click', function(e) {
             // Get all checked checkboxes
@@ -411,6 +410,35 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             const approveAllBtn = document.getElementById('approveAllBtn');
             const selectedIdsInput = document.getElementById('selected_ids_input');
 
+            // Function to toggle estimated time requirement based on status
+            function toggleEstTimeRequirement() {
+                const status = document.getElementById('sel1').value;
+                const esttimeField = document.getElementById('esttime');
+                const esttimeContainer = esttimeField.closest('.form-group');
+
+                if (status === 'Declined') {
+                    // Hide estimated time field for declined status
+                    if (esttimeContainer) {
+                        esttimeContainer.style.display = 'none';
+                    }
+                    // Clear the value when hiding
+                    esttimeField.value = '';
+                } else {
+                    // Show estimated time field for other statuses
+                    if (esttimeContainer) {
+                        esttimeContainer.style.display = 'block';
+                    }
+                }
+            }
+
+            // Add event listener to status dropdown
+            const statusSelect = document.getElementById('sel1');
+            if (statusSelect) {
+                statusSelect.addEventListener('change', toggleEstTimeRequirement);
+                // Initialize on page load
+                toggleEstTimeRequirement();
+            }
+
             // Only add event listeners if elements exist
             if (batchApprovalForm) {
                 batchApprovalForm.addEventListener('submit', function(e) {
@@ -427,8 +455,8 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     console.log("Form submission - Confirmed By:", confirmedBy);
                     console.log("Form submission - Est Time:", esttime);
 
-                    // Validate form fields
-                    if (!esttime) {
+                    // Validate form fields - estimated time only required if not declined
+                    if (status !== 'Declined' && !esttime) {
                         alert('Please enter an estimated time.');
                         return false;
                     }
@@ -483,7 +511,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                             console.log("Response data:", data);
 
                             // Success - show message and redirect
-                            alert('Requests approved successfully!');
+                            alert('Requests processed successfully!');
                             window.location.href = 'index_r.php';
                         })
                         .catch(error => {
@@ -511,10 +539,19 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     const status = document.getElementById('sel1');
                     const confirmedBy = document.getElementById('sel2');
 
-                    if ((!esttime || !esttime.value) ||
-                        (!status || !status.value) ||
-                        (!confirmedBy || !confirmedBy.value)) {
-                        alert('Please fill in all required fields.');
+                    // Only require estimated time if status is not declined
+                    if (status && status.value !== 'Declined' && (!esttime || !esttime.value)) {
+                        alert('Please enter an estimated time.');
+                        return false;
+                    }
+
+                    if (!status || !status.value) {
+                        alert('Please select a status.');
+                        return false;
+                    }
+
+                    if (!confirmedBy || !confirmedBy.value) {
+                        alert('Please select who confirmed this request.');
                         return false;
                     }
                 });
@@ -622,6 +659,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             xhr.send('ids=' + JSON.stringify(ids));
         }
     </script>
+
     <script>
         // More aggressive approach for Bootstrap modal
         document.addEventListener('DOMContentLoaded', function() {
