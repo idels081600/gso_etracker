@@ -390,11 +390,10 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
 
         document.getElementById('confirmAcceptBtn').addEventListener('click', function() {
             // Validate form
-            const esttime = document.getElementById('esttime').value;
             const status = document.getElementById('sel1').value;
             const confirmedBy = document.getElementById('sel2').value;
 
-            if (!esttime || !status || !confirmedBy) {
+            if (!status || !confirmedBy) {
                 alert('Please fill in all required fields.');
                 return;
             }
