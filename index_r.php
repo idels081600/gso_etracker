@@ -279,7 +279,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                             <div class="card-body">
                                 <div class="form-group mb-3">
                                     <label for="esttime">Estimated Time</label>
-                                    <input type="time" class="form-control" id="esttime" name="esttime" min="08:00" max="18:00" required>
+                                    <input type="time" class="form-control" id="esttime" name="esttime" min="08:00" max="18:00">
                                 </div>
 
                                 <div class="form-group mb-3">
