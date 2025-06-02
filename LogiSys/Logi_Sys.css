@@ -1,0 +1,99 @@
+#firstContainer {
+  background-color: rgb(13, 24, 34);
+  padding: 20px;
+  margin-left: 100px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+}
+.main_content {
+  margin-top: -2%;
+  margin-left: 5%;
+  padding: 5%;
+}
+.tally {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 1rem; /* Use relative units for padding */
+  border-radius: 0.5rem; /* Use relative units for border-radius */
+  min-width: 150px; /* Adjusted minimum width for responsiveness */
+  width: 15vw; /* Use viewport width for responsive sizing */
+  height: 160px; /* Fixed height; adjust as needed */
+  color: #000; /* Text color for better contrast */
+  display: flex;
+  flex-direction: column;
+  margin-top: 0%;
+}
+
+#firstContainer {
+  background-color: #f8f9fa;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  width: 100%; /* Set specific width */
+  height: 200px; /* Set specific height */
+}
+#secondContainer {
+  background-color: #e9ecef;
+  padding: 20px;
+  border-radius: 8px;
+  margin-left: 100px;
+  overflow-x: auto; /* Handle horizontal overflow */
+}
+
+.table-divider {
+  border: none;
+  border-top: 2px solid #dee2e6;
+  margin: 0;
+  opacity: 0.5;
+}
+
+.table-responsive {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+/* Custom styling for status badges */
+.badge {
+  font-size: 0.75em;
+}
+
+/* Media query for laptop screens */
+@media only screen and (min-width: 1024px) and (max-width: 1440px) {
+  .tally {
+    width: 15vw; /* Slightly larger width for laptop screens */
+    min-width: 180px; /* Increased minimum width */
+    height: 120px; /* Slightly taller for better proportions */
+    padding: 1.2rem; /* Slightly more padding */
+  }
+
+  #firstContainer {
+    gap: 15px; /* Adjust gap between tally containers */
+    padding: 25px; /* Slightly more padding for the container */
+  }
+
+  .sidebar {
+    width: 240px; /* Adjust sidebar width for laptops */
+  }
+
+  .content,
+  .main-content {
+    margin-left: 240px; /* Match sidebar width */
+  }
+}
+
+/* Alternative: More specific laptop breakpoints */
+@media only screen and (min-width: 1024px) and (max-width: 1366px) {
+  /* Standard laptop screens (1024x768, 1366x768) */
+  .tally {
+    width: 16vw;
+    min-width: 170px;
+    height: 115px;
+  }
+}
