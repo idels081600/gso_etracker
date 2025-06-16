@@ -33,8 +33,7 @@ if (!isset($_SESSION['username'])) {
                     <tr>
                         <th>Name</th>
                         <th>Address</th>
-                        <!-- <th>Contact</th> -->
-                        <th class="tent-no-column">Tent No.</th>
+                        <th>Tent No.</th>
                         <th>Date</th>
                         <th>Status</th>
                         <th>Action</th>
@@ -235,7 +234,7 @@ if (!isset($_SESSION['username'])) {
                         $statusQuery = "SELECT Status FROM tent_status";
                         $statusResult = mysqli_query($conn, $statusQuery);
 
-                        for ($i = 1; $i <= 120; $i++) {
+                        for ($i = 1; $i <= 200; $i++) {
                             $status = mysqli_fetch_assoc($statusResult);
                             $boxColor = '';
 
