@@ -1,55 +1,22 @@
-#firstContainer {
-  background-color: rgb(13, 24, 34);
-  padding: 20px;
-  margin-left: 100px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-}
 .main_content {
   margin-top: -2%;
-  margin-left: 3%;
+  margin-left: 6%;
   padding: 5%;
 }
-.tally {
-  background: #fff;
-  border: 1px solid #ddd;
-  padding: 1rem; /* Use relative units for padding */
-  border-radius: 0.5rem; /* Use relative units for border-radius */
-  min-width: 150px; /* Adjusted minimum width for responsiveness */
-  width: 15vw; /* Use viewport width for responsive sizing */
-  height: 160px; /* Fixed height; adjust as needed */
-  color: #000; /* Text color for better contrast */
-  display: flex;
-  flex-direction: column;
-  margin-top: 0%;
-}
 
-#firstContainer {
-  background-color: #f8f9fa;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  width: 100%; /* Set specific width */
-  height: 200px; /* Set specific height */
-}
 #secondContainer {
-  background-color: #e9ecef;
+  background-color: white;
   padding: 20px;
-  border-radius: 8px;
-  margin-left: 100px;
-  width: 130%; /* Use viewport width for responsive sizing */
-  height: 100%; /* Fixed height; adjust as needed */
-  overflow-x: auto; /* Handle horizontal overflow */
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
 }
 
-.table-divider {
-  border: none;
-  border-top: 2px solid #dee2e6;
-  margin: 0;
-  opacity: 0.5;
+.table-container {
+  max-height: 700px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
 }
 
 .table-responsive {
@@ -61,9 +28,60 @@
   margin-bottom: 0;
 }
 
+.table thead th {
+  position: sticky;
+  top: 0;
+  background-color: #f8f9fa;
+  z-index: 10;
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+}
+
+.table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
 /* Custom styling for status badges */
 .badge {
   font-size: 0.75em;
+}
+
+/* Remove the old styles that were causing issues */
+#firstContainer {
+  background-color: #f8f9fa;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.tally {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  min-width: 150px;
+  width: 15vw;
+  height: 160px;
+  color: #000;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0%;
 }
 
 /* Media query for laptop screens */

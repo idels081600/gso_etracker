@@ -1,0 +1,101 @@
+.table-container {
+  max-height: 700px; /* Reduced height for better scrolling */
+  overflow-y: auto;
+  overflow-x: auto; /* Added horizontal scroll if needed */
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+}
+
+.table-responsive {
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: none; /* Remove any conflicting height restrictions */
+}
+
+.table {
+  margin-bottom: 0;
+  min-width: 100%; /* Ensure table takes full width */
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  background-color: #f8f9fa;
+  z-index: 10;
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+  white-space: nowrap; /* Prevent header text wrapping */
+}
+
+/* Custom scrollbar styling */
+.table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px; /* Added for horizontal scrollbar */
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Corner where scrollbars meet */
+.table-container::-webkit-scrollbar-corner {
+  background: #f1f1f1;
+}
+
+#secondContainer {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+  margin-left: 10%;
+  width: calc(97 - 40px); /* Ensure container doesn't overflow */
+}
+
+/* Ensure table cells don't break */
+.table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Make badges smaller if needed */
+.badge {
+  font-size: 0.75em;
+  white-space: nowrap;
+}
+.suggestion-item:hover {
+  background-color: #f8f9fa !important;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none !important;
+}
+
+#stockInItemDropdown {
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+mark.bg-warning {
+  padding: 0.1em 0.2em;
+  border-radius: 0.2em;
+}
+
+.suggestion-item {
+  transition: background-color 0.2s ease;
+}

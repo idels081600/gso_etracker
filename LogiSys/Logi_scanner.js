@@ -1,603 +1,551 @@
-class BarcodeScanner {
+class QRScanner {
   constructor() {
-    this.codeReader = new ZXing.BrowserMultiFormatReader();
+    // Initialize elements
+    this.video = document.getElementById("scanner-video");
+    this.startBtn = document.getElementById("startBtn");
+    this.stopBtn = document.getElementById("stopBtn");
+    this.scannerStatus = document.getElementById("scannerStatus");
+    this.manualQRInput = document.getElementById("manualQRInput");
+    this.searchManualQR = document.getElementById("searchManualQR");
+    this.clearHistoryBtn = document.getElementById("clearHistoryBtn");
+    this.transactionList = document.getElementById("transactionList");
+
+    // Item info elements
+    this.itemNo = document.getElementById("itemNo");
+    this.itemName = document.getElementById("itemName");
+    this.currentBalance = document.getElementById("currentBalance");
+    this.itemUnit = document.getElementById("itemUnit");
+    this.rackNo = document.getElementById("rackNo");
+    this.itemStatus = document.getElementById("itemStatus");
+
+    // Scan result elements
+    this.scannedCode = document.getElementById("scannedCode");
+    this.scanResult = document.getElementById("scanResult");
+
+    // Initialize ZXing code reader
+    this.codeReader = new ZXing.BrowserQRCodeReader();
     this.scanning = false;
-    this.currentItem = null;
-    this.transactions = [];
-    this.initializeElements();
+    this.selectedItem = null;
+    this.lastScannedCode = null;
+    this.scanCooldown = false;
+
+    // Bind events
     this.bindEvents();
+
+    // Load transaction history
     this.loadTransactionHistory();
   }
 
-  initializeElements() {
-    this.video = document.getElementById("video");
-    this.startBtn = document.getElementById("startScan");
-    this.stopBtn = document.getElementById("stopScan");
-    this.scannerStatus = document.getElementById("scannerStatus");
-    this.scanResult = document.getElementById("scanResult");
-    this.scannedCode = document.getElementById("scannedCode");
-    this.manualBarcode = document.getElementById("manualBarcode");
-    this.manualSubmit = document.getElementById("manualSubmit");
-    this.itemInfo = document.getElementById("itemInfo");
-    this.noItemMessage = document.getElementById("noItemMessage");
+  bindEvents() {
+    // Start scanner button
+    this.startBtn.addEventListener("click", () => {
+      this.requestCameraPermission();
+    });
 
-    // Deduct elements
-    this.deductBtn = document.getElementById("deductBtn");
-    this.deductQuantity = document.getElementById("deductQuantity");
-    this.deductRequestor = document.getElementById("deductRequestor");
+    // Stop scanner button
+    this.stopBtn.addEventListener("click", () => {
+      this.stopScanning();
+    });
 
-    // Add elements
-    this.addBtn = document.getElementById("addBtn");
-    this.addQuantity = document.getElementById("addQuantity");
-    this.addReference = document.getElementById("addReference"); // Make sure this line exists
+    // Manual QR search
+    this.searchManualQR.addEventListener("click", () => {
+      const qrCode = this.manualQRInput.value.trim();
+      if (qrCode) {
+        this.searchItem(qrCode);
+      }
+    });
 
-    this.transactionHistory = document.getElementById("transactionHistory");
-    this.clearHistory = document.getElementById("clearHistory");
+    // Manual QR input enter key
+    this.manualQRInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        const qrCode = this.manualQRInput.value.trim();
+        if (qrCode) {
+          this.searchItem(qrCode);
+        }
+      }
+    });
+
+    // Clear history button
+    this.clearHistoryBtn.addEventListener("click", () => {
+      this.clearTransactionHistory();
+    });
   }
 
-  bindEvents() {
-    this.startBtn.addEventListener("click", () => this.startScanning());
-    this.stopBtn.addEventListener("click", () => this.stopScanning());
-    this.manualSubmit.addEventListener("click", () =>
-      this.searchManualBarcode()
-    );
-    this.manualBarcode.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") this.searchManualBarcode();
-    });
-    this.deductBtn.addEventListener("click", () => this.deductItems());
-    this.addBtn.addEventListener("click", () => this.addItems());
-    this.clearHistory.addEventListener("click", () =>
-      this.clearTransactionHistory()
-    );
+  async requestCameraPermission() {
+    try {
+      // First check if the browser supports getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error(
+          "Your browser does not support camera access. Please try using Chrome, Firefox, or Safari."
+        );
+      }
+
+      this.scannerStatus.textContent = "Requesting camera access...";
+      this.scannerStatus.className = "scanner-status status-active";
+
+      // Try to get available video devices
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(
+        (device) => device.kind === "videoinput"
+      );
+
+      if (videoDevices.length === 0) {
+        throw new Error("No camera found on your device.");
+      }
+
+      // Try different camera constraints
+      const constraints = [
+        {
+          video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        },
+        {
+          video: {
+            facingMode: "user",
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        },
+        { video: { width: { ideal: 1280 }, height: { ideal: 720 } } },
+        { video: true },
+      ];
+
+      let stream = null;
+      for (const constraint of constraints) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraint);
+          console.log("Camera accessed with constraint:", constraint);
+          break;
+        } catch (error) {
+          console.log("Failed with constraint:", constraint, error);
+          continue;
+        }
+      }
+
+      if (!stream) {
+        throw new Error("Failed to access camera with any configuration.");
+      }
+
+      this.video.srcObject = stream;
+      this.video.style.display = "block";
+
+      // Wait for video to load and play
+      await new Promise((resolve, reject) => {
+        this.video.onloadedmetadata = () => {
+          this.video.play().then(resolve).catch(reject);
+        };
+        this.video.onerror = reject;
+      });
+
+      this.scannerStatus.textContent =
+        "Camera started - Ready for continuous scanning";
+      this.scannerStatus.className = "scanner-status status-active";
+      this.startBtn.disabled = true;
+      this.stopBtn.disabled = false;
+
+      // Start continuous scanning
+      setTimeout(() => {
+        this.startScanning();
+      }, 1000);
+    } catch (error) {
+      console.error("Camera error:", error);
+      this.scannerStatus.textContent = error.message;
+      this.scannerStatus.className = "scanner-status status-inactive";
+      this.showError(error.message);
+    }
   }
 
   async startScanning() {
+    if (this.scanning) return;
+
     try {
       this.scanning = true;
-      this.updateScannerStatus("active");
-      this.startBtn.disabled = true;
-      this.stopBtn.disabled = false;
-      this.video.style.display = "block";
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
+      this.scannerStatus.textContent = "Continuous scanning active...";
+      this.scannerStatus.className = "scanner-status status-active";
+
+      // Configure the code reader
+      const hints = new Map();
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+        ZXing.BarcodeFormat.QR_CODE,
+      ]);
+
+      // Start continuous scanning
+      this.codeReader.decodeFromVideoDevice(
+        null,
+        this.video,
+        (result, err) => {
+          if (result && this.scanning) {
+            console.log("QR code detected:", result.text);
+            this.handleScanResult(result.text);
+          }
+          if (err && !(err instanceof ZXing.NotFoundException)) {
+            console.error("QR scan error:", err);
+          }
         },
-      });
-      this.video.srcObject = stream;
-      this.codeReader.decodeFromVideoDevice(null, this.video, (result, err) => {
-        if (result && this.scanning) {
-          this.handleScanResult(result.text);
-        }
-      });
+        hints
+      );
     } catch (error) {
       console.error("Error starting scanner:", error);
-      this.showError("Failed to start camera. Please check permissions.");
-      this.stopScanning();
+      this.scannerStatus.textContent = "Failed to start scanner";
+      this.scannerStatus.className = "scanner-status status-inactive";
+      this.showError("Failed to start scanner. Please try again.");
+      this.scanning = false;
+      this.startBtn.disabled = false;
+      this.stopBtn.disabled = true;
     }
   }
 
   stopScanning() {
-    this.scanning = false;
-    this.updateScannerStatus("inactive");
-    this.startBtn.disabled = false;
-    this.stopBtn.disabled = true;
-    this.video.style.display = "none";
-    if (this.video.srcObject) {
-      this.video.srcObject.getTracks().forEach((track) => track.stop());
-      this.video.srcObject = null;
-    }
-    this.codeReader.reset();
-  }
+    if (!this.scanning) return;
 
-  updateScannerStatus(status) {
-    if (status === "active") {
-      this.scannerStatus.className = "scanner-status status-active";
-      this.scannerStatus.textContent =
-        "Scanner Active - Point camera at barcode";
-    } else {
-      this.scannerStatus.className = "scanner-status status-inactive";
-      this.scannerStatus.textContent = "Scanner Inactive";
-    }
-  }
-
-  handleScanResult(barcode) {
-    this.scannedCode.textContent = barcode;
-    this.scanResult.style.display = "block";
-    this.searchItem(barcode);
-    // Auto-stop scanning after successful scan
-    setTimeout(() => this.stopScanning(), 1000);
-  }
-
-  searchManualBarcode() {
-    const barcode = this.manualBarcode.value.trim();
-    if (barcode) {
-      this.handleScanResult(barcode);
-      this.manualBarcode.value = "";
-    }
-  }
-
-  async searchItem(barcode) {
     try {
-      // Show loading state
-      this.showItemLoading();
-      // Replace this with your actual API endpoint
-      const response = await fetch("Logi_barcode_search_item.php", {
+      this.codeReader.reset();
+      this.scanning = false;
+      this.scanCooldown = false;
+      this.lastScannedCode = null;
+
+      this.scannerStatus.textContent = "Scanner stopped";
+      this.scannerStatus.className = "scanner-status status-inactive";
+      this.startBtn.disabled = false;
+      this.stopBtn.disabled = true;
+
+      // Stop all video tracks
+      if (this.video.srcObject) {
+        const tracks = this.video.srcObject.getTracks();
+        tracks.forEach((track) => track.stop());
+        this.video.srcObject = null;
+      }
+      this.video.style.display = "none";
+    } catch (error) {
+      console.error("Error stopping scanner:", error);
+      this.showError("Error stopping scanner");
+    }
+  }
+
+  handleScanResult(qrCode) {
+    // Stop scanning after a successful scan
+    this.stopScanning();
+
+    // Update scan result display if elements exist
+    if (this.scannedCode) {
+      this.scannedCode.textContent = qrCode;
+    }
+    if (this.scanResult) {
+      this.scanResult.style.display = "block";
+    }
+
+    // Search for the item
+    this.searchItem(qrCode);
+
+    // Show brief success feedback
+    this.scannerStatus.textContent = `Scanned: ${qrCode.substring(0, 20)}${
+      qrCode.length > 20 ? "..." : ""
+    }`;
+    // Reset status message after 2 seconds
+    setTimeout(() => {
+      if (!this.scanning) {
+        this.scannerStatus.textContent = "Scanner stopped";
+      }
+    }, 2000);
+  }
+
+  async searchItem(qrCode) {
+    try {
+      const response = await fetch("Logi_qr_search_item.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          barcode: barcode,
-        }),
+        body: JSON.stringify({ qr_code: qrCode }),
       });
+
       const data = await response.json();
-      if (data.success && data.item) {
-        this.currentItem = data.item;
+
+      if (data.success) {
+        this.selectedItem = data.item;
         this.displayItemInfo(data.item);
+        // Show success notification without stopping scanning
+        this.showSuccess(`Item found: ${data.item.item_name}`);
       } else {
-        this.showItemNotFound(barcode);
+        this.showError(data.message || "Item not found");
+        this.clearItemInfo();
       }
     } catch (error) {
       console.error("Error searching item:", error);
       this.showError("Failed to search item. Please try again.");
-      this.hideItemInfo();
     }
-  }
-
-  showItemLoading() {
-    this.itemInfo.style.display = "none";
-    this.noItemMessage.innerHTML = `
-            <div class="text-center">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Searching item...</p>
-            </div>
-        `;
   }
 
   displayItemInfo(item) {
-    document.getElementById("itemCode").textContent =
-      item.item_no || item.barcode;
-    document.getElementById("itemName").textContent =
-      item.item_name || item.name;
-    document.getElementById("currentStock").textContent =
-      item.current_balance || item.stock;
-    document.getElementById("itemUnit").textContent = item.unit || "pcs";
-    this.itemInfo.style.display = "block";
-    this.noItemMessage.style.display = "none";
-
-    // Reset forms with safety checks
-    if (this.deductQuantity) {
-      this.deductQuantity.value = 1;
-      this.deductQuantity.max = item.current_balance || item.stock;
-    }
-
-    if (this.deductRequestor) {
-      this.deductRequestor.value = "";
-    }
-
-    if (this.addQuantity) {
-      this.addQuantity.value = 1;
-    }
-
-    if (this.addReference) {
-      this.addReference.value = ""; // Reset reference field
-    }
+    this.itemNo.textContent = item.item_no;
+    this.itemName.textContent = item.item_name;
+    this.currentBalance.textContent = item.current_balance;
+    this.itemUnit.textContent = item.unit;
+    this.rackNo.textContent = item.rack_no;
+    this.itemStatus.textContent = item.status;
+    this.itemStatus.className = `info-value ${item.status.toLowerCase()}`;
   }
 
-  showItemNotFound(barcode) {
-    this.hideItemInfo();
-    this.noItemMessage.innerHTML = `
-            <div class="text-center text-warning">
-                <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
-                <h6>Item Not Found</h6>
-                <p>Barcode: <strong>${barcode}</strong></p>
-                <p>This item is not in the inventory database.</p>
-            </div>
-        `;
+  clearItemInfo() {
+    this.itemNo.textContent = "-";
+    this.itemName.textContent = "-";
+    this.currentBalance.textContent = "-";
+    this.itemUnit.textContent = "-";
+    this.rackNo.textContent = "-";
+    this.itemStatus.textContent = "-";
+    this.itemStatus.className = "info-value";
+    this.selectedItem = null;
   }
 
-  hideItemInfo() {
-    this.itemInfo.style.display = "none";
-    this.noItemMessage.style.display = "block";
-    this.currentItem = null;
-  }
-
-  async deductItems() {
-    if (!this.currentItem) {
-      this.showError("No item selected for deduction.");
-      return;
-    }
-
-    // Check if elements exist
-    if (!this.deductQuantity) {
-      this.showError("Deduct quantity element not found.");
-      return;
-    }
-
-    if (!this.deductRequestor) {
-      this.showError("Deduct requestor element not found.");
-      return;
-    }
-
-    const quantity = parseInt(this.deductQuantity.value);
-    const requestor = this.deductRequestor.value.trim();
-    const currentStock = parseInt(
-      this.currentItem.current_balance || this.currentItem.stock
-    );
-
-    // Validation
-    if (quantity <= 0) {
-      this.showError("Please enter a valid quantity greater than 0.");
-      return;
-    }
-    if (quantity > currentStock) {
-      this.showError(
-        `Insufficient stock. Available: ${currentStock}, Requested: ${quantity}`
-      );
-      return;
-    }
-    if (!requestor) {
-      this.showError("Please enter the requestor name.");
-      return;
-    }
-
-    // Store original button state OUTSIDE the try block
-    const originalText = this.deductBtn.innerHTML;
-    const originalDisabled = this.deductBtn.disabled;
-
+  async loadTransactionHistory() {
     try {
-      // Show loading on button
-      this.deductBtn.innerHTML =
-        '<i class="fas fa-spinner fa-spin"></i> Processing...';
-      this.deductBtn.disabled = true;
-
-      // Make API call to deduct items
-      const response = await fetch("Logi_barcode_deduct_item.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          item_no: this.currentItem.item_no,
-          quantity: quantity,
-          requestor: requestor,
-        }),
-      });
+      const response = await fetch("Logi_qr_get_transactions.php");
+      if (!response.ok) {
+        throw new Error("Failed to fetch transactions");
+      }
 
       const data = await response.json();
+      console.log("Transaction data:", data);
 
-      if (data.success) {
-        // Update current item stock
-        this.currentItem.current_balance = data.transaction.new_balance;
-
-        // Add to transaction history with requestor
-        this.addTransaction({
-          item_name: this.currentItem.item_name,
-          item_code: this.currentItem.item_no,
-          quantity: quantity,
-          requestor: requestor,
-          timestamp: new Date(),
-          old_balance: currentStock,
-          new_balance: data.transaction.new_balance,
-          type: "deduct",
-        });
-
-        // Update display
-        this.displayItemInfo(this.currentItem);
-
-        // Show success message
-        this.showSuccess(data.message);
-
-        // Reset form
-        this.deductQuantity.value = 1;
-        this.deductRequestor.value = "";
+      if (data.success && Array.isArray(data.transactions)) {
+        this.renderTransactionHistory(data.transactions);
       } else {
-        this.showError(
-          data.message || "Failed to deduct items. Please try again."
-        );
+        console.error("Invalid transaction data format:", data);
+        this.renderTransactionHistory([]);
       }
     } catch (error) {
-      console.error("Error deducting items:", error);
-      this.showError(
-        "Failed to deduct items. Please check your connection and try again."
-      );
-    } finally {
-      // Restore button using variables defined outside try block
-      this.deductBtn.innerHTML = originalText;
-      this.deductBtn.disabled = originalDisabled;
+      console.error("Error loading transactions:", error);
+      this.renderTransactionHistory([]);
     }
   }
-  async addItems() {
-    if (!this.currentItem) {
-      this.showError("No item selected for addition.");
+
+  renderTransactionHistory(transactions) {
+    if (!this.transactionList) {
+      console.error("Transaction list element not found");
       return;
     }
 
-    // Check if elements exist
-    if (!this.addQuantity) {
-      this.showError("Add quantity element not found.");
+    this.transactionList.innerHTML = "";
+
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+      this.transactionList.innerHTML = `
+        <div class="text-center text-muted py-3">
+          <i class="fas fa-history fa-2x mb-2"></i>
+          <p>No recent transactions</p>
+        </div>
+      `;
       return;
     }
 
-    if (!this.addReference) {
-      this.showError("Add reference element not found.");
-      return;
-    }
+    transactions.forEach((transaction) => {
+      if (!transaction) return;
 
-    const quantity = parseInt(this.addQuantity.value);
-    const reference = this.addReference.value.trim();
-    const currentStock = parseInt(
-      this.currentItem.current_balance || this.currentItem.stock
-    );
+      const transactionElement = document.createElement("div");
+      transactionElement.className = "transaction-item";
 
-    // Validation
-    if (quantity <= 0) {
-      this.showError("Please enter a valid quantity greater than 0.");
-      return;
-    }
+      let transactionType = transaction.type || "";
+      transactionType = transactionType.trim();
 
-    if (!reference) {
-      this.showError("Please enter PO No./IB No.");
-      return;
-    }
-
-    // Store original button state OUTSIDE the try block
-    const originalText = this.addBtn.innerHTML;
-    const originalDisabled = this.addBtn.disabled;
-
-    try {
-      // Show loading on button
-      this.addBtn.innerHTML =
-        '<i class="fas fa-spinner fa-spin"></i> Processing...';
-      this.addBtn.disabled = true;
-
-      // Make API call to add items
-      const response = await fetch("Logi_barcode_add_item.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          item_no: this.currentItem.item_no,
-          quantity: quantity,
-          reference_no: reference,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Update current item stock
-        this.currentItem.current_balance = data.transaction.new_balance;
-
-        // Add to transaction history with reference
-        this.addTransaction({
-          item_name: this.currentItem.item_name,
-          item_code: this.currentItem.item_no,
-          quantity: quantity,
-          reference_no: reference,
-          timestamp: new Date(),
-          old_balance: currentStock,
-          new_balance: data.transaction.new_balance,
-          type: "add",
-        });
-
-        // Update display
-        this.displayItemInfo(this.currentItem);
-
-        // Show success message
-        this.showSuccess(data.message);
-
-        // Reset form
-        this.addQuantity.value = 1;
-        this.addReference.value = "";
+      let typeClass, typeIcon;
+      if (transactionType.toLowerCase() === "addition") {
+        typeClass = "type-addition";
+        typeIcon = "plus-circle";
+      } else if (transactionType.toLowerCase() === "deduction") {
+        typeClass = "type-deduction";
+        typeIcon = "minus-circle";
       } else {
-        this.showError(
-          data.message || "Failed to add items. Please try again."
-        );
+        typeClass = "type-deduction";
+        typeIcon = "minus-circle";
+        console.warn("Unknown transaction type:", transactionType);
       }
-    } catch (error) {
-      console.error("Error adding items:", error);
-      this.showError(
-        "Failed to add items. Please check your connection and try again."
-      );
-    } finally {
-      // Restore button using variables defined outside try block
-      this.addBtn.innerHTML = originalText;
-      this.addBtn.disabled = originalDisabled;
-    }
-  }
 
-  addTransaction(transaction) {
-    this.transactions.unshift(transaction);
-    this.saveTransactionHistory();
-    this.renderTransactionHistory();
-  }
+      const itemName = transaction.item_name || "Unknown Item";
+      const itemNo = transaction.item_no || "N/A";
+      const quantity = transaction.quantity || 0;
+      const unit = transaction.unit || "pcs";
+      const previousBalance = transaction.previous_balance || 0;
+      const newBalance = transaction.new_balance || 0;
+      const requestor = transaction.requestor || "";
+      const referenceNo = transaction.reference_no || "";
 
-  renderTransactionHistory() {
-    if (this.transactions.length === 0) {
-      this.transactionHistory.innerHTML = `
-            <div class="text-center text-muted">
-                <i class="fas fa-clipboard-list fa-2x mb-2"></i>
-                <p>No transactions yet</p>
-            </div>
-        `;
-      return;
-    }
-
-    let html = "";
-    this.transactions.forEach((transaction, index) => {
-      const date = new Date(transaction.timestamp);
-      const timeString = date.toLocaleString();
-      const isAdd = transaction.type === "add";
-      const badgeClass = isAdd ? "bg-success" : "bg-warning";
-      const badgeText = isAdd
-        ? `+${transaction.quantity}`
-        : `-${transaction.quantity}`;
-
-      html += `
-            <div class="transaction-item">
-                <div class="row">
-                    <div class="col-md-8">
-                        <h6 class="mb-1">${transaction.item_name}</h6>
-                        <small class="text-muted">Code: ${
-                          transaction.item_code
-                        }</small>
-                        ${
-                          transaction.requestor
-                            ? `<br><small class="text-muted">Requestor: ${transaction.requestor}</small>`
-                            : ""
-                        }
-                        ${
-                          transaction.reference_no
-                            ? `<br><small class="text-muted">Ref: ${transaction.reference_no}</small>`
-                            : ""
-                        }
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <span class="badge ${badgeClass}">${badgeText}</span>
-                    </div>
-                </div>
-                <div class="row mt-1">
-                    <div class="col-md-6">
-                        <small class="text-muted">
-                            <i class="fas fa-clock"></i> ${timeString}
-                        </small>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <small class="text-muted">
-                            Stock: ${transaction.old_balance} → ${
-        transaction.new_balance
+      let dateStr = "Unknown date";
+      try {
+        if (transaction.timestamp) {
+          dateStr = new Date(transaction.timestamp).toLocaleString();
+        }
+      } catch (e) {
+        console.error("Error formatting date:", e);
       }
-                        </small>
-                    </div>
-                </div>
-            </div>
-        `;
+
+      transactionElement.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <span class="transaction-type ${typeClass}">
+              <i class="fas fa-${typeIcon}"></i>
+              ${transactionType}
+            </span>
+            <div class="mt-1">${itemName}</div>
+            <small class="text-muted">Item No: ${itemNo}</small>
+          </div>
+          <div class="text-end">
+            <div class="fw-bold">${quantity} ${unit}</div>
+            <small class="text-muted">${dateStr}</small>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between text-muted small">
+          <div>Previous: ${previousBalance}</div>
+          <div>New: ${newBalance}</div>
+        </div>
+        ${
+          requestor
+            ? `<div class="text-muted small mt-1">Requestor: ${requestor}</div>`
+            : ""
+        }
+        ${
+          referenceNo
+            ? `<div class="text-muted small">Reference: ${referenceNo}</div>`
+            : ""
+        }
+      `;
+
+      this.transactionList.appendChild(transactionElement);
     });
-    this.transactionHistory.innerHTML = html;
-  }
-
-  saveTransactionHistory() {
-    try {
-      localStorage.setItem(
-        "barcode_transactions",
-        JSON.stringify(this.transactions)
-      );
-    } catch (error) {
-      console.error("Error saving transaction history:", error);
-    }
-  }
-
-  loadTransactionHistory() {
-    try {
-      const saved = localStorage.getItem("barcode_transactions");
-      if (saved) {
-        this.transactions = JSON.parse(saved);
-        this.renderTransactionHistory();
-      }
-    } catch (error) {
-      console.error("Error loading transaction history:", error);
-      this.transactions = [];
-    }
   }
 
   clearTransactionHistory() {
-    if (confirm("Are you sure you want to clear all transaction history?")) {
-      this.transactions = [];
-      this.saveTransactionHistory();
-      this.renderTransactionHistory();
+    if (!this.transactionList) {
+      console.error("Transaction list element not found");
+      return;
     }
-  }
 
-  showSuccess(message) {
-    try {
-      const successMessageElement = document.getElementById("successMessage");
-      const successModalElement = document.getElementById("successModal");
-
-      if (successMessageElement && successModalElement) {
-        successMessageElement.textContent = message;
-
-        // Check if Bootstrap is available
-        if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
-          const modal = new bootstrap.Modal(successModalElement);
-          modal.show();
-        } else {
-          // Fallback: show alert if Bootstrap modal is not available
-          alert("Success: " + message);
-        }
-      } else {
-        // Fallback: show alert if modal elements are not found
-        alert("Success: " + message);
-      }
-    } catch (error) {
-      console.error("Error showing success modal:", error);
-      alert("Success: " + message);
+    if (confirm("Are you sure you want to clear the transaction history?")) {
+      this.transactionList.innerHTML = `
+        <div class="text-center text-muted py-3">
+          <i class="fas fa-history fa-2x mb-2"></i>
+          <p>No recent transactions</p>
+        </div>
+      `;
     }
   }
 
   showError(message) {
+    const errorModal = new bootstrap.Modal(
+      document.getElementById("errorModal")
+    );
+    document.getElementById("errorMessage").textContent = message;
+    errorModal.show();
+  }
+
+  showSuccess(message) {
+    const successModal = new bootstrap.Modal(
+      document.getElementById("successModal")
+    );
+    document.getElementById("successMessage").textContent = message;
+    successModal.show();
+  }
+
+  async addItem({ item_no, quantity, reference_no, reason }) {
     try {
-      const errorMessageElement = document.getElementById("errorMessage");
-      const errorModalElement = document.getElementById("errorModal");
-
-      if (errorMessageElement && errorModalElement) {
-        errorMessageElement.textContent = message;
-
-        // Check if Bootstrap is available
-        if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
-          const modal = new bootstrap.Modal(errorModalElement);
-          modal.show();
-        } else {
-          // Fallback: show alert if Bootstrap modal is not available
-          alert("Error: " + message);
-        }
+      const response = await fetch("Logi_barcode_add_item.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item_no, quantity, reference_no, reason }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        this.showSuccess(data.message || "Item added successfully!");
+        this.loadTransactionHistory();
       } else {
-        // Fallback: show alert if modal elements are not found
-        alert("Error: " + message);
+        this.showError(data.message || "Failed to add item.");
       }
     } catch (error) {
-      console.error("Error showing error modal:", error);
-      alert("Error: " + message);
+      this.showError("Failed to add item.");
+    }
+  }
+
+  async deductItem({ item_no, quantity, requestor, reason }) {
+    try {
+      const response = await fetch("Logi_barcode_deduct_item.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item_no, quantity, requestor, reason }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        this.showSuccess(data.message || "Item deducted successfully!");
+        this.loadTransactionHistory();
+      } else {
+        this.showError(data.message || "Failed to deduct item.");
+      }
+    } catch (error) {
+      this.showError("Failed to deduct item.");
     }
   }
 }
 
-// Initialize the scanner when page loads
+// Initialize scanner when the page loads
+document.addEventListener("DOMContentLoaded", () => {
+  window.qrScanner = new QRScanner();
+});
 document.addEventListener("DOMContentLoaded", function () {
-  const scanner = new BarcodeScanner();
+  // ADD ITEM BUTTON
+  document.getElementById("addItemBtn").addEventListener("click", function () {
+    // Get values from your input fields
+    const item_no = document.getElementById("itemNo").textContent.trim();
+    const quantityElem = document.getElementById('addCardQuantity');
+    const ibNoElem = document.getElementById('addCardIBNo');
+    const reasonElem = document.getElementById('addCardReason');
 
-  // Initialize modals after DOM is ready - use getElementById instead
-  try {
-    const successModalElement = document.getElementById("successModal");
-    const errorModalElement = document.getElementById("errorModal");
-
-    if (
-      successModalElement &&
-      typeof bootstrap !== "undefined" &&
-      bootstrap.Modal
-    ) {
-      scanner.successModal = new bootstrap.Modal(successModalElement, {
-        backdrop: true,
-        keyboard: true,
-        focus: true,
-      });
+    if (!quantityElem || !ibNoElem || !reasonElem) {
+      alert('One or more input fields are missing in the DOM.');
+      return;
     }
 
-    if (
-      errorModalElement &&
-      typeof bootstrap !== "undefined" &&
-      bootstrap.Modal
-    ) {
-      scanner.errorModal = new bootstrap.Modal(errorModalElement, {
-        backdrop: true,
-        keyboard: true,
-        focus: true,
-      });
+    const quantity = parseInt(quantityElem.value, 10);
+    const reference_no = ibNoElem.value.trim();
+    const reason = reasonElem.value.trim();
+
+    if (!item_no || !quantity || !reference_no) {
+      alert("Please fill in all fields for adding an item.");
+      return;
     }
-  } catch (error) {
-    console.error("Error initializing modals:", error);
-  }
+
+    window.qrScanner.addItem({ item_no, quantity, reference_no, reason });
+  });
+
+  // DEDUCT ITEM BUTTON
+  document
+    .getElementById("deductItemBtn")
+    .addEventListener("click", function () {
+      // Get values from your input fields
+      const item_no = document.getElementById("itemNo").textContent.trim();
+      const quantityElem = document.getElementById('deductCardQuantity');
+      const requestorElem = document.getElementById('deductCardRequestor');
+      const reasonElem = document.getElementById('deductCardReason');
+
+      if (!quantityElem || !requestorElem || !reasonElem) {
+        alert('One or more input fields are missing in the DOM.');
+        return;
+      }
+
+      const quantity = parseInt(quantityElem.value, 10);
+      const requestor = requestorElem.value.trim();
+      const reason = reasonElem.value.trim();
+
+      if (!item_no || !quantity || !requestor) {
+        alert("Please fill in all fields for deducting an item.");
+        return;
+      }
+
+      window.qrScanner.deductItem({
+        item_no,
+        quantity,
+        requestor,
+        reason
+      });
+    });
 });

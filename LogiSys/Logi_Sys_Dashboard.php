@@ -22,16 +22,11 @@
         </div>
         <hr class="divider">
         <ul>
-            <li><a href="dashboard_asset_tracker.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
-            <li class="dropdown">
-                <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
-                <ul class="dropdown-menu">
-                    <li><a href="pay_track.php">Payables</a></li>
-                    <li><a href="rfq_tracking.php">RFQ</a></li>
-                </ul>
-            </li>
-            <li><a href="./Logi_inventory.php"><i class="fas fa-campground icon-size"></i> Inventory</a></li>
-            <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
+            <li><a href="./Logi_Sys_Dashboard.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
+            <li><a href="Logi_inventory.php"><i class="fas fa-box icon-size"></i> Inventory</a></li>
+            <li><a href="Logi_mang.php"><i class="fas fa-users icon-size"></i> Office Balances</a></li>
+            <li><a href="Logi_manage_office.php"><i class="fas fa-truck icon-size"></i> Request</a></li>
+            <li><a href="Logi_transactions.php"><i class="fas fa-exchange-alt icon-size"></i> Transactions</a></li>
             <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
         <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>

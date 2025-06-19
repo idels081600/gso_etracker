@@ -1,0 +1,82 @@
+#firstContainer {
+  background-color: rgb(13, 24, 34);
+  padding: 20px;
+  margin-left: 100px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+}
+.main_content {
+  margin-top: -2%;
+  margin-left: 3%;
+  padding: 5%;
+}
+
+#secondContainer {
+  background-color: #e9ecef;
+  padding: 20px;
+  border-radius: 8px;
+  margin-left: 100px;
+  width: 130%; /* Use viewport width for responsive sizing */
+  height: 100%; /* Fixed height; adjust as needed */
+  overflow-x: auto; /* Handle horizontal overflow */
+}
+
+.table-responsive {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+/* Custom styling for status badges */
+.badge {
+  font-size: 0.75em;
+}
+.dropdown-menu {
+  background-color: #ffffff !important;
+  color: #000 !important;
+}
+
+.dropdown-item {
+  color: #000 !important;
+}
+
+.dropdown-item i {
+  color: #000 !important;
+}
+
+/* Media query for laptop screens */
+@media only screen and (min-width: 1024px) and (max-width: 1440px) {
+  .tally {
+    width: 15vw; /* Slightly larger width for laptop screens */
+    min-width: 180px; /* Increased minimum width */
+    height: 120px; /* Slightly taller for better proportions */
+    padding: 1.2rem; /* Slightly more padding */
+  }
+
+  #firstContainer {
+    gap: 15px; /* Adjust gap between tally containers */
+    padding: 25px; /* Slightly more padding for the container */
+  }
+
+  .sidebar {
+    width: 240px; /* Adjust sidebar width for laptops */
+  }
+
+  .content,
+  .main-content {
+    margin-left: 240px; /* Match sidebar width */
+  }
+}
+
+/* Alternative: More specific laptop breakpoints */
+@media only screen and (min-width: 1024px) and (max-width: 1366px) {
+  /* Standard laptop screens (1024x768, 1366x768) */
+  .tally {
+    width: 16vw;
+    min-width: 170px;
+    height: 115px;
+  }
+}

@@ -13,7 +13,7 @@ require_once 'logi_db.php'; // Include the database connection file
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
         // Get form data and sanitize
-        $item_id = mysqli_real_escape_string($conn, $_POST['itemId']); // This is the item_no
+        $item_id = mysqli_real_escape_string($conn, $_POST['itemNo']); // This is the item_no
         $item_name = mysqli_real_escape_string($conn, $_POST['itemName']);
         $rack_no = (int)$_POST['rackNo'];
         $unit = mysqli_real_escape_string($conn, $_POST['unit']); // Added unit field

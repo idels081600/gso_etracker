@@ -13,7 +13,7 @@ if (!isset($data['item_id']) || !isset($data['new_balance'])) {
 $item_id = intval($data['item_id']);
 $new_balance = floatval($data['new_balance']);
 
-$sql = "UPDATE inventory_items SET current_balance = ? WHERE id = ?";
+$sql = "UPDATE inventory_items SET current_balance = ? WHERE item_no = ?";
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
     echo json_encode(['success' => false, 'message' => 'SQL error: ' . $conn->error]);

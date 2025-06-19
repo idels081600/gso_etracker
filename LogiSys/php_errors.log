@@ -1,0 +1,285 @@
+[16-Jun-2025 07:29:52 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[16-Jun-2025 07:29:52 Europe/Berlin] Request Method: POST
+[16-Jun-2025 07:29:52 Europe/Berlin] Raw POST data: 
+[16-Jun-2025 07:29:52 Europe/Berlin] POST array: Array
+(
+    [itemNo] => 680
+    [itemName] => testing
+    [balance] => 111
+    [rackNo] => 13
+    [unit] => boxes
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[16-Jun-2025 07:29:52 Europe/Berlin] === RECEIVED FORM DATA ===
+[16-Jun-2025 07:29:52 Europe/Berlin] POST data: Array
+(
+    [itemNo] => 680
+    [itemName] => testing
+    [balance] => 111
+    [rackNo] => 13
+    [unit] => boxes
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[16-Jun-2025 07:29:52 Europe/Berlin] === SANITIZED DATA ===
+[16-Jun-2025 07:29:52 Europe/Berlin] Item No: 680
+[16-Jun-2025 07:29:52 Europe/Berlin] Item Name: testing
+[16-Jun-2025 07:29:52 Europe/Berlin] Rack No: 13
+[16-Jun-2025 07:29:52 Europe/Berlin] Unit: boxes
+[16-Jun-2025 07:29:52 Europe/Berlin] Current Balance: 111
+[16-Jun-2025 07:29:52 Europe/Berlin] Description: 
+[16-Jun-2025 07:29:52 Europe/Berlin] Expiry Date: null
+[16-Jun-2025 07:29:52 Europe/Berlin] Expiry Alert Days: 30
+[16-Jun-2025 07:29:52 Europe/Berlin] Initial Status: Available
+[16-Jun-2025 07:29:52 Europe/Berlin] Final Status: Available
+[16-Jun-2025 07:29:52 Europe/Berlin] Expiry Status: 
+[16-Jun-2025 07:29:52 Europe/Berlin] Checking for existing item: SELECT id FROM inventory_items WHERE item_no = ?
+[16-Jun-2025 07:29:52 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[16-Jun-2025 07:29:52 Europe/Berlin] Item added successfully. Insert ID: 1090
+[16-Jun-2025 07:29:52 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1090,"item_data":{"item_no":"680","item_name":"testing","rack_no":13,"unit":"boxes","current_balance":111,"status":"Available","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}
+[16-Jun-2025 07:29:52 Europe/Berlin] === ITEM ADDITION PROCESS COMPLETED ===
+[16-Jun-2025 07:31:50 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[16-Jun-2025 07:31:50 Europe/Berlin] Request Method: POST
+[16-Jun-2025 07:31:50 Europe/Berlin] Raw POST data: 
+[16-Jun-2025 07:31:50 Europe/Berlin] POST array: Array
+(
+    [itemNo] => 681
+    [itemName] => testing2
+    [balance] => 111
+    [rackNo] => 10
+    [unit] => boxes
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[16-Jun-2025 07:31:50 Europe/Berlin] === RECEIVED FORM DATA ===
+[16-Jun-2025 07:31:50 Europe/Berlin] POST data: Array
+(
+    [itemNo] => 681
+    [itemName] => testing2
+    [balance] => 111
+    [rackNo] => 10
+    [unit] => boxes
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[16-Jun-2025 07:31:50 Europe/Berlin] === SANITIZED DATA ===
+[16-Jun-2025 07:31:50 Europe/Berlin] Item No: 681
+[16-Jun-2025 07:31:50 Europe/Berlin] Item Name: testing2
+[16-Jun-2025 07:31:50 Europe/Berlin] Rack No: 10
+[16-Jun-2025 07:31:50 Europe/Berlin] Unit: boxes
+[16-Jun-2025 07:31:50 Europe/Berlin] Current Balance: 111
+[16-Jun-2025 07:31:50 Europe/Berlin] Description: 
+[16-Jun-2025 07:31:50 Europe/Berlin] Expiry Date: null
+[16-Jun-2025 07:31:50 Europe/Berlin] Expiry Alert Days: 30
+[16-Jun-2025 07:31:50 Europe/Berlin] Initial Status: Available
+[16-Jun-2025 07:31:50 Europe/Berlin] Final Status: Available
+[16-Jun-2025 07:31:50 Europe/Berlin] Expiry Status: 
+[16-Jun-2025 07:31:50 Europe/Berlin] Checking for existing item: SELECT id FROM inventory_items WHERE item_no = ?
+[16-Jun-2025 07:31:50 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[16-Jun-2025 07:31:50 Europe/Berlin] Item added successfully. Insert ID: 1091
+[16-Jun-2025 07:31:50 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1091,"item_data":{"item_no":"681","item_name":"testing2","rack_no":10,"unit":"boxes","current_balance":111,"status":"Available","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}
+[16-Jun-2025 07:34:48 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[16-Jun-2025 07:34:48 Europe/Berlin] Request Method: POST
+[16-Jun-2025 07:34:48 Europe/Berlin] Raw POST data: 
+[16-Jun-2025 07:34:48 Europe/Berlin] POST array: Array
+(
+    [itemNo] => 682
+    [itemName] => testing3
+    [balance] => 100
+    [rackNo] => 14
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[16-Jun-2025 07:34:48 Europe/Berlin] === RECEIVED FORM DATA ===
+[16-Jun-2025 07:34:48 Europe/Berlin] POST data: Array
+(
+    [itemNo] => 682
+    [itemName] => testing3
+    [balance] => 100
+    [rackNo] => 14
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[16-Jun-2025 07:34:48 Europe/Berlin] === SANITIZED DATA ===
+[16-Jun-2025 07:34:48 Europe/Berlin] Item No: 682
+[16-Jun-2025 07:34:48 Europe/Berlin] Item Name: testing3
+[16-Jun-2025 07:34:48 Europe/Berlin] Rack No: 14
+[16-Jun-2025 07:34:48 Europe/Berlin] Unit: pcs
+[16-Jun-2025 07:34:48 Europe/Berlin] Current Balance: 100
+[16-Jun-2025 07:34:48 Europe/Berlin] Description: 
+[16-Jun-2025 07:34:48 Europe/Berlin] Expiry Date: null
+[16-Jun-2025 07:34:48 Europe/Berlin] Expiry Alert Days: 30
+[16-Jun-2025 07:34:48 Europe/Berlin] Initial Status: Available
+[16-Jun-2025 07:34:48 Europe/Berlin] Final Status: Available
+[16-Jun-2025 07:34:48 Europe/Berlin] Expiry Status: 
+[16-Jun-2025 07:34:48 Europe/Berlin] Checking for existing item: SELECT id FROM inventory_items WHERE item_no = ?
+[16-Jun-2025 07:34:48 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[16-Jun-2025 07:34:48 Europe/Berlin] Item added successfully. Insert ID: 1092
+[16-Jun-2025 07:34:48 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1092,"item_data":{"item_no":"682","item_name":"testing3","rack_no":14,"unit":"pcs","current_balance":100,"status":"Available","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}
+[16-Jun-2025 07:39:46 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[16-Jun-2025 07:39:46 Europe/Berlin] Request Method: POST
+[16-Jun-2025 07:39:46 Europe/Berlin] Raw POST data: 
+[16-Jun-2025 07:39:46 Europe/Berlin] POST array: Array
+(
+    [item_search] => testing3
+    [item_name] => testing3
+    [item_no] => 682
+    [current_balance] => 100
+    [quantity] => 2
+    [reason] => New Purchase
+    [custom_reason] => 
+    [notes] => 
+    [previous_balance] => 100
+    [new_balance] => 
+    [transaction_type] => Stock In
+)
+
+[16-Jun-2025 07:39:46 Europe/Berlin] === RECEIVED FORM DATA ===
+[16-Jun-2025 07:39:46 Europe/Berlin] POST data: Array
+(
+    [item_search] => testing3
+    [item_name] => testing3
+    [item_no] => 682
+    [current_balance] => 100
+    [quantity] => 2
+    [reason] => New Purchase
+    [custom_reason] => 
+    [notes] => 
+    [previous_balance] => 100
+    [new_balance] => 
+    [transaction_type] => Stock In
+)
+
+[16-Jun-2025 07:39:46 Europe/Berlin] === ERROR IN ITEM ADDITION ===
+[16-Jun-2025 07:39:46 Europe/Berlin] Error message: Missing required field: itemNo
+[16-Jun-2025 07:40:32 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[16-Jun-2025 07:40:32 Europe/Berlin] Request Method: POST
+[16-Jun-2025 07:40:32 Europe/Berlin] Raw POST data: 
+[16-Jun-2025 07:40:32 Europe/Berlin] POST array: Array
+(
+    [item_search] => testing3
+    [item_name] => testing3
+    [item_no] => 682
+    [current_balance] => 100
+    [quantity] => 3
+    [reason] => New Purchase
+    [custom_reason] => 
+    [notes] => 
+    [previous_balance] => 100
+    [new_balance] => 
+    [transaction_type] => Stock In
+    [itemNo] => 682
+)
+
+[16-Jun-2025 07:40:33 Europe/Berlin] === RECEIVED FORM DATA ===
+[16-Jun-2025 07:40:33 Europe/Berlin] POST data: Array
+(
+    [item_search] => testing3
+    [item_name] => testing3
+    [item_no] => 682
+    [current_balance] => 100
+    [quantity] => 3
+    [reason] => New Purchase
+    [custom_reason] => 
+    [notes] => 
+    [previous_balance] => 100
+    [new_balance] => 
+    [transaction_type] => Stock In
+    [itemNo] => 682
+)
+
+[16-Jun-2025 07:40:33 Europe/Berlin] === ERROR IN ITEM ADDITION ===
+[16-Jun-2025 07:40:33 Europe/Berlin] Error message: Missing required field: itemName
+[16-Jun-2025 07:40:47 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[16-Jun-2025 07:40:47 Europe/Berlin] Request Method: POST
+[16-Jun-2025 07:40:47 Europe/Berlin] Raw POST data: 
+[16-Jun-2025 07:40:47 Europe/Berlin] POST array: Array
+(
+    [item_search] => testing3
+    [item_name] => testing3
+    [item_no] => 682
+    [current_balance] => 100
+    [quantity] => 3
+    [reason] => New Purchase
+    [custom_reason] => 
+    [notes] => 
+    [previous_balance] => 100
+    [new_balance] => 
+    [transaction_type] => Stock In
+    [itemNo] => 682
+)
+
+[16-Jun-2025 07:40:47 Europe/Berlin] === RECEIVED FORM DATA ===
+[16-Jun-2025 07:40:47 Europe/Berlin] POST data: Array
+(
+    [item_search] => testing3
+    [item_name] => testing3
+    [item_no] => 682
+    [current_balance] => 100
+    [quantity] => 3
+    [reason] => New Purchase
+    [custom_reason] => 
+    [notes] => 
+    [previous_balance] => 100
+    [new_balance] => 
+    [transaction_type] => Stock In
+    [itemNo] => 682
+)
+
+[16-Jun-2025 07:40:47 Europe/Berlin] === ERROR IN ITEM ADDITION ===
+[16-Jun-2025 07:40:47 Europe/Berlin] Error message: Missing required field: itemName
+[16-Jun-2025 07:41:59 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[16-Jun-2025 07:41:59 Europe/Berlin] Request Method: POST
+[16-Jun-2025 07:41:59 Europe/Berlin] Raw POST data: 
+[16-Jun-2025 07:41:59 Europe/Berlin] POST array: Array
+(
+    [item_search] => testing3
+    [item_name] => testing3
+    [item_no] => 682
+    [current_balance] => 100
+    [quantity] => 3
+    [reason] => New Purchase
+    [custom_reason] => 
+    [notes] => 
+    [previous_balance] => 100
+    [new_balance] => 
+    [transaction_type] => Stock In
+    [itemNo] => 682
+    [itemName] => testing3
+)
+
+[16-Jun-2025 07:41:59 Europe/Berlin] === RECEIVED FORM DATA ===
+[16-Jun-2025 07:41:59 Europe/Berlin] POST data: Array
+(
+    [item_search] => testing3
+    [item_name] => testing3
+    [item_no] => 682
+    [current_balance] => 100
+    [quantity] => 3
+    [reason] => New Purchase
+    [custom_reason] => 
+    [notes] => 
+    [previous_balance] => 100
+    [new_balance] => 
+    [transaction_type] => Stock In
+    [itemNo] => 682
+    [itemName] => testing3
+)
+
+[16-Jun-2025 07:41:59 Europe/Berlin] === ERROR IN ITEM ADDITION ===
+[16-Jun-2025 07:41:59 Europe/Berlin] Error message: Missing required field: rackNo
