@@ -47,12 +47,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "Employee":
                 header("location:add_req_emp.php");
                 break;
-            case "Desk Clerk":
-                header("location:qrcode_scanner_dept.php");
-                break;
-            case "Division Head":
-                header("location:qrcode_scanner_dept.php");
-                break;
+            // case "Desk Clerk":
+            //     header("location:qrcode_scanner_dept.php");
+            //     break;
+            // case "Division Head":
+            //     header("location:qrcode_scanner_dept.php");
+            //     break;
             case "TCWS Division Head":
                 header("location:index_tcws.php");
                 break;
@@ -71,9 +71,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "ASSET":
                 header("location:dashboard_asset_tracker.php");
                 break;
-                case "TENT INSTALLERS":
-                    header("location:tent_installers.php");
-                    break;
+            case "TENT INSTALLERS":
+                header("location:tent_installers.php");
+                break;
+            case "SUPPLIES":
+                header("location:LogiSys/Logi_Sys_Dashboard.php");
+                break;
             default:
                 header("location:login_v2.php");
                 break;
