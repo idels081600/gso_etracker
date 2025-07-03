@@ -215,9 +215,7 @@ if (!isset($_SESSION['username'])) {
                         <div class="form-group">
                             <label for="clientStatus">Status</label>
                             <select class="form-control" id="clientStatus">
-                                <option value="Retrieved">Retrieved</option>
-                                <option value="Installed">Installed</option>
-                                <option value="Long Term">Long Term</option>
+                                <!-- Options will be populated dynamically by JavaScript -->
                             </select>
                         </div>
                         <div class="form-group">

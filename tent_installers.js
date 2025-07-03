@@ -1,4 +1,3 @@
-
 $(document).ready(function() {
     $("#searchInput").on("keyup", function() {
         var value = $(this).val().toLowerCase();
@@ -8,32 +7,57 @@ $(document).ready(function() {
     });
 });
 
-
 $(document).ready(function() {
     var selectedClientId; // Declare within document ready scope
+    var currentStatus; // Store the current status
+
+    // Function to populate status dropdown based on current status
+    function populateStatusDropdown(status) {
+        var statusDropdown = $('#clientStatus');
+        statusDropdown.empty(); // Clear existing options
+        
+        if (status === 'Pending') {
+            statusDropdown.append('<option value="Installed">Install</option>');
+        } else if (status === 'Installed') {
+            statusDropdown.append('<option value="Retrieved">Retrieve</option>');
+            statusDropdown.append('<option value="For Retrieval">For Retrieval</option>');
+        } else if (status === 'For Retrieval') {
+            statusDropdown.append('<option value="Retrieved">Retrieved</option>');
+        } else if (status === 'Retrieved') {
+            // For retrieved items, you might want to allow changing back to other statuses
+            // or keep it as is. Adjust based on your business logic
+            statusDropdown.append('<option value="Retrieved" selected>Retrieved</option>');
+        } else {
+            // Default fallback - show all options
+            statusDropdown.append('<option value="Installed">Installed</option>');
+            statusDropdown.append('<option value="Retrieved">Retrieved</option>');
+            statusDropdown.append('<option value="For Retrieval">For Retrieval</option>');
+            statusDropdown.append('<option value="Long Term">Long Term</option>');
+        }
+    }
 
     // Edit button click handler
     $('.btn-primary').click(function() {
         var row = $(this).closest('tr');
-        var status = row.find('td:eq(3)').text().trim();
+        var status = row.find('td:eq(4)').text().trim(); // Status is in the 5th column (index 4)
         var name = row.find('td:eq(0)').text();
         var address = row.find('td:eq(1)').text();
-        var contact = row.find('td:eq(2)').text();
+        var contact = $(this).data('contact'); // Get contact from data attribute
         selectedClientId = $(this).data('id'); // Use data() method
         tent_installed = $(this).data('tent_no');
+        currentStatus = status; // Store current status
 
         console.log('Client ID on click:', selectedClientId);
+        console.log('Current Status:', currentStatus);
 
         $('#clientName').val(name);
         $('#clientAddress').val(address);
         $('#clientContact').val(contact);
         $('#clientId').val(selectedClientId);
         $('#tentNumber').val(tent_installed);
-        if (status === 'Pending') {
-            $('#clientStatus').html('<option value="Installed">Installed</option>');
-        } else if (status === 'Installed') {
-            $('#clientStatus').html('<option value="Retrieved">Retrieved</option>');
-        }
+        
+        // Populate status dropdown based on current status
+        populateStatusDropdown(currentStatus);
 
         $('#editModal').modal('show');
     });
@@ -66,16 +90,21 @@ $(document).ready(function() {
                     var row = $('button[data-id="' + selectedClientId + '"]').closest('tr');
                     row.find('td:eq(0)').text($('#clientName').val());
                     row.find('td:eq(1)').text($('#clientAddress').val());
-                    row.find('td:eq(2)').text($('#clientContact').val());
-                    row.find('td:eq(3)').text(statusValue);
+                    row.find('td:eq(2)').text($('#tentNumber').val());
+                    row.find('td:eq(4)').text(statusValue); // Update status column
                     $('#editModal').modal('hide');
+                    
+                    // Optionally reload the page to reflect changes
+                    // location.reload();
                 } else {
                     console.log('Update failed:', result);
+                    alert('Update failed: ' + (result.message || 'Unknown error'));
                 }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX Error:', status, error);
                 console.error('Response:', xhr.responseText);
+                alert('An error occurred while updating the record.');
             }
         });
     });
@@ -102,5 +131,31 @@ $(document).ready(function() {
                 }
             }
         }
+    });
+
+    // Handle dynamic button binding for newly loaded content
+    $(document).on('click', '.btn-primary', function() {
+        var row = $(this).closest('tr');
+        var status = row.find('td:eq(4)').text().trim(); // Status is in the 5th column (index 4)
+        var name = row.find('td:eq(0)').text();
+        var address = row.find('td:eq(1)').text();
+        var contact = $(this).data('contact'); // Get contact from data attribute
+        selectedClientId = $(this).data('id'); // Use data() method
+        tent_installed = $(this).data('tent_no');
+        currentStatus = status; // Store current status
+
+        console.log('Client ID on click:', selectedClientId);
+        console.log('Current Status:', currentStatus);
+
+        $('#clientName').val(name);
+        $('#clientAddress').val(address);
+        $('#clientContact').val(contact);
+        $('#clientId').val(selectedClientId);
+        $('#tentNumber').val(tent_installed);
+        
+        // Populate status dropdown based on current status
+        populateStatusDropdown(currentStatus);
+
+        $('#editModal').modal('show');
     });
 });
