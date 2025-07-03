@@ -39,21 +39,23 @@ $(document).ready(function() {
     // Edit button click handler
     $('.btn-primary').click(function() {
         var row = $(this).closest('tr');
-        var status = row.find('td:eq(4)').text().trim(); // Status is in the 5th column (index 4)
+        var status = row.find('td:eq(6)').text().trim(); // Status is now in the 7th column (index 6)
         var name = row.find('td:eq(0)').text();
         var address = row.find('td:eq(1)').text();
         var contact = $(this).data('contact'); // Get contact from data attribute
+        var noOfTents = $(this).data('no_of_tents'); // Get number of tents from data attribute
         selectedClientId = $(this).data('id'); // Use data() method
         tent_installed = $(this).data('tent_no');
         currentStatus = status; // Store current status
 
         console.log('Client ID on click:', selectedClientId);
         console.log('Current Status:', currentStatus);
+        console.log('No. of Tents:', noOfTents);
 
         $('#clientName').val(name);
         $('#clientAddress').val(address);
         $('#clientContact').val(contact);
-        $('#clientId').val(selectedClientId);
+        $('#noOfTents').val(noOfTents); // Set the number of tents field
         $('#tentNumber').val(tent_installed);
         
         // Populate status dropdown based on current status
