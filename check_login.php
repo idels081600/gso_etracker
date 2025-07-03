@@ -62,6 +62,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "Admin2":
                 header("location:index_r.php");
                 break;
+            case "Admin1":
+                header("location:index_desk.php");
+                break;
             case "TCWS Scanner":
                 header("location:qrcode_scanner_desk_tcws.php");
                 break;
