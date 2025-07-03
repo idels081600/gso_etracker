@@ -12,302 +12,394 @@ if (!isset($_SESSION['username'])) {
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script type="text/javascript"
-        src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/3.3.3/adapter.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-        integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.10/vue.min.js"></script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-</head>
-
-<style>
-    body {
-        background-color: #f0f0f0;
-        /* Set the background color of the body */
-    }
-
-    .navbar-brand {
-        display: flex;
-        align-items: center;
-    }
-
-    /* Style for the logo image */
-    .logo-img {
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        object-fit: cover;
-    }
-
-    /* Style for the "E-Pass Slip" text */
-    .logo-text {
-        color: white;
-        font-weight: bold;
-        font-size: 20px;
-        margin-left: 10px;
-        /* Add some spacing between the logo and text */
-    }
-
-    .container {
-        background-color: #fff;
-        /* Set the background color for the container */
-        padding: 20px;
-        /* Add some padding to the container */
-        border-radius: 5px;
-        /* Add rounded corners */
-        margin-top: 20px;
-        /* Add some space from the top */
-        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-        /* Add a shadow to the container */
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    /* Remove the white box on hover */
-    .navbar-nav .nav-link {
-        background-color: transparent !important;
-    }
-
-    /* Change the color of the text on hover */
-    .navbar-nav .nav-link:hover {
-        background-color: transparent !important;
-        color: #fff !important;
-        /* Change the color to your desired hover color */
-    }
-
-    #submit {
-        background-color: #4caf50;
-        /* Green background color */
-        color: white;
-        /* White text color */
-        padding: 6px 20px;
-        /* Padding for better appearance */
-        border: none;
-        /* No border */
-        border-radius: 5px;
-        /* Rounded corners */
-        cursor: pointer;
-        /* Cursor on hover */
-        margin-left: 10%;
-    }
-
-    #requestCameraPermission {
-        background-color: #4caf50;
-        /* Green background color */
-        color: white;
-        /* White text color */
-        padding: 10px 20px;
-        /* Padding for better appearance */
-        border: none;
-        /* No border */
-        border-radius: 5px;
-        /* Rounded corners */
-        cursor: pointer;
-        /* Cursor on hover */
-        margin-top: 10%;
-    }
-
-    #textrow {
-        margin-top: 30px;
-        text-align: center;
-    }
-
-    #texthead {
-        font-size: 40px;
-        /* Adjust font size as needed */
-        text-align: center;
-        margin-left: 15%;
-    }
-
-    #text {
-        font-size: 80px;
-        text-align: center;
-        margin-top: 10%;
-        margin-left: -20%;
-    }
-
-    .square-video-container {
-        position: relative;
-        width: 90%;
-        padding-bottom: 50%;
-        overflow: hidden;
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    #preview {
-        position: absolute;
-        width: 70%;
-        height: 70%;
-        object-fit: cover;
-        margin-left: 8%;
-    }
-
-    #label {
-        font-size: 30px;
-        text-align: center;
-        margin-top: 10px;
-        margin-left: -10%;
-        /* Add or adjust margin-top as needed */
-    }
-
-    @media screen and (max-width: 600px) {
-        #textrow {
-            margin-top: 10px;
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>E-Pass Slip Scanner</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        body {
+            background: #e9f5ec;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        #label {
-            font-size: 18px;
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .logo-img {
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            object-fit: cover;
+            margin-right: 10px;
+            border: 2px solid white;
+        }
+
+        .logo-text {
+            color: white;
+            font-size: 1.4rem;
+            letter-spacing: 0.04em;
+        }
+
+        main.container {
+            max-width: 480px;
+            background: white;
+            padding: 30px 35px;
+            margin: 40px auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             text-align: center;
-            margin-top: 10px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        h3#label {
+            font-weight: 600;
+            color: #28a745;
+            margin-bottom: 25px;
+        }
+
+        #barcodeInput {
+            font-size: 1.25rem;
+            padding: 14px 20px;
+            border-radius: 8px;
+            border: 1.8px solid #28a745;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: border-color 0.3s ease;
+        }
+
+        #barcodeInput:focus {
+            border-color: #1e7e34;
+            outline: none;
+            box-shadow: 0 0 8px rgba(40, 167, 69, 0.6);
         }
 
         #texthead {
-            font-size: 20px;
-            /* Adjust font size as needed */
-            text-align: center;
-            margin-left: 5%;
+            margin-top: 40px;
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #2c3e50;
         }
 
         #text {
-            font-size: 30px;
-            margin-top: 10%;
-            margin-left: 1%;
+            font-size: 3.5rem;
+            margin-top: 12px;
+            font-weight: 700;
+            color: #28a745;
+            min-height: 60px;
         }
 
-        .square-video-container {
-            width: 80%;
-            margin-left: auto;
-            margin-right: auto;
+        #errorMessage {
+            margin-top: 18px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            display: none;
+            padding: 12px 15px;
+            border-radius: 8px;
         }
 
-        #preview {
-            width: 90%;
-                height: 90%;
-            margin-left: 1%;
-        }
-    }
-</style>
+        @media (max-width: 576px) {
+            main.container {
+                margin: 20px 15px;
+                padding: 25px 20px;
+            }
 
+            #texthead {
+                font-size: 1.8rem;
+            }
+
+            #text {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <a class="navbar-brand" href="qrcode_scanner_desk.php">
-            <img src="logo.png" alt="Logo" class="logo-img">
-            <span class="logo-text">E-Pass</span>
+        <a class="navbar-brand" href="index_desk.php" aria-label="Go to home page">
+            <img src="logo.png" alt="Logo" class="logo-img" />
+            <span class="logo-text">E-Pass Slip</span>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="nav navbar-nav navbar-right">
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="index_desk.php">Home <span class="sr-only">(current)</span></a>
-                </li> -->
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="add_req_desk.php">Add Request</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="approved_desk.php">Approved</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="decline_desk.php">Declined Request</a>
-                </li> -->
-                <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_dept.php">Arrival</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_desk.php">Departure</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="login_v2.php">Logout</a>
-                </li>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav" role="menu">
+                <li class="nav-item" role="none"><a class="nav-link" href="index_desk.php" role="menuitem">Home</a></li>
+                <li class="nav-item" role="none"><a class="nav-link" href="track_emp_desk.php" role="menuitem">Track Employees</a></li>
+                <li class="nav-item" role="none"><a class="nav-link" href="qrcode_scanner_desk.php" role="menuitem">Scanner</a></li>
+                <li class="nav-item" role="none"><a class="nav-link" href="logout.php" role="menuitem">Logout</a></li>
             </ul>
         </div>
     </nav>
-    <div class="container">
-        <div class="col-md-8 square-video-container">
-            <h3 id="label">Place your QR here </h3>
-            <video id="preview"></video>
-
+    <main class="container py-4" role="main" aria-live="polite" aria-atomic="true">
+        <!-- Header -->
+        <header class="mb-4">
+            <h3 id="label" class="text-primary">
+                <i class="fas fa-qrcode" aria-hidden="true"></i> Scan QR Code
+            </h3>
+            <p class="sr-only" id="qr-instructions">Please scan the QR code or enter the barcode manually.</p>
+        </header>
+        <!-- Input Field -->
+        <div class="mb-4">
+            <label for="barcodeInput" class="form-label visually-hidden">QR code Input</label>
+            <input
+                type="text"
+                id="barcodeInput"
+                class="form-control"
+                placeholder="Scan barcode here"
+                aria-describedby="qr-instructions"
+                autofocus
+                autocomplete="off"
+                inputmode="numeric"
+                aria-label="Scan barcode input" />
         </div>
-        <div class="row" id="textrow">
-            <h2 id="texthead">Amping,</h2>
-            <h1 name="text" id="text"></h1>
-            <form method="post" action="">
-                <!-- <button id="submit" name="approve_req_depart" >Submit</button> -->
-            </form>
+        <!-- Greeting Text -->
+        <div class="text-center mb-3">
+            <h2 id="texthead" class="fw-semibold">Stand By</h2>
+            <h1 id="text" aria-live="polite" aria-atomic="true" class="display-6"></h1>
         </div>
-    </div>
+        <!-- Error Message -->
+        <div id="errorMessage" class="alert alert-danger d-none" role="alert" aria-live="assertive"></div>
+    </main>
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+        document.addEventListener("DOMContentLoaded", function() {
+            const barcodeInput = document.getElementById("barcodeInput");
+            const errorMessage = document.getElementById("errorMessage");
+            const textDisplay = document.getElementById("text");
+            const textHead = document.getElementById("texthead");
 
-            function requestCameraPermission() {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function (stream) {
-                        scanner.start(stream);
-                    })
-                    .catch(function (error) {
-                        console.error('Camera access denied:', error);
-                    });
+            // Audio feedback
+            const successAudio = new Audio("success.mp3");
+            const errorAudio = new Audio("error.wav");
+
+            // Debounce variables for wireless scanner
+            let inputTimer = null;
+            let isProcessing = false;
+            const DEBOUNCE_DELAY = 300; // 300ms delay after last character
+            const MIN_BARCODE_LENGTH = 3; // Minimum expected barcode length
+
+            barcodeInput.focus();
+
+            // Handle input with debounce for wireless scanners
+            barcodeInput.addEventListener("input", function(event) {
+                const scannedData = event.target.value.trim();
+                console.log("Input received:", scannedData, "Length:", scannedData.length);
+
+                // Clear existing timer
+                if (inputTimer) {
+                    clearTimeout(inputTimer);
+                }
+
+                // Don't process if already processing or input is too short
+                if (isProcessing || scannedData.length < MIN_BARCODE_LENGTH) {
+                    return;
+                }
+
+                // Set timer to process after delay (when input stops coming)
+                inputTimer = setTimeout(() => {
+                    if (scannedData !== "" && !isProcessing) {
+                        console.log("Processing scanned data:", scannedData);
+                        checkScannedData(scannedData);
+                    }
+                }, DEBOUNCE_DELAY);
+            });
+
+            // Alternative: Handle Enter key press (most scanners send Enter after scanning)
+            barcodeInput.addEventListener("keypress", function(event) {
+                if (event.key === "Enter" || event.keyCode === 13) {
+                    event.preventDefault();
+
+                    // Clear any existing timer
+                    if (inputTimer) {
+                        clearTimeout(inputTimer);
+                    }
+
+                    const scannedData = event.target.value.trim();
+                    console.log("Enter key pressed, processing:", scannedData);
+
+                    if (scannedData !== "" && !isProcessing) {
+                        checkScannedData(scannedData);
+                    }
+                }
+            });
+
+            // Handle paste events (for manual input or some scanners)
+            barcodeInput.addEventListener("paste", function(event) {
+                setTimeout(() => {
+                    const scannedData = event.target.value.trim();
+                    console.log("Paste detected:", scannedData);
+
+                    if (scannedData !== "" && !isProcessing) {
+                        checkScannedData(scannedData);
+                    }
+                }, 50);
+            });
+
+            function resetDisplay() {
+                // Hide error message first
+                errorMessage.style.display = "none";
+                errorMessage.classList.add("d-none");
+
+                // Clear text displays
+                textHead.textContent = "Stand By";
+                textDisplay.textContent = "";
             }
 
-            Instascan.Camera.getCameras().then(function (cameras) {
-                if (cameras.length > 0) {
-                    scanner.start(cameras[0]);
+            function showSuccess(name, status) {
+                // Hide error message
+                errorMessage.style.display = "none";
+                errorMessage.classList.add("d-none");
+
+                // Play success audio
+                successAudio.currentTime = 0;
+                successAudio.play().catch(e => console.log("Audio play failed:", e));
+
+                // Set appropriate header text
+                if (status && status.startsWith("Arrived")) {
+                    textHead.textContent = "Welcome Back!";
+                } else if (status === "exists") {
+                    textHead.textContent = "Take Care!";
+                } else if (status === "done") {
+                    textHead.textContent = "Completed!";
                 } else {
-                    alert('No cameras found');
+                    textHead.textContent = "Success!";
                 }
-            }).catch(function (e) {
-                console.error(e);
-            });
 
-            // Listen for form submission
-            document.querySelector('form').addEventListener('submit', function (e) {
-                e.preventDefault(); // Prevent the default form submission
-            });
+                // Display name
+                textDisplay.textContent = name || "Unknown";
+            }
 
-            scanner.addListener('scan', function (c) {
-                // Check if the scanned data exists in the database
-                checkScannedData(c);
-            });
+            function showError(message) {
+                // Clear success displays
+                textHead.textContent = "";
+                textDisplay.textContent = "";
+
+                // Play error audio
+                errorAudio.currentTime = 0;
+                errorAudio.play().catch(e => console.log("Audio play failed:", e));
+
+                // Show error message
+                errorMessage.textContent = message;
+                errorMessage.style.display = "block";
+                errorMessage.classList.remove("d-none");
+            }
 
             function checkScannedData(scannedData) {
-                // You can use AJAX to check if the scanned data exists in the database
-                // I'll provide a simplified example using jQuery for this purpose
+                // Prevent multiple simultaneous requests
+                if (isProcessing) {
+                    console.log("Already processing, ignoring request");
+                    return;
+                }
+
+                isProcessing = true;
+
+                // Clear any pending timer
+                if (inputTimer) {
+                    clearTimeout(inputTimer);
+                }
+
+                // Reset display first
+                resetDisplay();
+
+                // Show processing indicator
+                textHead.textContent = "Processing...";
 
                 $.ajax({
-                    url: 'code.php', // Create a separate PHP file to handle the database check
-                    type: 'POST',
-                    data: { scannedData: scannedData },
-                    success: function (response) {
-                        if (response === 'exists') {
-                            // Scanned data exists in the database, proceed with update and display
-                            document.getElementById('text').textContent = scannedData;
+                    url: "code_desk.php",
+                    type: "POST",
+                    data: {
+                        scannedData: scannedData
+                    },
+                    dataType: "json",
+                    timeout: 10000, // 10 second timeout
+                    success: function(response) {
+                        console.log("Response from server:", response);
 
-                            // Play a sound
-                            var audio = new Audio('qrcode.mp3'); // Replace 'path/to/sound.mp3' with the actual path to your sound file
-                            audio.play();
+                        // Define success statuses explicitly
+                        const successStatuses = ["exists", "done"];
+                        const isArrivedStatus = response.status && response.status.startsWith("Arrived");
+                        const isSuccessStatus = successStatuses.includes(response.status);
+
+                        if (isSuccessStatus || isArrivedStatus) {
+                            // Handle success cases
+                            const name = response.name || scannedData;
+                            showSuccess(name, response.status);
                         } else {
-                            alert('Your Request does not exist in the database');
+                            // Handle error cases
+                            let errorMsg = "An unexpected error occurred.";
+
+                            switch (response.status) {
+                                case "not_exists":
+                                    errorMsg = "Your request does not exist in the database or is not approved.";
+                                    break;
+                                case "update_error":
+                                    errorMsg = "Error updating the database. Please try again.";
+                                    break;
+                                case "est_error":
+                                    errorMsg = "Error fetching estimated time from the database.";
+                                    break;
+                                default:
+                                    if (response.message) {
+                                        errorMsg = response.message;
+                                    }
+                                    break;
+                            }
+
+                            showError(errorMsg);
                         }
                     },
-                    error: function () {
-                        alert('Error checking scanned data');
+                    error: function(xhr, status, error) {
+                        console.error("AJAX Error:", error);
+                        if (status === "timeout") {
+                            showError("Request timeout. Please try again.");
+                        } else {
+                            showError("Connection error. Please try again.");
+                        }
+                    },
+                    complete: function() {
+                        // Reset processing flag and clear input after a delay
+                        setTimeout(() => {
+                            isProcessing = false;
+                            barcodeInput.value = "";
+                            barcodeInput.focus();
+                        }, 1500); // 1.5 second delay before allowing next scan
                     }
                 });
             }
+
+            // Focus input when clicking anywhere on the page
+            document.addEventListener("click", function() {
+                if (!isProcessing) {
+                    barcodeInput.focus();
+                }
+            });
+
+            // Refocus input when it loses focus (unless processing)
+            barcodeInput.addEventListener("blur", function() {
+                if (!isProcessing) {
+                    setTimeout(() => {
+                        barcodeInput.focus();
+                    }, 100);
+                }
+            });
         });
     </script>
+
 </body>
 
 </html>

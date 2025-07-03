@@ -2,12 +2,12 @@
 session_start();
 require_once 'dbh.php'; // Assuming this file contains your database connection logic
 
-
-
 if (!isset($_SESSION['username'])) {
-    header("location:login.php");
-} else if ($_SESSION['role'] == 'Admin') {
-    header("location:login.php");
+    header("location:login_v2.php");
+    exit();
+} else if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Admin' || $_SESSION['role'] == 'TCWS Employee') {
+    header("location:login_v2.php");
+    exit();
 }
 ?>
 
@@ -40,7 +40,7 @@ if (!isset($_SESSION['username'])) {
         }
 
         #btn_back {
-            margin-left: 890px;
+            margin-left: 880px;
         }
 
         .navbar-brand {
@@ -64,14 +64,24 @@ if (!isset($_SESSION['username'])) {
             margin-left: 10px;
             /* Add some spacing between the logo and text */
         }
+
+        .button-row {
+            display: flex;
+            flex-direction: row;
+            margin-top: 10px;
+        }
+
+        #declineButtonContainer {
+            margin-left: 10px;
+        }
     </style>
 </head>
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <a class="navbar-brand" href="login_v2.php">
+        <a class="navbar-brand" href="index_desk.php">
             <img src="logo.png" alt="Logo" class="logo-img">
-            <span class="logo-text">E-Pass</span>
+            <span class="logo-text">E-Pass Slip </span>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,19 +94,13 @@ if (!isset($_SESSION['username'])) {
                     <a class="nav-link" href="index_desk.php">Home <span class="sr-only">(current)</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="add_req_desk.php">Add Request</a>
+                    <a class="nav-link" href="track_emp_desk.php">Track Employees</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="approved_desk.php">Approved</a>
+                    <a class="nav-link" href="qrcode_scanner_desk.php">Scanner</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="decline_desk.php">Declined Request</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_desk.php">Scan QrCode</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="login_v2.php">Logout</a>
+                    <a class="nav-link" href="logout.php">Logout</a>
                 </li>
             </ul>
         </div>
@@ -173,26 +177,47 @@ if (!isset($_SESSION['username'])) {
                                             <?php echo $data['timedept']; ?>
                                         </p>
                                     </div>
-                                    <div class="mb-3">
-                                        <label>Estimated Time:</label>
-                                        <p class="form-control-static">
-                                            <?php echo $data['esttime']; ?>
-                                        </p>
+                                    <div class="form-group">
+                                        <label for="esttime">Estimated Time</label>
+                                        <input type="time" class="form" id="esttime" name="esttime" min="08:00" max="18:00">
                                     </div>
-
                                     <div class="mb-3">
                                         <label>Type of Request:</label>
                                         <p class="form-control-static">
                                             <?php echo $data['typeofbusiness']; ?>
                                         </p>
                                     </div>
-                                    <div class="mb-3">
-                                        <label>Status:</label>
-                                        <p class="form-control-static">
-                                            <?php echo $data['Status']; ?>
-                                        </p>
-                                    </div>
 
+                                    <div class="mb-3">
+                                        <div class="form-group">
+                                            <label for="sel1">Status:</label>
+                                            <select class="form" id="sel1" name='status'>
+                                                <option>Partially Approved</option>
+                                                <option>Declined</option>
+                                            </select>
+                                            <div id="reason" name="reasons" style="display: none;">
+                                                <label for="decline_reason">Decline Reason:</label>
+                                                <textarea id="decline_reason" name="decline_reason"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-group">
+                                            <label for="sel2">Confirmed By:</label>
+                                            <select class="form" id="sel2" name='confirmed_by'>
+                                                <option>CAGULADA RENE ART</option>
+                                                <option>CASAS RUBY</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="button-row">
+                                        <div id="approveButtonContainer">
+                                            <button type="submit" name="approve_req_desk" class="btn btn-success">Approve</button>
+                                        </div>
+                                        <div id="declineButtonContainer">
+                                            <button type="submit" name="decline_req_desk" class="btn btn-danger">Decline</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </form>
                             <?php
@@ -206,11 +231,98 @@ if (!isset($_SESSION['username'])) {
         </div>
     </div>
 
-
-
-
     </div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Focus on the 'esttime' input field when the page loads
+            const esttimeInput = document.getElementById("esttime");
+            if (esttimeInput) {
+                esttimeInput.focus();
+            }
+        });
+    </script>
+
+    <script>
+        // Add an event listener to the dropdown
+        document.getElementById("sel1").addEventListener("change", function() {
+            var selectedStatus = this.value;
+            var reasonDiv = document.getElementById("reason");
+
+            // Show the textarea if "Declined" is selected, otherwise hide it
+            if (selectedStatus === "Declined") {
+                reasonDiv.style.display = "block";
+            } else {
+                reasonDiv.style.display = "none";
+            }
+        });
+    </script>
+    <script>
+        // Add an event listener to the dropdown
+        document.getElementById("sel1").addEventListener("change", function() {
+            var selectedStatus = this.value;
+            var reasonDiv = document.getElementById("declineButtonContainer");
+
+            // Show the textarea if "Declined" is selected, otherwise hide it
+            if (selectedStatus === "Approved") {
+                reasonDiv.style.display = "none";
+            } else {
+                reasonDiv.style.display = "block";
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var statusSelect = document.getElementById('sel1');
+            var declineButtonContainer = document.getElementById('declineButtonContainer');
+
+            // Function to toggle visibility of decline button based on selected option
+            function toggleDeclineButtonVisibility() {
+                if (statusSelect.value === 'Partially Approved') {
+                    declineButtonContainer.style.display = 'none';
+                } else {
+                    declineButtonContainer.style.display = 'block';
+                }
+            }
+
+            // Initially call the function to set initial visibility
+            toggleDeclineButtonVisibility();
+
+            // Add change event listener to the status select element
+            statusSelect.addEventListener('change', function() {
+                toggleDeclineButtonVisibility();
+            });
+        });
+    </script>
+
+    <script>
+        // Add an event listener to the dropdown
+        document.getElementById("sel1").addEventListener("change", function() {
+            var selectedStatus = this.value;
+            var approveButtonContainer = document.getElementById("approveButtonContainer");
+
+            // Show or hide the "Approve" button based on the selected status
+            if (selectedStatus === "Declined") {
+                approveButtonContainer.style.display = "none";
+            } else {
+                approveButtonContainer.style.display = "block";
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listener for the Enter key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    // Check if the event target is an input field
+                    if (!event.target.tagName || event.target.tagName.toLowerCase() !== 'input') {
+                        // Simulate a click on the approve button
+                        document.querySelector('[name="approve_req_desk"]').click();
+                    }
+                }
+            });
+        });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
         integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
         crossorigin="anonymous"></script>

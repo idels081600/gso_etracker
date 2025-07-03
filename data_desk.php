@@ -1,40 +1,20 @@
-
 <?php
- require_once 'dbh.php';
+require_once 'dbh.php';
+require_once 'functions.php';
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+$result = display_request();
 
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-} 
-
-$sql = "SELECT * FROM `request` WHERE `Status` LIKE 'Pending' ORDER BY `id` DESC";
-$result = $conn->query($sql);
-?>
- <tr>
-                      <th scope="col">Name</th>
-                      <th scope="col">Position</th>
-                      <th scope="col">Destination</th>
-                      <th scope="col">Type of Request</th>
-                      <th scope="col">Status</th>
-                      <th scope="col">Action</th>
-                      
-                  </tr>
-<?php
-while($row = mysqli_fetch_assoc($result))
-{
-  ?>
-  
-<td><?php echo $row["name"]; ?></td>
-<td><?php echo $row["position"]; ?></td>
-<td><?php echo $row["destination"]; ?></td>
-<td><?php echo $row["typeofbusiness"]; ?></td>
-<td><?php echo $row["Status"]; ?></td>
-<td> <a href="view_desk.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a></td>
-</tr>
-
-  <?php
+while ($row = mysqli_fetch_assoc($result)) {
+  echo '<tr>';
+  echo '<td>' . $row["name"] . '</td>';
+  echo '<td>' . $row["position"] . '</td>';
+  echo '<td>' . $row["destination"] . '</td>';
+  echo '<td>' . $row["typeofbusiness"] . '</td>';
+  echo '<td>' . $row["Status"] . '</td>';
+  echo '<td>
+          <a href="view_desk.php?id=' . $row['id'] . '" class="btn btn-info btn-sm">View</a>
+          <input type="checkbox" name="selected[]" value="' . $row['id'] . '" class="form-check-input ml-2">
+        </td>';
+  echo '</tr>';
 }
-
-$conn->close();
 ?>
