@@ -39,7 +39,7 @@ $(document).ready(function() {
     // Edit button click handler
     $('.btn-primary').click(function() {
         var row = $(this).closest('tr');
-        var status = row.find('td:eq(6)').text().trim(); // Status is now in the 7th column (index 6)
+        var status = row.find('td:eq(4)').text().trim(); // Status is now in the 5th column (index 4)
         var name = row.find('td:eq(0)').text();
         var address = row.find('td:eq(1)').text();
         var contact = $(this).data('contact'); // Get contact from data attribute
@@ -92,7 +92,7 @@ $(document).ready(function() {
                     var row = $('button[data-id="' + selectedClientId + '"]').closest('tr');
                     row.find('td:eq(0)').text($('#clientName').val());
                     row.find('td:eq(1)').text($('#clientAddress').val());
-                    row.find('td:eq(2)').text($('#tentNumber').val());
+                    row.find('td:eq(2)').text($('#noOfTents').val()); // Update number of tents column
                     row.find('td:eq(4)').text(statusValue); // Update status column
                     $('#editModal').modal('hide');
                     
@@ -142,6 +142,7 @@ $(document).ready(function() {
         var name = row.find('td:eq(0)').text();
         var address = row.find('td:eq(1)').text();
         var contact = $(this).data('contact'); // Get contact from data attribute
+        var noOfTents = $(this).data('no_of_tents'); // Get number of tents from data attribute
         selectedClientId = $(this).data('id'); // Use data() method
         tent_installed = $(this).data('tent_no');
         currentStatus = status; // Store current status
@@ -152,7 +153,7 @@ $(document).ready(function() {
         $('#clientName').val(name);
         $('#clientAddress').val(address);
         $('#clientContact').val(contact);
-        $('#clientId').val(selectedClientId);
+        $('#noOfTents').val(noOfTents); // Set the number of tents field
         $('#tentNumber').val(tent_installed);
         
         // Populate status dropdown based on current status
@@ -160,4 +161,175 @@ $(document).ready(function() {
 
         $('#editModal').modal('show');
     });
+});
+
+// JavaScript code for Today and Show All buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const todayBtn = document.getElementById('todayBtn');
+    const showAllBtn = document.getElementById('showAllBtn');
+    const tableBody = document.getElementById('tableBody');
+    const table = document.querySelector('.table');
+    const rows = table.getElementsByTagName('tr');
+    
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Today button click event
+    todayBtn.addEventListener('click', function() {
+        // Add active state to Today button
+        todayBtn.classList.add('active');
+        showAllBtn.classList.remove('active');
+        
+        // Filter table to show only today's pending records
+        filterTableForToday();
+    });
+    
+    // Show All button click event
+    showAllBtn.addEventListener('click', function() {
+        // Add active state to Show All button
+        showAllBtn.classList.add('active');
+        todayBtn.classList.remove('active');
+        
+        // Show all records
+        showAllRecords();
+    });
+    
+    // Function to filter table for today's pending records
+    function filterTableForToday() {
+        // Loop through all table rows (excluding the header row)
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            const cells = row.getElementsByTagName('td');
+            
+            if (cells.length > 0) {
+                const dateCell = cells[3]; // Date column (index 3)
+                const statusCell = cells[4]; // Status column (index 4)
+                
+                if (dateCell && statusCell) {
+                    const rowDate = dateCell.textContent.trim();
+                    const rowStatus = statusCell.textContent.trim();
+                    
+                    // Show row if it's today's date and status is Pending
+                    if (rowDate === today && rowStatus === 'Pending') {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            }
+        }
+        
+        // Check if any rows are visible
+        checkIfNoResults();
+    }
+    
+    // Function to show all records
+    function showAllRecords() {
+        // Show all rows
+        for (let i = 1; i < rows.length; i++) {
+            rows[i].style.display = '';
+        }
+        
+        // Remove any "no results" message
+        removeNoResultsMessage();
+    }
+    
+    // Function to check if no results are visible and show message
+    function checkIfNoResults() {
+        let visibleRows = 0;
+        
+        for (let i = 1; i < rows.length; i++) {
+            if (rows[i].style.display !== 'none') {
+                visibleRows++;
+            }
+        }
+        
+        if (visibleRows === 0) {
+            showNoResultsMessage("No pending records found for today (" + today + ")");
+        } else {
+            removeNoResultsMessage();
+        }
+    }
+    
+    // Function to show "no results" message
+    function showNoResultsMessage(message) {
+        // Remove existing message if any
+        removeNoResultsMessage();
+        
+        // Create new row with message
+        const noResultsRow = document.createElement('tr');
+        noResultsRow.id = 'noResultsRow';
+        noResultsRow.innerHTML = `<td colspan="6" class="text-center text-muted">${message}</td>`;
+        
+        // Add to table body
+        tableBody.appendChild(noResultsRow);
+    }
+    
+    // Function to remove "no results" message
+    function removeNoResultsMessage() {
+        const existingMessage = document.getElementById('noResultsRow');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+    }
+    
+    // Initialize with Show All active by default
+    showAllBtn.classList.add('active');
+    
+    // Also integrate with existing search functionality if it exists
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            // If search is being used, reset button states
+            if (searchInput.value.trim() !== '') {
+                todayBtn.classList.remove('active');
+                showAllBtn.classList.remove('active');
+            }
+        });
+    }
+});
+
+// Enhanced search functionality that works with the filter buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const table = document.querySelector('.table');
+    const rows = table.getElementsByTagName('tr');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const filter = searchInput.value.toLowerCase();
+            
+            // If search input is empty, don't filter
+            if (filter === '') {
+                // Show all rows
+                for (let i = 1; i < rows.length; i++) {
+                    rows[i].style.display = '';
+                }
+                return;
+            }
+            
+            // Loop through all table rows (excluding the header row)
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                const cells = row.getElementsByTagName('td');
+                let rowVisible = false;
+                
+                // Check each cell in the row
+                for (let j = 0; j < cells.length; j++) {
+                    const cellText = cells[j].textContent.toLowerCase();
+                    if (cellText.includes(filter)) {
+                        rowVisible = true;
+                        break;
+                    }
+                }
+                
+                // Show or hide the row based on search match
+                if (rowVisible) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        });
+    }
 });

@@ -27,15 +27,17 @@ if (!isset($_SESSION['username'])) {
         <div class="form-group">
             <input type="text" class="form-control" id="searchInput" placeholder="Search...">
         </div>
+        <div class="mb-3">
+            <button type="button" class="btn btn-info" id="todayBtn">Today</button>
+            <button type="button" class="btn btn-secondary ml-2" id="showAllBtn">Show All</button>
+        </div>
         <div class="table-responsive">
             <table class="table table-striped mt-4 table-fixed">
                 <thead>
                     <tr>
                         <th>Name</th>
                         <th>Address</th>
-                        <th>Contact No.</th>
                         <th>No. of Tents</th>
-
                         <th>Date</th>
                         <th>Status</th>
                         <th>Action</th>
@@ -78,7 +80,6 @@ if (!isset($_SESSION['username'])) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['contact_no']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['date']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['status']) . "</td>";
@@ -105,7 +106,6 @@ if (!isset($_SESSION['username'])) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['contact_no']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['date']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['status']) . "</td>";
@@ -132,7 +132,6 @@ if (!isset($_SESSION['username'])) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['contact_no']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['date']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['status']) . "</td>";
@@ -159,7 +158,6 @@ if (!isset($_SESSION['username'])) {
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['contact_no']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['date']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['status']) . "</td>";
