@@ -75,58 +75,6 @@ if (!isset($_SESSION['username'])) {
                         mysqli_num_rows($result_retrieved) + mysqli_num_rows($result_for_retrieval);
 
                     if ($total_rows > 0) {
-                        // Display Pending records first
-                        while ($row = mysqli_fetch_assoc($result_pending)) {
-                            echo "<tr>";
-                            echo "<td>" . htmlspecialchars($row['name']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['date']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['status']) . "</td>";
-                            echo '<td class="text-right">
-                <button class="btn btn-primary"
-                    data-toggle="modal"
-                    data-target="#editModal"
-                    data-id="' . htmlspecialchars($row['id']) . '"
-                    data-name="' . htmlspecialchars($row['name']) . '"
-                    data-address="' . htmlspecialchars($row['location']) . '"
-                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
-                    data-no_of_tents="' . htmlspecialchars($row['no_of_tents']) . '"
-                    data-date="' . htmlspecialchars($row['date']) . '"
-                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
-                    data-status="' . htmlspecialchars($row['status']) . '">
-                    Edit
-                </button>
-            </td>';
-                            echo "</tr>";
-                        }
-
-                        // Then display Installed records
-                        while ($row = mysqli_fetch_assoc($result_installed)) {
-                            echo "<tr>";
-                            echo "<td>" . htmlspecialchars($row['name']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['date']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['status']) . "</td>";
-                            echo '<td class="text-right">
-                <button class="btn btn-primary"
-                    data-toggle="modal"
-                    data-target="#editModal"
-                    data-id="' . htmlspecialchars($row['id']) . '"
-                    data-name="' . htmlspecialchars($row['name']) . '"
-                    data-address="' . htmlspecialchars($row['location']) . '"
-                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
-                    data-no_of_tents="' . htmlspecialchars($row['no_of_tents']) . '"
-                    data-date="' . htmlspecialchars($row['date']) . '"  
-                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
-                    data-status="' . htmlspecialchars($row['status']) . '">
-                    Edit
-                </button>
-            </td>';
-                            echo "</tr>";
-                        }
-
                         // Display For Retrieval records
                         while ($row = mysqli_fetch_assoc($result_for_retrieval)) {
                             echo "<tr>";
@@ -152,10 +100,9 @@ if (!isset($_SESSION['username'])) {
             </td>';
                             echo "</tr>";
                         }
-
-                        // Finally display Retrieved records
-                        while ($row = mysqli_fetch_assoc($result_retrieved)) {
-                            echo "<tr>";
+                        // Display Pending records (hidden by default, shown only for Today)
+                        while ($row = mysqli_fetch_assoc($result_pending)) {
+                            echo "<tr class='pending-row'>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
@@ -177,6 +124,9 @@ if (!isset($_SESSION['username'])) {
                 </button>
             </td>';
                             echo "</tr>";
+                        }
+                        if (mysqli_num_rows($result_for_retrieval) + mysqli_num_rows($result_pending) == 0) {
+                            echo "<tr><td colspan='6'>No data found</td></tr>";
                         }
                     } else {
                         echo "<tr><td colspan='8'>No data found</td></tr>";

@@ -174,64 +174,70 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
     
+    // Track the last filter state
+    let lastFilter = 'showAll'; // 'showAll' or 'today'
+    
+    // On page load, hide all .pending-row
+    document.querySelectorAll('.pending-row').forEach(function(row) {
+        row.style.display = 'none';
+    });
+    
     // Today button click event
     todayBtn.addEventListener('click', function() {
-        // Add active state to Today button
         todayBtn.classList.add('active');
         showAllBtn.classList.remove('active');
-        
-        // Filter table to show only today's pending records
+        lastFilter = 'today';
         filterTableForToday();
     });
     
     // Show All button click event
     showAllBtn.addEventListener('click', function() {
-        // Add active state to Show All button
         showAllBtn.classList.add('active');
         todayBtn.classList.remove('active');
-        
-        // Show all records
-        showAllRecords();
+        lastFilter = 'showAll';
+        // Show only 'For Retrieval' records
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (row.classList.contains('pending-row')) {
+                row.style.display = 'none';
+                continue;
+            }
+            const cells = row.getElementsByTagName('td');
+            if (cells.length > 0) {
+                const statusCell = cells[4]; // Status column (index 4)
+                if (statusCell && statusCell.textContent.trim() === 'For Retrieval') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        }
+        removeNoResultsMessage();
+        checkIfNoResults();
     });
     
     // Function to filter table for today's pending records
     function filterTableForToday() {
-        // Loop through all table rows (excluding the header row)
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            const cells = row.getElementsByTagName('td');
-            
-            if (cells.length > 0) {
+            if (row.classList.contains('pending-row')) {
+                const cells = row.getElementsByTagName('td');
                 const dateCell = cells[3]; // Date column (index 3)
                 const statusCell = cells[4]; // Status column (index 4)
-                
                 if (dateCell && statusCell) {
                     const rowDate = dateCell.textContent.trim();
                     const rowStatus = statusCell.textContent.trim();
-                    
-                    // Show row if it's today's date and status is Pending
                     if (rowDate === today && rowStatus === 'Pending') {
                         row.style.display = '';
                     } else {
                         row.style.display = 'none';
                     }
                 }
+            } else {
+                row.style.display = 'none';
             }
         }
-        
-        // Check if any rows are visible
         checkIfNoResults();
-    }
-    
-    // Function to show all records
-    function showAllRecords() {
-        // Show all rows
-        for (let i = 1; i < rows.length; i++) {
-            rows[i].style.display = '';
-        }
-        
-        // Remove any "no results" message
-        removeNoResultsMessage();
     }
     
     // Function to check if no results are visible and show message
@@ -298,23 +304,35 @@ document.addEventListener('DOMContentLoaded', function() {
     if (searchInput) {
         searchInput.addEventListener('input', function() {
             const filter = searchInput.value.toLowerCase();
-            
-            // If search input is empty, don't filter
             if (filter === '') {
-                // Show all rows
-                for (let i = 1; i < rows.length; i++) {
-                    rows[i].style.display = '';
+                // Reapply last filter
+                if (lastFilter === 'today') {
+                    filterTableForToday();
+                } else {
+                    // Show only 'For Retrieval' records
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        const cells = row.getElementsByTagName('td');
+                        if (cells.length > 0) {
+                            const statusCell = cells[4];
+                            if (statusCell && statusCell.textContent.trim() === 'For Retrieval') {
+                                row.style.display = '';
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        }
+                    }
+                    removeNoResultsMessage();
+                    checkIfNoResults();
                 }
                 return;
             }
-            
-            // Loop through all table rows (excluding the header row)
+            // Always search all rows, even hidden ones
+            let visibleRows = 0;
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
                 const cells = row.getElementsByTagName('td');
                 let rowVisible = false;
-                
-                // Check each cell in the row
                 for (let j = 0; j < cells.length; j++) {
                     const cellText = cells[j].textContent.toLowerCase();
                     if (cellText.includes(filter)) {
@@ -322,13 +340,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         break;
                     }
                 }
-                
-                // Show or hide the row based on search match
                 if (rowVisible) {
                     row.style.display = '';
+                    visibleRows++;
                 } else {
                     row.style.display = 'none';
                 }
+            }
+            if (visibleRows === 0) {
+                showNoResultsMessage('No results found for "' + filter + '"');
+            } else {
+                removeNoResultsMessage();
             }
         });
     }
