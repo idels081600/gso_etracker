@@ -56,8 +56,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $row = mysqli_fetch_assoc($statusResult);
         $existingStatus = $row['status'];
 
-        // If the existing status is empty, update the status to 'Installed'
-        if (empty($existingStatus) || $existingStatus === 'Pending') {
+        // If the existing status is empty or Pending, and $tentno has a value, update the status to 'Installed'
+        if ((empty($existingStatus) || $existingStatus === 'Pending') && !empty($tentno)) {
             $query = "UPDATE tent SET
                           tent_no = '$tentno',
                           date = '$datepicker',
@@ -70,11 +70,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                           status = 'Installed' 
                         WHERE id = '$id'";
         } else {
-            // If the existing status is not empty, update without modifying the status column
+            // Otherwise, update without modifying the status column
             $query = "UPDATE tent SET
                           tent_no = '$tentno',
-                          date = '$datepicker'
-                          ,
+                          date = '$datepicker',
                           retrieval_date = '$retrieval_date',
                           name = '$name',
                           Contact_no = '$contact',
