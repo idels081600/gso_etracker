@@ -388,7 +388,7 @@ if (isset($_POST['save_data'])) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     $(document).ready(function() {
-        $('#printPendingBtn').on('click', function() {s
+        $('#printPendingBtn').on('click', function() {
             window.open('print_tent_pending.php', '_blank');
         });
         $('#printRetrievalBtn').on('click', function() {
@@ -396,4 +396,5 @@ if (isset($_POST['save_data'])) {
         });
     });
 </script>
+
 </html>
