@@ -67,5 +67,11 @@ $result = mysqli_query($conn, $query);
             <?php endif; ?>
         </tbody>
     </table>
+    <div style="width: 100%; margin-top: 60px;">
+        <div style="width: 350px; float: right; text-align: center;">
+            <div style="font-weight: bold; text-transform: uppercase; letter-spacing: 1px; text-decoration: underline;">CHRIS JOHN RENER G. TORRALBA</div>
+            <div style="font-size: 15px;">CGSO HEAD</div>
+        </div>
+    </div>
 </body>
 </html> 
