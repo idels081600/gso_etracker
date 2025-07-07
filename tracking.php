@@ -135,7 +135,10 @@ if (isset($_POST['save_data'])) {
         <div class="container_table">
             <div class="container_table_content">
                 <div class="d-flex justify-content-between align-items-center mb-3 px-3" style="padding-left:0;padding-right:0;">
-                    <button class="btn btn-success" id="addButton" role="button" data-bs-toggle="modal" data-bs-target="#detailsModal">Install Tent</button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-success" id="addButton" role="button" data-bs-toggle="modal" data-bs-target="#detailsModal">Install Tent</button>
+                        <button class="btn btn-secondary" id="printButton" data-bs-toggle="modal" data-bs-target="#printModal"><i class="fas fa-print"></i> Print</button>
+                    </div>
                     <input type="text" id="search-input" class="form-control w-auto" placeholder="Search...">
                 </div>
                 <div class="table-container">
@@ -235,11 +238,11 @@ if (isset($_POST['save_data'])) {
                             </div>
                             <div class="col-md-6">
                                 <label for="viewEditDate" class="form-label">Date</label>
-                                <input type="text" class="form-control" id="viewEditDate" name="date" >
+                                <input type="text" class="form-control" id="viewEditDate" name="date">
                             </div>
                             <div class="col-md-6">
                                 <label for="viewEditRetrievalDate" class="form-label">Retrieval Date</label>
-                                <input type="text" class="form-control" id="viewEditRetrievalDate" name="retrieval_date" >
+                                <input type="text" class="form-control" id="viewEditRetrievalDate" name="retrieval_date">
                             </div>
                             <div class="col-md-6">
                                 <label for="viewEditName" class="form-label">Name</label>
@@ -362,11 +365,35 @@ if (isset($_POST['save_data'])) {
             </div>
         </div>
     </div>
+    <!-- Print Modal -->
+    <div class="modal fade" id="printModal" tabindex="-1" aria-labelledby="printModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="printModalLabel">Print Tent Schedule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body d-flex flex-column align-items-center gap-3">
+                    <button class="btn btn-primary w-100" id="printPendingBtn">Pending</button>
+                    <button class="btn btn-warning w-100" id="printRetrievalBtn">For Retrieval</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 <script src="tracking.js"></script>
 <!-- Bootstrap 5 JS Bundle (with Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
+<script>
+    $(document).ready(function() {
+        $('#printPendingBtn').on('click', function() {s
+            window.open('print_tent_pending.php', '_blank');
+        });
+        $('#printRetrievalBtn').on('click', function() {
+            window.open('print_tent_for_retrieval.php', '_blank');
+        });
+    });
+</script>
 </html>
