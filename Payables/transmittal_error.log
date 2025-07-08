@@ -339,3 +339,31 @@
     [deadline] => 10
 )
 
+[2025-07-08 08:55:20] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123
+    [project_name] => testing
+    [office] =>  CMO
+    [received_by] => Mae Angelie Bacullo
+    [winning_bidders] => bq
+    [NOA_no] => 2025-07-08
+    [COA_date] => 2025-07-08
+    [notice_proceed] => 2025-07-08
+    [deadline] => 10
+)
+
+[2025-07-08 08:55:33] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123
+    [project_name] => testing
+    [office] =>  CMO
+    [received_by] => Mae Angelie Bacullo
+    [winning_bidders] => bq
+    [NOA_no] => 2025-07-08
+    [COA_date] => 2025-07-08
+    [notice_proceed] => 2025-07-08
+    [deadline] => 10
+)
+

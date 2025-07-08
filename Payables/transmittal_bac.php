@@ -144,7 +144,7 @@ require_once 'transmit_db.php';
                             </div>
                             <div class="col-md-6">
                                 <label for="NOA_no" class="form-label">NOA no.</label>
-                                <input type="text" class="form-control" id="NOA_no" name="NOA_no" required>
+                                <input type="date" class="form-control" id="NOA_no" name="NOA_no" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="COA_date" class="form-label">Contract of Agreement Date</label>
@@ -211,7 +211,7 @@ require_once 'transmit_db.php';
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_NOA_no" class="form-label">NOA no.</label>
-                                <input type="text" class="form-control" id="edit_NOA_no" name="NOA_no" required>
+                                <input type="date" class="form-control" id="edit_NOA_no" name="NOA_no" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_COA_date" class="form-label">Contract of Agreement Date</label>

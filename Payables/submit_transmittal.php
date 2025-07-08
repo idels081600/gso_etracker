@@ -40,8 +40,8 @@ if (
     $date_received = date('Y-m-d H:i:s');
 
     $stmt = $conn->prepare("INSERT INTO transmittal_bac (
-        ib_no, project_name, date_received, office, received_by, winning_bidders, NOA_no, COA_date, notice_proceed, deadline, transmittal_type, calendar_days
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        ib_no, project_name, date_received, office, received_by, winning_bidders, NOA_no, COA_date, notice_proceed, deadline, transmittal_type, calendar_days, delete_status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)");
     if (!$stmt) {
         log_error('Prepare failed: ' . $conn->error);
         $error_message = 'An error occurred while preparing the statement.';
