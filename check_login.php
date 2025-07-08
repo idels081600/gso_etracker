@@ -1,5 +1,6 @@
 <?php
 session_start();
+$full_name = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : '';
 require_once 'dbh.php';
 
 if ($conn === false) {
@@ -38,7 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // User found, set session variables based on role
         $_SESSION['username'] = $row['username'];
         $_SESSION['role'] = $row['role'];
-
+        $_SESSION['pay_name'] = $row['name'];
         // Redirect based on role
         switch ($row['role']) {
             case "Admin":
@@ -79,6 +80,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 break;
             case "SUPPLIES":
                 header("location:LogiSys/Logi_Sys_Dashboard.php");
+                break;
+            case "Pay_admin":
+                header("location:Payables/transmittal_bac.php");
                 break;
             default:
                 header("location:login_v2.php");

@@ -1,0 +1,49 @@
+.table,
+.table thead,
+.table tbody,
+.table th {
+  font-size: 0.9rem;
+}
+
+.table td {
+  font-size: 0.8rem;
+}
+
+/* Truncate long project names in card list */
+.card-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
+  color: #208045;
+  font-weight: 600;
+}
+
+/* Days left color coding */
+.days-left-red {
+  color: #dc3545;
+  font-weight: bold;
+}
+.days-left-orange {
+  color: #fd7e14;
+  font-weight: bold;
+}
+
+.scrollable-table {
+  max-height: 500px;
+  overflow-y: auto;
+  position: relative;
+  width: 100%;
+}
+
+.scrollable-table table {
+  margin-bottom: 0;
+}
+
+.scrollable-table thead th {
+  position: sticky;
+  top: 0;
+  background: #f8f9fa;
+  z-index: 2;
+}

@@ -1,0 +1,341 @@
+[2025-07-07 08:18:12] Invalid POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] =>  CMO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:20:13] Invalid POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:21:51] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:21:51] Invalid POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:21:58] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:21:58] Invalid POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:22:50] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:22:50] Invalid POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:22:52] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:22:52] Invalid POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:23:15] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:23:15] Invalid POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:25:49] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:25:49] Invalid POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:25:52] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:25:52] Invalid POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_transmitted] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [noa_no] => 123
+    [contract_date] => 2025-07-07
+    [notice_to_proceed_date] => 2025-07-07
+    [calendar_days] => 12
+)
+
+[2025-07-07 08:26:19] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123
+    [project_name] => testing
+    [date_received] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [NOA_no] => 123
+    [COA_date] => 2025-07-07
+    [notice_proceed] => 2025-07-07
+    [deadline] => 10
+)
+
+[2025-07-07 09:55:22] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [date_received] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [NOA_no] => 123
+    [COA_date] => 2025-07-07
+    [notice_proceed] => 2025-07-07
+    [deadline] => 2
+)
+
+[2025-07-07 10:01:12] POST data: Array
+(
+    [transmittal_type] => Services
+    [ib_no] => 123
+    [project_name] => testing
+    [date_received] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [NOA_no] => 123
+    [COA_date] => 2025-07-07
+    [notice_proceed] => 2025-07-07
+    [deadline] => 5
+)
+
+[2025-07-07 10:42:09] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123
+    [project_name] => testing
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [NOA_no] => 123
+    [COA_date] => 2025-07-07
+    [notice_proceed] => 2025-07-07
+    [deadline] => 12
+)
+
+[2025-07-07 10:43:29] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [office] =>  CMO
+    [received_by] => ako
+    [winning_bidders] => 123
+    [NOA_no] => 123
+    [COA_date] => 2025-07-07
+    [notice_proceed] => 2025-07-07
+    [deadline] => 2
+)
+
+[2025-07-07 10:44:24] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => testing
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => 123
+    [NOA_no] => 123
+    [COA_date] => 2025-07-07
+    [notice_proceed] => 2025-07-07
+    [deadline] => 12
+)
+
+[2025-07-08 05:12:04] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123
+    [project_name] => GSO BUilDing
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [NOA_no] => 123
+    [COA_date] => 2025-07-08
+    [notice_proceed] => 2025-07-08
+    [deadline] => 10
+)
+
