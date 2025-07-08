@@ -20,6 +20,7 @@ if ($start && $end) {
     $params[] = $end;
     $types .= 'ss';
 }
+$where[] = "delete_status = 0";
 $where_sql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
 $sql = "SELECT * FROM transmittal_bac $where_sql ORDER BY date_received DESC";
