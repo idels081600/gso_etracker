@@ -391,7 +391,7 @@ if ($result && mysqli_num_rows($result) > 0) {
                                 <thead class="table-light" style="height: 20px; line-height: 1;">
                                     <tr>
                                         <th>SR/DR</th>
-                                        <th>Date</th>
+                                        <th>Date</th> 
                                         <th>Department/Requestor</th>
                                         <th>Store</th>
                                         <th>Activity</th>
@@ -399,7 +399,7 @@ if ($result && mysqli_num_rows($result) > 0) {
                                         <th>Amount</th>
                                         <th>Total</th>
                                         <th>Payment Name</th>
-                                        <th>Payment Amount</th>
+                                        <th>Payment Amount</th> 
                                         <th>Remarks</th>
                                         <th>Action</th>
                                     </tr>

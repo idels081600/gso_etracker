@@ -46,13 +46,13 @@ $(document).ready(function () {
 
     // Get the ID directly from the hidden input value
     var currentId = $("#record_id").val();
-
     // Get the current PO value - if dropdown is empty, use a hidden field value
     var poValue = $("#paymentDropdown").val() || $("#current_po").val();
 
     $.ajax({
       url: "update_record_maricris.php",
       type: "POST",
+      dataType: "json", // Explicitly expect JSON
       data: {
         id: currentId,
         sr_no: $("#sr_no").val(),
@@ -62,16 +62,29 @@ $(document).ready(function () {
         amount: $("#amount").val(),
         office: $("#office").val(),
         supplier: $("#supplierDropdown").val(),
-        payment: poValue, // Use the determined PO value
+        payment: poValue,
         remarks: $("#remarks").val(),
       },
       success: function (response) {
         console.log("Update response:", response);
-        location.reload();
+
+        if (response.status === "success") {
+          alert(response.message || "Record updated successfully");
+          location.reload();
+        } else {
+          alert(response.message || "An error occurred");
+        }
       },
       error: function (xhr, status, error) {
         console.log("Update error:", error);
         console.log("Server response:", xhr.responseText);
+
+        try {
+          var response = JSON.parse(xhr.responseText);
+          alert(response.message || "An error occurred");
+        } catch (e) {
+          alert("Server error: " + xhr.responseText);
+        }
       },
     });
   });
@@ -127,6 +140,7 @@ $(document).ready(function () {
 
 //FILTER
 $(document).ready(function () {
+  // Filter button click handler
   $("#filter_button").click(function () {
     var startDate = $("#start_date").val();
     var endDate = $("#end_date").val();
@@ -150,6 +164,62 @@ $(document).ready(function () {
               maximumFractionDigits: 2,
             })
         );
+      },
+      error: function (xhr, status, error) {
+        console.error("AJAX Error:", error);
+        alert("An error occurred while filtering records.");
+      },
+    });
+  });
+
+  // Edit button click handler
+  $(document).on("click", ".edit-btn", function () {
+    var id = $(this).data("id");
+
+    $.ajax({
+      url: "get_record_maricris.php",
+      type: "POST",
+      data: { id: id },
+      dataType: "json",
+      success: function (data) {
+        $("#record_id").val(data.id);
+        $("#sr_no").val(data.SR_DR);
+        $("#date1").val(data.date);
+        $("#activity").val(data.activity);
+        $("#quantity").val(data.no_of_pax);
+        $("#amount").val(data.amount);
+        $("#office").val(data.department);
+        $("#supplierDropdown").val(data.store);
+
+        // Store the current PO in a hidden field in case it's not in the dropdown
+        $("#current_po").val(data.PO_no);
+
+        // Try to select the PO in the dropdown
+        if (
+          $("#paymentDropdown option[value='" + data.PO_no + "']").length > 0
+        ) {
+          $("#paymentDropdown").val(data.PO_no);
+        } else {
+          // If PO is not in dropdown (e.g., depleted), add it temporarily
+          $("#paymentDropdown").append(
+            $("<option>", {
+              value: data.PO_no,
+              text:
+                "PO_no: " +
+                data.PO_no +
+                " - ₱" +
+                parseFloat(data.PO_amount).toFixed(2),
+              class: "temp-option",
+            })
+          );
+          $("#paymentDropdown").val(data.PO_no);
+        }
+
+        $("#remarks").val(data.Remarks);
+      },
+      error: function (xhr, status, error) {
+        console.error("AJAX Error:", error);
+        alert("An error occurred while fetching record details.");
       },
     });
   });
