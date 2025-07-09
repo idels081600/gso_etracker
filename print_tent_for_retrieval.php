@@ -5,6 +5,29 @@ require_once 'db_asset.php';
 $query = "SELECT * FROM tent WHERE status = 'For Retrieval' ORDER BY id DESC";
 $result = mysqli_query($conn, $query);
 
+// Separate entries for Sat/Sun of current week
+$week_start = date('Y-m-d', strtotime('monday this week'));
+$week_end = date('Y-m-d', strtotime('sunday this week'));
+$sat = date('Y-m-d', strtotime('saturday this week'));
+$sun = date('Y-m-d', strtotime('sunday this week'));
+
+$weekday_rows = [];
+$weekend_rows = [];
+if ($result && mysqli_num_rows($result) > 0) {
+    while ($row = mysqli_fetch_assoc($result)) {
+        $row_date = $row['retrieval_date'];
+        if ($row_date >= $week_start && $row_date <= $week_end) {
+            $dow = date('N', strtotime($row_date)); // 6=Sat, 7=Sun
+            if ($dow == 6 || $dow == 7) {
+                $weekend_rows[] = $row;
+            } else {
+                $weekday_rows[] = $row;
+            }
+        } else {
+            $weekday_rows[] = $row; // Out-of-week entries go to main
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -51,8 +74,8 @@ $result = mysqli_query($conn, $query);
             </tr>
         </thead>
         <tbody>
-            <?php if ($result && mysqli_num_rows($result) > 0): ?>
-                <?php while ($row = mysqli_fetch_assoc($result)): ?>
+            <?php if (count($weekday_rows) > 0): ?>
+                <?php foreach ($weekday_rows as $row): ?>
                     <tr>
                         <td><?= htmlspecialchars($row['date']) ?></td>
                         <td><?= htmlspecialchars($row['name']) ?></td>
@@ -61,7 +84,7 @@ $result = mysqli_query($conn, $query);
                         <td><?= htmlspecialchars($row['purpose']) ?></td>
                         <td><?= htmlspecialchars($row['location']) ?></td>
                     </tr>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             <?php else: ?>
                 <tr><td colspan="6">No tents for retrieval found.</td></tr>
             <?php endif; ?>
@@ -73,5 +96,39 @@ $result = mysqli_query($conn, $query);
             <div style="font-size: 15px;">CGSO HEAD</div>
         </div>
     </div>
+    <?php if (count($weekend_rows) > 0): ?>
+        <div style="page-break-before: always;"></div>
+        <h2>FOR RETRIEVAL TENT SCHEDULE (SATURDAY & SUNDAY)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Contact Number</th>
+                    <th>No. of Tents</th>
+                    <th>Purpose</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($weekend_rows as $row): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($row['date']) ?></td>
+                        <td><?= htmlspecialchars($row['name']) ?></td>
+                        <td><?= htmlspecialchars($row['Contact_no']) ?></td>
+                        <td><?= htmlspecialchars($row['no_of_tents']) ?></td>
+                        <td><?= htmlspecialchars($row['purpose']) ?></td>
+                        <td><?= htmlspecialchars($row['location']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <div style="width: 100%; margin-top: 60px;">
+            <div style="width: 350px; float: right; text-align: center;">
+                <div style="font-weight: bold; text-transform: uppercase; letter-spacing: 1px; text-decoration: underline;">CHRIS JOHN RENER G. TORRALBA</div>
+                <div style="font-size: 15px;">CGSO HEAD</div>
+            </div>
+        </div>
+    <?php endif; ?>
 </body>
 </html> 

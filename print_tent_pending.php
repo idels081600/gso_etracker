@@ -1,13 +1,29 @@
 <?php
 require_once 'db_asset.php';
 
-// Get today's date in Y-m-d format
-$today = date('Y-m-d');
-
-// Fetch all tents with status = 'Pending' and today's date
-$query = "SELECT * FROM tent WHERE status = 'Pending' AND date = '$today' ORDER BY id DESC";
+// Fetch all tents with status = 'Pending' for the current week
+$week_start = date('Y-m-d', strtotime('monday this week'));
+$week_end = date('Y-m-d', strtotime('sunday this week'));
+$query = "SELECT * FROM tent WHERE status = 'Pending' AND date >= '$week_start' AND date <= '$week_end' ORDER BY id DESC";
 $result = mysqli_query($conn, $query);
 
+$weekday_rows = [];
+$weekend_rows = [];
+if ($result && mysqli_num_rows($result) > 0) {
+    while ($row = mysqli_fetch_assoc($result)) {
+        $row_date = $row['date'];
+        if ($row_date >= $week_start && $row_date <= $week_end) {
+            $dow = date('N', strtotime($row_date)); // 6=Sat, 7=Sun
+            if ($dow == 6 || $dow == 7) {
+                $weekend_rows[] = $row;
+            } else {
+                $weekday_rows[] = $row;
+            }
+        } else {
+            $weekday_rows[] = $row; // Out-of-week entries go to main
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -40,7 +56,7 @@ $result = mysqli_query($conn, $query);
     </style>
 </head>
 <body>
-    <h2>PENDING TENT SCHEDULE (<?= htmlspecialchars($today) ?>)</h2>
+    <h2>PENDING TENT SCHEDULE (<?= htmlspecialchars($week_start) ?> to <?= htmlspecialchars($week_end) ?>)</h2>
     <button class="print-btn" onclick="window.print()">Print</button>
     <table>
         <thead>
@@ -54,8 +70,8 @@ $result = mysqli_query($conn, $query);
             </tr>
         </thead>
         <tbody>
-            <?php if ($result && mysqli_num_rows($result) > 0): ?>
-                <?php while ($row = mysqli_fetch_assoc($result)): ?>
+            <?php if (count($weekday_rows) > 0): ?>
+                <?php foreach ($weekday_rows as $row): ?>
                     <tr>
                         <td><?= htmlspecialchars($row['date']) ?></td>
                         <td><?= htmlspecialchars($row['name']) ?></td>
@@ -64,9 +80,9 @@ $result = mysqli_query($conn, $query);
                         <td><?= htmlspecialchars($row['purpose']) ?></td>
                         <td><?= htmlspecialchars($row['location']) ?></td>
                     </tr>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             <?php else: ?>
-                <tr><td colspan="6">No pending tents found for today.</td></tr>
+                <tr><td colspan="6">No pending tents found for this week.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>
@@ -76,5 +92,39 @@ $result = mysqli_query($conn, $query);
             <div style="font-size: 15px;">CGSO HEAD</div>
         </div>
     </div>
+    <?php if (count($weekend_rows) > 0): ?>
+        <div style="page-break-before: always;"></div>
+        <h2>PENDING TENT SCHEDULE (SATURDAY & SUNDAY)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Contact Number</th>
+                    <th>No. of Tents</th>
+                    <th>Purpose</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($weekend_rows as $row): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($row['date']) ?></td>
+                        <td><?= htmlspecialchars($row['name']) ?></td>
+                        <td><?= htmlspecialchars($row['Contact_no']) ?></td>
+                        <td><?= htmlspecialchars($row['no_of_tents']) ?></td>
+                        <td><?= htmlspecialchars($row['purpose']) ?></td>
+                        <td><?= htmlspecialchars($row['location']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <div style="width: 100%; margin-top: 60px;">
+            <div style="width: 350px; float: right; text-align: center;">
+                <div style="font-weight: bold; text-transform: uppercase; letter-spacing: 1px; text-decoration: underline;">CHRIS JOHN RENER G. TORRALBA</div>
+                <div style="font-size: 15px;">CGSO HEAD</div>
+            </div>
+        </div>
+    <?php endif; ?>
 </body>
 </html> 
