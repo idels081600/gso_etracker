@@ -31,29 +31,44 @@ if (
         $_POST['deadline']
     )
 ) {
-    // Calculate deadline date
-    $notice_proceed_date = $_POST['notice_proceed'];
-    $days = intval($_POST['deadline']);
-    $deadline_date = date('Y-m-d', strtotime($notice_proceed_date . ' + ' . ($days - 1) . ' days'));
+    // Use date_received from input if provided, else use current date and time
+    if (!empty($_POST['date_received'])) {
+        $date_received = $_POST['date_received'];
+        if (strlen($date_received) === 10) {
+            $date_received .= ' 00:00:00';
+        }
+    } else {
+        $date_received = date('Y-m-d H:i:s');
+    }
 
-    // Set date_received to current date and time
-    $date_received = date('Y-m-d H:i:s');
+    $notice_proceed_date = $_POST['notice_proceed'];
+    $deadline_raw = $_POST['deadline'];
+    if (is_numeric($deadline_raw)) {
+        $days = intval($deadline_raw);
+        $deadline_date = date('Y-m-d', strtotime($notice_proceed_date . ' + ' . ($days - 1) . ' days'));
+    } else {
+        $days = $deadline_raw;
+        $deadline_date = $deadline_raw;
+    }
+
+    $amount = isset($_POST['amount']) ? $_POST['amount'] : '';
 
     $stmt = $conn->prepare("INSERT INTO transmittal_bac (
-        ib_no, project_name, date_received, office, received_by, winning_bidders, NOA_no, COA_date, notice_proceed, deadline, transmittal_type, calendar_days, delete_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)");
+        ib_no, project_name, date_received, office, received_by, winning_bidders, amount, NOA_no, COA_date, notice_proceed, deadline, transmittal_type, calendar_days, delete_status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)");
     if (!$stmt) {
         log_error('Prepare failed: ' . $conn->error);
         $error_message = 'An error occurred while preparing the statement.';
     } else {
         $stmt->bind_param(
-            "sssssssssssi",
+            "sssssssssssss",
             $_POST['ib_no'],
             $_POST['project_name'],
             $date_received,
             $_POST['office'],
             $_POST['received_by'],
             $_POST['winning_bidders'],
+            $amount,
             $_POST['NOA_no'],
             $_POST['COA_date'],
             $_POST['notice_proceed'],

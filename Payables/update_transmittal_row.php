@@ -19,6 +19,7 @@ $required = [
     'office',
     'received_by',
     'winning_bidders',
+    'amount',
     'NOA_no',
     'COA_date',
     'notice_proceed',
@@ -34,27 +35,35 @@ foreach ($required as $field) {
 
 $id = intval($_POST['id']);
 $notice_proceed_date = $_POST['notice_proceed'];
-$days = intval($_POST['deadline']);
-$deadline_date = date('Y-m-d', strtotime($notice_proceed_date . ' + ' . ($days - 1) . ' days'));
+$deadline_raw = $_POST['deadline'];
+if (is_numeric($deadline_raw)) {
+    $days = intval($deadline_raw);
+    $deadline_date = date('Y-m-d', strtotime($notice_proceed_date . ' + ' . ($days - 1) . ' days'));
+} else {
+    $days = $deadline_raw;
+    $deadline_date = $deadline_raw;
+}
 
-$stmt = $conn->prepare("UPDATE transmittal_bac SET ib_no=?, project_name=?, office=?, received_by=?, winning_bidders=?, NOA_no=?, COA_date=?, notice_proceed=?, deadline=?, transmittal_type=? WHERE id=?");
+$stmt = $conn->prepare("UPDATE transmittal_bac SET ib_no=?, project_name=?, office=?, received_by=?, winning_bidders=?, amount=?, NOA_no=?, COA_date=?, notice_proceed=?, deadline=?, transmittal_type=?, calendar_days=? WHERE id=?");
 if (!$stmt) {
     log_error('Prepare failed: ' . $conn->error);
     echo json_encode(['success' => false, 'error' => 'Prepare failed: ' . $conn->error]);
     exit;
 }
 $stmt->bind_param(
-    "ssssssssssi",
+    "ssssssssssssi",
     $_POST['ib_no'],
     $_POST['project_name'],
     $_POST['office'],
     $_POST['received_by'],
     $_POST['winning_bidders'],
+    $_POST['amount'],
     $_POST['NOA_no'],
     $_POST['COA_date'],
     $_POST['notice_proceed'],
     $deadline_date,
     $_POST['transmittal_type'],
+    $days,
     $id
 );
 if (!$stmt->execute()) {

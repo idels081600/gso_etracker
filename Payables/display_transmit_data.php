@@ -10,6 +10,7 @@ function display_transmittal_bac_data() {
             echo '<tr>';
             echo '<td>' . htmlspecialchars($row['ib_no']) . '</td>';
             echo '<td>' . htmlspecialchars($row['project_name']) . '</td>';
+            echo '<td>' . htmlspecialchars($row['amount']) . '</td>';
             echo '<td>' . htmlspecialchars($row['date_received']) . '</td>';
             echo '<td>' . htmlspecialchars($row['office']) . '</td>';
             echo '<td>' . htmlspecialchars($row['received_by']) . '</td>';

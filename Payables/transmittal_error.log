@@ -367,3 +367,136 @@
     [deadline] => 10
 )
 
+[2025-07-09 05:24:43] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123 
+    [project_name] => testing
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [NOA_no] => 123
+    [COA_date] => 2025-07-09
+    [notice_proceed] => 2025-07-09
+    [deadline] => 2
+)
+
+[2025-07-09 05:25:03] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123 
+    [project_name] => testing
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [NOA_no] => 123
+    [COA_date] => 2025-07-09
+    [notice_proceed] => 2025-07-09
+    [deadline] => 2
+)
+
+[2025-07-09 05:25:22] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123
+    [project_name] => testing
+    [office] => SWMO, ALERT, GSO
+    [received_by] => Mae Angelie Bacullo
+    [winning_bidders] => bq
+    [NOA_no] => 123
+    [COA_date] => 2025-07-09
+    [notice_proceed] => 2025-07-09
+    [deadline] => as need
+)
+
+[2025-07-09 05:25:53] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123
+    [project_name] => testing
+    [office] => SWMO, ALERT, GSO
+    [received_by] => Mae Angelie Bacullo
+    [winning_bidders] => bq
+    [NOA_no] => 123
+    [COA_date] => 2025-07-09
+    [notice_proceed] => 2025-07-09
+    [deadline] => as need
+)
+
+[2025-07-09 05:26:35] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123
+    [project_name] => GSO BUilDing
+    [office] => SWMO, ALERT, GSO
+    [received_by] => ako
+    [winning_bidders] => bq
+    [NOA_no] => 123
+    [COA_date] => 2025-07-09
+    [notice_proceed] => 2025-07-09
+    [deadline] => 2
+)
+
+[2025-07-09 05:30:26] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123
+    [project_name] => GSO BUilDing extension
+    [date_received] => 2025-07-07
+    [office] => SWMO, ALERT, GSO
+    [received_by] => Jan Vincent Nagal
+    [winning_bidders] => bq
+    [NOA_no] => 123
+    [COA_date] => 2025-07-09
+    [notice_proceed] => 2025-07-09
+    [deadline] => as needed
+)
+
+[2025-07-09 05:36:55] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123 
+    [project_name] => testing
+    [date_received] => 2025-07-09
+    [office] =>  CMO
+    [received_by] => Jan Vincent Nagal
+    [winning_bidders] => 123
+    [amount] => 1000
+    [NOA_no] => 123
+    [COA_date] => 2025-07-09
+    [notice_proceed] => 2025-07-09
+    [deadline] => as needed
+)
+
+[2025-07-09 05:37:31] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123 
+    [project_name] => testing
+    [date_received] => 2025-07-09
+    [office] =>  CMO
+    [received_by] => Jan Vincent Nagal
+    [winning_bidders] => 123
+    [amount] => 1000
+    [NOA_no] => 123
+    [COA_date] => 2025-07-09
+    [notice_proceed] => 2025-07-09
+    [deadline] => as needed
+)
+
+[2025-07-09 05:37:52] POST data: Array
+(
+    [transmittal_type] => Goods
+    [ib_no] => 123 
+    [project_name] => GSO BUilDing
+    [date_received] => 2025-07-09
+    [office] => SWMO, ALERT, GSO
+    [received_by] => Jan Vincent Nagal
+    [winning_bidders] => bq
+    [amount] => 1000
+    [NOA_no] => 123
+    [COA_date] => 2025-07-09
+    [notice_proceed] => 2025-07-09
+    [deadline] => as needed
+)
+
