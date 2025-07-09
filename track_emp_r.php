@@ -218,7 +218,7 @@ if (isset($_POST['undo_delete'])) {
       <div class="col-md-3">
         <div class="input-group mb-4 mt-5" style="display: flex; align-items: left;">
           <div class="input-group-append" id="btns" style="margin-left: 0px; display: flex; align-items: center;">
-            <a href="export.php" class="btn btn-success btn-sm" style="margin: 5px;">Export</a>
+            <a href="export_r.php" class="btn btn-success btn-sm" style="margin: 5px;">Export</a>
             <form method="post" action="" style="margin-right: 5px;">
               <button type="submit" name="delete_all" class="btn btn-danger btn-sm" onclick="confirmDelete()">Delete</button>
               <input type="hidden" name="confirm" id="confirm" value="no">
