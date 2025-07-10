@@ -24,18 +24,46 @@ if ($result && mysqli_num_rows($result) > 0) {
         }
     }
 }
+
+// Display today's pending tents (weekdays only)
+$today = date('Y-m-d');
+$today_rows = array_filter($weekday_rows, function ($row) use ($today) {
+    return $row['date'] === $today;
+});
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Print Tent Pending List</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h2 { text-align: center; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #333; padding: 8px; text-align: center; }
-        th { background: #f2f2f2; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background: #f2f2f2;
+        }
+
         .print-btn {
             background: #28a745;
             color: #fff;
@@ -47,17 +75,22 @@ if ($result && mysqli_num_rows($result) > 0) {
             margin-bottom: 16px;
             transition: background 0.2s;
         }
+
         .print-btn:hover {
             background: #218838;
         }
+
         @media print {
-            button { display: none; }
+            button {
+                display: none;
+            }
         }
     </style>
 </head>
+<button class="print-btn" onclick="window.print()">Print</button>
+
 <body>
-    <h2>PENDING TENT SCHEDULE (<?= htmlspecialchars($week_start) ?> to <?= htmlspecialchars($week_end) ?>)</h2>
-    <button class="print-btn" onclick="window.print()">Print</button>
+    <h2>PENDING TENT SCHEDULE FOR TODAY (<?= htmlspecialchars($today) ?>)</h2>
     <table>
         <thead>
             <tr>
@@ -70,8 +103,8 @@ if ($result && mysqli_num_rows($result) > 0) {
             </tr>
         </thead>
         <tbody>
-            <?php if (count($weekday_rows) > 0): ?>
-                <?php foreach ($weekday_rows as $row): ?>
+            <?php if (count($today_rows) > 0): ?>
+                <?php foreach ($today_rows as $row): ?>
                     <tr>
                         <td><?= htmlspecialchars($row['date']) ?></td>
                         <td><?= htmlspecialchars($row['name']) ?></td>
@@ -82,7 +115,9 @@ if ($result && mysqli_num_rows($result) > 0) {
                     </tr>
                 <?php endforeach; ?>
             <?php else: ?>
-                <tr><td colspan="6">No pending tents found for this week.</td></tr>
+                <tr>
+                    <td colspan="6">No pending tents found for today.</td>
+                </tr>
             <?php endif; ?>
         </tbody>
     </table>
@@ -127,4 +162,5 @@ if ($result && mysqli_num_rows($result) > 0) {
         </div>
     <?php endif; ?>
 </body>
-</html> 
+
+</html>

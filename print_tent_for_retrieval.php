@@ -5,6 +5,10 @@ require_once 'db_asset.php';
 $query = "SELECT * FROM tent WHERE status = 'For Retrieval' ORDER BY id DESC";
 $result = mysqli_query($conn, $query);
 
+// Fetch weekend tents with status = 'Installed'
+$weekend_query = "SELECT * FROM tent WHERE status = 'Installed' ORDER BY id DESC";
+$weekend_result = mysqli_query($conn, $weekend_query);
+
 // Separate entries for Sat/Sun of current week
 $week_start = date('Y-m-d', strtotime('monday this week'));
 $week_end = date('Y-m-d', strtotime('sunday this week'));
@@ -25,6 +29,19 @@ if ($result && mysqli_num_rows($result) > 0) {
             }
         } else {
             $weekday_rows[] = $row; // Out-of-week entries go to main
+        }
+    }
+}
+
+// Add weekend entries with status = 'Installed'
+if ($weekend_result && mysqli_num_rows($weekend_result) > 0) {
+    while ($row = mysqli_fetch_assoc($weekend_result)) {
+        $row_date = $row['retrieval_date'];
+        if ($row_date >= $week_start && $row_date <= $week_end) {
+            $dow = date('N', strtotime($row_date)); // 6=Sat, 7=Sun
+            if ($dow == 6 || $dow == 7) {
+                $weekend_rows[] = $row;
+            }
         }
     }
 }
