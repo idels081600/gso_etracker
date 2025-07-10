@@ -16,11 +16,10 @@ function get_vehicles_list()
     return $vehicles;
 }
 
-
 function get_motorpool_repairs()
 {
     global $conn;
-    $query = "SELECT * FROM motorpool_repair ORDER BY id DESC";
+    $query = "SELECT * FROM motorpool_repair WHERE status IN ('Pending', 'In Progress') ORDER BY id DESC";
     $result = mysqli_query($conn, $query);
 
     // Store repairs in an array
@@ -33,6 +32,8 @@ function get_motorpool_repairs()
 
     return $repairs;
 }
+
+
 function count_daily_repairs()
 {
     global $conn;
