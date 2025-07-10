@@ -73,7 +73,7 @@
   }
 
   .modal-body {
-    max-height: 80vh;
+    max-height: 90vh;
     overflow-y: auto;
   }
 
@@ -89,7 +89,6 @@
   }
   .table-fixed th,
   .table-fixed td {
-   
     font-size: 10px;
   }
 }
@@ -107,4 +106,20 @@
 .box.selected {
   outline: 2px solid #000;
   outline-offset: -2px;
+}
+/* Highlight today's records */
+.today-record {
+  background-color: #fff3cd !important; /* Light yellow background */
+  border-left: 4px solid #ffc107 !important; /* Yellow left border */
+}
+
+.today-record:hover {
+  background-color: #ffeaa7 !important; /* Slightly darker yellow on hover */
+}
+
+/* Optional: Add a small badge or indicator for today's records */
+.today-record td:first-child::before {
+  content: "📅 ";
+  color: #856404;
+  font-weight: bold;
 }

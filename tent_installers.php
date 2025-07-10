@@ -47,41 +47,54 @@ if (!isset($_SESSION['username'])) {
                     <?php
                     require_once 'db_asset.php';
 
-                    // First fetch Pending status
+                    // Get today's date
+                    $today = date('Y-m-d');
+
+                    // First fetch Pending status (unchanged)
                     $query_pending = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date, t.no_of_tents
              FROM tent t 
-             WHERE t.status = 'Pending'";
+             WHERE t.status = 'Pending'
+             ORDER BY t.date DESC";
                     $result_pending = mysqli_query($conn, $query_pending);
 
-                    // Then fetch Installed status
-                    $query_installed = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date, t.no_of_tents
+                    // Fetch For Retrieval status - prioritize today's date
+                    $query_for_retrieval = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.retrieval_date, t.no_of_tents
+           FROM tent t 
+           WHERE t.status = 'For Retrieval'
+           ORDER BY 
+               CASE WHEN t.retrieval_date = '$today' THEN 0 ELSE 1 END,
+               t.retrieval_date DESC";
+                    $result_for_retrieval = mysqli_query($conn, $query_for_retrieval);
+
+                    // Fetch Installed status - prioritize today's date
+                    $query_installed = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.retrieval_date, t.no_of_tents
             FROM tent t 
-            WHERE t.status = 'Installed'";
+            WHERE t.status = 'Installed'
+            ORDER BY 
+                CASE WHEN t.retrieval_date = '$today' THEN 0 ELSE 1 END,
+                t.retrieval_date DESC";
                     $result_installed = mysqli_query($conn, $query_installed);
 
-                    // Finally fetch Retrieved status
+                    // Fetch Retrieved status (unchanged)
                     $query_retrieved = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date, t.no_of_tents
            FROM tent t 
-           WHERE t.status = 'Retrieved'";
+           WHERE t.status = 'Retrieved'
+           ORDER BY t.date DESC";
                     $result_retrieved = mysqli_query($conn, $query_retrieved);
-
-                    // For Retrieval status (keeping this as it was in your original query)
-                    $query_for_retrieval = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date, t.no_of_tents
-           FROM tent t 
-           WHERE t.status = 'For Retrieval'";
-                    $result_for_retrieval = mysqli_query($conn, $query_for_retrieval);
 
                     $total_rows = mysqli_num_rows($result_pending) + mysqli_num_rows($result_installed) +
                         mysqli_num_rows($result_retrieved) + mysqli_num_rows($result_for_retrieval);
 
                     if ($total_rows > 0) {
-                        // Display For Retrieval records
+                        // Display For Retrieval records (now sorted with today's date first)
                         while ($row = mysqli_fetch_assoc($result_for_retrieval)) {
-                            echo "<tr class='for-retrieval-row'>";
+                            // Add a CSS class to highlight today's records
+                            $todayClass = ($row['retrieval_date'] == $today) ? 'today-record' : '';
+                            echo "<tr class='for-retrieval-row $todayClass'>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['date']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['retrieval_date']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['status']) . "</td>";
                             echo '<td class="text-right">
                 <button class="btn btn-primary"
@@ -92,7 +105,7 @@ if (!isset($_SESSION['username'])) {
                     data-address="' . htmlspecialchars($row['location']) . '"
                     data-contact="' . htmlspecialchars($row['contact_no']) . '"
                     data-no_of_tents="' . htmlspecialchars($row['no_of_tents']) . '"
-                    data-date="' . htmlspecialchars($row['date']) . '"
+                    data-date="' . htmlspecialchars($row['retrieval_date']) . '"
                     data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
                     data-status="' . htmlspecialchars($row['status']) . '">
                     Edit
@@ -100,13 +113,16 @@ if (!isset($_SESSION['username'])) {
             </td>';
                             echo "</tr>";
                         }
-                        // Display Installed records
+                        
+                        // Display Installed records (now sorted with today's date first)
                         while ($row = mysqli_fetch_assoc($result_installed)) {
-                            echo "<tr class='installed-row'>";
+                            // Add a CSS class to highlight today's records
+                            $todayClass = ($row['retrieval_date'] == $today) ? 'today-record' : '';
+                            echo "<tr class='installed-row $todayClass'>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['date']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['retrieval_date']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['status']) . "</td>";
                             echo '<td class="text-right">
                 <button class="btn btn-primary"
@@ -117,7 +133,7 @@ if (!isset($_SESSION['username'])) {
                     data-address="' . htmlspecialchars($row['location']) . '"
                     data-contact="' . htmlspecialchars($row['contact_no']) . '"
                     data-no_of_tents="' . htmlspecialchars($row['no_of_tents']) . '"
-                    data-date="' . htmlspecialchars($row['date']) . '"
+                    data-date="' . htmlspecialchars($row['retrieval_date']) . '"
                     data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
                     data-status="' . htmlspecialchars($row['status']) . '">
                     Edit
@@ -125,6 +141,7 @@ if (!isset($_SESSION['username'])) {
             </td>';
                             echo "</tr>";
                         }
+                        
                         // Display Pending records (hidden by default, shown only for Today)
                         while ($row = mysqli_fetch_assoc($result_pending)) {
                             echo "<tr class='pending-row'>";
@@ -150,6 +167,7 @@ if (!isset($_SESSION['username'])) {
             </td>';
                             echo "</tr>";
                         }
+                        
                         if (mysqli_num_rows($result_for_retrieval) + mysqli_num_rows($result_installed) + mysqli_num_rows($result_pending) == 0) {
                             echo "<tr><td colspan='6'>No data found</td></tr>";
                         }
@@ -158,8 +176,6 @@ if (!isset($_SESSION['username'])) {
                     }
                     ?>
                 </tbody>
-
-
             </table>
         </div>
     </div>
@@ -228,7 +244,7 @@ if (!isset($_SESSION['username'])) {
                                         $boxColor = 'background: #007bff;'; // Blue
                                         break;
                                     case 'For Retrieval':
-                                        $boxColor = 'background:rgb(212, 113, 0);'; // Blue
+                                        $boxColor = 'background:rgb(212, 113, 0);'; // Orange
                                         break;
                                     default:
                                         $boxColor = 'background: #ddd;'; // Default gray
