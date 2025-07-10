@@ -1,10 +1,13 @@
 <?php
 header('Content-Type: application/json');
 
-// Enable error reporting for debugging
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// DISABLE error reporting for production to prevent HTML output
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(0);
+
+// Start output buffering to catch any unexpected output
+ob_start();
 
 require_once 'logi_db.php'; // Adjust path as needed based on your database connection file location
 
@@ -26,14 +29,24 @@ try {
     $office_id = intval($_POST['officeId']);
     $items = $_POST['items'];
     $quantities = $_POST['quantities'];
-    $po_numbers = $_POST['po_numbers'];
     $assigned_dates = $_POST['assigned_dates'];
     $notes = $_POST['notes'] ?? [];
 
     // Validate arrays have same length
     $item_count = count($items);
-    if (count($quantities) !== $item_count || count($po_numbers) !== $item_count || count($assigned_dates) !== $item_count) {
+    if (count($quantities) !== $item_count || count($assigned_dates) !== $item_count) {
         throw new Exception('Form data mismatch. Please try again.');
+    }
+
+    // Ensure po_numbers array exists and has the right length
+    if (!isset($_POST['po_numbers']) || !is_array($_POST['po_numbers'])) {
+        $po_numbers = array_fill(0, $item_count, '');
+    } else {
+        $po_numbers = $_POST['po_numbers'];
+        // Pad array if it's shorter than expected
+        while (count($po_numbers) < $item_count) {
+            $po_numbers[] = '';
+        }
     }
 
     // Start transaction
@@ -59,10 +72,15 @@ try {
             $assigned_date = date('Y-m-d');
         }
 
+        // Set default PO number if empty
+        if (empty($po_number)) {
+            $po_number = 'N/A';
+        }
+
         // Get item details
         $item_query = "SELECT item_name, unit FROM inventory_items WHERE item_no = ?";
         $item_stmt = mysqli_prepare($conn, $item_query);
-
+        
         if (!$item_stmt) {
             throw new Exception('Failed to prepare item query: ' . mysqli_error($conn));
         }
@@ -80,20 +98,20 @@ try {
 
         // Insert new record directly
         $insert_query = "INSERT INTO office_balance_items (
-            office_balance_id, 
-            item_no, 
-            item_name, 
-            quantity, 
-            unit, 
-            po_number, 
-            assigned_date, 
-            status, 
+            office_balance_id,
+            item_no,
+            item_name,
+            quantity,
+            unit,
+            po_number,
+            assigned_date,
+            status,
             notes,
             created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', ?, NOW())";
 
         $insert_stmt = mysqli_prepare($conn, $insert_query);
-
+        
         if (!$insert_stmt) {
             throw new Exception('Failed to prepare insert query: ' . mysqli_error($conn));
         }
@@ -116,6 +134,7 @@ try {
             mysqli_stmt_close($insert_stmt);
             continue;
         }
+
         mysqli_stmt_close($insert_stmt);
 
         $assigned_items[] = [
@@ -140,6 +159,9 @@ try {
         $success_message .= ". Some items had issues: " . implode(', ', $errors);
     }
 
+    // Clear any unexpected output before sending JSON
+    ob_clean();
+
     // Return success response
     $response = [
         'success' => true,
@@ -149,12 +171,16 @@ try {
     ];
 
     echo json_encode($response);
+
 } catch (Exception $e) {
     // Rollback transaction on error
     if (isset($conn)) {
         mysqli_rollback($conn);
         mysqli_autocommit($conn, true);
     }
+
+    // Clear any unexpected output before sending JSON
+    ob_clean();
 
     // Return error response
     $response = [
@@ -164,11 +190,18 @@ try {
 
     echo json_encode($response);
 
-    // Log the error for debugging
+    // Log the error for debugging (this won't interfere with JSON output)
     error_log("Error in Logi_assign_supplies.php: " . $e->getMessage());
+
+} finally {
+    // Close database connection
+    if (isset($conn)) {
+        mysqli_close($conn);
+    }
+    
+    // End output buffering
+    ob_end_flush();
 }
 
-// Close database connection
-if (isset($conn)) {
-    mysqli_close($conn);
-}
+exit;
+?>

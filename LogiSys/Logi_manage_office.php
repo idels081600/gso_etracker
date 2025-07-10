@@ -39,7 +39,7 @@ function getStatusBadge($status)
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
@@ -79,6 +79,9 @@ function getStatusBadge($status)
                                             </button>
                                             <button type="button" class="btn btn-primary btn-sm" style="color: white;" data-bs-toggle="modal" data-bs-target="#assignSuppliesModal">
                                                 <i class="fas fa-box"></i> Assign Supplies
+                                            </button>
+                                            <button type="button" class="btn btn-warning btn-sm" style="color: white;" data-bs-toggle="modal" data-bs-target="#manageSuppliesModal">
+                                                <i class="fas fa-cogs"></i> Manage Supplies
                                             </button>
                                             <button type="button" class="btn btn-info btn-sm" style="color: black;" id="printBtn">
                                                 <i class="fas fa-print"></i> Print Report
@@ -312,6 +315,10 @@ function getStatusBadge($status)
                                             <input type="number" class="form-control" name="quantities[]" min="1" required>
                                         </div>
                                         <div class="col-md-2">
+                                            <label class="form-label">PO Number <span class="text-muted">(Optional)</span></label>
+                                            <input type="text" class="form-control" name="po_numbers[]" placeholder="PO-2024-001 (optional)">
+                                        </div>
+                                        <div class="col-md-2">
                                             <label class="form-label">Date Assigned</label>
                                             <input type="date" class="form-control" name="assigned_dates[]" value="<?= date('Y-m-d') ?>">
                                         </div>
@@ -338,7 +345,7 @@ function getStatusBadge($status)
                         <div class="mb-3">
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle"></i>
-                                <strong>Note:</strong> Make sure the PO number is valid and the quantities don't exceed available inventory.
+                                <strong>Note:</strong> PO numbers are optional. Make sure the quantities don't exceed available inventory.
                             </div>
                         </div>
                     </div>
@@ -353,7 +360,128 @@ function getStatusBadge($status)
         </div>
     </div>
 
-    <!-- Office Details Modal -->
+    <!-- Manage Supplies Modal -->
+    <div class="modal fade" id="manageSuppliesModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Manage Common Use Supplies</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Search Items Section -->
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">Search & Select Items</h6>
+                                    <button class="btn btn-sm btn-success" id="addSelectedItems" disabled>
+                                        <i class="fas fa-arrow-right"></i> Add Selected Items
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Search Bar -->
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" id="itemSearchInput" placeholder="Search items by name or item number...">
+                                        <button class="btn btn-outline-secondary" type="button" id="searchItemsBtn">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" type="button" id="clearSearchBtn">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Search Results Table -->
+                                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                        <table class="table table-sm table-hover">
+                                            <thead class="table-light sticky-top">
+                                                <tr>
+                                                    <th width="30">
+                                                        <input type="checkbox" id="selectAllSearchItems">
+                                                    </th>
+                                                    <th>Item No</th>
+                                                    <th>Item Name</th>
+                                                    <th>Unit</th>
+                                                    <th>Available Stock</th>
+                                                    <th>Quantity</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="searchItemsTable">
+                                                <tr>
+                                                    <td colspan="6" class="text-center text-muted">
+                                                        Use the search bar above to find items
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <!-- Common Use Items Section -->
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">Common Use Items</h6>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-primary" id="updateCommonItems" disabled>
+                                            <i class="fas fa-edit"></i> Update Selected
+                                        </button>
+                                        <button class="btn btn-danger" id="removeCommonItems" disabled>
+                                            <i class="fas fa-trash"></i> Remove Selected
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                        <table class="table table-sm table-hover">
+                                            <thead class="table-light sticky-top">
+                                                <tr>
+                                                    <th width="30">
+                                                        <input type="checkbox" id="selectAllCommonItems">
+                                                    </th>
+                                                    <th>Item No</th>
+                                                    <th>Item Name</th>
+                                                    <th>Quantity</th>
+                                                    <th>Status</th>
+                                                    <th>Date Added</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="commonItemsTable">
+                                                <tr>
+                                                    <td colspan="7" class="text-center text-muted">
+                                                        No common use items added yet
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="d-flex justify-content-between w-100">
+                        <div>
+                            <span class="text-muted">
+                                <span id="selectedItemsCount">0</span> items selected for common use
+                            </span>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" id="saveCommonUseChanges">
+                                <i class="fas fa-save"></i> Save All Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

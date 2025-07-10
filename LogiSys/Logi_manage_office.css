@@ -5,35 +5,59 @@
   margin-bottom: 20px;
   border-radius: 8px;
 }
+
 .main_content {
   margin-top: -2%;
   margin-left: 3%;
   padding: 5%;
+  background: #fff; /* White background */
+  color: #212529;   /* Dark text */
 }
 
 #secondContainer {
-  background-color: #e9ecef;
+  background-color: #fff; /* White background */
   padding: 20px;
   border-radius: 8px;
   margin-left: 100px;
-  width: 130%; /* Use viewport width for responsive sizing */
-  height: 100%; /* Fixed height; adjust as needed */
-  overflow-x: auto; /* Handle horizontal overflow */
+  width: 130%;
+  height: 100%;
+  overflow-x: auto;
+  color: #212529; /* Dark text */
+}
+
+.card {
+  background: #fff !important; /* White card background */
+  color: #212529 !important;   /* Dark text */
+  border: 1px solid #e0e0e0;
+}
+
+.card-header, .card-body {
+  background: #fff !important;
+  color: #212529 !important;
+}
+
+.modal-content {
+  background: #fff !important;
+  color: #212529 !important;
 }
 
 .table-responsive {
   border-radius: 8px;
   overflow: hidden;
+  background: #fff;
 }
 
 .table {
   margin-bottom: 0;
+  background: #fff;
+  color: #212529;
 }
 
 /* Custom styling for status badges */
 .badge {
   font-size: 0.75em;
 }
+
 .dropdown-menu {
   background-color: #ffffff !important;
   color: #000 !important;
@@ -50,33 +74,115 @@
 /* Media query for laptop screens */
 @media only screen and (min-width: 1024px) and (max-width: 1440px) {
   .tally {
-    width: 15vw; /* Slightly larger width for laptop screens */
-    min-width: 180px; /* Increased minimum width */
-    height: 120px; /* Slightly taller for better proportions */
-    padding: 1.2rem; /* Slightly more padding */
+    width: 15vw;
+    min-width: 180px;
+    height: 120px;
+    padding: 1.2rem;
   }
 
   #firstContainer {
-    gap: 15px; /* Adjust gap between tally containers */
-    padding: 25px; /* Slightly more padding for the container */
+    gap: 15px;
+    padding: 25px;
   }
 
   .sidebar {
-    width: 240px; /* Adjust sidebar width for laptops */
+    width: 240px;
   }
 
   .content,
   .main-content {
-    margin-left: 240px; /* Match sidebar width */
+    margin-left: 240px;
   }
 }
 
-/* Alternative: More specific laptop breakpoints */
 @media only screen and (min-width: 1024px) and (max-width: 1366px) {
-  /* Standard laptop screens (1024x768, 1366x768) */
   .tally {
     width: 16vw;
     min-width: 170px;
     height: 115px;
   }
+}
+
+.main_content .btn-success {
+  background-color: #4CAF50 !important;
+  border-color: #4CAF50 !important;
+  color: #fff !important;
+}
+.main_content .btn-success:hover, .main_content .btn-success:focus {
+  background-color: #43a047 !important;
+  border-color: #388e3c !important;
+}
+
+.main_content .btn-primary {
+  background-color: #1976D2 !important;
+  border-color: #1976D2 !important;
+  color: #fff !important;
+}
+.main_content .btn-primary:hover, .main_content .btn-primary:focus {
+  background-color: #1565c0 !important;
+  border-color: #0d47a1 !important;
+}
+
+.main_content .btn-info {
+  background-color: #29B6F6 !important;
+  border-color: #29B6F6 !important;
+  color: #fff !important;
+}
+.main_content .btn-info:hover, .main_content .btn-info:focus {
+  background-color: #039be5 !important;
+  border-color: #0288d1 !important;
+}
+
+.main_content .btn-danger {
+  background-color: #E53935 !important;
+  border-color: #E53935 !important;
+  color: #fff !important;
+}
+.main_content .btn-danger:hover, .main_content .btn-danger:focus {
+  background-color: #c62828 !important;
+  border-color: #b71c1c !important;
+}
+
+.main_content .btn-outline-primary {
+  background-color: #fff !important;
+  color: #1976D2 !important;
+  border-color: #1976D2 !important;
+}
+.main_content .btn-outline-primary:hover, .main_content .btn-outline-primary:focus {
+  background-color: #e3f2fd !important;
+  color: #1565c0 !important;
+  border-color: #1565c0 !important;
+}
+
+.main_content .btn-outline-danger {
+  background-color: #fff !important;
+  color: #E53935 !important;
+  border-color: #E53935 !important;
+}
+.main_content .btn-outline-danger:hover, .main_content .btn-outline-danger:focus {
+  background-color: #ffebee !important;
+  color: #c62828 !important;
+  border-color: #c62828 !important;
+}
+
+.main_content .btn-outline-success {
+  background-color: #fff !important;
+  color: #4CAF50 !important;
+  border-color: #4CAF50 !important;
+}
+.main_content .btn-outline-success:hover, .main_content .btn-outline-success:focus {
+  background-color: #e8f5e9 !important;
+  color: #388e3c !important;
+  border-color: #388e3c !important;
+}
+
+.main_content .btn-outline-info {
+  background-color: #fff !important;
+  color: #29B6F6 !important;
+  border-color: #29B6F6 !important;
+}
+.main_content .btn-outline-info:hover, .main_content .btn-outline-info:focus {
+  background-color: #e1f5fe !important;
+  color: #039be5 !important;
+  border-color: #039be5 !important;
 }

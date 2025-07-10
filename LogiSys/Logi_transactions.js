@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Search input event listener
   if (searchInput) {
     searchInput.addEventListener("input", function () {
-      const searchTerm = this.value.toLowerCase().trim();
+      const searchTerm = this.value.toLowerCase().trim(); 
 
       // Reset selection if user types after selecting
       if (isItemSelected && this.value !== selectedItem.item_name) {
@@ -753,3 +753,55 @@ if (stockOutForm) {
     });
   });
 }
+
+// Transaction search bar filter
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('transactionSearchInput');
+    const tableBody = document.getElementById('transactionsTableBody');
+    if (searchInput && tableBody) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let rowText = row.textContent.toLowerCase();
+                // Also specifically check cell 0 (date)
+                let dateText = '';
+                if (cells.length > 0) {
+                    dateText = cells[0].textContent.toLowerCase();
+                }
+                if (rowText.includes(searchTerm) || dateText.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+
+// Transaction type filter
+
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('transactionType');
+    const tableBody = document.getElementById('transactionsTableBody');
+    if (typeSelect && tableBody) {
+        typeSelect.addEventListener('change', function() {
+            const selectedType = this.value.toLowerCase();
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let typeText = '';
+                if (cells.length >= 7) {
+                    typeText = cells[7].textContent.trim().toLowerCase();
+                }
+                if (!selectedType || typeText.includes(selectedType)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});

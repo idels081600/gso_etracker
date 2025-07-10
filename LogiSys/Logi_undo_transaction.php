@@ -76,85 +76,55 @@ try {
         $current_balance = (int)$item['current_balance'];
         $transaction_quantity = (int)$transaction['quantity'];
         $previous_balance = (int)$transaction['previous_balance'];
-        $new_balance_from_transaction = (int)$transaction['new_balance'];
+        $transaction_type = strtolower(trim($transaction['transaction_type']));
 
-        // Determine the undo operation based on the original transaction
-        // If the transaction increased the balance, we need to decrease it
-        // If the transaction decreased the balance, we need to increase it
-        $undo_balance = 0;
-        $undo_reason = "";
+        if ($transaction_type === 'stock out' || $transaction_type === 'deduction') {
+            // Undo deduction: add quantity to previous_balance and current_balance
+            $new_previous_balance = $previous_balance + $transaction_quantity;
+            $new_current_balance = $current_balance + $transaction_quantity;
 
-        if ($new_balance_from_transaction > $previous_balance) {
-            // Original transaction was an addition (Stock In)
-            $undo_balance = $current_balance - $transaction_quantity;
-            $undo_reason = "Undo Stock In - " . $transaction['reason'];
-            
-            // Check if we have enough stock to undo
-            if ($undo_balance < 0) {
-                throw new Exception("Cannot undo transaction: Insufficient stock. Current balance: {$current_balance}, trying to remove: {$transaction_quantity}");
+            // Update inventory_items current_balance
+            $update_inventory_query = "UPDATE inventory_items SET current_balance = ? WHERE item_no = ?";
+            $update_stmt = mysqli_prepare($conn, $update_inventory_query);
+            if (!$update_stmt) {
+                throw new Exception("Database prepare error: " . mysqli_error($conn));
             }
+            mysqli_stmt_bind_param($update_stmt, "is", $new_current_balance, $transaction['item_no']);
+            if (!mysqli_stmt_execute($update_stmt)) {
+                throw new Exception("Failed to update inventory: " . mysqli_stmt_error($update_stmt));
+            }
+            mysqli_stmt_close($update_stmt);
+        } elseif ($transaction_type === 'stock in' || $transaction_type === 'addition') {
+            // Undo addition: deduct quantity from current_balance
+            $new_current_balance = $current_balance - $transaction_quantity;
+            if ($new_current_balance < 0) {
+                throw new Exception("Cannot undo transaction: Insufficient stock after deduction.");
+            }
+            $update_inventory_query = "UPDATE inventory_items SET current_balance = ? WHERE item_no = ?";
+            $update_stmt = mysqli_prepare($conn, $update_inventory_query);
+            if (!$update_stmt) {
+                throw new Exception("Database prepare error: " . mysqli_error($conn));
+            }
+            mysqli_stmt_bind_param($update_stmt, "is", $new_current_balance, $transaction['item_no']);
+            if (!mysqli_stmt_execute($update_stmt)) {
+                throw new Exception("Failed to update inventory: " . mysqli_stmt_error($update_stmt));
+            }
+            mysqli_stmt_close($update_stmt);
         } else {
-            // Original transaction was a deduction (Stock Out)
-            $undo_balance = $current_balance + $transaction_quantity;
-            $undo_reason = "Undo Stock Out - " . $transaction['reason'];
+            throw new Exception("Unsupported transaction type for undo operation.");
         }
 
-        // Update the inventory item balance
-        $update_inventory_query = "UPDATE inventory_items SET current_balance = ? WHERE item_no = ?";
-        $update_stmt = mysqli_prepare($conn, $update_inventory_query);
-        
-        if (!$update_stmt) {
+        // Delete the transaction from inventory_transactions
+        $delete_transaction_query = "DELETE FROM inventory_transactions WHERE id = ?";
+        $delete_stmt = mysqli_prepare($conn, $delete_transaction_query);
+        if (!$delete_stmt) {
             throw new Exception("Database prepare error: " . mysqli_error($conn));
         }
-
-        mysqli_stmt_bind_param($update_stmt, "is", $undo_balance, $transaction['item_no']);
-        
-        if (!mysqli_stmt_execute($update_stmt)) {
-            throw new Exception("Failed to update inventory: " . mysqli_stmt_error($update_stmt));
+        mysqli_stmt_bind_param($delete_stmt, "i", $transaction_id);
+        if (!mysqli_stmt_execute($delete_stmt)) {
+            throw new Exception("Failed to delete transaction: " . mysqli_stmt_error($delete_stmt));
         }
-        mysqli_stmt_close($update_stmt);
-
-        // Create a new transaction record for the undo operation
-        $undo_transaction_type = ($new_balance_from_transaction > $previous_balance) ? 'Stock Out' : 'Stock In';
-        $undo_quantity = $transaction_quantity;
-        
-        $insert_undo_query = "INSERT INTO inventory_transactions 
-                             (item_no, item_name, transaction_type, quantity, previous_balance, new_balance, reason, requestor, created_at) 
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-        
-        $insert_stmt = mysqli_prepare($conn, $insert_undo_query);
-        
-        if (!$insert_stmt) {
-            throw new Exception("Database prepare error: " . mysqli_error($conn));
-        }
-
-        $requestor = "System - Undo Transaction #" . $transaction_id;
-        
-        mysqli_stmt_bind_param($insert_stmt, "sssiiiss", 
-            $transaction['item_no'],
-            $transaction['item_name'],
-            $undo_transaction_type,
-            $undo_quantity,
-            $current_balance,
-            $undo_balance,
-            $undo_reason,
-            $requestor
-        );
-        
-        if (!mysqli_stmt_execute($insert_stmt)) {
-            throw new Exception("Failed to create undo transaction: " . mysqli_stmt_error($insert_stmt));
-        }
-        mysqli_stmt_close($insert_stmt);
-
-        // Mark the original transaction as undone (optional - you can add an 'undone' column to track this)
-        $mark_undone_query = "UPDATE inventory_transactions SET reason = CONCAT(reason, ' [UNDONE]') WHERE id = ?";
-        $mark_stmt = mysqli_prepare($conn, $mark_undone_query);
-        
-        if ($mark_stmt) {
-            mysqli_stmt_bind_param($mark_stmt, "i", $transaction_id);
-            mysqli_stmt_execute($mark_stmt);
-            mysqli_stmt_close($mark_stmt);
-        }
+        mysqli_stmt_close($delete_stmt);
 
         // Commit the transaction
         mysqli_commit($conn);
@@ -162,13 +132,13 @@ try {
         // Return success response
         $response = [
             'success' => true,
-            'message' => 'Transaction undone successfully',
+            'message' => 'Transaction undone and deleted successfully',
             'details' => [
                 'item_name' => $transaction['item_name'],
-                'original_quantity' => $transaction_quantity,
-                'previous_balance' => $current_balance,
-                'new_balance' => $undo_balance,
-                'undo_type' => $undo_transaction_type
+                'item_no' => $transaction['item_no'],
+                'quantity' => $transaction_quantity,
+                'transaction_type' => $transaction['transaction_type'],
+                'new_current_balance' => $new_current_balance
             ]
         ];
 

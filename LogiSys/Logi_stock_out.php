@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 
 try {
     // Validate required fields
-    $required_fields = ['itemNo', 'itemName', 'quantity', 'reason', 'previous_balance', 'new_balance', 'requestor_name'];
+    $required_fields = ['itemNo', 'itemName', 'quantity', 'reason', 'previous_balance', 'requestor_name'];
     foreach ($required_fields as $field) {
         if (!isset($_POST[$field]) || empty($_POST[$field])) {
             throw new Exception("Missing required field: $field");
@@ -19,21 +19,26 @@ try {
     $quantity = (int)$_POST['quantity'];
     $reason = mysqli_real_escape_string($conn, $_POST['reason']);
     $previous_balance = (int)$_POST['previous_balance'];
-    $new_balance = (int)$_POST['new_balance'];
     $requestor = mysqli_real_escape_string($conn, $_POST['requestor_name']);
     $transaction_type = 'DEDUCTION';
+
+    // Calculate new_balance if not provided
+    if (isset($_POST['new_balance']) && !empty($_POST['new_balance'])) {
+        $new_balance = (int)$_POST['new_balance'];
+        // Validate balance calculation if provided
+        if ($new_balance !== ($previous_balance - $quantity)) {
+            throw new Exception("Invalid balance calculation");
+        }
+    } else {
+        $new_balance = $previous_balance - $quantity;
+    }
 
     // Validate quantity
     if ($quantity <= 0) {
         throw new Exception("Quantity must be greater than 0");
     }
 
-    // Validate balance calculation
-    if ($new_balance !== ($previous_balance - $quantity)) {
-        throw new Exception("Invalid balance calculation");
-    }
-
-    // Validate sufficient stock
+    // Modified validation - now allows balance to go to zero, but not negative
     if ($new_balance < 0) {
         throw new Exception("Insufficient stock for this transaction");
     }
@@ -103,4 +108,4 @@ try {
 }
 
 $conn->close();
-?> 
+?>

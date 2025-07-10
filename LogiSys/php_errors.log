@@ -283,3 +283,91 @@
 
 [16-Jun-2025 07:41:59 Europe/Berlin] === ERROR IN ITEM ADDITION ===
 [16-Jun-2025 07:41:59 Europe/Berlin] Error message: Missing required field: rackNo
+[27-Jun-2025 10:33:39 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[27-Jun-2025 10:33:39 Europe/Berlin] Request Method: POST
+[27-Jun-2025 10:33:39 Europe/Berlin] Raw POST data: 
+[27-Jun-2025 10:33:39 Europe/Berlin] POST array: Array
+(
+    [itemNo] => 683
+    [itemName] => Hydraulic Oil
+    [balance] => 10
+    [rackNo] => 20
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[27-Jun-2025 10:33:39 Europe/Berlin] === RECEIVED FORM DATA ===
+[27-Jun-2025 10:33:39 Europe/Berlin] POST data: Array
+(
+    [itemNo] => 683
+    [itemName] => Hydraulic Oil
+    [balance] => 10
+    [rackNo] => 20
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[27-Jun-2025 10:33:39 Europe/Berlin] === SANITIZED DATA ===
+[27-Jun-2025 10:33:39 Europe/Berlin] Item No: 683
+[27-Jun-2025 10:33:39 Europe/Berlin] Item Name: Hydraulic Oil
+[27-Jun-2025 10:33:39 Europe/Berlin] Rack No: 20
+[27-Jun-2025 10:33:39 Europe/Berlin] Unit: pcs
+[27-Jun-2025 10:33:39 Europe/Berlin] Current Balance: 10
+[27-Jun-2025 10:33:39 Europe/Berlin] Description: 
+[27-Jun-2025 10:33:39 Europe/Berlin] Expiry Date: null
+[27-Jun-2025 10:33:39 Europe/Berlin] Expiry Alert Days: 30
+[27-Jun-2025 10:33:39 Europe/Berlin] Initial Status: Low Stock
+[27-Jun-2025 10:33:39 Europe/Berlin] Final Status: Low Stock
+[27-Jun-2025 10:33:39 Europe/Berlin] Expiry Status: 
+[27-Jun-2025 10:33:39 Europe/Berlin] Checking for existing item: SELECT id FROM inventory_items WHERE item_no = ?
+[27-Jun-2025 10:33:39 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[27-Jun-2025 10:33:39 Europe/Berlin] Item added successfully. Insert ID: 1094
+[27-Jun-2025 10:33:39 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1094,"item_data":{"item_no":"683","item_name":"Hydraulic Oil","rack_no":20,"unit":"pcs","current_balance":10,"status":"Low Stock","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}
+[27-Jun-2025 10:36:42 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[27-Jun-2025 10:36:42 Europe/Berlin] Request Method: POST
+[27-Jun-2025 10:36:42 Europe/Berlin] Raw POST data: 
+[27-Jun-2025 10:36:42 Europe/Berlin] POST array: Array
+(
+    [itemNo] => 684
+    [itemName] => Engine Oil (unleaded)
+    [balance] => 16
+    [rackNo] => 20
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 4 liters per bottle
+)
+
+[27-Jun-2025 10:36:42 Europe/Berlin] === RECEIVED FORM DATA ===
+[27-Jun-2025 10:36:42 Europe/Berlin] POST data: Array
+(
+    [itemNo] => 684
+    [itemName] => Engine Oil (unleaded)
+    [balance] => 16
+    [rackNo] => 20
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 4 liters per bottle
+)
+
+[27-Jun-2025 10:36:42 Europe/Berlin] === SANITIZED DATA ===
+[27-Jun-2025 10:36:42 Europe/Berlin] Item No: 684
+[27-Jun-2025 10:36:42 Europe/Berlin] Item Name: Engine Oil (unleaded)
+[27-Jun-2025 10:36:42 Europe/Berlin] Rack No: 20
+[27-Jun-2025 10:36:42 Europe/Berlin] Unit: pcs
+[27-Jun-2025 10:36:42 Europe/Berlin] Current Balance: 16
+[27-Jun-2025 10:36:42 Europe/Berlin] Description: 4 liters per bottle
+[27-Jun-2025 10:36:42 Europe/Berlin] Expiry Date: null
+[27-Jun-2025 10:36:42 Europe/Berlin] Expiry Alert Days: 30
+[27-Jun-2025 10:36:42 Europe/Berlin] Initial Status: Available
+[27-Jun-2025 10:36:42 Europe/Berlin] Final Status: Available
+[27-Jun-2025 10:36:42 Europe/Berlin] Expiry Status: 
+[27-Jun-2025 10:36:42 Europe/Berlin] Checking for existing item: SELECT id FROM inventory_items WHERE item_no = ?
+[27-Jun-2025 10:36:42 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[27-Jun-2025 10:36:42 Europe/Berlin] Item added successfully. Insert ID: 1095
+[27-Jun-2025 10:36:42 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1095,"item_data":{"item_no":"684","item_name":"Engine Oil (unleaded)","rack_no":20,"unit":"pcs","current_balance":16,"status":"Available","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}

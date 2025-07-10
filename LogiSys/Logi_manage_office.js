@@ -4,7 +4,7 @@ let supplyItemCount = 1;
 // Add new supply item
 document.getElementById("addSupplyItem").addEventListener("click", function () {
   supplyItemCount++;
-  const container = document.getElementById("suppliesContainer");
+  const container = document.getElementById("suppliesContainer"); 
   const newItem = container.querySelector(".supply-item").cloneNode(true);
 
   // Clear values
@@ -150,15 +150,31 @@ document
         try {
           const jsonData = JSON.parse(data);
           if (jsonData.success) {
-            alert("Office added successfully!");
-            location.reload();
+            Swal.fire({
+              icon: 'success',
+              title: 'Success',
+              text: 'Office added successfully!',
+              confirmButtonColor: '#3085d6'
+            }).then(() => {
+              location.reload();
+            });
           } else {
-            alert("Error: " + jsonData.message);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: jsonData.message,
+              confirmButtonColor: '#d33'
+            });
           }
         } catch (e) {
           console.error("JSON Parse Error:", e);
           console.error("Response was:", data);
-          alert("Server returned invalid response");
+          Swal.fire({
+            icon: 'error',
+            title: 'Server Error',
+            text: 'Server returned invalid response',
+            confirmButtonColor: '#d33'
+          });
         }
       })
       .catch((error) => {
@@ -172,13 +188,36 @@ document
   .addEventListener("submit", function (e) {
     e.preventDefault();
     const formData = new FormData(this);
-
+    
     fetch("Logi_assign_supplies.php", {
       method: "POST",
       body: formData,
     })
-      .then((response) => response.json())
+      .then((response) => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers.get('content-type')); 
+        
+        if (!response.ok) {
+          // For 500 errors, try to get the response text to see the actual error
+          return response.text().then(text => {
+            console.error('Server error response:', text);
+            throw new Error(`HTTP error! status: ${response.status}. Response: ${text.substring(0, 200)}...`);
+          });
+        }
+        
+        // Check if response is actually JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          return response.text().then(text => {
+            console.error('Expected JSON but received:', text);
+            throw new Error('Server returned non-JSON response: ' + text.substring(0, 100));
+          });
+        }
+        
+        return response.json();
+      })
       .then((data) => {
+        console.log('Success response:', data);
         if (data.success) {
           alert("Supplies assigned successfully!");
           location.reload();
@@ -187,7 +226,61 @@ document
         }
       })
       .catch((error) => {
-        console.error("Error:", error);
-        alert("Error assigning supplies");
+        console.error("Full error details:", error);
+        alert("Error assigning supplies: " + error.message);
       });
   });
+
+function deleteOffice(officeId) {
+    // Using SweetAlert2 for better confirmation dialog
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this! This will also delete all associated items.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading
+            Swal.fire({
+                title: 'Deleting...',
+                text: 'Please wait while we delete the office.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Send delete request
+            fetch('Logi_delete_office.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `office_id=${encodeURIComponent(officeId)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: data.message,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Error!', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error!', 'An error occurred while deleting the office.', 'error');
+            });
+        }
+    });
+}

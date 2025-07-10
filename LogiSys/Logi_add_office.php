@@ -61,19 +61,8 @@ try {
     if (mysqli_stmt_execute($insert_stmt)) {
         $office_id = mysqli_insert_id($conn);
 
-        // Log the activity (optional)
-        $log_query = "INSERT INTO office_balance_history (office_balance_item_id, action_type, notes, action_by, action_date) VALUES (?, 'Office Created', ?, ?, NOW())";
-        $log_stmt = mysqli_prepare($conn, $log_query);
-
-        if ($log_stmt) {
-            $action_by = 'Admin'; // You can get this from session
-            $notes = "Office '{$officeName}' created";
-            mysqli_stmt_bind_param($log_stmt, "iss", $office_id, $notes, $action_by);
-            mysqli_stmt_execute($log_stmt);
-            mysqli_stmt_close($log_stmt);
-        }
-
         mysqli_stmt_close($insert_stmt);
+        $insert_stmt = null;
 
         echo json_encode([
             'success' => true,
@@ -93,7 +82,7 @@ try {
     ]);
 } finally {
     // Close any remaining statements and connection
-    if (isset($insert_stmt)) {
+    if (isset($insert_stmt) && $insert_stmt !== null) {
         mysqli_stmt_close($insert_stmt);
     }
     if (isset($conn)) {

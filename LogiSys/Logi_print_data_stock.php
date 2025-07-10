@@ -36,8 +36,8 @@ for ($i = 0; $i < count($headers); $i++) {
 }
 $pdf->Ln();
 
-// Fetch all items
-$query = "SELECT item_no, rack_no, item_name, current_balance FROM inventory_items";
+// Fetch all items ordered by rack number only
+$query = "SELECT item_no, rack_no, item_name, current_balance FROM inventory_items ORDER BY rack_no ASC";
 $result = mysqli_query($conn, $query);
 
 // Table body styling
@@ -91,4 +91,4 @@ header('Content-Disposition: inline; filename="Inventory_Report.pdf"');
 
 // Output PDF for inline preview in browser
 $pdf->Output('I', 'Inventory_Report.pdf');
-?> 
+?>

@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const deleteBtn = document.getElementById("deleteItemBtn");
   const updateBtn = document.getElementById("updateItemBtn");
   const searchInput = document.getElementById("searchInput");
-
+ 
   selectAllCheckbox.addEventListener("change", function () {
     rowCheckboxes.forEach((checkbox) => {
       checkbox.checked = this.checked;
@@ -1184,4 +1184,38 @@ document.addEventListener("DOMContentLoaded", function () {
           console.error(error);
         });
     });
+});
+// Simple search functionality for balance update modal
+document.addEventListener('DOMContentLoaded', function() {
+  const balanceSearchInput = document.getElementById('balanceSearchInput');
+  const balanceSearchBtn = document.getElementById('balanceSearchBtn');
+  
+  function searchItems() {
+      const searchTerm = balanceSearchInput.value.toLowerCase();
+      const rows = document.querySelectorAll('#balanceItemsTableBody tr.balance-item-row');
+      
+      rows.forEach(row => {
+          const itemNo = row.cells[0].textContent.toLowerCase();
+          const itemName = row.cells[1].textContent.toLowerCase();
+          
+          if (itemNo.includes(searchTerm) || itemName.includes(searchTerm)) {
+              row.style.display = '';
+          } else {
+              row.style.display = 'none';
+          }
+      });
+  }
+  
+  // Search on button click
+  balanceSearchBtn.addEventListener('click', searchItems);
+  
+  // Search on Enter key
+  balanceSearchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+          searchItems();
+      }
+  });
+  
+  // Search as you type
+  balanceSearchInput.addEventListener('input', searchItems);
 });

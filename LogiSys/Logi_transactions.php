@@ -32,6 +32,9 @@ function getTransactionTypeBadge($type)
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <style>
+        .container { max-width: 75vw; }
+    </style>
 </head>
 
 <body>
@@ -104,26 +107,17 @@ function getTransactionTypeBadge($type)
                                 <label for="transactionType" class="form-label">Transaction Type</label>
                                 <select class="form-select form-select-sm" id="transactionType">
                                     <option value="">All Types</option>
-                                    <option value="Stock In">Stock In</option>
-                                    <option value="Stock Out">Stock Out</option>
-                                    <option value="Adjustment">Adjustment</option>
-                                    <option value="Transfer">Transfer</option>
+                                    <option value="Addition">Addition</option>
+                                    <option value="Deduction">Deduction</option>
                                 </select>
                             </div>
-                            <div class="col-md-3 d-flex align-items-end">
-                                <button type="button" class="btn btn-primary btn-sm me-2" id="filterBtn">
-                                    <i class="fas fa-filter"></i> Filter
-                                </button>
-                                <button type="button" class="btn btn-secondary btn-sm" id="clearFilterBtn">
-                                    <i class="fas fa-times"></i> Clear
-                                </button>
-                            </div>
+                         
                         </div>
 
                         <!-- Transactions Table -->
                         <div class="table-container">
                             <div class="table-responsive">
-                                <table class="table table-hover">
+                                <table class="table table-hover table-sm small">
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Date & Time</th>
