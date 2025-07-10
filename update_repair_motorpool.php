@@ -3,11 +3,21 @@ require_once 'db_asset.php';
 
 header('Content-Type: application/json');
 
-if ($_POST['edit_repair_id']) {
+if (isset($_POST['edit_repair_id']) && !empty($_POST['edit_repair_id'])) {
     $repair_id = mysqli_real_escape_string($conn, $_POST['edit_repair_id']);
     $plate_no = mysqli_real_escape_string($conn, $_POST['edit_vehicle_id']);
     $repair_date = mysqli_real_escape_string($conn, $_POST['edit_repair_date']);
-    $repair_type = mysqli_real_escape_string($conn, $_POST['edit_repair_type']);
+    
+    // Handle multiple repair types
+    if (isset($_POST['edit_repair_type']) && is_array($_POST['edit_repair_type'])) {
+        $repair_types = array_map(function($type) use ($conn) {
+            return mysqli_real_escape_string($conn, $type);
+        }, $_POST['edit_repair_type']);
+        $repair_type = implode(', ', $repair_types);
+    } else {
+        $repair_type = '';
+    }
+    
     $mileage = mysqli_real_escape_string($conn, $_POST['edit_mileage']);
     $parts_replaced = mysqli_real_escape_string($conn, $_POST['edit_parts_replaced']);
     $cost = mysqli_real_escape_string($conn, $_POST['edit_cost']);

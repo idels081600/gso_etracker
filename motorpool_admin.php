@@ -298,13 +298,11 @@ $office_counts_json = json_encode($office_counts);
                         <thead class="sticky-top bg-light border-bottom" style="border-bottom: 2px solid #dee2e6 !important;">
                             <tr>
                                 <th scope="col">Plate no.</th>
-                                <th scope="col">Model</th>
+
                                 <th scope="col">Date</th>
                                 <th scope="col">Office</th>
                                 <th scope="col">Repair Type</th>
-                                <th scope="col">mileage</th>
                                 <th scope="col">Parts Replaced</th>
-                                <th scope="col">Cost</th>
                                 <th scope="col">Remarks</th>
                                 <th scope="col">Status</th>
                                 <th scope="col">Actions</th>
@@ -318,13 +316,18 @@ $office_counts_json = json_encode($office_counts);
                             ?>
                                     <tr>
                                         <td><?php echo htmlspecialchars($repair['plate_no'] ?? ''); ?></td>
-                                        <td><?php echo htmlspecialchars($repair['car_model'] ?? ''); ?></td>
+
                                         <td><?php echo htmlspecialchars($repair['repair_date'] ?? ''); ?></td>
                                         <td><?php echo htmlspecialchars($repair['office'] ?? ''); ?></td>
                                         <td><?php echo htmlspecialchars($repair['repair_type'] ?? ''); ?></td>
-                                        <td><?php echo htmlspecialchars($repair['mileage'] ?? ''); ?></td>
-                                        <td><?php echo htmlspecialchars($repair['parts_replaced'] ?? ''); ?></td>
-                                        <td><?php echo '₱' . number_format($repair['cost'] ?? 0, 2); ?></td>
+                                        <td>
+                                            <?php
+                                            $parts = $repair['parts_replaced'] ?? '';
+                                            // Replace literal \r\n with actual line breaks, then convert to HTML
+                                            $parts = str_replace(['\\r\\n', '\\n', '\\r'], "\n", $parts);
+                                            echo nl2br(htmlspecialchars($parts));
+                                            ?>
+                                        </td>
                                         <td><?php echo htmlspecialchars($repair['remarks'] ?? ''); ?></td>
                                         <td>
                                             <form class="status-form" data-repair-id="<?php echo $repair['id']; ?>">
@@ -430,6 +433,7 @@ $office_counts_json = json_encode($office_counts);
         </div>
     </div>
     <!-- Edit Repair Modal -->
+    <!-- Edit Repair Modal -->
     <div class="modal fade" id="editRepairModal" tabindex="-1" aria-labelledby="editRepairModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -464,36 +468,95 @@ $office_counts_json = json_encode($office_counts);
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="edit_repair_type" class="form-label">Repair Type</label>
-                                <select class="form-select" id="edit_repair_type" name="edit_repair_type" required>
-                                    <option value="">Select Type</option>
-                                    <option value="Oil Change">Oil Change</option>
-                                    <option value="Brake Repair">Brake Repair</option>
-                                    <option value="Tire Replacement">Tire Replacement</option>
-                                    <option value="Battery Replacement">Battery Replacement</option>
-                                    <option value="Engine Tune-up">Engine Tune-up</option>
-                                    <option value="AC Repair">AC Repair</option>
-                                    <option value="Transmission Service">Transmission Service</option>
-                                    <option value="Suspension Repair">Suspension Repair</option>
-                                    <option value="Other">Other</option>
-                                </select>
+                                <label class="form-label">Repair Type</label>
+                                <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="AC Repair" id="edit_repair_ac">
+                                        <label class="form-check-label" for="edit_repair_ac">AC Repair</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Battery Replacement" id="edit_repair_battery">
+                                        <label class="form-check-label" for="edit_repair_battery">Battery Replacement</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Body Repair" id="edit_repair_body">
+                                        <label class="form-check-label" for="edit_repair_body">Body Repair</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Body Work" id="edit_repair_body_work">
+                                        <label class="form-check-label" for="edit_repair_body_work">Body Work</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Brake Repair" id="edit_repair_brake">
+                                        <label class="form-check-label" for="edit_repair_brake">Brake Repair</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Cooling System" id="edit_repair_cooling">
+                                        <label class="form-check-label" for="edit_repair_cooling">Cooling System</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Electrical Repair" id="edit_repair_electrical">
+                                        <label class="form-check-label" for="edit_repair_electrical">Electrical Repair</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Engine Repair" id="edit_repair_engine">
+                                        <label class="form-check-label" for="edit_repair_engine">Engine Repair</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Engine Tune-up" id="edit_repair_tuneup">
+                                        <label class="form-check-label" for="edit_repair_tuneup">Engine Tune-up</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Exhaust System" id="edit_repair_exhaust">
+                                        <label class="form-check-label" for="edit_repair_exhaust">Exhaust System</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Fuel System" id="edit_repair_fuel">
+                                        <label class="form-check-label" for="edit_repair_fuel">Fuel System</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Oil Change" id="edit_repair_oil">
+                                        <label class="form-check-label" for="edit_repair_oil">Oil Change</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Preventive Maintenance" id="edit_repair_preventive">
+                                        <label class="form-check-label" for="edit_repair_preventive">Preventive Maintenance</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Suspension Repair" id="edit_repair_suspension">
+                                        <label class="form-check-label" for="edit_repair_suspension">Suspension Repair</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Tire Replacement" id="edit_repair_tire">
+                                        <label class="form-check-label" for="edit_repair_tire">Tire Replacement</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Transmission Service" id="edit_repair_transmission">
+                                        <label class="form-check-label" for="edit_repair_transmission">Transmission Service</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="Other" id="edit_repair_other">
+                                        <label class="form-check-label" for="edit_repair_other">Other</label>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Select all applicable repair types</small>
                             </div>
                             <div class="col-md-6">
-                                <label for="edit_mileage" class="form-label">Current Mileage</label>
-                                <input type="number" class="form-control" id="edit_mileage" name="edit_mileage" min="0" required>
+                                <label for="edit_parts_replaced" class="form-label">Parts Replaced</label>
+                                <textarea class="form-control" id="edit_parts_replaced" name="edit_parts_replaced" rows="4" style="resize: vertical; min-height: 80px;" placeholder="Enter parts replaced (press Enter for new line)"></textarea>
                             </div>
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="edit_parts_replaced" class="form-label">Parts Replaced</label>
-                                <input type="text" class="form-control" id="edit_parts_replaced" name="edit_parts_replaced">
+                                <label for="edit_mileage" class="form-label">Current Mileage</label>
+                                <input type="number" class="form-control" id="edit_mileage" name="edit_mileage" min="0">
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_cost" class="form-label">Repair Cost</label>
                                 <div class="input-group">
                                     <span class="input-group-text">₱</span>
-                                    <input type="number" class="form-control" id="edit_cost" name="edit_cost" min="0" step="0.01" required>
+                                    <input type="number" class="form-control" id="edit_cost" name="edit_cost" min="0" step="0.01">
                                 </div>
                             </div>
                         </div>
@@ -503,20 +566,32 @@ $office_counts_json = json_encode($office_counts);
                                 <label for="edit_office" class="form-label">Office</label>
                                 <select class="form-select" id="edit_office" name="edit_office" required>
                                     <option value="">Select Office</option>
-                                    <option value="CGSO">CGSO</option>
-                                    <option value="CTO">CTO</option>
-                                    <option value="HRMO">HRMO</option>
-                                    <option value="PNP">PNP</option>
-                                    <option value="CMO">CMO</option>
-                                    <option value="CEE">CEE</option>
-                                    <option value="CVMO">CVMO</option>
-                                    <option value="CEO">CEO</option>
-                                    <option value="CHO">CHO</option>
-                                    <option value="CDRRMO">CDRRMO</option>
-                                    <option value="PDAO">PDAO</option>
-                                    <option value="ALERT">ALERT</option>
-                                    <option value="CAVO">CAVO</option>
                                     <option value="ADMIN">ADMIN</option>
+                                    <option value="ALERT">ALERT</option>
+                                    <option value="BFP">BFP</option>
+                                    <option value="BJMP">BJMP</option>
+                                    <option value="BPLO">BPLO</option>
+                                    <option value="CASSO">CASSO</option>
+                                    <option value="CAVI">CAVI</option>
+                                    <option value="CAVO">CAVO</option>
+                                    <option value="CDRRMO">CDRRMO</option>
+                                    <option value="CEE">CEE</option>
+                                    <option value="CEO">CEO</option>
+                                    <option value="CGSO">CGSO</option>
+                                    <option value="CHO">CHO</option>
+                                    <option value="CITY ADMIN">CITY ADMIN</option>
+                                    <option value="CMO">CMO</option>
+                                    <option value="CSWD">CSWD</option>
+                                    <option value="CTMO">CTMO</option>
+                                    <option value="CTO">CTO</option>
+                                    <option value="CVMO">CVMO</option>
+                                    <option value="DILG">DILG</option>
+                                    <option value="HRMO">HRMO</option>
+                                    <option value="OSCA">OSCA</option>
+                                    <option value="PDAO">PDAO</option>
+                                    <option value="PNP">PNP</option>
+                                    <option value="SP">SP</option>
+                                    <option value="TCWS">TCWS</option>
                                     <option value="Other">Other</option>
                                 </select>
                             </div>
@@ -527,6 +602,7 @@ $office_counts_json = json_encode($office_counts);
                                     <option value="PMS">PMS</option>
                                     <option value="REPAIR">REPAIR</option>
                                     <option value="RESCUE">RESCUE</option>
+                                    <option value="REPAIR & PMS">REPAIR & PMS</option>
                                 </select>
                             </div>
                         </div>
@@ -551,6 +627,7 @@ $office_counts_json = json_encode($office_counts);
             </div>
         </div>
     </div>
+
 
     <!-- Add Repair Modal -->
     <div class="modal fade" id="addRepairModal" tabindex="-1" aria-labelledby="addRepairModalLabel" aria-hidden="true">
@@ -585,35 +662,73 @@ $office_counts_json = json_encode($office_counts);
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="repair_type" class="form-label">Repair Type</label>
-                                <select class="form-select" id="repair_type" name="repair_type" required>
-                                    <option value="">Select Type</option>
-                                    <option value="Oil Change">Oil Change</option>
-                                    <option value="Brake Repair">Brake Repair</option>
-                                    <option value="Tire Replacement">Tire Replacement</option>
-                                    <option value="Battery Replacement">Battery Replacement</option>
-                                    <option value="Engine Tune-up">Engine Tune-up</option>
-                                    <option value="AC Repair">AC Repair</option>
-                                    <option value="Transmission Service">Transmission Service</option>
-                                    <option value="Suspension Repair">Suspension Repair</option>
-                                    <option value="Other">Other</option>
-                                </select>
+                                <label class="form-label">Repair Type</label>
+                                <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                    <div class="form-check">
+                                        <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="AC Repair" id="repair_ac">
+                                        <label class="form-check-label" for="repair_ac">AC Repair</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="Battery Replacement" id="repair_battery">
+                                        <label class="form-check-label" for="repair_battery">Battery Replacement</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="Body Repair" id="repair_body">
+                                        <label class="form-check-label" for="repair_body">Body Repair</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="Brake Repair" id="repair_brake">
+                                        <label class="form-check-label" for="repair_brake">Brake Repair</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="Engine Repair" id="repair_engine">
+                                        <label class="form-check-label" for="repair_engine">Engine Repair</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="Engine Tune-up" id="repair_tuneup">
+                                        <label class="form-check-label" for="repair_tuneup">Engine Tune-up</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="Oil Change" id="repair_oil">
+                                        <label class="form-check-label" for="repair_oil">Oil Change</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="Suspension Repair" id="repair_suspension">
+                                        <label class="form-check-label" for="repair_suspension">Suspension Repair</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="Tire Replacement" id="repair_tire">
+                                        <label class="form-check-label" for="repair_tire">Tire Replacement</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="Transmission Service" id="repair_transmission">
+                                        <label class="form-check-label" for="repair_transmission">Transmission Service</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="Other" id="repair_other">
+                                        <label class="form-check-label" for="repair_other">Other</label>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Select all applicable repair types</small>
                             </div>
                             <div class="col-md-6">
-                                <label for="mileage" class="form-label">Current Mileage</label>
-                                <input type="number" class="form-control" id="mileage" name="mileage" min="0" required>
+                                <label for="parts_replaced" class="form-label">Parts Replaced</label>
+                                <textarea class="form-control" id="parts_replaced" name="parts_replaced" rows="3" style="resize: vertical; min-height: 80px;" placeholder="Enter parts replaced (press Enter for new line)"></textarea>
                             </div>
+
+
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="parts_replaced" class="form-label">Parts Replaced</label>
-                                <input type="text" class="form-control" id="parts_replaced" name="parts_replaced">
+                                <label for="mileage" class="form-label">Current Mileage</label>
+                                <input type="number" class="form-control" id="mileage" name="mileage" min="0">
                             </div>
+
                             <div class="col-md-6">
                                 <label for="cost" class="form-label">Repair Cost</label>
                                 <div class="input-group">
                                     <span class="input-group-text">₱</span>
-                                    <input type="number" class="form-control" id="cost" name="cost" min="0" step="0.01" required>
+                                    <input type="number" class="form-control" id="cost" name="cost" min="0" step="0.01">
                                 </div>
                             </div>
                         </div>
@@ -622,22 +737,35 @@ $office_counts_json = json_encode($office_counts);
                                 <label for="office" class="form-label">Office</label>
                                 <select class="form-select" id="office" name="office" required>
                                     <option value="">Select Office</option>
-                                    <option value="CGSO">CGSO</option>
-                                    <option value="CTO">CTO</option>
-                                    <option value="HRMO">HRMO</option>
-                                    <option value="PNP">PNP</option>
-                                    <option value="CMO">CMO</option>
-                                    <option value="CEE">CEE</option>
-                                    <option value="CVMO">CVMO</option>
-                                    <option value="CEO">CEO</option>
-                                    <option value="CHO">CHO</option>
-                                    <option value="CDRRMO">CDRRMO</option>
-                                    <option value="PDAO">PDAO</option>
-                                    <option value="ALERT">ALERT</option>
-                                    <option value="CAVO">CAVO</option>
                                     <option value="ADMIN">ADMIN</option>
+                                    <option value="ALERT">ALERT</option>
+                                    <option value="BFP">BFP</option>
+                                    <option value="BJMP">BJMP</option>
+                                    <option value="BPLO">BPLO</option>
+                                    <option value="CASSO">CASSO</option>
+                                    <option value="CAVI">CAVI</option>
+                                    <option value="CAVO">CAVO</option>
+                                    <option value="CDRRMO">CDRRMO</option>
+                                    <option value="CEE">CEE</option>
+                                    <option value="CEO">CEO</option>
+                                    <option value="CGSO">CGSO</option>
+                                    <option value="CHO">CHO</option>
+                                    <option value="CITY ADMIN">CITY ADMIN</option>
+                                    <option value="CMO">CMO</option>
+                                    <option value="CSWD">CSWD</option>
+                                    <option value="CTMO">CTMO</option>
+                                    <option value="CTO">CTO</option>
+                                    <option value="CVMO">CVMO</option>
+                                    <option value="DILG">DILG</option>
+                                    <option value="HRMO">HRMO</option>
+                                    <option value="OSCA">OSCA</option>
+                                    <option value="PDAO">PDAO</option>
+                                    <option value="PNP">PNP</option>
+                                    <option value="SP">SP</option>
+                                    <option value="TCWS">TCWS</option>
                                     <option value="Other">Other</option>
                                 </select>
+
                             </div>
                             <div class="col-md-6">
                                 <label for="notes" class="form-label">Service Type</label>
@@ -646,6 +774,7 @@ $office_counts_json = json_encode($office_counts);
                                     <option value="PMS">PMS</option>
                                     <option value="REPAIR">REPAIR</option>
                                     <option value="RESCUE">RESCUE</option>
+                                    <option value="REPAIR & PMS">REPAIR & PMS</option>
                                 </select>
                             </div>
                         </div>

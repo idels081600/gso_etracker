@@ -620,17 +620,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Function to populate edit modal
   function populateEditModal(repair) {
+    // Basic fields
     document.getElementById("edit_repair_id").value = repair.id;
     document.getElementById("edit_vehicle_id").value = repair.plate_no;
     document.getElementById("edit_repair_date").value = repair.repair_date;
-    document.getElementById("edit_repair_type").value = repair.repair_type;
-    document.getElementById("edit_mileage").value = repair.mileage;
-    document.getElementById("edit_parts_replaced").value =
-      repair.parts_replaced;
-    document.getElementById("edit_cost").value = repair.cost;
-    document.getElementById("edit_office").value = repair.office;
-    document.getElementById("edit_notes").value = repair.remarks;
-    document.getElementById("edit_status").value = repair.status;
+    document.getElementById("edit_mileage").value = repair.mileage || '';
+    document.getElementById("edit_parts_replaced").value = repair.parts_replaced || '';
+    document.getElementById("edit_cost").value = repair.cost || '';
+    document.getElementById("edit_office").value = repair.office || '';
+    document.getElementById("edit_notes").value = repair.remarks || '';
+    document.getElementById("edit_status").value = repair.status || '';
+
+    // Handle multiple repair types
+    // First, uncheck all checkboxes
+    const checkboxes = document.querySelectorAll('.edit-repair-type-checkbox');
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = false;
+    });
+
+    // Then check the appropriate ones based on repair_type
+    if (repair.repair_type) {
+      // Split repair types by comma and trim whitespace
+      const repairTypes = repair.repair_type.split(',').map(type => type.trim());
+      
+      repairTypes.forEach(type => {
+        const checkbox = document.querySelector(`input[name="edit_repair_type[]"][value="${type}"]`);
+        if (checkbox) {
+          checkbox.checked = true;
+        }
+      });
+    }
   }
 
   // Function to delete repair
@@ -670,6 +689,13 @@ document.addEventListener("DOMContentLoaded", function () {
     .addEventListener("submit", function (e) {
       e.preventDefault();
 
+      // Validate that at least one repair type is selected
+      const checkedBoxes = document.querySelectorAll('.edit-repair-type-checkbox:checked');
+      if (checkedBoxes.length === 0) {
+        alert('Please select at least one repair type.');
+        return false;
+      }
+
       const formData = new FormData(this);
 
       fetch("update_repair_motorpool.php", {
@@ -696,4 +722,99 @@ document.addEventListener("DOMContentLoaded", function () {
           alert("Error updating repair record");
         });
     });
+});
+
+// Add validation for edit repair form
+document.addEventListener('DOMContentLoaded', function() {
+  const editForm = document.getElementById('editRepairForm');
+  const editCheckboxes = document.querySelectorAll('.edit-repair-type-checkbox');
+
+  if (editForm) {
+    editForm.addEventListener('submit', function(e) {
+      const checkedBoxes = document.querySelectorAll('.edit-repair-type-checkbox:checked');
+      if (checkedBoxes.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one repair type.');
+        return false;
+      }
+    });
+  }
+});
+// Repair Type Dropdown with Input functionality
+document.addEventListener("DOMContentLoaded", function () {
+  const repairTypeInput = document.getElementById("edit_repair_type");
+  const repairTypeDropdown = document.getElementById(
+    "edit_repair_type_dropdown"
+  );
+  const repairTypeMenu = document.getElementById("edit_repair_type_menu");
+
+  // Toggle dropdown menu
+  repairTypeDropdown.addEventListener("click", function (e) {
+    e.preventDefault();
+    repairTypeMenu.classList.toggle("show");
+  });
+
+  // Handle dropdown item selection
+  repairTypeMenu.addEventListener("click", function (e) {
+    if (e.target.classList.contains("dropdown-item")) {
+      e.preventDefault();
+      const value = e.target.getAttribute("data-value");
+      repairTypeInput.value = value;
+      repairTypeMenu.classList.remove("show");
+    }
+  });
+
+  // Filter dropdown items based on input
+  repairTypeInput.addEventListener("input", function () {
+    const filter = this.value.toLowerCase();
+    const items = repairTypeMenu.querySelectorAll(".dropdown-item");
+
+    items.forEach(function (item) {
+      const text = item.textContent.toLowerCase();
+      if (text.includes(filter)) {
+        item.style.display = "block";
+      } else {
+        item.style.display = "none";
+      }
+    });
+
+    // Show dropdown when typing
+    if (this.value.length > 0) {
+      repairTypeMenu.classList.add("show");
+    }
+  });
+
+  // Hide dropdown when clicking outside
+  document.addEventListener("click", function (e) {
+    if (
+      !e.target.closest("#edit_repair_type") &&
+      !e.target.closest("#edit_repair_type_dropdown")
+    ) {
+      repairTypeMenu.classList.remove("show");
+    }
+  });
+
+  // Show all items when input is focused
+  repairTypeInput.addEventListener("focus", function () {
+    const items = repairTypeMenu.querySelectorAll(".dropdown-item");
+    items.forEach(function (item) {
+      item.style.display = "block";
+    });
+  });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.querySelector("form");
+  const checkboxes = document.querySelectorAll(".repair-type-checkbox");
+
+  form.addEventListener("submit", function (e) {
+    const checkedBoxes = document.querySelectorAll(
+      ".repair-type-checkbox:checked"
+    );
+    if (checkedBoxes.length === 0) {
+      e.preventDefault();
+      alert("Please select at least one repair type.");
+      return false;
+    }
+  });
 });
