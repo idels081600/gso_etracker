@@ -163,6 +163,34 @@ $(document).ready(function() {
     });
 });
 
+// Global variables for filter state
+let lastFilter = 'showAll'; // 'showAll' or 'today'
+let today = new Date().toISOString().split('T')[0];
+
+// Global functions for message handling
+function showNoResultsMessage(message) {
+    // Remove existing message if any
+    removeNoResultsMessage();
+    
+    // Create new row with message
+    const tableBody = document.getElementById('tableBody');
+    const noResultsRow = document.createElement('tr');
+    noResultsRow.id = 'noResultsRow';
+    noResultsRow.innerHTML = `<td colspan="6" class="text-center text-muted">${message}</td>`;
+    
+    // Add to table body
+    if (tableBody) {
+        tableBody.appendChild(noResultsRow);
+    }
+}
+
+function removeNoResultsMessage() {
+    const existingMessage = document.getElementById('noResultsRow');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+}
+
 // JavaScript code for Today and Show All buttons
 document.addEventListener('DOMContentLoaded', function() {
     const todayBtn = document.getElementById('todayBtn');
@@ -172,10 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const rows = table.getElementsByTagName('tr');
     
     // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Track the last filter state
-    let lastFilter = 'showAll'; // 'showAll' or 'today'
+    today = new Date().toISOString().split('T')[0];
     
     // On page load, hide all .pending-row
     document.querySelectorAll('.pending-row').forEach(function(row) {
@@ -195,21 +220,17 @@ document.addEventListener('DOMContentLoaded', function() {
         showAllBtn.classList.add('active');
         todayBtn.classList.remove('active');
         lastFilter = 'showAll';
-        // Show only 'For Retrieval' records
+        // Show 'For Retrieval' and 'Installed' records
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
             if (row.classList.contains('pending-row')) {
                 row.style.display = 'none';
                 continue;
             }
-            const cells = row.getElementsByTagName('td');
-            if (cells.length > 0) {
-                const statusCell = cells[4]; // Status column (index 4)
-                if (statusCell && statusCell.textContent.trim() === 'For Retrieval') {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+            if (row.classList.contains('for-retrieval-row') || row.classList.contains('installed-row')) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
             }
         }
         removeNoResultsMessage();
@@ -257,27 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Function to show "no results" message
-    function showNoResultsMessage(message) {
-        // Remove existing message if any
-        removeNoResultsMessage();
-        
-        // Create new row with message
-        const noResultsRow = document.createElement('tr');
-        noResultsRow.id = 'noResultsRow';
-        noResultsRow.innerHTML = `<td colspan="6" class="text-center text-muted">${message}</td>`;
-        
-        // Add to table body
-        tableBody.appendChild(noResultsRow);
-    }
-    
-    // Function to remove "no results" message
-    function removeNoResultsMessage() {
-        const existingMessage = document.getElementById('noResultsRow');
-        if (existingMessage) {
-            existingMessage.remove();
-        }
-    }
+
     
     // Initialize with Show All active by default
     showAllBtn.classList.add('active');
@@ -294,7 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
 // Enhanced search functionality that works with the filter buttons
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
@@ -309,17 +309,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (lastFilter === 'today') {
                     filterTableForToday();
                 } else {
-                    // Show only 'For Retrieval' records
+                    // Show 'For Retrieval' and 'Installed' records only
                     for (let i = 1; i < rows.length; i++) {
                         const row = rows[i];
-                        const cells = row.getElementsByTagName('td');
-                        if (cells.length > 0) {
-                            const statusCell = cells[4];
-                            if (statusCell && statusCell.textContent.trim() === 'For Retrieval') {
-                                row.style.display = '';
-                            } else {
-                                row.style.display = 'none';
-                            }
+                        if (row.classList.contains('for-retrieval-row') || row.classList.contains('installed-row')) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
                         }
                     }
                     removeNoResultsMessage();
@@ -327,31 +323,116 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 return;
             }
-            // Always search all rows, even hidden ones
+            
+            // Search within the context of the current filter
             let visibleRows = 0;
+            
+            // First, hide all rows that don't match the current filter
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
                 const cells = row.getElementsByTagName('td');
-                let rowVisible = false;
+                
+                if (lastFilter === 'today') {
+                    // For today filter, only show pending rows for today
+                    if (!row.classList.contains('pending-row')) {
+                        row.style.display = 'none';
+                        continue;
+                    }
+                    
+                    const dateCell = cells[3];
+                    const statusCell = cells[4];
+                    if (dateCell && statusCell) {
+                        const rowDate = dateCell.textContent.trim();
+                        const rowStatus = statusCell.textContent.trim();
+                        if (rowDate !== today || rowStatus !== 'Pending') {
+                            row.style.display = 'none';
+                            continue;
+                        }
+                    } else {
+                        row.style.display = 'none';
+                        continue;
+                    }
+                } else {
+                    // For show all filter, EXCLUDE pending rows and show only For Retrieval and Installed rows
+                    if (row.classList.contains('pending-row')) {
+                        row.style.display = 'none';
+                        continue;
+                    }
+                    
+                    if (!row.classList.contains('for-retrieval-row') && !row.classList.contains('installed-row')) {
+                        row.style.display = 'none';
+                        continue;
+                    }
+                }
+                
+                // Now check if the remaining visible rows match the search term
+                let matchesSearch = false;
                 for (let j = 0; j < cells.length; j++) {
                     const cellText = cells[j].textContent.toLowerCase();
                     if (cellText.includes(filter)) {
-                        rowVisible = true;
+                        matchesSearch = true;
                         break;
                     }
                 }
-                if (rowVisible) {
+                
+                if (matchesSearch) {
                     row.style.display = '';
                     visibleRows++;
                 } else {
                     row.style.display = 'none';
                 }
             }
+            
             if (visibleRows === 0) {
-                showNoResultsMessage('No results found for "' + filter + '"');
+                showNoResultsMessage('No results found for "' + filter + '" in current filter');
             } else {
                 removeNoResultsMessage();
             }
         });
+    }
+    
+    // Function to filter table for today's pending records
+    function filterTableForToday() {
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (row.classList.contains('pending-row')) {
+                const cells = row.getElementsByTagName('td');
+                const dateCell = cells[3]; // Date column (index 3)
+                const statusCell = cells[4]; // Status column (index 4)
+                if (dateCell && statusCell) {
+                    const rowDate = dateCell.textContent.trim();
+                    const rowStatus = statusCell.textContent.trim();
+                    if (rowDate === today && rowStatus === 'Pending') {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            } else {
+                row.style.display = 'none';
+            }
+        }
+        checkIfNoResults();
+    }
+    
+    // Function to check if no results are visible and show message
+    function checkIfNoResults() {
+        let visibleRows = 0;
+        
+        for (let i = 1; i < rows.length; i++) {
+            if (rows[i].style.display !== 'none') {
+                visibleRows++;
+            }
+        }
+        
+        if (visibleRows === 0) {
+            if (lastFilter === 'today') {
+                showNoResultsMessage("No pending records found for today (" + today + ")");
+            } else {
+                showNoResultsMessage("No installed or for retrieval records found");
+            }
+        } else {
+            removeNoResultsMessage();
+        }
     }
 });

@@ -77,7 +77,32 @@ if (!isset($_SESSION['username'])) {
                     if ($total_rows > 0) {
                         // Display For Retrieval records
                         while ($row = mysqli_fetch_assoc($result_for_retrieval)) {
-                            echo "<tr>";
+                            echo "<tr class='for-retrieval-row'>";
+                            echo "<td>" . htmlspecialchars($row['name']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['location']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['date']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['status']) . "</td>";
+                            echo '<td class="text-right">
+                <button class="btn btn-primary"
+                    data-toggle="modal"
+                    data-target="#editModal"
+                    data-id="' . htmlspecialchars($row['id']) . '"
+                    data-name="' . htmlspecialchars($row['name']) . '"
+                    data-address="' . htmlspecialchars($row['location']) . '"
+                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
+                    data-no_of_tents="' . htmlspecialchars($row['no_of_tents']) . '"
+                    data-date="' . htmlspecialchars($row['date']) . '"
+                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
+                    data-status="' . htmlspecialchars($row['status']) . '">
+                    Edit
+                </button>
+            </td>';
+                            echo "</tr>";
+                        }
+                        // Display Installed records
+                        while ($row = mysqli_fetch_assoc($result_installed)) {
+                            echo "<tr class='installed-row'>";
                             echo "<td>" . htmlspecialchars($row['name']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['location']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
@@ -125,7 +150,7 @@ if (!isset($_SESSION['username'])) {
             </td>';
                             echo "</tr>";
                         }
-                        if (mysqli_num_rows($result_for_retrieval) + mysqli_num_rows($result_pending) == 0) {
+                        if (mysqli_num_rows($result_for_retrieval) + mysqli_num_rows($result_installed) + mysqli_num_rows($result_pending) == 0) {
                             echo "<tr><td colspan='6'>No data found</td></tr>";
                         }
                     } else {
