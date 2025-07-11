@@ -46,20 +46,20 @@ try {
     // First, get the current record's PO information
     $current_query = "SELECT PO_no, PO_amount, total FROM Maam_mariecris WHERE id = ?";
     $current_stmt = mysqli_prepare($conn, $current_query);
-    
+
     if (!$current_stmt) {
         throw new Exception("Database prepare error: " . mysqli_error($conn));
     }
 
     mysqli_stmt_bind_param($current_stmt, "i", $id);
-    
+
     if (!mysqli_stmt_execute($current_stmt)) {
         throw new Exception("Database execute error: " . mysqli_stmt_error($current_stmt));
     }
 
     $current_result = mysqli_stmt_get_result($current_stmt);
     $current_data = mysqli_fetch_assoc($current_result);
-    
+
     if (!$current_data) {
         throw new Exception("Record not found");
     }
@@ -82,13 +82,13 @@ try {
                                  SET balance = balance + ?, used_amount = used_amount - ? 
                                  WHERE po = ?";
             $po_balance_stmt = mysqli_prepare($conn, $update_po_balance);
-            
+
             if (!$po_balance_stmt) {
                 throw new Exception("Database prepare error: " . mysqli_error($conn));
             }
 
             mysqli_stmt_bind_param($po_balance_stmt, "dds", $current_total, $current_total, $current_po);
-            
+
             if (!mysqli_stmt_execute($po_balance_stmt)) {
                 throw new Exception("Error updating PO balance: " . mysqli_stmt_error($po_balance_stmt));
             }
@@ -112,7 +112,7 @@ try {
             WHERE id = ?";
 
         $stmt = mysqli_prepare($conn, $query);
-        
+
         if (!$stmt) {
             throw new Exception("Database prepare error: " . mysqli_error($conn));
         }
@@ -144,45 +144,85 @@ try {
 
         $response['status'] = 'success';
         $response['message'] = "Payment information removed successfully.";
-
     } else {
-        // Original code for normal payment processing
-        // If payment is empty, use the current PO
+        // FIXED: Handle empty payment properly
         if (empty($payment)) {
-            $payment = $current_po;
-            $payment_amount = $current_po_amount;
+            // If payment is empty, just update the record without payment logic
+            // Keep existing PO information if any, or set to empty if none
+            $payment = $current_po; // Keep current PO
+            $payment_amount = $current_po_amount; // Keep current PO amount
+            
+            // If there's an existing PO, calculate remaining balance based on current PO
+            if (!empty($current_po) && $current_po_amount > 0) {
+                $remaining_balance = $current_po_amount - $total;
+                
+                // Update remarks based on balance status only if there's an existing PO
+                if ($remaining_balance <= 0) {
+                    $remarks = "PAID";
+                }
+            } else {
+                // No existing PO, set remaining balance to 0
+                $remaining_balance = 0;
+                // Don't override remarks when there's no PO
+                // $remarks stays as user input
+            }
+            
+            // If total amount has changed and there's an existing PO, update the PO balance
+            if (!empty($current_po) && $current_total != $total) {
+                // Calculate the difference in total
+                $total_difference = $total - $current_total;
+                
+                // Update the PO balance to reflect the new total
+                $update_po_balance = "UPDATE Maam_mariecris_payments 
+                                     SET balance = balance - ?, used_amount = used_amount + ? 
+                                     WHERE po = ?";
+                $po_balance_stmt = mysqli_prepare($conn, $update_po_balance);
+                
+                if (!$po_balance_stmt) {
+                    throw new Exception("Database prepare error: " . mysqli_error($conn));
+                }
+
+                mysqli_stmt_bind_param($po_balance_stmt, "dds", $total_difference, $total_difference, $current_po);
+                
+                if (!mysqli_stmt_execute($po_balance_stmt)) {
+                    throw new Exception("Error updating PO balance: " . mysqli_stmt_error($po_balance_stmt));
+                }
+                mysqli_stmt_close($po_balance_stmt);
+            }
+            
+            // Don't override remarks when payment is empty (unless there's existing PO logic above)
+            // $remarks stays as user input for non-payment updates
         } else {
             // Get the payment amount from the Maam_mariecris_payments table
             $payment_query = "SELECT amount, balance FROM Maam_mariecris_payments WHERE po = ?";
             $payment_stmt = mysqli_prepare($conn, $payment_query);
-            
+
             if (!$payment_stmt) {
                 throw new Exception("Database prepare error: " . mysqli_error($conn));
             }
 
             mysqli_stmt_bind_param($payment_stmt, "s", $payment);
-            
+
             if (!mysqli_stmt_execute($payment_stmt)) {
                 throw new Exception("Database execute error: " . mysqli_stmt_error($payment_stmt));
             }
 
             $payment_result = mysqli_stmt_get_result($payment_stmt);
             $payment_data = mysqli_fetch_assoc($payment_result);
-            $payment_amount = $payment_data['amount'] ?? $current_po_amount;
+            $payment_amount = $payment_data['amount'] ?? 0;
             $payment_balance = $payment_data['balance'] ?? 0;
             mysqli_stmt_close($payment_stmt);
-        }
 
-        // REMOVED THE PO BALANCE CHECK - Allow updates regardless of PO balance
-        // Calculate the difference between payment amount and total
-        $difference = $payment_amount - $total;
-        
-        // Set remaining_balance (can be negative if overspent)
-        $remaining_balance = $difference;
-        
-        // Update remarks based on balance status
-        if ($remaining_balance <= 0) {
-            $remarks = "PAID";
+            // Calculate the difference between payment amount and total
+            $difference = $payment_amount - $total;
+
+            // Set remaining_balance (can be negative if overspent)
+            $remaining_balance = $difference;
+
+            // Only automatically set "PAID" when there's an actual payment AND balance is fully used
+            if (!empty($payment) && $current_po != $payment && $remaining_balance <= 0) {
+                $remarks = "PAID";
+            }
         }
 
         // Update the record
@@ -202,7 +242,7 @@ try {
             WHERE id = ?";
 
         $stmt = mysqli_prepare($conn, $query);
-        
+
         if (!$stmt) {
             throw new Exception("Database prepare error: " . mysqli_error($conn));
         }
@@ -238,13 +278,13 @@ try {
                                  SET balance = balance + ?, used_amount = used_amount - ? 
                                  WHERE po = ?";
                 $old_po_stmt = mysqli_prepare($conn, $update_old_po);
-                
+
                 if (!$old_po_stmt) {
                     throw new Exception("Database prepare error: " . mysqli_error($conn));
                 }
 
                 mysqli_stmt_bind_param($old_po_stmt, "dds", $current_total, $current_total, $current_po);
-                
+
                 if (!mysqli_stmt_execute($old_po_stmt)) {
                     throw new Exception("Error updating old PO balance: " . mysqli_stmt_error($old_po_stmt));
                 }
@@ -252,18 +292,19 @@ try {
             }
 
             // Update the balance of the new PO (allow negative balance)
-            if (!empty($payment)) {
+            // Only if payment is not empty and different from current
+            if (!empty($payment) && $current_po != $payment) {
                 $update_new_po = "UPDATE Maam_mariecris_payments 
                                  SET balance = balance - ?, used_amount = used_amount + ? 
                                  WHERE po = ?";
                 $new_po_stmt = mysqli_prepare($conn, $update_new_po);
-                
+
                 if (!$new_po_stmt) {
                     throw new Exception("Database prepare error: " . mysqli_error($conn));
                 }
 
                 mysqli_stmt_bind_param($new_po_stmt, "dds", $total, $total, $payment);
-                
+
                 if (!mysqli_stmt_execute($new_po_stmt)) {
                     throw new Exception("Error updating new PO balance: " . mysqli_stmt_error($new_po_stmt));
                 }
@@ -279,13 +320,12 @@ try {
         $response['status'] = 'success';
         $response['message'] = 'Record updated successfully';
     }
-
 } catch (Exception $e) {
     // Rollback transaction on error
     if (isset($conn)) {
         mysqli_rollback($conn);
     }
-    
+
     $response['status'] = 'error';
     $response['message'] = $e->getMessage();
 }
@@ -293,4 +333,3 @@ try {
 // Ensure we only output JSON
 echo json_encode($response);
 exit;
-?>
