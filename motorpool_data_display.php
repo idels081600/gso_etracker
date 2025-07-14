@@ -3,7 +3,7 @@ require_once 'db_asset.php';
 function get_vehicles_list()
 {
     global $conn;
-    $vehicleQuery = "SELECT plate_no, car_model FROM vehicle_records ORDER BY plate_no ASC";
+    $vehicleQuery = "SELECT plate_no, car_model,office  FROM vehicle_records ORDER BY plate_no ASC";
     $vehicleResult = mysqli_query($conn, $vehicleQuery);
 
     // Store vehicles in an array

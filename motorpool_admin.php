@@ -452,7 +452,7 @@ $office_counts_json = json_encode($office_counts);
                                     <option value="PNP">PNP</option>
                                     <option value="SP">SP</option>
                                     <option value="TCWS">TCWS</option>
-
+                                    <option value="SWMO">SWMO</option>
                                 </select>
                             </div>
                         </div>
@@ -625,6 +625,7 @@ $office_counts_json = json_encode($office_counts);
                                     <option value="PNP">PNP</option>
                                     <option value="SP">SP</option>
                                     <option value="TCWS">TCWS</option>
+                                    <option value="SWMO">SWMO</option>
                                     <option value="Other">Other</option>
                                 </select>
                             </div>
@@ -768,38 +769,9 @@ $office_counts_json = json_encode($office_counts);
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="office" class="form-label">Office</label>
-                                <select class="form-select" id="office" name="office" required>
-                                    <option value="">Select Office</option>
-                                    <option value="ADMIN">ADMIN</option>
-                                    <option value="ALERT">ALERT</option>
-                                    <option value="BFP">BFP</option>
-                                    <option value="BJMP">BJMP</option>
-                                    <option value="BPLO">BPLO</option>
-                                    <option value="CASSO">CASSO</option>
-                                    <option value="CAVI">CAVI</option>
-                                    <option value="CAVO">CAVO</option>
-                                    <option value="CDRRMO">CDRRMO</option>
-                                    <option value="CEE">CEE</option>
-                                    <option value="CEO">CEO</option>
-                                    <option value="CGSO">CGSO</option>
-                                    <option value="CHO">CHO</option>
-                                    <option value="CITY ADMIN">CITY ADMIN</option>
-                                    <option value="CMO">CMO</option>
-                                    <option value="CSWD">CSWD</option>
-                                    <option value="CTMO">CTMO</option>
-                                    <option value="CTO">CTO</option>
-                                    <option value="CVMO">CVMO</option>
-                                    <option value="DILG">DILG</option>
-                                    <option value="HRMO">HRMO</option>
-                                    <option value="OSCA">OSCA</option>
-                                    <option value="PDAO">PDAO</option>
-                                    <option value="PNP">PNP</option>
-                                    <option value="SP">SP</option>
-                                    <option value="TCWS">TCWS</option>
-                                    <option value="Other">Other</option>
-                                </select>
-
+                                <input type="text" class="form-control" id="office" name="office" required placeholder="Enter Office">
                             </div>
+
                             <div class="col-md-6">
                                 <label for="notes" class="form-label">Service Type</label>
                                 <select class="form-select" id="notes" name="notes" required>
@@ -1088,6 +1060,29 @@ $office_counts_json = json_encode($office_counts);
                     }
                 }
             },
+        });
+
+
+        // Vehicle data for office lookup
+        const vehicleData = <?php echo json_encode($vehicles); ?>;
+
+        // Add event listener for vehicle selection
+        document.getElementById('vehicle_id').addEventListener('change', function() {
+            const selectedPlateNo = this.value;
+            const officeField = document.getElementById('office');
+
+            if (selectedPlateNo) {
+                // Find the selected vehicle in the data
+                const selectedVehicle = vehicleData.find(vehicle => vehicle.plate_no === selectedPlateNo);
+
+                if (selectedVehicle && selectedVehicle.office) {
+                    officeField.value = selectedVehicle.office;
+                } else {
+                    officeField.value = '';
+                }
+            } else {
+                officeField.value = '';
+            }
         });
     </script>
 

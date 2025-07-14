@@ -93,7 +93,9 @@ document.getElementById("repairSearch").addEventListener("keyup", function () {
   });
 });
 
-// Function to load vehicle data into the selection table
+// Store loaded vehicle data for lookup
+let loadedVehicleData = [];
+
 function loadVehicleSelectionTable() {
   const tableBody = document.querySelector("#vehicleSelectionTable tbody");
   // Clear existing table rows
@@ -106,6 +108,8 @@ function loadVehicleSelectionTable() {
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
+        // Store loaded vehicle data for later lookup
+        loadedVehicleData = data.data;
         // Clear loading indicator
         tableBody.innerHTML = "";
         // Check if we have data
@@ -120,7 +124,7 @@ function loadVehicleSelectionTable() {
           row.innerHTML = `
                 <td>${vehicle.plate_no}</td>
                 <td>${vehicle.car_model || "-"}</td>
-                  <td>${vehicle.office}</td>
+                <td>${vehicle.office}</td>
                 <td>${vehicle.status}</td>
                 <td>${vehicle.old_mileage}</td>
                 <td>${vehicle.latest_mileage}</td>
@@ -132,7 +136,7 @@ function loadVehicleSelectionTable() {
                     <button class="btn btn-sm btn-primary select-vehicle me-1"
                             data-plate="${vehicle.plate_no}"
                             data-model="${vehicle.car_model || ""}"
-                              data-office="${vehicle.office}"
+                            data-office="${vehicle.office}"
                             data-status="${vehicle.status}"
                             data-old-mileage="${vehicle.old_mileage}"
                             data-latest-mileage="${vehicle.latest_mileage}"
@@ -162,6 +166,8 @@ function loadVehicleSelectionTable() {
               this.dataset.plate;
             document.getElementById("update_car_model").value =
               this.dataset.model;
+            document.getElementById("update_office").value =
+              this.dataset.office || "";
             document.getElementById("update_status").value =
               this.dataset.status;
             document.getElementById("update_old_mileage").value =
@@ -835,3 +841,4 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
+
