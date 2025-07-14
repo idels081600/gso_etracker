@@ -359,42 +359,42 @@ $(function () {
 $(function () {
   $(".form-element-other1").hide();
 });
-
 // Date color logic and update_status_duration AJAX
 $(function () {
   function updateDateColors() {
     var today = new Date();
     var redDates = [];
     var orangeDates = [];
+
     $(".date, .retrieval-date").each(function () {
       var dateText = $(this).text();
       var date = new Date(dateText);
       var row = $(this).closest("tr");
-      var selectedOption = row
-        .find("select.status-dropdown")
-        .find(":selected")
-        .val();
+      var dropdown = row.find("select.status-dropdown");
+      var selectedOption = dropdown.find(":selected").val();
+      var id = dropdown.find(":selected").data("id");
+
       if (selectedOption) {
         var timeDiff = date.getTime() - today.getTime();
         var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        // Define which statuses can be auto-updated (exclude 'Retrieved')
+        var autoUpdateStatuses = ["Installed", "Pending"];
+
         if (diffDays < 0) {
           $(this).css("color", "red");
           var tent_no = row.find("td:first").text().trim();
-          var id = row
-            .find("select.status-dropdown")
-            .find(":selected")
-            .data("id");
-          if (tent_no !== "") {
+
+          // Only auto-update if status is in the allowed list
+          if (tent_no !== "" && autoUpdateStatuses.includes(selectedOption)) {
             redDates.push({ tent_no: tent_no, id: id });
           }
         } else if (diffDays === 0) {
           $(this).css("color", "orange");
           var tent_no = row.find("td:first").text().trim();
-          var id = row
-            .find("select.status-dropdown")
-            .find(":selected")
-            .data("id");
-          if (tent_no !== "") {
+
+          // Only auto-update if status is in the allowed list
+          if (tent_no !== "" && autoUpdateStatuses.includes(selectedOption)) {
             orangeDates.push({ tent_no: tent_no, id: id });
           }
         } else {
@@ -404,6 +404,7 @@ $(function () {
         $(this).css("color", "");
       }
     });
+
     if (redDates.length > 0) {
       $.ajax({
         type: "POST",
@@ -417,6 +418,7 @@ $(function () {
         },
       });
     }
+
     if (orangeDates.length > 0) {
       $.ajax({
         type: "POST",
@@ -431,8 +433,9 @@ $(function () {
       });
     }
   }
+
   updateDateColors();
-  setInterval(updateDateColors, 20000); // Update every 60 seconds
+  setInterval(updateDateColors, 60000); // Update every 60 seconds
 });
 
 // Multi-select green boxes up to viewEditNoOfTents value
