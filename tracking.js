@@ -378,7 +378,7 @@ $(function () {
         var timeDiff = date.getTime() - today.getTime();
         var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
-        // Define which statuses can be auto-updated (exclude 'Retrieved')
+        // Define which statuses can be auto-updated (exclude 'Retrieved' and 'For Retrieval')
         var autoUpdateStatuses = ["Installed", "Pending"];
 
         if (diffDays < 0) {
