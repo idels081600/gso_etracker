@@ -205,8 +205,9 @@ if (!isset($_SESSION['username'])) {
                                         <div class="form-group">
                                             <label for="sel2">Confirmed By:</label>
                                             <select class="form" id="sel2" name='confirmed_by'>
-                                                <option>CAGULADA RENE ART</option>
-                                                <option>CASAS RUBY</option>
+                                                <?php if(isset($_SESSION['pay_name']) && !empty($_SESSION['pay_name'])): ?>
+                                                    <option><?php echo htmlspecialchars($_SESSION['pay_name']); ?></option>
+                                                <?php endif; ?>
                                             </select>
                                         </div>
                                     </div>
