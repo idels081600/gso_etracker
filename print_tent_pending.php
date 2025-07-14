@@ -43,8 +43,50 @@ $today_rows = array_filter($weekday_rows, function ($row) use ($today) {
             margin: 20px;
         }
 
+        .header-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 2px solid #333;
+            gap: 20px;
+        }
+
+        .header-logo img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .header-text {
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .header-text .tagbil {
+            display: block;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 5px 0;
+        }
+
+        .header-text .tagbil:first-child {
+            font-size: 16px;
+        }
+
+        .header-text .tagbil:last-child {
+            font-size: 20px;
+        }
+
         h2 {
             text-align: center;
+            margin-top: 20px;
         }
 
         table {
@@ -87,9 +129,20 @@ $today_rows = array_filter($weekday_rows, function ($row) use ($today) {
         }
     </style>
 </head>
-<button class="print-btn" onclick="window.print()">Print</button>
 
 <body>
+    <!-- Header with Logo for First Page -->
+    <div class="header-logo">
+        <img src="tagbi_seal.png" alt="Tagbilaran Seal">
+        <div class="header-text">
+            <span class="tagbil">Republic of the Philippines</span>
+            <span class="tagbil">City Government of Tagbilaran</span>
+        </div>
+        <img src="logo.png" alt="Logo">
+    </div>
+
+    <button class="print-btn" onclick="window.print()">Print</button>
+
     <h2>PENDING TENT SCHEDULE FOR TODAY (<?= htmlspecialchars($today) ?>)</h2>
     <table>
         <thead>
@@ -127,8 +180,20 @@ $today_rows = array_filter($weekday_rows, function ($row) use ($today) {
             <div style="font-size: 15px;">CGSO HEAD</div>
         </div>
     </div>
+
     <?php if (count($weekend_rows) > 0): ?>
         <div style="page-break-before: always;"></div>
+
+        <!-- Header with Logo for Second Page -->
+        <div class="header-logo">
+            <img src="tagbi_seal.png" alt="Tagbilaran Seal">
+            <div class="header-text">
+                <span class="tagbil">Republic of the Philippines</span>
+                <span class="tagbil">City Government of Tagbilaran</span>
+            </div>
+            <img src="logo.png" alt="Logo">
+        </div>
+
         <h2>PENDING TENT SCHEDULE (SATURDAY & SUNDAY)</h2>
         <table>
             <thead>

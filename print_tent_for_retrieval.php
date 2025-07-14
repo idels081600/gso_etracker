@@ -24,7 +24,7 @@ if ($result && mysqli_num_rows($result) > 0) {
             $dow = date('N', strtotime($row_date)); // 6=Sat, 7=Sun
             if ($dow == 6 || $dow == 7) {
                 $weekend_rows[] = $row;
-            } else {   
+            } else {
                 $weekday_rows[] = $row;
             }
         } else {
@@ -48,15 +48,79 @@ if ($weekend_result && mysqli_num_rows($weekend_result) > 0) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Print Tent For Retrieval List</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h2 { text-align: center; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #333; padding: 8px; text-align: center; }
-        th { background: #f2f2f2; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 2px solid #333;
+            gap: 20px;
+        }
+
+        .header-logo img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .header-text {
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .header-text .tagbil {
+            display: block;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 5px 0;
+        }
+
+        .header-text .tagbil:first-child {
+            font-size: 16px;
+        }
+
+        .header-text .tagbil:last-child {
+            font-size: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background: #f2f2f2;
+        }
+
         .print-btn {
             background: #ffc107;
             color: #333;
@@ -68,15 +132,30 @@ if ($weekend_result && mysqli_num_rows($weekend_result) > 0) {
             margin-bottom: 16px;
             transition: background 0.2s;
         }
+
         .print-btn:hover {
             background: #e0a800;
         }
+
         @media print {
-            button { display: none; }
+            button {
+                display: none;
+            }
         }
     </style>
 </head>
+
 <body>
+    <!-- Header with Logo for First Page -->
+    <div class="header-logo">
+        <img src="tagbi_seal.png" alt="Tagbilaran Seal">
+        <div class="header-text">
+            <span class="tagbil">Republic of the Philippines</span>
+            <span class="tagbil">City Government of Tagbilaran</span>
+        </div>
+        <img src="logo.png" alt="Logo">
+    </div>
+
     <h2>FOR RETRIEVAL TENT SCHEDULE</h2>
     <button class="print-btn" onclick="window.print()">Print</button>
     <table>
@@ -103,7 +182,9 @@ if ($weekend_result && mysqli_num_rows($weekend_result) > 0) {
                     </tr>
                 <?php endforeach; ?>
             <?php else: ?>
-                <tr><td colspan="6">No tents for retrieval found.</td></tr>
+                <tr>
+                    <td colspan="6">No tents for retrieval found.</td>
+                </tr>
             <?php endif; ?>
         </tbody>
     </table>
@@ -113,8 +194,20 @@ if ($weekend_result && mysqli_num_rows($weekend_result) > 0) {
             <div style="font-size: 15px;">CGSO HEAD</div>
         </div>
     </div>
+
     <?php if (count($weekend_rows) > 0): ?>
         <div style="page-break-before: always;"></div>
+
+        <!-- Header with Logo for Second Page -->
+        <div class="header-logo">
+            <img src="tagbi_seal.png" alt="Tagbilaran Seal">
+            <div class="header-text">
+                <span class="tagbil">Republic of the Philippines</span>
+                <span class="tagbil">City Government of Tagbilaran</span>
+            </div>
+            <img src="logo.png" alt="Logo">
+        </div>
+
         <h2>FOR RETRIEVAL TENT SCHEDULE (SATURDAY & SUNDAY)</h2>
         <table>
             <thead>
@@ -148,4 +241,5 @@ if ($weekend_result && mysqli_num_rows($weekend_result) > 0) {
         </div>
     <?php endif; ?>
 </body>
-</html> 
+
+</html>
