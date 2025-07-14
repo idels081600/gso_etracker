@@ -136,7 +136,7 @@ if (isset($_POST['save_data'])) {
             <div class="container_table_content">
                 <div class="d-flex justify-content-between align-items-center mb-3 px-3" style="padding-left:0;padding-right:0;">
                     <div class="d-flex align-items-center gap-2">
-                        <button class="btn btn-success" id="addButton" role="button" data-bs-toggle="modal" data-bs-target="#detailsModal">Install Tent</button>
+                    <button class="btn btn-success" id="addButton" role="button" data-bs-toggle="modal" data-bs-target="#detailsModal">Install Tent</button>
                         <button class="btn btn-secondary" id="printButton" data-bs-toggle="modal" data-bs-target="#printModal"><i class="fas fa-print"></i> Print</button>
                     </div>
                     <input type="text" id="search-input" class="form-control w-auto" placeholder="Search...">
@@ -327,6 +327,7 @@ if (isset($_POST['save_data'])) {
                                     <option value="LGU">LGU</option>
                                     <option value="Municipalities">Municipalities</option>
                                     <option value="Province">Province</option>
+                                     <option value="Burial">Burial</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -396,5 +397,4 @@ if (isset($_POST['save_data'])) {
         });
     });
 </script>
-
 </html>

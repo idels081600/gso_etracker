@@ -365,6 +365,7 @@ $(function () {
   function updateDateColors() {
     var today = new Date();
     var redDates = [];
+    var orangeDates = [];
     $(".date, .retrieval-date").each(function () {
       var dateText = $(this).text();
       var date = new Date(dateText);
@@ -388,6 +389,14 @@ $(function () {
           }
         } else if (diffDays === 0) {
           $(this).css("color", "orange");
+          var tent_no = row.find("td:first").text().trim();
+          var id = row
+            .find("select.status-dropdown")
+            .find(":selected")
+            .data("id");
+          if (tent_no !== "") {
+            orangeDates.push({ tent_no: tent_no, id: id });
+          }
         } else {
           $(this).css("color", "");
         }
@@ -408,9 +417,22 @@ $(function () {
         },
       });
     }
+    if (orangeDates.length > 0) {
+      $.ajax({
+        type: "POST",
+        url: "update_status_duration.php",
+        data: { orangeDates: JSON.stringify(orangeDates) },
+        success: function (response) {
+          console.log("Response from server:", response);
+        },
+        error: function (xhr, status, error) {
+          console.error("AJAX error:", status, error);
+        },
+      });
+    }
   }
   updateDateColors();
-  setInterval(updateDateColors, 60000);
+  setInterval(updateDateColors, 20000); // Update every 60 seconds
 });
 
 // Multi-select green boxes up to viewEditNoOfTents value

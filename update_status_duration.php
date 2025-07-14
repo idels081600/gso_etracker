@@ -2,13 +2,13 @@
 // Include your database connection file
 include 'db_asset.php';
 
-// Check if data is received via POST request
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['redDates'])) {
-    // Decode the JSON data received from JavaScript
-    $redDates = json_decode($_POST['redDates'], true);
-
-    // Iterate over the redDates array
-    foreach ($redDates as $data) {
+// Function to process dates and update status
+function processDates($datesArray, $conn) {
+    if (!is_array($datesArray)) {
+        return;
+    }
+    
+    foreach ($datesArray as $data) {
         $id = mysqli_real_escape_string($conn, $data['id']);
         $tent_no = mysqli_real_escape_string($conn, $data['tent_no']);
         $status = 'For Retrieval'; // Set status to "For Retrieval"
@@ -36,7 +36,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['redDates'])) {
             }
         }
     }
+}
+
+// Check if data is received via POST request
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $hasData = false;
+    
+    // Process redDates (overdue)
+    if (isset($_POST['redDates'])) {
+        $redDates = json_decode($_POST['redDates'], true);
+        processDates($redDates, $conn);
+        $hasData = true;
+    }
+    
+    // Process orangeDates (due today)
+    if (isset($_POST['orangeDates'])) {
+        $orangeDates = json_decode($_POST['orangeDates'], true);
+        processDates($orangeDates, $conn);
+        $hasData = true;
+    }
+    
+    if (!$hasData) {
+        echo "Error: No valid data received\n";
+    }
 } else {
-    // If not a POST request or no redDates data, return an error
-    echo "Error: Invalid request or missing data\n";
+    // If not a POST request, return an error
+    echo "Error: Invalid request method\n";
 }
