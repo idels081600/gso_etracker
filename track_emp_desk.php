@@ -249,7 +249,7 @@ if (isset($_POST['undo_delete'])) {
               echo '<td>' . $row["status1"] . '</td>';
               echo '<td>' . $row["typeofbusiness"] . '</td>';
               echo '<td>' . $row["remarks"] . '</td>';
-              echo '<td><a href="view_track_emp_r.php?id=' . $row['id'] . '" class="btn btn-info btn-sm">View</a></td>';
+              echo '<td><a href="view_track_emp_desk.php?id=' . $row['id'] . '" class="btn btn-info btn-sm">View</a></td>';
               echo '</tr>';
             }
             ?>
@@ -277,7 +277,7 @@ if (isset($_POST['undo_delete'])) {
             document.querySelector("#showdata").innerHTML = this.responseText;
           }
         };
-        xhttp.open("GET", "live_track_r.php", true);
+        xhttp.open("GET", "live_track_desk.php", true);
         xhttp.send();
       }, 1000);
     }
