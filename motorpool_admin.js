@@ -120,6 +120,7 @@ function loadVehicleSelectionTable() {
           row.innerHTML = `
                 <td>${vehicle.plate_no}</td>
                 <td>${vehicle.car_model || "-"}</td>
+                  <td>${vehicle.office}</td>
                 <td>${vehicle.status}</td>
                 <td>${vehicle.old_mileage}</td>
                 <td>${vehicle.latest_mileage}</td>
@@ -131,6 +132,7 @@ function loadVehicleSelectionTable() {
                     <button class="btn btn-sm btn-primary select-vehicle me-1"
                             data-plate="${vehicle.plate_no}"
                             data-model="${vehicle.car_model || ""}"
+                              data-office="${vehicle.office}"
                             data-status="${vehicle.status}"
                             data-old-mileage="${vehicle.old_mileage}"
                             data-latest-mileage="${vehicle.latest_mileage}"
@@ -154,6 +156,9 @@ function loadVehicleSelectionTable() {
           button.addEventListener("click", function () {
             // Fill the update form with vehicle data
             document.getElementById("update_plate_no").value =
+              this.dataset.plate;
+            // Store the original plate number for reference
+            document.getElementById("original_plate_no").value =
               this.dataset.plate;
             document.getElementById("update_car_model").value =
               this.dataset.model;
@@ -622,29 +627,35 @@ document.addEventListener("DOMContentLoaded", function () {
   function populateEditModal(repair) {
     // Basic fields
     document.getElementById("edit_repair_id").value = repair.id;
+    document.getElementById("edit_office").value = repair.office;
     document.getElementById("edit_vehicle_id").value = repair.plate_no;
     document.getElementById("edit_repair_date").value = repair.repair_date;
-    document.getElementById("edit_mileage").value = repair.mileage || '';
-    document.getElementById("edit_parts_replaced").value = repair.parts_replaced || '';
-    document.getElementById("edit_cost").value = repair.cost || '';
-    document.getElementById("edit_office").value = repair.office || '';
-    document.getElementById("edit_notes").value = repair.remarks || '';
-    document.getElementById("edit_status").value = repair.status || '';
+    document.getElementById("edit_mileage").value = repair.mileage || "";
+    document.getElementById("edit_parts_replaced").value =
+      repair.parts_replaced || "";
+    document.getElementById("edit_cost").value = repair.cost || "";
+    document.getElementById("edit_office").value = repair.office || "";
+    document.getElementById("edit_notes").value = repair.remarks || "";
+    document.getElementById("edit_status").value = repair.status || "";
 
     // Handle multiple repair types
     // First, uncheck all checkboxes
-    const checkboxes = document.querySelectorAll('.edit-repair-type-checkbox');
-    checkboxes.forEach(checkbox => {
+    const checkboxes = document.querySelectorAll(".edit-repair-type-checkbox");
+    checkboxes.forEach((checkbox) => {
       checkbox.checked = false;
     });
 
     // Then check the appropriate ones based on repair_type
     if (repair.repair_type) {
       // Split repair types by comma and trim whitespace
-      const repairTypes = repair.repair_type.split(',').map(type => type.trim());
-      
-      repairTypes.forEach(type => {
-        const checkbox = document.querySelector(`input[name="edit_repair_type[]"][value="${type}"]`);
+      const repairTypes = repair.repair_type
+        .split(",")
+        .map((type) => type.trim());
+
+      repairTypes.forEach((type) => {
+        const checkbox = document.querySelector(
+          `input[name="edit_repair_type[]"][value="${type}"]`
+        );
         if (checkbox) {
           checkbox.checked = true;
         }
@@ -690,9 +701,11 @@ document.addEventListener("DOMContentLoaded", function () {
       e.preventDefault();
 
       // Validate that at least one repair type is selected
-      const checkedBoxes = document.querySelectorAll('.edit-repair-type-checkbox:checked');
+      const checkedBoxes = document.querySelectorAll(
+        ".edit-repair-type-checkbox:checked"
+      );
       if (checkedBoxes.length === 0) {
-        alert('Please select at least one repair type.');
+        alert("Please select at least one repair type.");
         return false;
       }
 
@@ -725,16 +738,20 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Add validation for edit repair form
-document.addEventListener('DOMContentLoaded', function() {
-  const editForm = document.getElementById('editRepairForm');
-  const editCheckboxes = document.querySelectorAll('.edit-repair-type-checkbox');
+document.addEventListener("DOMContentLoaded", function () {
+  const editForm = document.getElementById("editRepairForm");
+  const editCheckboxes = document.querySelectorAll(
+    ".edit-repair-type-checkbox"
+  );
 
   if (editForm) {
-    editForm.addEventListener('submit', function(e) {
-      const checkedBoxes = document.querySelectorAll('.edit-repair-type-checkbox:checked');
+    editForm.addEventListener("submit", function (e) {
+      const checkedBoxes = document.querySelectorAll(
+        ".edit-repair-type-checkbox:checked"
+      );
       if (checkedBoxes.length === 0) {
         e.preventDefault();
-        alert('Please select at least one repair type.');
+        alert("Please select at least one repair type.");
         return false;
       }
     });

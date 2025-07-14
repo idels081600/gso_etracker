@@ -26,10 +26,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $latest_repair_date = !empty($_POST['latest_repair_date']) ? $_POST['latest_repair_date'] : NULL;
     $status = mysqli_real_escape_string($conn, $_POST['status']);
     $date_procured = !empty($_POST['date_procured']) ? $_POST['date_procured'] : NULL;
+    $office = mysqli_real_escape_string($conn, $_POST['update_office'] ?? '');
     
     // Create SQL query for update
     $sql = "UPDATE vehicle_records SET 
             car_model = '$car_model',
+            office = '$office',
             no_dispatch = $no_dispatch,
             old_mileage = $old_mileage,
             latest_mileage = $latest_mileage,

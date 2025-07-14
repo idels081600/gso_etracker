@@ -12,6 +12,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $latest_repair_date = !empty($_POST['latest_repair_date']) ? $_POST['latest_repair_date'] : NULL;
     $status = mysqli_real_escape_string($conn, $_POST['status']);
     $date_procured = !empty($_POST['date_procured']) ? $_POST['date_procured'] : NULL;
+    $office = mysqli_real_escape_string($conn, $_POST['office'] ?? '');
     
     // Check if plate number already exists
     $check_sql = "SELECT plate_no FROM vehicle_records WHERE plate_no = '$plate_no'";
@@ -25,11 +26,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         // Insert new vehicle
         $sql = "INSERT INTO vehicle_records (
-                    plate_no, car_model, no_dispatch, old_mileage, 
+                    plate_no, car_model, office, no_dispatch, old_mileage, 
                     latest_mileage, no_of_repairs, new_repair_date, 
                     status, date_procured
                 ) VALUES (
-                    '$plate_no', '$car_model', $no_dispatch, $old_mileage,
+                    '$plate_no', '$car_model', '$office', $no_dispatch, $old_mileage,
                     $latest_mileage, $no_of_repairs, 
                     " . ($latest_repair_date ? "'$latest_repair_date'" : "NULL") . ",
                     '$status', 

@@ -422,6 +422,39 @@ $office_counts_json = json_encode($office_counts);
                                 <label for="date_procured" class="form-label">Date Procured</label>
                                 <input type="date" class="form-control" id="date_procured" name="date_procured">
                             </div>
+                            <div class="col-md-6">
+                                <label for="add_office" class="form-label">Office</label>
+                                <select class="form-select" id="add_office" name="office">
+                                    <option value="">Select Office</option>
+                                    <option value="ADMIN">ADMIN</option>
+                                    <option value="ALERT">ALERT</option>
+                                    <option value="BFP">BFP</option>
+                                    <option value="BJMP">BJMP</option>
+                                    <option value="BPLO">BPLO</option>
+                                    <option value="CASSO">CASSO</option>
+                                    <option value="CAVI">CAVI</option>
+                                    <option value="CAVO">CAVO</option>
+                                    <option value="CDRRMO">CDRRMO</option>
+                                    <option value="CEE">CEE</option>
+                                    <option value="CEO">CEO</option>
+                                    <option value="CGSO">CGSO</option>
+                                    <option value="CHO">CHO</option>
+                                    <option value="CITY ADMIN">CITY ADMIN</option>
+                                    <option value="CMO">CMO</option>
+                                    <option value="CSWD">CSWD</option>
+                                    <option value="CTMO">CTMO</option>
+                                    <option value="CTO">CTO</option>
+                                    <option value="CVMO">CVMO</option>
+                                    <option value="DILG">DILG</option>
+                                    <option value="HRMO">HRMO</option>
+                                    <option value="OSCA">OSCA</option>
+                                    <option value="PDAO">PDAO</option>
+                                    <option value="PNP">PNP</option>
+                                    <option value="SP">SP</option>
+                                    <option value="TCWS">TCWS</option>
+
+                                </select>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -848,6 +881,39 @@ $office_counts_json = json_encode($office_counts);
                                 <label for="update_date_procured" class="form-label">Date Procured</label>
                                 <input type="date" class="form-control" id="update_date_procured" name="date_procured">
                             </div>
+                            <div class="col-md-6">
+                                <label for="update_office" class="form-label">Office</label>
+                                <select class="form-select" id="edit_office" name="update_office">
+                                    <option value="">Select Office</option>
+                                    <option value="ADMIN">ADMIN</option>
+                                    <option value="ALERT">ALERT</option>
+                                    <option value="BFP">BFP</option>
+                                    <option value="BJMP">BJMP</option>
+                                    <option value="BPLO">BPLO</option>
+                                    <option value="CASSO">CASSO</option>
+                                    <option value="CAVI">CAVI</option>
+                                    <option value="CAVO">CAVO</option>
+                                    <option value="CDRRMO">CDRRMO</option>
+                                    <option value="CEE">CEE</option>
+                                    <option value="CEO">CEO</option>
+                                    <option value="CGSO">CGSO</option>
+                                    <option value="CHO">CHO</option>
+                                    <option value="CITY ADMIN">CITY ADMIN</option>
+                                    <option value="CMO">CMO</option>
+                                    <option value="CSWD">CSWD</option>
+                                    <option value="CTMO">CTMO</option>
+                                    <option value="CTO">CTO</option>
+                                    <option value="CVMO">CVMO</option>
+                                    <option value="DILG">DILG</option>
+                                    <option value="HRMO">HRMO</option>
+                                    <option value="OSCA">OSCA</option>
+                                    <option value="PDAO">PDAO</option>
+                                    <option value="PNP">PNP</option>
+                                    <option value="SP">SP</option>
+                                    <option value="TCWS">TCWS</option>
+
+                                </select>
+                            </div>
                         </div>
                     </form>
                     <hr class="my-4">
@@ -866,6 +932,7 @@ $office_counts_json = json_encode($office_counts);
                                 <tr>
                                     <th>Plate No.</th>
                                     <th>Car Model</th>
+                                    <th>Office</th>
                                     <th>Status</th>
                                     <th>Old Mileage</th>
                                     <th>Latest Mileage</th>
