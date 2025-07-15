@@ -114,7 +114,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                 <li class="nav-item">
                     <a class="nav-link" href="index_desk.php">Home <span class="sr-only">(current)</span></a>
                 </li>
-              
+
                 <li class="nav-item">
                     <a class="nav-link" href="track_emp_desk.php">Track Employees</a>
                 </li>
@@ -287,8 +287,9 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                 <div class="form-group mb-3">
                                     <label for="sel2">Confirmed By:</label>
                                     <select class="form-control" id="sel2" name="confirmed_by" required>
-                                        <option>CAGULADA RENE ART</option>
-                                        <option>CASAS RUBY</option>
+                                        <?php if (isset($_SESSION['pay_name']) && !empty($_SESSION['pay_name'])): ?>
+                                            <option><?php echo htmlspecialchars($_SESSION['pay_name']); ?></option>
+                                        <?php endif; ?>
                                     </select>
                                 </div>
                             </div>
