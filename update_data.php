@@ -14,9 +14,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $location = mysqli_real_escape_string($conn, $_POST['Location1']);
     $purpose = mysqli_real_escape_string($conn, $_POST['purpose1']);
     $status = mysqli_real_escape_string($conn, $_POST['status']); // Get the selected status value
+    $address = mysqli_real_escape_string($conn, $_POST['address1']); // Added address field
     $retrieval_date = date('Y-m-d', strtotime($_POST['duration1']));
+
     // Debug: Print $_POST variables
-    echo "Debug: ID: $id, Tent No: $tent_no, Datepicker: $datepicker, Name: $name, Contact: $contact, TentNo: $tentno, Location: $location, Purpose: $purpose, Status: $status<br>";
+    echo "Debug: ID: $id, Tent No: $tent_no, Datepicker: $datepicker, Name: $name, Contact: $contact, TentNo: $tentno, Location: $location, Purpose: $purpose, Status: $status, Address: $address<br>";
 
     // Explode tent_no if it contains multiple numbers separated by commas
     $tent_numbers = explode(',', $tentno);
@@ -48,17 +50,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Ensure the loop is entered
     echo "Loop executed.";
 
-
     // Check if the status column for the given ID is empty
     $statusQuery = "SELECT status FROM tent WHERE id = '$id'";
     $statusResult = mysqli_query($conn, $statusQuery);
+    
     if ($statusResult) {
         $row = mysqli_fetch_assoc($statusResult);
         $existingStatus = $row['status'];
 
         // If the existing status is empty or Pending, and $tentno has a value, update the status to 'Installed'
         if ((empty($existingStatus) || $existingStatus === 'Pending') && !empty($tentno)) {
-            $query = "UPDATE tent SET
+            $query = "UPDATE tent SET 
                           tent_no = '$tentno',
                           date = '$datepicker',
                           retrieval_date = '$retrieval_date',
@@ -67,11 +69,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                           no_of_tents = '$tent_no',
                           location = '$location',
                           purpose = '$purpose',
-                          status = 'Installed' 
+                          address = '$address',
+                          status = 'Installed'
                         WHERE id = '$id'";
         } else {
             // Otherwise, update without modifying the status column
-            $query = "UPDATE tent SET
+            $query = "UPDATE tent SET 
                           tent_no = '$tentno',
                           date = '$datepicker',
                           retrieval_date = '$retrieval_date',
@@ -79,7 +82,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                           Contact_no = '$contact',
                           no_of_tents = '$tent_no',
                           location = '$location',
-                          purpose = '$purpose'
+                          purpose = '$purpose',
+                          address = '$address'
                         WHERE id = '$id'";
         }
 
@@ -94,3 +98,4 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         echo "Error retrieving existing status: " . mysqli_error($conn) . "<br>";
     }
 }
+?>

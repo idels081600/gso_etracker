@@ -63,6 +63,7 @@ $(function () {
       $("#viewEditPurpose").val(data.purpose);
       $("#viewEditLocation").val(data.location);
       $("#viewEditStatus").val(data.status);
+      $("#viewEditAddress").val(data.address);
       // Show the new Bootstrap 5 modal
       var modal = new bootstrap.Modal(document.getElementById("viewEditModal"));
       modal.show();
@@ -483,7 +484,6 @@ $("#viewEditModal").on("hidden.bs.modal", function () {
 $(function () {
   $("#viewEditForm").on("submit", function (e) {
     e.preventDefault();
-
     var formData = new FormData();
     formData.append("id", $("#id").val());
     formData.append("tent_no1", $("#viewEditNoOfTents").val());
@@ -495,6 +495,7 @@ $(function () {
     formData.append("purpose1", $("#viewEditPurpose").val());
     formData.append("status", $("#viewEditStatus").val());
     formData.append("duration1", $("#viewEditRetrievalDate").val());
+    formData.append("address1", $("#viewEditAddress").val()); // Added address field
 
     $.ajax({
       url: "update_data.php",

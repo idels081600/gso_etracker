@@ -11,7 +11,6 @@ if (!isset($_SESSION['username'])) {
     exit(); // Ensure that the script stops execution after the redirect
 }
 $result = display_data();
-
 if (isset($_POST['save_data'])) {
     $name = mysqli_real_escape_string($conn, $_POST['name']);
     $contact_no = mysqli_real_escape_string($conn, $_POST['contact']);
@@ -19,6 +18,7 @@ if (isset($_POST['save_data'])) {
     $no_of_tents = mysqli_real_escape_string($conn, $_POST['tent_no']);
     $purpose = mysqli_real_escape_string($conn, $_POST['No_tents']);
     $location = "";
+    $address = mysqli_real_escape_string($conn, $_POST['address']);
     $duration = mysqli_real_escape_string($conn, $_POST['duration']);
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -34,8 +34,8 @@ if (isset($_POST['save_data'])) {
     // Calculate retrieval date
     $retrieval_date = date('Y-m-d', strtotime($date . ' + ' . $duration . ' days'));
 
-    $query = "INSERT INTO tent(name, contact_no, no_of_tents, purpose, location, status, date, retrieval_date) 
-              VALUES ('$name', '$contact_no', '$no_of_tents', '$purpose', '$location', 'Pending', '$date', '$retrieval_date')";
+    $query = "INSERT INTO tent(name, contact_no, no_of_tents, purpose, location, address, status, date, retrieval_date) 
+              VALUES ('$name', '$contact_no', '$no_of_tents', '$purpose', '$location', '$address', 'Pending', '$date', '$retrieval_date')";
 
     $query_run = mysqli_query($conn, $query);
     if ($query_run) {
@@ -136,7 +136,7 @@ if (isset($_POST['save_data'])) {
             <div class="container_table_content">
                 <div class="d-flex justify-content-between align-items-center mb-3 px-3" style="padding-left:0;padding-right:0;">
                     <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-success" id="addButton" role="button" data-bs-toggle="modal" data-bs-target="#detailsModal">Install Tent</button>
+                        <button class="btn btn-success" id="addButton" role="button" data-bs-toggle="modal" data-bs-target="#detailsModal">Install Tent</button>
                         <button class="btn btn-secondary" id="printButton" data-bs-toggle="modal" data-bs-target="#printModal"><i class="fas fa-print"></i> Print</button>
                     </div>
                     <input type="text" id="search-input" class="form-control w-auto" placeholder="Search...">
@@ -273,6 +273,10 @@ if (isset($_POST['save_data'])) {
                                     <option value="Retrieved">Retrieved</option>
                                 </select>
                             </div>
+                            <div class="col-md-6">
+                                <label for="viewEditAddress" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="viewEditAddress" name="address">
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -327,11 +331,11 @@ if (isset($_POST['save_data'])) {
                                     <option value="LGU">LGU</option>
                                     <option value="Municipalities">Municipalities</option>
                                     <option value="Province">Province</option>
-                                     <option value="Burial">Burial</option>
+                                    <option value="Burial">Burial</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="Location" class="form-label">Location</label>
+                                <label for="Location" class="form-label">Barangay</label>
                                 <select class="form-select" id="Location" name="Location">
                                     <option value="">Select Location</option>
                                     <option value="Bool">Bool</option>
@@ -355,6 +359,10 @@ if (isset($_POST['save_data'])) {
                             <div class="col-md-6">
                                 <label for="tent_duration" class="form-label">Tent Duration</label>
                                 <input type="number" class="form-control" id="tent_duration" name="duration" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="address" class="form-label">Address</label>
+                                <input type="text" class="form-control" id="address" name="address" required>
                             </div>
                         </div>
                     </div>
@@ -397,4 +405,5 @@ if (isset($_POST['save_data'])) {
         });
     });
 </script>
+
 </html>

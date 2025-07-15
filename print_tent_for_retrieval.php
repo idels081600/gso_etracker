@@ -162,11 +162,12 @@ if ($weekend_result && mysqli_num_rows($weekend_result) > 0) {
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Name</th>
-                <th>Contact Number</th>
-                <th>No. of Tents</th>
+                <th>Borrower</th>
+                <th>Contact No.</th>
+                <th>No. of Tents</th>   
                 <th>Purpose</th>
                 <th>Location</th>
+                <th>Address</th>
             </tr>
         </thead>
         <tbody>
@@ -179,6 +180,7 @@ if ($weekend_result && mysqli_num_rows($weekend_result) > 0) {
                         <td><?= htmlspecialchars($row['no_of_tents']) ?></td>
                         <td><?= htmlspecialchars($row['purpose']) ?></td>
                         <td><?= htmlspecialchars($row['location']) ?></td>
+                        <td><?= htmlspecialchars($row['address']) ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -213,11 +215,12 @@ if ($weekend_result && mysqli_num_rows($weekend_result) > 0) {
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Name</th>
-                    <th>Contact Number</th>
+                    <th>Borrower</th>
+                    <th>Contact No.</th>
                     <th>No. of Tents</th>
                     <th>Purpose</th>
                     <th>Location</th>
+                    <th>Address</th>
                 </tr>
             </thead>
             <tbody>
@@ -229,6 +232,7 @@ if ($weekend_result && mysqli_num_rows($weekend_result) > 0) {
                         <td><?= htmlspecialchars($row['no_of_tents']) ?></td>
                         <td><?= htmlspecialchars($row['purpose']) ?></td>
                         <td><?= htmlspecialchars($row['location']) ?></td>
+                        <td><?= htmlspecialchars($row['address']) ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
