@@ -274,7 +274,7 @@ if (isset($_POST['save_data'])) {
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="viewEditAddress" class="form-label">Name</label>
+                                <label for="viewEditAddress" class="form-label">Address</label>
                                 <input type="text" class="form-control" id="viewEditAddress" name="address">
                             </div>
                         </div>
