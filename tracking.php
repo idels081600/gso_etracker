@@ -315,24 +315,8 @@ if (isset($_POST['save_data'])) {
                                 <input type="text" class="form-control" id="contact" name="contact" required>
                             </div>
                             <div class="col-md-6">
-                                <label for="No_tents" class="form-label">Purpose</label>
-                                <select class="form-select" id="No_tents" name="No_tents" required>
-                                    <option value="">Select Purpose</option>
-                                    <option value="Wake">Wake</option>
-                                    <option value="Fiesta">Fiesta</option>
-                                    <option value="Birthday">Birthday</option>
-                                    <option value="Wedding">Wedding</option>
-                                    <option value="Baptism">Baptism</option>
-                                    <option value="Personal">Personal</option>
-                                    <option value="Private">Private</option>
-                                    <option value="Church">Church</option>
-                                    <option value="School">School</option>
-                                    <option value="City Government">City Government</option>
-                                    <option value="LGU">LGU</option>
-                                    <option value="Municipalities">Municipalities</option>
-                                    <option value="Province">Province</option>
-                                    <option value="Burial">Burial</option>
-                                </select>
+                                <label for="address" class="form-label">Address</label>
+                                <input type="text" class="form-control" id="address" name="address" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="Location" class="form-label">Barangay</label>
@@ -357,12 +341,28 @@ if (isset($_POST['save_data'])) {
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="tent_duration" class="form-label">Tent Duration</label>
-                                <input type="number" class="form-control" id="tent_duration" name="duration" required>
+                                <label for="No_tents" class="form-label">Purpose</label>
+                                <select class="form-select" id="No_tents" name="No_tents" required>
+                                    <option value="">Select Purpose</option>
+                                    <option value="Wake">Wake</option>
+                                    <option value="Fiesta">Fiesta</option>
+                                    <option value="Birthday">Birthday</option>
+                                    <option value="Wedding">Wedding</option>
+                                    <option value="Baptism">Baptism</option>
+                                    <option value="Personal">Personal</option>
+                                    <option value="Private">Private</option>
+                                    <option value="Church">Church</option>
+                                    <option value="School">School</option>
+                                    <option value="City Government">City Government</option>
+                                    <option value="LGU">LGU</option>
+                                    <option value="Municipalities">Municipalities</option>
+                                    <option value="Province">Province</option>
+                                    <option value="Burial">Burial</option>
+                                </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="address" class="form-label">Address</label>
-                                <input type="text" class="form-control" id="address" name="address" required>
+                                <label for="tent_duration" class="form-label">Tent Duration</label>
+                                <input type="number" class="form-control" id="tent_duration" name="duration" required>
                             </div>
                         </div>
                     </div>
