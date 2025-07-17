@@ -94,6 +94,10 @@ if (isset($_POST['save_data'])) {
     </div>
 
     <div class="content">
+        <div id="system-status" class="alert alert-info" style="display: none; margin-bottom: 20px;">
+            <i class="fas fa-info-circle"></i>
+            <span id="system-status-message"></span>
+        </div>
 
         <h1>Tent</h1>
         <ul class="tally_list" id="tallyList">

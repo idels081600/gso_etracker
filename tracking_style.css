@@ -472,3 +472,58 @@ th {
   color: #fff;
   box-shadow: 0 4px 12px rgba(25, 135, 84, 0.15);
 }
+
+/* Status update indicators */
+.status-updated {
+    background-color: #d4edda !important;
+    transition: background-color 0.3s ease;
+}
+
+.status-error {
+    background-color: #f8d7da !important;
+    transition: background-color 0.3s ease;
+}
+
+/* Update status indicator */
+#update-status-indicator {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Loading spinner for status updates */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Enhanced table row highlighting */
+.table tbody tr.status-updated td {
+    border-color: #c3e6cb;
+}
+
+.table tbody tr.status-error td {
+    border-color: #f5c6cb;
+}
+
+/* Status dropdown enhancements */
+.status-dropdown:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.status-dropdown.updating {
+    opacity: 0.6;
+    pointer-events: none;
+}

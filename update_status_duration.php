@@ -1,65 +1,216 @@
 <?php
+// Enhanced error handling and logging
+error_reporting(E_ALL);
+ini_set('log_errors', 1);
+ini_set('error_log', 'php_errors.log');
+
+header('Content-Type: application/json');
+
 // Include your database connection file
 include 'db_asset.php';
 
-// Function to process dates and update status
-function processDates($datesArray, $conn) {
-    if (!is_array($datesArray)) {
-        return;
+// Function to log debug information
+function logDebug($message, $data = null) {
+    $logMessage = date('Y-m-d H:i:s') . ' - ' . $message;
+    if ($data !== null) {
+        $logMessage .= ' - Data: ' . json_encode($data);
+    }
+    error_log($logMessage);
+}
+
+// Function to send JSON response
+function sendResponse($success, $message, $data = null) {
+    $response = [
+        'success' => $success,
+        'message' => $message,
+        'timestamp' => date('Y-m-d H:i:s')
+    ];
+    
+    if ($data !== null) {
+        $response['data'] = $data;
     }
     
-    foreach ($datesArray as $data) {
-        $id = mysqli_real_escape_string($conn, $data['id']);
-        $tent_no = mysqli_real_escape_string($conn, $data['tent_no']);
-        $status = 'For Retrieval'; // Set status to "For Retrieval"
+    echo json_encode($response);
+    exit;
+}
 
-        // Update query for tent table
-        $queryTent = "UPDATE tent SET status = '$status' WHERE id = '$id'";
-        if (mysqli_query($conn, $queryTent)) {
-            echo "Status updated successfully in tent table for ID $id\n";
-        } else {
-            echo "Error updating status in tent table for ID $id: " . mysqli_error($conn) . "\n";
+try {
+    // Validate request method
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        sendResponse(false, 'Invalid request method');
+    }
+
+    // Start transaction for data consistency
+    mysqli_autocommit($conn, false);
+    
+    $updatedItems = [];
+    $errors = [];
+
+    // Process red dates (overdue items)
+    if (isset($_POST['redDates'])) {
+        $redDates = json_decode($_POST['redDates'], true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('Invalid JSON in redDates: ' . json_last_error_msg());
         }
-
-        // Retrieve tent_no data from tent table
-        // Split tent_no data into array if needed (e.g., if tent_no is a comma-separated string)
-        $tentNos = explode(',', $tent_no); // Assuming tent_no is in a comma-separated string
-
-        // Update query for tent_status table
-        foreach ($tentNos as $tentNo) {
-            $tentNo = trim($tentNo); // Remove any extra spaces
-            $queryTentStatus = "UPDATE tent_status SET Status = '$status' WHERE id = '$tentNo'";
-            if (mysqli_query($conn, $queryTentStatus)) {
-                echo "Status updated successfully for tent_no $tentNo in tent_status table\n";
+        
+        logDebug('Processing red dates', $redDates);
+        
+        foreach ($redDates as $item) {
+            if (!isset($item['tent_no']) || !isset($item['id'])) {
+                $errors[] = 'Missing tent_no or id in red date item';
+                continue;
+            }
+            
+            $tent_no = mysqli_real_escape_string($conn, $item['tent_no']);
+            $id = mysqli_real_escape_string($conn, $item['id']);
+            
+            // Update tent table
+            $tentQuery = "UPDATE tent SET status = 'Retrieved' WHERE id = ? AND status IN ('Installed', 'Pending')";
+            $tentStmt = mysqli_prepare($conn, $tentQuery);
+            
+            if (!$tentStmt) {
+                $errors[] = "Prepare failed for tent update: " . mysqli_error($conn);
+                continue;
+            }
+            
+            mysqli_stmt_bind_param($tentStmt, "s", $id);
+            
+            if (!mysqli_stmt_execute($tentStmt)) {
+                $errors[] = "Failed to update tent {$tent_no}: " . mysqli_stmt_error($tentStmt);
+                continue;
+            }
+            
+            $affectedRows = mysqli_stmt_affected_rows($tentStmt);
+            mysqli_stmt_close($tentStmt);
+            
+            if ($affectedRows > 0) {
+                // Update tent_status table
+                $statusQuery = "UPDATE tent_status SET Status = 'On Stock' WHERE id = ?";
+                $statusStmt = mysqli_prepare($conn, $statusQuery);
+                
+                if ($statusStmt) {
+                    mysqli_stmt_bind_param($statusStmt, "s", $tent_no);
+                    mysqli_stmt_execute($statusStmt);
+                    mysqli_stmt_close($statusStmt);
+                }
+                
+                $updatedItems[] = [
+                    'tent_no' => $tent_no,
+                    'id' => $id,
+                    'new_status' => 'Retrieved',
+                    'type' => 'overdue'
+                ];
+                
+                logDebug("Successfully updated tent {$tent_no} to Retrieved");
             } else {
-                echo "Error updating status for tent_no $tentNo in tent_status table: " . mysqli_error($conn) . "\n";
+                logDebug("No rows affected for tent {$tent_no} - may already be updated or not found");
             }
         }
     }
-}
-
-// Check if data is received via POST request
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $hasData = false;
     
-    // Process redDates (overdue)
-    if (isset($_POST['redDates'])) {
-        $redDates = json_decode($_POST['redDates'], true);
-        processDates($redDates, $conn);
-        $hasData = true;
-    }
-    
-    // Process orangeDates (due today)
+    // Process orange dates (due today items)
     if (isset($_POST['orangeDates'])) {
         $orangeDates = json_decode($_POST['orangeDates'], true);
-        processDates($orangeDates, $conn);
-        $hasData = true;
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('Invalid JSON in orangeDates: ' . json_last_error_msg());
+        }
+        
+        logDebug('Processing orange dates', $orangeDates);
+        
+        foreach ($orangeDates as $item) {
+            if (!isset($item['tent_no']) || !isset($item['id'])) {
+                $errors[] = 'Missing tent_no or id in orange date item';
+                continue;
+            }
+            
+            $tent_no = mysqli_real_escape_string($conn, $item['tent_no']);
+            $id = mysqli_real_escape_string($conn, $item['id']);
+            
+            // Update tent table
+            $tentQuery = "UPDATE tent SET status = 'For Retrieval' WHERE id = ? AND status IN ('Installed', 'Pending')";
+            $tentStmt = mysqli_prepare($conn, $tentQuery);
+            
+            if (!$tentStmt) {
+                $errors[] = "Prepare failed for tent update: " . mysqli_error($conn);
+                continue;
+            }
+            
+            mysqli_stmt_bind_param($tentStmt, "s", $id);
+            
+            if (!mysqli_stmt_execute($tentStmt)) {
+                $errors[] = "Failed to update tent {$tent_no}: " . mysqli_stmt_error($tentStmt);
+                continue;
+            }
+            
+            $affectedRows = mysqli_stmt_affected_rows($tentStmt);
+            mysqli_stmt_close($tentStmt);
+            
+            if ($affectedRows > 0) {
+                // Update tent_status table
+                $statusQuery = "UPDATE tent_status SET Status = 'For Retrieval' WHERE id = ?";
+                $statusStmt = mysqli_prepare($conn, $statusQuery);
+                
+                if ($statusStmt) {
+                    mysqli_stmt_bind_param($statusStmt, "s", $tent_no);
+                    mysqli_stmt_execute($statusStmt);
+                    mysqli_stmt_close($statusStmt);
+                }
+                
+                $updatedItems[] = [
+                    'tent_no' => $tent_no,
+                    'id' => $id,
+                    'new_status' => 'For Retrieval',
+                    'type' => 'due_today'
+                ];
+                
+                logDebug("Successfully updated tent {$tent_no} to For Retrieval");
+            } else {
+                logDebug("No rows affected for tent {$tent_no} - may already be updated or not found");
+            }
+        }
     }
     
-    if (!$hasData) {
-        echo "Error: No valid data received\n";
+    // Commit transaction if no critical errors
+    if (empty($errors) || count($updatedItems) > 0) {
+        mysqli_commit($conn);
+        
+        $message = count($updatedItems) > 0 
+            ? "Successfully updated " . count($updatedItems) . " tent(s)"
+            : "No updates needed";
+            
+        if (!empty($errors)) {
+            $message .= " (with " . count($errors) . " warnings)";
+        }
+        
+        sendResponse(true, $message, [
+            'updated_items' => $updatedItems,
+            'warnings' => $errors,
+            'total_updated' => count($updatedItems)
+        ]);
+    } else {
+        // Rollback on errors
+        mysqli_rollback($conn);
+        sendResponse(false, "Update failed: " . implode(', ', $errors));
     }
-} else {
-    // If not a POST request, return an error
-    echo "Error: Invalid request method\n";
+} catch (Exception $e) {
+    // Rollback transaction on exception
+    mysqli_rollback($conn);
+    
+    logDebug('Exception in update_status_duration.php', [
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ]);
+    
+    sendResponse(false, "System error: " . $e->getMessage());
+} finally {
+    // Restore autocommit
+    mysqli_autocommit($conn, true);
+    
+    // Close connection
+    if (isset($conn)) {
+        mysqli_close($conn);
+    }
 }
