@@ -80,16 +80,16 @@ require_once 'transmit_db.php';
                             <thead class="table-light">
                                 <tr>
                                     <th>IB no.</th>
+                                    <th>Winning Bidders</th>
                                     <th>Project Name</th>
                                     <th>Amount</th>
                                     <th>Date Transmitted</th>
                                     <th>Office</th>
-                                    <th>Received by</th>
-                                    <th>Winning Bidders</th>
                                     <th>NOA no.</th>
                                     <th>Contract of Agreement Date</th>
                                     <th>Notice to Proceed Date</th>
                                     <th>Calendar Days of Delivery</th>
+                                    <th>Received by</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -157,15 +157,15 @@ require_once 'transmit_db.php';
                             </div>
                             <div class="col-md-6">
                                 <label for="COA_date" class="form-label">Contract of Agreement Date</label>
-                                <input type="date" class="form-control" id="COA_date" name="COA_date" >
+                                <input type="date" class="form-control" id="COA_date" name="COA_date">
                             </div>
                             <div class="col-md-6">
                                 <label for="notice_proceed" class="form-label">Notice to Proceed Date</label>
-                                <input type="date" class="form-control" id="notice_proceed" name="notice_proceed" >
+                                <input type="date" class="form-control" id="notice_proceed" name="notice_proceed">
                             </div>
                             <div class="col-md-6">
                                 <label for="deadline" class="form-label">Calendar Days of Delivery</label>
-                                <input type="text" class="form-control" id="deadline" name="deadline"  >
+                                <input type="text" class="form-control" id="deadline" name="deadline">
                             </div>
                         </div>
                     </div>
@@ -228,19 +228,19 @@ require_once 'transmit_db.php';
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_NOA_no" class="form-label">NOA no.</label>
-                                <input type="text" class="form-control" id="edit_NOA_no" name="NOA_no" >
+                                <input type="text" class="form-control" id="edit_NOA_no" name="NOA_no">
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_COA_date" class="form-label">Contract of Agreement Date</label>
-                                <input type="date" class="form-control" id="edit_COA_date" name="COA_date" >
+                                <input type="date" class="form-control" id="edit_COA_date" name="COA_date">
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_notice_proceed" class="form-label">Notice to Proceed Date</label>
-                                <input type="date" class="form-control" id="edit_notice_proceed" name="notice_proceed" >
+                                <input type="date" class="form-control" id="edit_notice_proceed" name="notice_proceed">
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_deadline" class="form-label">Calendar Days of Delivery</label>
-                                <input type="text" class="form-control" id="edit_deadline" name="deadline"  >
+                                <input type="text" class="form-control" id="edit_deadline" name="deadline">
                             </div>
                         </div>
                     </div>
