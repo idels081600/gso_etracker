@@ -1,0 +1,363 @@
+/* Custom styles for fuel dashboard */
+
+/* Navbar customization */
+.navbar {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+}
+
+.navbar-brand i {
+    font-size: 1.8rem;
+}
+
+/* Navigation links */
+.nav-link {
+    color: #495057 !important;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #0d6efd !important;
+}
+
+.nav-link.active {
+    color: #0d6efd !important;
+    font-weight: 600;
+}
+
+/* Dropdown menu styling */
+.dropdown-menu {
+    border: 1px solid #e9ecef;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.dropdown-item {
+    color: #495057;
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #0d6efd;
+}
+
+/* User avatar */
+.rounded-circle {
+    border: 2px solid #e9ecef;
+}
+
+/* Fuel Tally Cards */
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.card-text {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+/* Icon containers */
+.bg-success.rounded-circle {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-warning.rounded-circle {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-primary.rounded-circle {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 991.98px) {
+    .navbar-nav {
+        margin-top: 1rem;
+    }
+    
+    .d-flex.align-items-center {
+        margin-top: 1rem;
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .d-flex.align-items-center form {
+        margin-bottom: 1rem;
+        margin-right: 0 !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .card-text {
+        font-size: 2rem;
+    }
+    
+    .bg-success.rounded-circle,
+    .bg-warning.rounded-circle,
+    .bg-primary.rounded-circle {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .bg-success.rounded-circle i,
+    .bg-warning.rounded-circle i,
+    .bg-primary.rounded-circle i {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* Body styling */
+body {
+    background-color: #f8f9fa;
+}
+
+/* Main content area */
+.container-fluid {
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+/* Scrollable Table Styles */
+.table-container-scrollable {
+    max-height: 600px; /* Adjust height as needed */
+    overflow-y: auto;
+    overflow-x: auto;
+    position: relative;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-bottom: none;
+}
+
+/* Sticky header for the table */
+.table-sticky-header thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8f9fa !important;
+    border-bottom: 2px solid #dee2e6 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Custom scrollbar styling */
+.table-container-scrollable::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-container-scrollable::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-container-scrollable::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.table-container-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Firefox scrollbar styling */
+.table-container-scrollable {
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+/* Table styling */
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #495057;
+    padding: 1rem 0.75rem;
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Badge styling */
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Action buttons */
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* Checkbox styling */
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Text truncation */
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Pagination */
+.pagination-sm .page-link {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Text truncation for long content */
+.text-truncate-table {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Loading state */
+.table-loading {
+    position: relative;
+}
+
+.table-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+/* Empty state styling */
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Mobile responsiveness for table */
+@media (max-width: 768px) {
+    .table-container-scrollable {
+        max-height: 400px;
+        font-size: 0.875rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.8rem;
+    }
+    
+    .text-truncate-table {
+        max-width: 120px;
+    }
+    
+    .btn-group-sm > .btn {
+        padding: 0.125rem 0.25rem;
+    }
+    
+    .btn-group-sm > .btn i {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .table-container-scrollable {
+        max-height: 350px;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.375rem 0.125rem;
+        font-size: 0.75rem;
+    }
+    
+    .text-truncate-table {
+        max-width: 100px;
+    }
+}
+
+/* Card styling */
+.card-header {
+    padding: 1rem 1.25rem;
+}
+
+.card-footer {
+    padding: 0.75rem 1.25rem;
+    background-color: #f8f9fa !important;
+}
+
+/* Smooth scrolling */
+.table-container-scrollable {
+    scroll-behavior: smooth;
+}
+
+/* Row selection highlighting */
+.table tbody tr.selected {
+    background-color: #e3f2fd !important;
+}
+
+/* Loading spinner for refresh button */
+.btn .fa-spin {
+    animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
