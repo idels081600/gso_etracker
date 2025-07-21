@@ -3,7 +3,7 @@ require_once "db_asset.php";
 function display_data()
 {
     global $conn;
-    $query = "SELECT * FROM `tent` WHERE `status` IN ('Pending', 'Installed','For Retrieval') ORDER BY `id` DESC";
+    $query = "SELECT * FROM `tent` WHERE `status` IN ('Pending', 'Installed','For Retrieval','Long Term') ORDER BY `id` DESC";
 
     $result = mysqli_query($conn, $query);
     return $result;

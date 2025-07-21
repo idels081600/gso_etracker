@@ -12,6 +12,7 @@ if (!isset($_SESSION['username'])) {
 }
 $result = display_data();
 if (isset($_POST['save_data'])) {
+    // Prevent duplicate submissions by checking if data already exists
     $name = mysqli_real_escape_string($conn, $_POST['name']);
     $contact_no = mysqli_real_escape_string($conn, $_POST['contact']);
     $date = mysqli_real_escape_string($conn, date('Y-m-d', strtotime($_POST['datepicker'])));
@@ -22,27 +23,40 @@ if (isset($_POST['save_data'])) {
     $duration = mysqli_real_escape_string($conn, $_POST['duration']);
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        // Check if "other" input is not empty
         if (!empty($_POST['other'])) {
-            $location = mysqli_real_escape_string($conn, $_POST['other']); // Use "other" input value
+            $location = mysqli_real_escape_string($conn, $_POST['other']);
         } else {
-            // "other" input is empty, use the value from the dropdown
             $location = mysqli_real_escape_string($conn, $_POST['Location']);
         }
     }
 
+    // Check for duplicate entry before inserting
+    $check_query = "SELECT id FROM tent WHERE name = '$name' AND contact_no = '$contact_no' AND date = '$date' AND location = '$location' LIMIT 1";
+    $check_result = mysqli_query($conn, $check_query);
+
+    if (mysqli_num_rows($check_result) > 0) {
+        // Duplicate found, redirect without inserting
+        header("Location: tracking.php?error=duplicate");
+        exit();
+    }
+
     // Calculate retrieval date
-    $retrieval_date = date('Y-m-d', strtotime($date . ' + ' . $duration . ' days'));
+    if (!empty($duration) && is_numeric($duration)) {
+        $retrieval_date = date('Y-m-d', strtotime($date . ' + ' . $duration . ' days'));
+        $retrieval_date_value = "'$retrieval_date'";
+    } else {
+        $retrieval_date_value = "NULL";
+    }
 
     $query = "INSERT INTO tent(name, contact_no, no_of_tents, purpose, location, address, status, date, retrieval_date) 
-              VALUES ('$name', '$contact_no', '$no_of_tents', '$purpose', '$location', '$address', 'Pending', '$date', '$retrieval_date')";
+              VALUES ('$name', '$contact_no', '$no_of_tents', '$purpose', '$location', '$address', 'Pending', '$date', $retrieval_date_value)";
 
     $query_run = mysqli_query($conn, $query);
     if ($query_run) {
-        header("Location: tracking.php");
+        header("Location: tracking.php?success=1");
+        exit();
     } else {
-        // Handle insert error
-        header("Location: tracking.php");
+        header("Location: tracking.php?error=insert_failed");
         exit();
     }
 }
@@ -182,6 +196,7 @@ if (isset($_POST['save_data'])) {
                                                         <option value="Installed" data-id="<?php echo $row['id']; ?>">Installed</option>
                                                         <option value="For Retrieval" data-id="<?php echo $row['id']; ?>">For Retrieval</option>
                                                         <option value="Retrieved" data-id="<?php echo $row['id']; ?>">Retrieved</option>
+                                                        <option value="Long Term" data-id="<?php echo $row['id']; ?>">Long Term</option>
                                                     </select>
                                                 </div>
                                             </td>
@@ -193,6 +208,7 @@ if (isset($_POST['save_data'])) {
                                                         <option value="Installed" data-id="<?php echo $row['id']; ?>" <?php echo ($row['status'] == 'Installed') ? 'selected' : ''; ?>>Installed</option>
                                                         <option value="For Retrieval" data-id="<?php echo $row['id']; ?>" <?php echo ($row['status'] == 'For Retrieval') ? 'selected' : ''; ?>>For Retrieval</option>
                                                         <option value="Retrieved" data-id="<?php echo $row['id']; ?>" <?php echo ($row['status'] == 'Retrieved') ? 'selected' : ''; ?>>Retrieved</option>
+                                                        <option value="Long Term" data-id="<?php echo $row['id']; ?>" <?php echo ($row['status'] == 'Long Term') ? 'selected' : ''; ?>>Long Term</option>
                                                     </select>
                                                 </div>
                                             </td>
@@ -227,7 +243,7 @@ if (isset($_POST['save_data'])) {
                     <div class="modal-body">
                         <div class="boxContainer">
                             <div class="boxes">
-                                <?php for ($i = 1; $i <= 200; $i++): ?>
+                                <?php for ($i = 1; $i <= 300; $i++): ?>
                                     <div class="box" data-box="<?php echo $i; ?>"><?php echo $i; ?></div>
                                 <?php endfor; ?>
                             </div>
@@ -275,6 +291,7 @@ if (isset($_POST['save_data'])) {
                                     <option value="Installed">Installed</option>
                                     <option value="For Retrieval">For Retrieval</option>
                                     <option value="Retrieved">Retrieved</option>
+                                    <option value="Long Term">Long Term</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -304,23 +321,23 @@ if (isset($_POST['save_data'])) {
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label for="tent_no" class="form-label">No. of Tents</label>
-                                <input type="number" class="form-control" id="tent_no" name="tent_no" min="0" step="1" pattern="\d+" required>
+                                <input type="number" class="form-control" id="tent_no" name="tent_no" min="0" step="1" pattern="\d+">
                             </div>
                             <div class="col-md-6">
                                 <label for="datepicker" class="form-label">Date</label>
-                                <input type="text" class="form-control" id="datepicker" placeholder="Select a date" name="datepicker" required>
+                                <input type="text" class="form-control" id="datepicker" placeholder="Select a date" name="datepicker">
                             </div>
                             <div class="col-md-6">
                                 <label for="name" class="form-label">Name</label>
-                                <input type="text" class="form-control" id="name" name="name" required>
+                                <input type="text" class="form-control" id="name" name="name">
                             </div>
                             <div class="col-md-6">
                                 <label for="contact" class="form-label">Contact no.</label>
-                                <input type="text" class="form-control" id="contact" name="contact" required>
+                                <input type="text" class="form-control" id="contact" name="contact">
                             </div>
                             <div class="col-md-6">
                                 <label for="address" class="form-label">Address</label>
-                                <input type="text" class="form-control" id="address" name="address" required>
+                                <input type="text" class="form-control" id="address" name="address">
                             </div>
                             <div class="col-md-6">
                                 <label for="Location" class="form-label">Barangay</label>
@@ -346,7 +363,7 @@ if (isset($_POST['save_data'])) {
                             </div>
                             <div class="col-md-6">
                                 <label for="No_tents" class="form-label">Purpose</label>
-                                <select class="form-select" id="No_tents" name="No_tents" required>
+                                <select class="form-select" id="No_tents" name="No_tents">
                                     <option value="">Select Purpose</option>
                                     <option value="Wake">Wake</option>
                                     <option value="Fiesta">Fiesta</option>
@@ -366,7 +383,7 @@ if (isset($_POST['save_data'])) {
                             </div>
                             <div class="col-md-6">
                                 <label for="tent_duration" class="form-label">Tent Duration</label>
-                                <input type="number" class="form-control" id="tent_duration" name="duration" required>
+                                <input type="number" class="form-control" id="tent_duration" name="duration">
                             </div>
                         </div>
                     </div>
