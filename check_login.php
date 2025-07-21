@@ -84,6 +84,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "Pay_admin":
                 header("location:Payables/transmittal_bac.php");
                 break;
+            case "fuel_admin":
+                header("location:fuel_tracker/fuel_dashboard.php");
+                break;
             default:
                 header("location:login_v2.php");
                 break;
