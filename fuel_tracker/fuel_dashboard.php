@@ -1,3 +1,6 @@
+<?php
+session_start();
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -55,7 +58,7 @@
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
                             role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <img src="../logo.png" alt="User" class="rounded-circle me-2" width="32" height="32">
-                            <span class="text-dark"><?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'User'; ?></span>
+                            <span class="text-dark"><?php echo isset( $_SESSION['pay_name']) ? htmlspecialchars( $_SESSION['pay_name']) : 'User'; ?></span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>

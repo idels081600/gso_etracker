@@ -23,6 +23,19 @@ document.addEventListener("DOMContentLoaded", function () {
     loadFuelRecords();
   }
 
+  // Initialize filter dropdown functionality
+  const filterDropdown = document.getElementById('filterDropdown');
+  if (filterDropdown) {
+    const filterItems = document.querySelectorAll('.dropdown-menu [data-filter]');
+    filterItems.forEach(item => {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        const filter = this.getAttribute('data-filter');
+        applyFuelFilter(filter);
+      });
+    });
+  }
+
   // Optional: Add search functionality
   // addTableSearch();
 });
@@ -652,5 +665,47 @@ function updateRecordCount(count = null) {
       if (recordsShowingElement) recordsShowingElement.textContent = rowCount;
       if (totalRecordsElement) totalRecordsElement.textContent = rowCount;
     }
+  }
+}
+
+function applyFuelFilter(filter) {
+  const today = new Date();
+  let filters = {};
+
+  switch (filter) {
+    case 'all':
+      loadFuelRecords();
+      break;
+    case 'today':
+      filters.date_from = today.toISOString().split('T')[0];
+      filters.date_to = filters.date_from;
+      loadFilteredFuelRecords(filters);
+      break;
+    case 'week': {
+      const firstDayOfWeek = new Date(today);
+      firstDayOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+      filters.date_from = firstDayOfWeek.toISOString().split('T')[0];
+      filters.date_to = today.toISOString().split('T')[0];
+      loadFilteredFuelRecords(filters);
+      break;
+    }
+    case 'month': {
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      filters.date_from = firstDayOfMonth.toISOString().split('T')[0];
+      filters.date_to = today.toISOString().split('T')[0];
+      loadFilteredFuelRecords(filters);
+      break;
+    }
+    case 'unleaded':
+      filters.fuel_type = 'Unleaded';
+      loadFilteredFuelRecords(filters);
+      break;
+    case 'diesel':
+      filters.fuel_type = 'Diesel';
+      loadFilteredFuelRecords(filters);
+      break;
+    default:
+      loadFuelRecords();
+      break;
   }
 }
