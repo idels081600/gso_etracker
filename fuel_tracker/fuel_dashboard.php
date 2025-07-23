@@ -1,5 +1,8 @@
 <?php
 session_start();
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -58,7 +61,7 @@ session_start();
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
                             role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <img src="../logo.png" alt="User" class="rounded-circle me-2" width="32" height="32">
-                            <span class="text-dark"><?php echo isset( $_SESSION['pay_name']) ? htmlspecialchars( $_SESSION['pay_name']) : 'User'; ?></span>
+                            <span class="text-dark"><?php echo isset($_SESSION['pay_name']) ? htmlspecialchars($_SESSION['pay_name']) : 'User'; ?></span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
@@ -479,7 +482,14 @@ session_start();
                                 </h5>
                             </div>
                             <div class="col-auto">
-                                <div class="d-flex gap-2">
+                                <div class="d-flex gap-2 align-items-center">
+                                    <!-- Date Range Filter -->
+                                    <input type="date" class="form-control form-control-sm" id="dateFilterStart" placeholder="Start Date" style="max-width: 150px;">
+                                    <span class="mx-1">to</span>
+                                    <input type="date" class="form-control form-control-sm" id="dateFilterEnd" placeholder="End Date" style="max-width: 150px;">
+                                    <button class="btn btn-outline-secondary btn-sm" id="dateFilterBtn">
+                                        <i class="fas fa-calendar-alt me-1"></i>Filter by Date
+                                    </button>
                                     <!-- Filter Dropdown -->
                                     <div class="dropdown">
                                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
@@ -499,7 +509,7 @@ session_start();
                                         </ul>
                                     </div>
                                     <!-- Export Button -->
-                                    <button class="btn btn-outline-primary btn-sm" id="exportBtn">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="exportBtn">
                                         <i class="fas fa-download me-1"></i>Export
                                     </button>
                                     <!-- Refresh Button -->
