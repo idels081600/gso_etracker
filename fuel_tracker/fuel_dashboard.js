@@ -686,3 +686,65 @@ async function viewRecord(recordId) {
         showNotification("Failed to load record details", "danger");
     }
 }
+
+// Function to delete a record
+async function deleteRecord(recordId, row) {
+    try {
+        console.log("Deleting record ID:", recordId);
+
+        // Show loading state
+        const deleteBtn = row.querySelector(".btn-outline-danger");
+        const originalHTML = deleteBtn.innerHTML;
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        deleteBtn.disabled = true;
+
+        // Make API call to delete record
+        const response = await fetch(`delete_fuel_record.php?id=${recordId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Remove the row from the table
+            row.remove();
+            showNotification(`Record ${recordId} deleted successfully`, "success");
+
+            // Update record count
+            updateRecordCount();
+
+            // Reload statistics if elements exist
+            loadFuelStatistics();
+        } else {
+            throw new Error(data.message || "Failed to delete record");
+        }
+    } catch (error) {
+        console.error("Error deleting record:", error);
+        showNotification(`Failed to delete record: ${error.message}`, "danger");
+
+        // Restore button state
+        const deleteBtn = row.querySelector(".btn-outline-danger");
+        deleteBtn.innerHTML = originalHTML;
+        deleteBtn.disabled = false;
+    }
+}
+
+// Update record count display
+function updateRecordCount() {
+    const recordsShowingElement = document.getElementById("recordsShowing");
+    const totalRecordsElement = document.getElementById("totalRecords");
+
+    const tbody = document.getElementById("fuelRecordsBody");
+    if (tbody) {
+        const rowCount = tbody.querySelectorAll("tr").length;
+        if (recordsShowingElement) recordsShowingElement.textContent = rowCount;
+        if (totalRecordsElement) totalRecordsElement.textContent = rowCount;
+    }
+}
