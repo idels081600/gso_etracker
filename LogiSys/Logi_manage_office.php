@@ -403,7 +403,6 @@ function getStatusBadge($status)
                                                     <th>Item Name</th>
                                                     <th>Unit</th>
                                                     <th>Available Stock</th>
-                                                    <th>Quantity</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="searchItemsTable">
@@ -445,7 +444,6 @@ function getStatusBadge($status)
                                                     <th>Item Name</th>
                                                     <th>Quantity</th>
                                                     <th>Status</th>
-                                                    <th>Date Added</th>
                                                     <th>Actions</th>
                                                 </tr>
                                             </thead>

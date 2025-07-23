@@ -1,5 +1,12 @@
 <?php
+// Start output buffering to catch any unexpected output
+ob_start();
+
 session_start();
+
+// Clear any output that might have been generated
+ob_clean();
+
 header('Content-Type: application/json');
 
 // Check if user is logged in
@@ -21,7 +28,7 @@ try {
     $data = json_decode($input, true);
 
     if (!$data) {
-        throw new Exception('Invalid JSON data');
+        throw new Exception('Invalid JSON data received');
     }
 
     // Validate required fields
@@ -29,70 +36,80 @@ try {
         throw new Exception('No items in request');
     }
 
-    // Remarks (reason) is now optional
+    // Get data from request
     $reason = isset($data['reason']) ? trim($data['reason']) : '';
-
     $user_id = $_SESSION['user_id'];
     $username = $_SESSION['username'];
+    $office_id = isset($data['office_id']) ? $data['office_id'] : $user_id;
+    $office_name = isset($data['office_name']) ? $data['office_name'] : ($username . "'s Office");
     $items = $data['items'];
 
     // Start transaction
     mysqli_autocommit($conn, false);
 
-    // Insert request header
-    $request_query = "INSERT INTO supply_requests (
-        user_id, 
-        username, 
-        reason, 
-        status, 
-        created_at
-    ) VALUES (?, ?, ?, 'Pending', NOW())";
+    // Check if there's already a request for this specific office today
+    $today = date('Y-m-d');
+    $check_query = "SELECT COUNT(*) as count FROM items_requested 
+                    WHERE office_id = ? AND DATE(date_requested) = ? AND remarks != ''";
 
-    $request_stmt = mysqli_prepare($conn, $request_query);
-    
-    if (!$request_stmt) {
-        throw new Exception('Failed to prepare request query: ' . mysqli_error($conn));
+    $check_stmt = mysqli_prepare($conn, $check_query);
+
+    if (!$check_stmt) {
+        throw new Exception('Failed to prepare check query: ' . mysqli_error($conn));
     }
 
-    mysqli_stmt_bind_param($request_stmt, "iss", $user_id, $username, $reason);
+    mysqli_stmt_bind_param($check_stmt, "is", $office_id, $today);
+    mysqli_stmt_execute($check_stmt);
+    $check_result = mysqli_stmt_get_result($check_stmt);
+    $row = mysqli_fetch_assoc($check_result);
+    $has_remarks_today = $row['count'] > 0;
+    mysqli_stmt_close($check_stmt);
 
-    if (!mysqli_stmt_execute($request_stmt)) {
-        throw new Exception('Failed to insert request: ' . mysqli_stmt_error($request_stmt));
-    }
-
-    $request_id = mysqli_insert_id($conn);
-    mysqli_stmt_close($request_stmt);
-
-    // Insert request items
-    $item_query = "INSERT INTO supply_request_items (
-        request_id,
-        item_no,
+    // Insert request items directly - Fixed the column order and bind parameters
+    $item_query = "INSERT INTO items_requested (
+        office_id,
+        office_name,
+        item_id,
         item_name,
-        requested_quantity,
-        unit,
-        created_at
-    ) VALUES (?, ?, ?, ?, ?, NOW())";
+        quantity,
+        approved_quantity,
+        date_requested,
+        remarks,
+        status
+    ) VALUES (?, ?, ?, ?, ?, 0, NOW(), ?, 'Pending')";
 
     $item_stmt = mysqli_prepare($conn, $item_query);
-    
+
     if (!$item_stmt) {
         throw new Exception('Failed to prepare item query: ' . mysqli_error($conn));
     }
 
+    $item_counter = 0;
     foreach ($items as $item) {
+        // Validate item data
+        if (!isset($item['id']) || !isset($item['name']) || !isset($item['quantity'])) {
+            throw new Exception('Invalid item data structure');
+        }
+
+        // Only include remarks for the first item to avoid duplication
+        $item_remarks = ($item_counter === 0) ? $reason : '';
+
         mysqli_stmt_bind_param(
             $item_stmt,
-            "issis",
-            $request_id,
-            $item['id'],
-            $item['name'],
-            $item['quantity'],
-            $item['unit']
+            "isisis",
+            $office_id,      // i - integer
+            $username,    // s - string
+            $item['id'],     // i - string
+            $item['name'],   // s - string
+            $item['quantity'], // i - integer
+            $item_remarks    // s - string (only for first item)
         );
- 
+
         if (!mysqli_stmt_execute($item_stmt)) {
             throw new Exception('Failed to insert request item: ' . mysqli_stmt_error($item_stmt));
         }
+
+        $item_counter++;
     }
 
     mysqli_stmt_close($item_stmt);
@@ -101,12 +118,14 @@ try {
     mysqli_commit($conn);
     mysqli_autocommit($conn, true);
 
+    // Clear any unexpected output before sending JSON
+    ob_clean();
+
     echo json_encode([
         'success' => true,
         'message' => 'Request submitted successfully',
-        'request_id' => $request_id
+        'items_count' => count($items)
     ]);
-
 } catch (Exception $e) {
     // Rollback transaction on error
     if (isset($conn)) {
@@ -114,18 +133,19 @@ try {
         mysqli_autocommit($conn, true);
     }
 
+    // Clear any unexpected output before sending JSON
+    ob_clean();
+
     echo json_encode([
         'success' => false,
         'message' => $e->getMessage()
     ]);
 
-    // Log the error
+    // Log the error (don't echo it)
     error_log("Error in Logi_submit_request.php: " . $e->getMessage());
-
 } finally {
     // Close database connection
     if (isset($conn)) {
         mysqli_close($conn);
     }
 }
-?> 

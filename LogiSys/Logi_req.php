@@ -16,26 +16,21 @@ $username = $_SESSION['username'];
 $user_role = $_SESSION['role'];
 $user_office = null;
 
-// Get assigned items for this user directly from office_balance_items
+// Get all active items from common_items
 $assigned_items = [];
 $items_query = "SELECT 
-                    id,
                     item_no,
                     item_name,
                     quantity,
                     unit,
-                    po_number,
-                    assigned_date,
-                    status,
-                    notes
-                FROM office_balance_items
-                WHERE office_balance_id = ? AND status = 'Active'
-                ORDER BY assigned_date DESC";
+                    status
+                FROM common_items
+                WHERE status = 'Active'
+                ORDER BY item_name ASC";
 
 $items_stmt = mysqli_prepare($conn, $items_query);
 
 if ($items_stmt) {
-    mysqli_stmt_bind_param($items_stmt, "i", $user_id);
     mysqli_stmt_execute($items_stmt);
     $items_result = mysqli_stmt_get_result($items_stmt);
 
@@ -62,7 +57,8 @@ $inventory_result = mysqli_query($conn, $inventory_query);
     <style>
         .request-items-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr; /* Two columns */
+            grid-template-columns: 1fr 1fr;
+            /* Two columns */
             gap: 12px;
         }
 
@@ -75,6 +71,12 @@ $inventory_result = mysqli_query($conn, $inventory_query);
             display: flex;
             align-items: center;
             min-height: 40px;
+        }
+
+        /* Make the items table scrollable */
+        .scrollable-table-container {
+            max-height: 70vh;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -109,8 +111,10 @@ $inventory_result = mysqli_query($conn, $inventory_query);
                             <?php endif; ?>
                         </div>
                         <div class="dropdown-divider"></div>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-user"></i> Profile</a></li>
-                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="Logi_my_req.php"><i class="fas fa-user"></i> My Request</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
                         <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                     </ul>
                 </li>
@@ -127,15 +131,15 @@ $inventory_result = mysqli_query($conn, $inventory_query);
                         <h5 class="mb-0 text-dark"><i class="fas fa-boxes text-secondary"></i> Available Items</h5>
                     </div>
                     <div class="card-body bg-white">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
+                        <!-- Search bar for items table -->
+                        <div class="mb-3">
+                            <input type="text" id="itemSearchInput" class="form-control" placeholder="Search by item name or number...">
+                        </div>
+                        <div class="scrollable-table-container">
+                            <table class="table table-hover" id="itemsTableMain">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th class="text-dark">Item No</th>
                                         <th class="text-dark">Item Name</th>
-                                        <th class="text-dark">Current Balance</th>
-                                        <th class="text-dark">Unit</th>
-                                        <th class="text-dark">Status</th>
                                         <th class="text-dark">Action</th>
                                     </tr>
                                 </thead>
@@ -143,31 +147,16 @@ $inventory_result = mysqli_query($conn, $inventory_query);
                                     <?php if (!empty($assigned_items)): ?>
                                         <?php foreach ($assigned_items as $item): ?>
                                             <tr>
-                                                <td><?= htmlspecialchars($item['item_no']) ?></td>
                                                 <td><?= htmlspecialchars($item['item_name']) ?></td>
-                                                <td><?= htmlspecialchars($item['quantity']) ?></td>
-                                                <td><?= htmlspecialchars($item['unit']) ?></td>
-                                                <td>
-                                                    <?php
-                                                    $status_class = 'text-success';
-                                                    $status_text = 'Available';
-                                                    if ($item['quantity'] <= 0) {
-                                                        $status_class = 'text-danger';
-                                                        $status_text = 'Out of Stock';
-                                                    } elseif ($item['quantity'] <= 10) {
-                                                        $status_class = 'text-warning';
-                                                        $status_text = 'Low Stock';
-                                                    }
-                                                    ?>
-                                                    <span class="badge badge-light border <?= $status_class ?>"><?= $status_text ?></span>
-                                                </td>
+
                                                 <td>
                                                     <?php if ($item['quantity'] > 0): ?>
                                                         <button class="btn btn-sm btn-outline-dark"
                                                             type="button"
-                                                            onclick="openAddToRequestModal('<?= htmlspecialchars($item['item_no']) ?>', '<?= htmlspecialchars($item['item_name']) ?>', <?= $item['quantity'] ?>, '<?= htmlspecialchars($item['unit']) ?>')">
+                                                            onclick="openAddToRequestModal('<?= htmlspecialchars($item['item_no']) ?>', '<?= htmlspecialchars($item['item_name']) ?>', '<?= htmlspecialchars($item['unit']) ?>')">
                                                             <i class="fas fa-plus"></i> Add
                                                         </button>
+
                                                     <?php else: ?>
                                                         <button class="btn btn-sm btn-outline-secondary" disabled>
                                                             <i class="fas fa-times"></i> Unavailable
@@ -181,8 +170,7 @@ $inventory_result = mysqli_query($conn, $inventory_query);
                                             <td colspan="6" class="text-center text-muted">
                                                 <div class="py-4">
                                                     <i class="fas fa-inbox fa-2x mb-2"></i>
-                                                    <p>No items assigned to your office</p>
-                                                    <small>Contact the administrator to assign supplies to your office.</small>
+                                                    <p>No items available</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -251,10 +239,7 @@ $inventory_result = mysqli_query($conn, $inventory_query);
                             <label>Unit</label>
                             <input type="text" class="form-control" id="modalItemUnit" readonly>
                         </div>
-                        <div class="form-group">
-                            <label>Current Balance</label>
-                            <input type="number" class="form-control" id="modalItemCurrentBalance" readonly>
-                        </div>
+
                         <div class="form-group">
                             <label>Quantity to Request</label>
                             <input type="number" class="form-control" id="modalItemQty" min="1" required>
@@ -269,11 +254,52 @@ $inventory_result = mysqli_query($conn, $inventory_query);
             </div>
         </div>
     </div>
+    <!-- Add this toast container to your HTML body -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i id="toast-icon" class="fas fa-info-circle me-2"></i>
+                <strong id="toast-title" class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div id="toast-body" class="toast-body">
+                <!-- Message will be inserted here -->
+            </div>
+        </div>
+    </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const userId = <?php echo json_encode($_SESSION['user_id']); ?>;
+        const username = <?php echo json_encode($_SESSION['username']); ?>;
+        const officeId = <?php echo json_encode($_SESSION['user_id']); ?>; // Using user_id as office_id
+        const officeName = <?php echo json_encode($_SESSION['username'] . "'s Office"); ?>; // Or set a 
+    </script>
     <script src="Logi_req.js"></script>
+    <script>
+        // Client-side search for items table
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('itemSearchInput');
+            const table = document.getElementById('itemsTable');
+            searchInput.addEventListener('input', function() {
+                const filter = searchInput.value.toLowerCase();
+                const rows = table.getElementsByTagName('tr');
+                for (let i = 0; i < rows.length; i++) {
+                    const cells = rows[i].getElementsByTagName('td');
+                    if (cells.length > 0) {
+                        const itemName = cells[0].textContent.toLowerCase();
+                        if (itemName.indexOf(filter) > -1) {
+                            rows[i].style.display = '';
+                        } else {
+                            rows[i].style.display = 'none';
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

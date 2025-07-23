@@ -81,7 +81,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $log_stmt->close();
 
                 // Redirect to Logi_req.php
-                header("Location: Logi_req.php");
+                header("Location: Logi_my_req.php");
                 exit();
             } else {
                 // Invalid password

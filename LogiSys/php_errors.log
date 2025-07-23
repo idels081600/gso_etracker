@@ -371,3 +371,223 @@
 [27-Jun-2025 10:36:42 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 [27-Jun-2025 10:36:42 Europe/Berlin] Item added successfully. Insert ID: 1095
 [27-Jun-2025 10:36:42 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1095,"item_data":{"item_no":"684","item_name":"Engine Oil (unleaded)","rack_no":20,"unit":"pcs","current_balance":16,"status":"Available","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}
+[11-Jul-2025 08:21:14 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[11-Jul-2025 08:21:14 Europe/Berlin] Request Method: POST
+[11-Jul-2025 08:21:14 Europe/Berlin] Raw POST data: 
+[11-Jul-2025 08:21:14 Europe/Berlin] POST array: Array
+(
+    [itemNo] => 685
+    [itemName] => FR dichroic halogen lamp
+    [balance] => 1
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[11-Jul-2025 08:21:14 Europe/Berlin] === RECEIVED FORM DATA ===
+[11-Jul-2025 08:21:14 Europe/Berlin] POST data: Array
+(
+    [itemNo] => 685
+    [itemName] => FR dichroic halogen lamp
+    [balance] => 1
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[11-Jul-2025 08:21:14 Europe/Berlin] === SANITIZED DATA ===
+[11-Jul-2025 08:21:14 Europe/Berlin] Item No: 685
+[11-Jul-2025 08:21:14 Europe/Berlin] Item Name: FR dichroic halogen lamp
+[11-Jul-2025 08:21:14 Europe/Berlin] Rack No: 16
+[11-Jul-2025 08:21:14 Europe/Berlin] Unit: pcs
+[11-Jul-2025 08:21:14 Europe/Berlin] Current Balance: 1
+[11-Jul-2025 08:21:14 Europe/Berlin] Description: 
+[11-Jul-2025 08:21:14 Europe/Berlin] Expiry Date: null
+[11-Jul-2025 08:21:14 Europe/Berlin] Expiry Alert Days: 30
+[11-Jul-2025 08:21:14 Europe/Berlin] Initial Status: Low Stock
+[11-Jul-2025 08:21:14 Europe/Berlin] Final Status: Low Stock
+[11-Jul-2025 08:21:14 Europe/Berlin] Expiry Status: 
+[11-Jul-2025 08:21:14 Europe/Berlin] Checking for existing item: SELECT id FROM inventory_items WHERE item_no = ?
+[11-Jul-2025 08:21:14 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[11-Jul-2025 08:21:14 Europe/Berlin] Item added successfully. Insert ID: 1096
+[11-Jul-2025 08:21:14 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1096,"item_data":{"item_no":"685","item_name":"FR dichroic halogen lamp","rack_no":16,"unit":"pcs","current_balance":1,"status":"Low Stock","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}
+[11-Jul-2025 08:22:51 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[11-Jul-2025 08:22:51 Europe/Berlin] Request Method: POST
+[11-Jul-2025 08:22:51 Europe/Berlin] Raw POST data: 
+[11-Jul-2025 08:22:51 Europe/Berlin] POST array: Array
+(
+    [itemNo] => 686
+    [itemName] => LP PIN LED 3w
+    [balance] => 16
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[11-Jul-2025 08:22:51 Europe/Berlin] === RECEIVED FORM DATA ===
+[11-Jul-2025 08:22:51 Europe/Berlin] POST data: Array
+(
+    [itemNo] => 686
+    [itemName] => LP PIN LED 3w
+    [balance] => 16
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[11-Jul-2025 08:22:51 Europe/Berlin] === SANITIZED DATA ===
+[11-Jul-2025 08:22:51 Europe/Berlin] Item No: 686
+[11-Jul-2025 08:22:51 Europe/Berlin] Item Name: LP PIN LED 3w
+[11-Jul-2025 08:22:51 Europe/Berlin] Rack No: 16
+[11-Jul-2025 08:22:51 Europe/Berlin] Unit: pcs
+[11-Jul-2025 08:22:51 Europe/Berlin] Current Balance: 16
+[11-Jul-2025 08:22:51 Europe/Berlin] Description: 
+[11-Jul-2025 08:22:51 Europe/Berlin] Expiry Date: null
+[11-Jul-2025 08:22:51 Europe/Berlin] Expiry Alert Days: 30
+[11-Jul-2025 08:22:51 Europe/Berlin] Initial Status: Available
+[11-Jul-2025 08:22:51 Europe/Berlin] Final Status: Available
+[11-Jul-2025 08:22:51 Europe/Berlin] Expiry Status: 
+[11-Jul-2025 08:22:51 Europe/Berlin] Checking for existing item: SELECT id FROM inventory_items WHERE item_no = ?
+[11-Jul-2025 08:22:51 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[11-Jul-2025 08:22:51 Europe/Berlin] Item added successfully. Insert ID: 1097
+[11-Jul-2025 08:22:51 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1097,"item_data":{"item_no":"686","item_name":"LP PIN LED 3w","rack_no":16,"unit":"pcs","current_balance":16,"status":"Available","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}
+[11-Jul-2025 08:25:11 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[11-Jul-2025 08:25:11 Europe/Berlin] Request Method: POST
+[11-Jul-2025 08:25:11 Europe/Berlin] Raw POST data: 
+[11-Jul-2025 08:25:11 Europe/Berlin] POST array: Array
+(
+    [itemNo] => 687
+    [itemName] => T5 LED tube 28w
+    [balance] => 11
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[11-Jul-2025 08:25:11 Europe/Berlin] === RECEIVED FORM DATA ===
+[11-Jul-2025 08:25:11 Europe/Berlin] POST data: Array
+(
+    [itemNo] => 687
+    [itemName] => T5 LED tube 28w
+    [balance] => 11
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[11-Jul-2025 08:25:11 Europe/Berlin] === SANITIZED DATA ===
+[11-Jul-2025 08:25:11 Europe/Berlin] Item No: 687
+[11-Jul-2025 08:25:11 Europe/Berlin] Item Name: T5 LED tube 28w
+[11-Jul-2025 08:25:11 Europe/Berlin] Rack No: 16
+[11-Jul-2025 08:25:11 Europe/Berlin] Unit: pcs
+[11-Jul-2025 08:25:11 Europe/Berlin] Current Balance: 11
+[11-Jul-2025 08:25:11 Europe/Berlin] Description: 
+[11-Jul-2025 08:25:11 Europe/Berlin] Expiry Date: null
+[11-Jul-2025 08:25:11 Europe/Berlin] Expiry Alert Days: 30
+[11-Jul-2025 08:25:11 Europe/Berlin] Initial Status: Available
+[11-Jul-2025 08:25:11 Europe/Berlin] Final Status: Available
+[11-Jul-2025 08:25:11 Europe/Berlin] Expiry Status: 
+[11-Jul-2025 08:25:11 Europe/Berlin] Checking for existing item: SELECT id FROM inventory_items WHERE item_no = ?
+[11-Jul-2025 08:25:11 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[11-Jul-2025 08:25:11 Europe/Berlin] Item added successfully. Insert ID: 1098
+[11-Jul-2025 08:25:11 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1098,"item_data":{"item_no":"687","item_name":"T5 LED tube 28w","rack_no":16,"unit":"pcs","current_balance":11,"status":"Available","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}
+[11-Jul-2025 08:26:46 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[11-Jul-2025 08:26:46 Europe/Berlin] Request Method: POST
+[11-Jul-2025 08:26:46 Europe/Berlin] Raw POST data: 
+[11-Jul-2025 08:26:46 Europe/Berlin] POST array: Array
+(
+    [itemNo] => 688
+    [itemName] => Meteor Lights
+    [balance] => 20
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[11-Jul-2025 08:26:46 Europe/Berlin] === RECEIVED FORM DATA ===
+[11-Jul-2025 08:26:46 Europe/Berlin] POST data: Array
+(
+    [itemNo] => 688
+    [itemName] => Meteor Lights
+    [balance] => 20
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[11-Jul-2025 08:26:46 Europe/Berlin] === SANITIZED DATA ===
+[11-Jul-2025 08:26:46 Europe/Berlin] Item No: 688
+[11-Jul-2025 08:26:46 Europe/Berlin] Item Name: Meteor Lights
+[11-Jul-2025 08:26:46 Europe/Berlin] Rack No: 16
+[11-Jul-2025 08:26:46 Europe/Berlin] Unit: pcs
+[11-Jul-2025 08:26:46 Europe/Berlin] Current Balance: 20
+[11-Jul-2025 08:26:46 Europe/Berlin] Description: 
+[11-Jul-2025 08:26:46 Europe/Berlin] Expiry Date: null
+[11-Jul-2025 08:26:46 Europe/Berlin] Expiry Alert Days: 30
+[11-Jul-2025 08:26:46 Europe/Berlin] Initial Status: Available
+[11-Jul-2025 08:26:46 Europe/Berlin] Final Status: Available
+[11-Jul-2025 08:26:46 Europe/Berlin] Expiry Status: 
+[11-Jul-2025 08:26:46 Europe/Berlin] Checking for existing item: SELECT id FROM inventory_items WHERE item_no = ?
+[11-Jul-2025 08:26:46 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[11-Jul-2025 08:26:46 Europe/Berlin] Item added successfully. Insert ID: 1099
+[11-Jul-2025 08:26:46 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1099,"item_data":{"item_no":"688","item_name":"Meteor Lights","rack_no":16,"unit":"pcs","current_balance":20,"status":"Available","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}
+[11-Jul-2025 08:28:38 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[11-Jul-2025 08:28:38 Europe/Berlin] Request Method: POST
+[11-Jul-2025 08:28:38 Europe/Berlin] Raw POST data: 
+[11-Jul-2025 08:28:38 Europe/Berlin] POST array: Array
+(
+    [itemNo] => 689
+    [itemName] => T8 led tube & box
+    [balance] => 4
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[11-Jul-2025 08:28:38 Europe/Berlin] === RECEIVED FORM DATA ===
+[11-Jul-2025 08:28:38 Europe/Berlin] POST data: Array
+(
+    [itemNo] => 689
+    [itemName] => T8 led tube & box
+    [balance] => 4
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[11-Jul-2025 08:28:38 Europe/Berlin] === SANITIZED DATA ===
+[11-Jul-2025 08:28:38 Europe/Berlin] Item No: 689
+[11-Jul-2025 08:28:38 Europe/Berlin] Item Name: T8 led tube & box
+[11-Jul-2025 08:28:38 Europe/Berlin] Rack No: 16
+[11-Jul-2025 08:28:38 Europe/Berlin] Unit: pcs
+[11-Jul-2025 08:28:38 Europe/Berlin] Current Balance: 4
+[11-Jul-2025 08:28:38 Europe/Berlin] Description: 
+[11-Jul-2025 08:28:38 Europe/Berlin] Expiry Date: null
+[11-Jul-2025 08:28:38 Europe/Berlin] Expiry Alert Days: 30
+[11-Jul-2025 08:28:38 Europe/Berlin] Initial Status: Low Stock
+[11-Jul-2025 08:28:38 Europe/Berlin] Final Status: Low Stock
+[11-Jul-2025 08:28:38 Europe/Berlin] Expiry Status: 
+[11-Jul-2025 08:28:38 Europe/Berlin] Checking for existing item: SELECT id FROM inventory_items WHERE item_no = ?
+[11-Jul-2025 08:28:38 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[11-Jul-2025 08:28:38 Europe/Berlin] Item added successfully. Insert ID: 1100
+[11-Jul-2025 08:28:38 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1100,"item_data":{"item_no":"689","item_name":"T8 led tube & box","rack_no":16,"unit":"pcs","current_balance":4,"status":"Low Stock","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}
