@@ -86,7 +86,7 @@ foreach ($groupedData as $officeName => $officeData) {
 
     // Column widths: Date (40), Vehicle (50), Fuel Type (40), Liters (40) = 170mm total
     $pdf->Cell(40, 7, 'Date', 1, 0, 'C', true);
-    $pdf->Cell(50, 7, 'Vehicle', 1, 0, 'C', true);
+    $pdf->Cell(70, 7, 'Vehicle', 1, 0, 'C', true);
     $pdf->Cell(40, 7, 'Fuel Type', 1, 0, 'C', true);
     $pdf->Cell(40, 7, 'Liters', 1, 1, 'C', true); // Last cell in row, move to next line
 
@@ -98,7 +98,7 @@ foreach ($groupedData as $officeName => $officeData) {
     // Add individual records for the current office
     foreach ($officeData['records'] as $row) {
         $pdf->Cell(40, 6, $row['date'], 1, 0, 'C');
-        $pdf->Cell(50, 6, $row['vehicle'], 1, 0, 'L');
+        $pdf->Cell(70, 6, $row['vehicle'], 1, 0, 'L');
         $pdf->Cell(40, 6, $row['fuel_type'], 1, 0, 'L');
         $pdf->Cell(40, 6, number_format($row['liters_issued'], 2), 1, 1, 'R'); // Format liters to 2 decimal places
     }
@@ -107,7 +107,7 @@ foreach ($groupedData as $officeName => $officeData) {
     // Total Liters for the office
     $pdf->SetFont('Arial', 'B', 10); // Bold font for total line
     $pdf->SetFillColor(240, 240, 240); // Slightly darker grey for total line
-    $pdf->Cell(130, 7, 'Total Liters for ' . $officeName . ':', 1, 0, 'R', true); // Span across first three columns
+    $pdf->Cell(150, 7, 'Total Liters for ' . $officeName . ':', 1, 0, 'R', true); // Span across first three columns
     $pdf->Cell(40, 7, number_format($officeData['total_liters'], 2), 1, 1, 'R', true); // Display total liters
     $pdf->Ln(10); // Larger space before the next office group
 }
