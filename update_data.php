@@ -27,6 +27,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Debug: Print $_POST variables
     echo "Debug: ID: $id, Tent No: $tent_no, Datepicker: $datepicker, Name: $name, Contact: $contact, TentNo: $tentno, Location: $location, Purpose: $purpose, Status: $status, Address: $address<br>";
 
+    // Get existing status before processing
+    $statusQuery = "SELECT status FROM tent WHERE id = '$id'";
+    $statusResult = mysqli_query($conn, $statusQuery);
+    
+    if (!$statusResult) {
+        echo "Error retrieving existing status: " . mysqli_error($conn) . "<br>";
+        exit();
+    }
+    
+    $row = mysqli_fetch_assoc($statusResult);
+    $existingStatus = $row['status'];
+
     // Only process tent_status updates if tentno is not empty
     if (!empty($tentno)) {
         // Explode tent_no if it contains multiple numbers separated by commas
@@ -36,9 +48,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         var_dump($tent_numbers);
 
         // Determine the status to set in tent_status table based on the selected status
+        // If no status selected, use 'Installed' since we have tent numbers
+        $status_for_tent_status = !empty($status) ? $status : 'Installed';
         $tent_status_value = 'Available'; // Default value
 
-        switch ($status) {
+        switch ($status_for_tent_status) {
             case 'Installed':
                 $tent_status_value = 'Installed';
                 break;
@@ -52,7 +66,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $tent_status_value = 'Long Term'; // Set to Long Term
                 break;
             default:
-                $tent_status_value = 'Available';
+                $tent_status_value = 'Installed'; // Default to Installed when tent numbers exist
         }
 
         // Loop through each tent number
@@ -80,50 +94,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         echo "Loop executed.";
     }
 
-    // Check if the status column for the given ID is empty
-    $statusQuery = "SELECT status FROM tent WHERE id = '$id'";
-    $statusResult = mysqli_query($conn, $statusQuery);
-
-    if ($statusResult) {
-        $row = mysqli_fetch_assoc($statusResult);
-        $existingStatus = $row['status'];
-
-        // Determine what status to use in the tent table
-        $final_status = $status; // Use the selected status from the form
-
-        // If no status was selected and we have tent numbers, default to 'Installed'
-        if (empty($status) && !empty($tentno)) {
-            $final_status = 'Installed';
-        }
-
-        // If status is empty and no tent numbers, keep existing status or set to Pending
-        if (empty($status) && empty($tentno)) {
-            $final_status = !empty($existingStatus) ? $existingStatus : 'Pending';
-        }
-
-        // Update the tent table with the correct status
-        $query = "UPDATE tent SET 
-                     tent_no = '$tentno',
-                     date = '$datepicker',
-                     retrieval_date = $retrieval_date_value,
-                     name = '$name',
-                     Contact_no = '$contact',
-                     no_of_tents = '$tent_no',
-                     location = '$location',
-                     purpose = '$purpose',
-                     address = '$address',
-                     status = '$final_status'
-                   WHERE id = '$id'";
-
-        // Execute query
-        if (mysqli_query($conn, $query)) {
-            echo "Record updated successfully with status: $final_status<br>";
-            header("Location: tracking.php");
-            exit(); // Always add exit() after header redirect
-        } else {
-            echo "Error updating record: " . mysqli_error($conn) . "<br>";
-        }
+    // Determine what status to use in the tent table
+    // Priority logic: If tent numbers exist, automatically set to 'Installed'
+    if (!empty($tentno)) {
+        // When tent numbers are provided, automatically set status to 'Installed'
+        // Override any other status logic
+        $final_status = 'Installed';
     } else {
-        echo "Error retrieving existing status: " . mysqli_error($conn) . "<br>";
+        // No tent numbers provided
+        if (!empty($status)) {
+            // If status is explicitly provided, use it
+            $final_status = $status;
+        } else {
+            // No status provided and no tent numbers, set to 'Pending'
+            $final_status = 'Pending';
+        }
+    }
+
+    // Ensure we never set status to null or empty (final safety check)
+    if (empty($final_status)) {
+        $final_status = 'Pending'; // Fallback status
+    }
+
+    // Update the tent table with the correct status
+    $query = "UPDATE tent SET 
+                 tent_no = '$tentno',
+                 date = '$datepicker',
+                 retrieval_date = $retrieval_date_value,
+                 name = '$name',
+                 Contact_no = '$contact',
+                 no_of_tents = '$tent_no',
+                 location = '$location',
+                 purpose = '$purpose',
+                 address = '$address',
+                 status = '$final_status'
+               WHERE id = '$id'";
+
+    // Execute query
+    if (mysqli_query($conn, $query)) {
+        echo "Record updated successfully with status: $final_status<br>";
+        header("Location: tracking.php");
+        exit(); // Always add exit() after header redirect
+    } else {
+        echo "Error updating record: " . mysqli_error($conn) . "<br>";
     }
 }
+?>

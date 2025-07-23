@@ -288,6 +288,7 @@ if (isset($_POST['save_data'])) {
                                 <label for="viewEditStatus" class="form-label">Status</label>
                                 <select class="form-select" id="viewEditStatus" name="status">
                                     <option value="">Select Status</option>
+                                    <option value="Pending">Pending</option>
                                     <option value="Installed">Installed</option>
                                     <option value="For Retrieval">For Retrieval</option>
                                     <option value="Retrieved">Retrieved</option>
