@@ -808,7 +808,11 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((data) => {
           console.log("Upload successful:", data);
           // Add logic to inform the user, refresh data, etc.
-          alert("CSV file uploaded successfully!"); // Simple alert for demo
+          let successMessage = "CSV file uploaded successfully!";
+          if (data.successful_rows) {
+            successMessage += `\n${data.successful_rows} rows were successfully uploaded.`;
+          }
+          alert(successMessage); // Simple alert for demo
         })
         .catch((error) => {
           console.error("Upload failed:", error);
@@ -819,7 +823,12 @@ document.addEventListener("DOMContentLoaded", function () {
             errorMessage = `Upload failed: ${error.cause.message}`;
             // If there are failed rows, provide more detail
             if (error.cause.failed_rows_count > 0) {
-              errorMessage += `\n${error.cause.failed_rows_count} rows had issues. Check console for details.`;
+              errorMessage += `\n${error.cause.failed_rows_count} rows had issues:\n`;
+              error.cause.failed_rows.forEach((row) => {
+                errorMessage += `  - Row ${row.row}: ${row.errors.join(
+                  ", "
+                )}\n`;
+              });
               console.error("Failed rows details:", error.cause.failed_rows);
             }
           } else {
@@ -831,4 +840,24 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
   });
+});
+document.getElementById("searchBtn").addEventListener("click", function () {
+  const searchValue = document.getElementById("searchBar").value.toLowerCase();
+  const rows = document.querySelectorAll("#fuelRecordsBody tr");
+
+  rows.forEach((row) => {
+    const rowText = row.textContent.toLowerCase();
+    if (rowText.includes(searchValue)) {
+      row.style.display = ""; // Show row
+    } else {
+      row.style.display = "none"; // Hide row
+    }
+  });
+});
+
+// Optional: Trigger search when pressing Enter key
+document.getElementById("searchBar").addEventListener("keypress", function (e) {
+  if (e.key === "Enter") {
+    document.getElementById("searchBtn").click();
+  }
 });
