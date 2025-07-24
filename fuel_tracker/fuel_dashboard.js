@@ -151,7 +151,10 @@ async function saveFuelRecord() {
 
   // Validate the date field
   if (!data.fuel_date || data.fuel_date.trim() === "") {
-    showNotification("Date is required. Please select a valid date.", "warning");
+    showNotification(
+      "Date is required. Please select a valid date.",
+      "warning"
+    );
     return;
   }
 
@@ -177,7 +180,7 @@ async function saveFuelRecord() {
         purpose: data.purpose,
         fuel_type: data.fuel_type,
         liters_issued: data.liters_issued,
-        remarks: data.remarks
+        remarks: data.remarks,
       }),
     });
 
@@ -207,7 +210,10 @@ async function saveFuelRecord() {
 
     // Handle invalid JSON response
     if (error instanceof SyntaxError) {
-      showNotification("Invalid response from server. Please check the backend.", "danger");
+      showNotification(
+        "Invalid response from server. Please check the backend.",
+        "danger"
+      );
     } else {
       showNotification(`Error: ${error.message}`, "danger");
     }
@@ -290,7 +296,11 @@ function handleFilterSelection(filter) {
       break;
 
     case "month":
-      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const firstDayOfMonth = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        1
+      );
       filters.date_from = firstDayOfMonth.toISOString().split("T")[0];
       filters.date_to = today.toISOString().split("T")[0];
       loadFilteredFuelRecords(filters);
@@ -425,14 +435,18 @@ function createTableRow(record) {
 
   row.innerHTML = `
         <td>
-            <input type="checkbox" class="form-check-input row-checkbox" value="${record.id}">
+            <input type="checkbox" class="form-check-input row-checkbox" value="${
+              record.id
+            }">
         </td>
         <td>
             <span class="fw-medium">${formattedDate}</span>
             <small class="text-muted d-block">${relativeDate}</small>
         </td>
         <td>
-            <span class="badge bg-light text-dark">${record.office || "-"}</span>
+            <span class="badge bg-light text-dark">${
+              record.office || "-"
+            }</span>
         </td>
         <td>${record.vehicle || "-"}</td>
         <td>
@@ -522,7 +536,10 @@ async function loadFuelStatistics() {
     if (data.success) {
       updateFuelStatistics(data.data);
     } else {
-      showNotification("Error loading fuel statistics: " + data.message, "danger");
+      showNotification(
+        "Error loading fuel statistics: " + data.message,
+        "danger"
+      );
     }
   } catch (error) {
     console.error("Error loading fuel statistics:", error);
@@ -541,210 +558,277 @@ function updateFuelStatistics(statistics) {
   document.getElementById("dieselMonth").textContent = "0";
 
   // Update with actual data
-  statistics.forEach(stat => {
-      const fuelType = stat.fuel_type.toLowerCase();
+  statistics.forEach((stat) => {
+    const fuelType = stat.fuel_type.toLowerCase();
 
-      if (fuelType === "unleaded") {
-          document.getElementById("unleadedCount").textContent = stat.total_records;
-          document.getElementById("unleadedLiters").textContent =
-              parseFloat(stat.total_liters || 0).toFixed(2) + " L";
-          document.getElementById("unleadedMonth").textContent = stat.month_records;
-      } else if (fuelType === "diesel") {
-          document.getElementById("dieselCount").textContent = stat.total_records;
-          document.getElementById("dieselLiters").textContent =
-              parseFloat(stat.total_liters || 0).toFixed(2) + " L";
-          document.getElementById("dieselMonth").textContent = stat.month_records;
-      }
+    if (fuelType === "unleaded") {
+      document.getElementById("unleadedCount").textContent = stat.total_records;
+      document.getElementById("unleadedLiters").textContent =
+        parseFloat(stat.total_liters || 0).toFixed(2) + " L";
+      document.getElementById("unleadedMonth").textContent = stat.month_records;
+    } else if (fuelType === "diesel") {
+      document.getElementById("dieselCount").textContent = stat.total_records;
+      document.getElementById("dieselLiters").textContent =
+        parseFloat(stat.total_liters || 0).toFixed(2) + " L";
+      document.getElementById("dieselMonth").textContent = stat.month_records;
+    }
   });
 }
 
 // Function to edit a record
 function editRecord(recordId, row) {
-    // Find the record data from the row's cells
-    const cells = row.querySelectorAll("td");
+  // Find the record data from the row's cells
+  const cells = row.querySelectorAll("td");
 
-    // Populate the edit modal fields
-    document.getElementById("editRecordId").value = recordId;
-    document.getElementById("editFuelDate").value =
-        cells[1].querySelector(".fw-medium")?.innerText.trim() || "";
-    document.getElementById("editOffice").value = cells[2].innerText.trim();
-    document.getElementById("editVehicle").value = cells[3].innerText.trim();
-    document.getElementById("editPlateNo").value = cells[4].innerText.trim();
-    document.getElementById("editDriver").value = cells[5].innerText.trim();
-    document.getElementById("editPurpose").value = cells[6].innerText.trim();
-    document.getElementById("editFuelType").value =
-        cells[7].querySelector(".badge")?.innerText.trim() || "";
-    document.getElementById("editLitersIssued").value =
-        parseFloat((cells[8].innerText || "").replace(" L", "")) || "";
-    document.getElementById("editRemarks").value = cells[9].innerText.trim();
+  // Populate the edit modal fields
+  document.getElementById("editRecordId").value = recordId;
+  document.getElementById("editFuelDate").value =
+    cells[1].querySelector(".fw-medium")?.innerText.trim() || "";
+  document.getElementById("editOffice").value = cells[2].innerText.trim();
+  document.getElementById("editVehicle").value = cells[3].innerText.trim();
+  document.getElementById("editPlateNo").value = cells[4].innerText.trim();
+  document.getElementById("editDriver").value = cells[5].innerText.trim();
+  document.getElementById("editPurpose").value = cells[6].innerText.trim();
+  document.getElementById("editFuelType").value =
+    cells[7].querySelector(".badge")?.innerText.trim() || "";
+  document.getElementById("editLitersIssued").value =
+    parseFloat((cells[8].innerText || "").replace(" L", "")) || "";
+  document.getElementById("editRemarks").value = cells[9].innerText.trim();
 
-    // Show the edit modal (Bootstrap 5)
-    const editModal = new bootstrap.Modal(
-        document.getElementById("editFuelRecordModal")
-    );
-    editModal.show();
+  // Show the edit modal (Bootstrap 5)
+  const editModal = new bootstrap.Modal(
+    document.getElementById("editFuelRecordModal")
+  );
+  editModal.show();
 }
 
 // Handle update button click in the edit modal
 if (document.getElementById("updateFuelRecord")) {
-    document
-        .getElementById("updateFuelRecord")
-        .addEventListener("click", async function () {
-            const form = document.getElementById("editFuelRecordForm");
-            const formData = new FormData(form);
-            const recordId = formData.get("id");
-            const payload = {};
-            formData.forEach((value, key) => {
-                payload[key] = value;
-            });
+  document
+    .getElementById("updateFuelRecord")
+    .addEventListener("click", async function () {
+      const form = document.getElementById("editFuelRecordForm");
+      const formData = new FormData(form);
+      const recordId = formData.get("id");
+      const payload = {};
+      formData.forEach((value, key) => {
+        payload[key] = value;
+      });
 
-            try {
-                // Show loading state
-                const updateBtn = document.getElementById("updateFuelRecord");
-                const originalHTML = updateBtn.innerHTML;
-                updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                updateBtn.disabled = true;
+      try {
+        // Show loading state
+        const updateBtn = document.getElementById("updateFuelRecord");
+        const originalHTML = updateBtn.innerHTML;
+        updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        updateBtn.disabled = true;
 
-                // Send update request (adjust endpoint as needed)
-                const response = await fetch(`update_fuel_record.php?id=${recordId}`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(payload),
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                if (data.success) {
-                    showNotification(
-                        `Record ${recordId} updated successfully`,
-                        "success"
-                    );
-                    // Hide modal
-                    const editModalEl = document.getElementById("editFuelRecordModal");
-                    const editModal = bootstrap.Modal.getInstance(editModalEl);
-                    editModal.hide();
-                    // Reload records
-                    loadFuelRecords();
-                    // Reload statistics if needed
-                    loadFuelStatistics();
-                } else {
-                    throw new Error(data.message || "Failed to update record");
-                }
-            } catch (error) {
-                showNotification(`Failed to update record: ${error.message}`, "danger");
-            } finally {
-                // Restore button state
-                const updateBtn = document.getElementById("updateFuelRecord");
-                updateBtn.innerHTML = '<i class="fas fa-save me-1"></i>Update Record';
-                updateBtn.disabled = false;
-            }
+        // Send update request (adjust endpoint as needed)
+        const response = await fetch(`update_fuel_record.php?id=${recordId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          showNotification(
+            `Record ${recordId} updated successfully`,
+            "success"
+          );
+          // Hide modal
+          const editModalEl = document.getElementById("editFuelRecordModal");
+          const editModal = bootstrap.Modal.getInstance(editModalEl);
+          editModal.hide();
+          // Reload records
+          loadFuelRecords();
+          // Reload statistics if needed
+          loadFuelStatistics();
+        } else {
+          throw new Error(data.message || "Failed to update record");
+        }
+      } catch (error) {
+        showNotification(`Failed to update record: ${error.message}`, "danger");
+      } finally {
+        // Restore button state
+        const updateBtn = document.getElementById("updateFuelRecord");
+        updateBtn.innerHTML = '<i class="fas fa-save me-1"></i>Update Record';
+        updateBtn.disabled = false;
+      }
+    });
 }
 
 // Function to view a record
 async function viewRecord(recordId) {
-    try {
-        // Fetch the record details from the backend
-        const response = await fetch(
-            `get_fuel_data.php?action=single&id=${recordId}`
-        );
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
+  try {
+    // Fetch the record details from the backend
+    const response = await fetch(
+      `get_fuel_data.php?action=single&id=${recordId}`
+    );
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
 
-        if (!data.success || !data.data) {
-            showNotification("Failed to load record details", "danger");
-            return;
-        }
-
-        const record = data.data;
-
-        // Populate the modal fields
-        document.getElementById("viewFuelDate").textContent = record.date || "-";
-        document.getElementById("viewOffice").textContent = record.office || "-";
-        document.getElementById("viewVehicle").textContent = record.vehicle || "-";
-        document.getElementById("viewPlateNo").textContent = record.plate_no || "-";
-        document.getElementById("viewDriver").textContent = record.driver || "-";
-        document.getElementById("viewPurpose").textContent = record.purpose || "-";
-        document.getElementById("viewFuelType").textContent =
-            record.fuel_type || "-";
-        document.getElementById("viewLitersIssued").textContent =
-            record.liters_issued || "-";
-        document.getElementById("viewRemarks").textContent = record.remarks || "-";
-
-        // Show the view modal (Bootstrap 5)
-        const viewModal = new bootstrap.Modal(
-            document.getElementById("viewFuelRecordModal")
-        );
-        viewModal.show();
-    } catch (error) {
-        console.error("Error loading record details:", error);
-        showNotification("Failed to load record details", "danger");
+    if (!data.success || !data.data) {
+      showNotification("Failed to load record details", "danger");
+      return;
     }
+
+    const record = data.data;
+
+    // Populate the modal fields
+    document.getElementById("viewFuelDate").textContent = record.date || "-";
+    document.getElementById("viewOffice").textContent = record.office || "-";
+    document.getElementById("viewVehicle").textContent = record.vehicle || "-";
+    document.getElementById("viewPlateNo").textContent = record.plate_no || "-";
+    document.getElementById("viewDriver").textContent = record.driver || "-";
+    document.getElementById("viewPurpose").textContent = record.purpose || "-";
+    document.getElementById("viewRemarks").textContent = record.remarks || "-";
+    const viewModal = new bootstrap.Modal(
+      document.getElementById("viewFuelRecordModal")
+    );
+    viewModal.show();
+  } catch (error) {
+    console.error("Error loading record details:", error);
+    showNotification("Failed to load record details", "danger");
+  }
 }
 
 // Function to delete a record
 async function deleteRecord(recordId, row) {
-    try {
-        console.log("Deleting record ID:", recordId);
+  try {
+    console.log("Deleting record ID:", recordId);
 
-        // Show loading state
-        const deleteBtn = row.querySelector(".btn-outline-danger");
-        const originalHTML = deleteBtn.innerHTML;
-        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        deleteBtn.disabled = true;
+    // Show loading state
+    const deleteBtn = row.querySelector(".btn-outline-danger");
+    const originalHTML = deleteBtn.innerHTML;
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    deleteBtn.disabled = true;
 
-        // Make API call to delete record
-        const response = await fetch(`delete_fuel_record.php?id=${recordId}`, {
-            method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
+    // Make API call to delete record
+    const response = await fetch(`delete_fuel_record.php?id=${recordId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-            // Remove the row from the table
-            row.remove();
-            showNotification(`Record ${recordId} deleted successfully`, "success");
-
-            // Update record count
-            updateRecordCount();
-
-            // Reload statistics if elements exist
-            loadFuelStatistics();
-        } else {
-            throw new Error(data.message || "Failed to delete record");
-        }
-    } catch (error) {
-        console.error("Error deleting record:", error);
-        showNotification(`Failed to delete record: ${error.message}`, "danger");
-
-        // Restore button state
-        const deleteBtn = row.querySelector(".btn-outline-danger");
-        deleteBtn.innerHTML = originalHTML;
-        deleteBtn.disabled = false;
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Remove the row from the table
+      row.remove();
+      showNotification(`Record ${recordId} deleted successfully`, "success");
+
+      // Update record count
+      updateRecordCount();
+
+      // Reload statistics if elements exist
+      loadFuelStatistics();
+    } else {
+      throw new Error(data.message || "Failed to delete record");
+    }
+  } catch (error) {
+    console.error("Error deleting record:", error);
+    showNotification(`Failed to delete record: ${error.message}`, "danger");
+
+    // Restore button state
+    const deleteBtn = row.querySelector(".btn-outline-danger");
+    deleteBtn.innerHTML = originalHTML;
+    deleteBtn.disabled = false;
+  }
 }
 
 // Update record count display
 function updateRecordCount() {
-    const recordsShowingElement = document.getElementById("recordsShowing");
-    const totalRecordsElement = document.getElementById("totalRecords");
+  const recordsShowingElement = document.getElementById("recordsShowing");
+  const totalRecordsElement = document.getElementById("totalRecords");
 
-    const tbody = document.getElementById("fuelRecordsBody");
-    if (tbody) {
-        const rowCount = tbody.querySelectorAll("tr").length;
-        if (recordsShowingElement) recordsShowingElement.textContent = rowCount;
-        if (totalRecordsElement) totalRecordsElement.textContent = rowCount;
-    }
+  const tbody = document.getElementById("fuelRecordsBody");
+  if (tbody) {
+    const rowCount = tbody.querySelectorAll("tr").length;
+    if (recordsShowingElement) recordsShowingElement.textContent = rowCount;
+    if (totalRecordsElement) totalRecordsElement.textContent = rowCount;
+  }
 }
+document.addEventListener("DOMContentLoaded", function () {
+  const uploadCsvBtn = document.getElementById("uploadCsvBtn");
+  const csvUploadInput = document.getElementById("csvUploadInput");
+
+  uploadCsvBtn.addEventListener("click", function () {
+    csvUploadInput.click();
+  });
+
+  csvUploadInput.addEventListener("change", function () {
+    if (csvUploadInput.files.length > 0) {
+      const selectedFile = csvUploadInput.files[0];
+      console.log("Selected file:", selectedFile.name);
+
+      const formData = new FormData();
+      formData.append("csvFile", selectedFile);
+
+      fetch("upload_bulk.php", {
+        method: "POST",
+        body: formData,
+      })
+        .then((response) => {
+          // Check if the response's content type is JSON before attempting to parse it
+          const contentType = response.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+            // If it's not JSON, read the response as text and create a more informative error
+            return response.text().then((text) => {
+              throw new Error(
+                `Upload failed: Expected JSON response but received: ${contentType}.  Response text: ${text}`
+              );
+            });
+          }
+
+          // If it is JSON, parse it as usual
+          return response.json().then((data) => {
+            if (!response.ok) {
+              // If response is not OK, construct an error with the JSON data
+              throw new Error(
+                `Upload failed with status ${response.status}: ${
+                  data.message || "Unknown error"
+                }`,
+                { cause: data }
+              );
+            }
+            return data; // If OK, proceed with success data
+          });
+        })
+        .then((data) => {
+          console.log("Upload successful:", data);
+          // Add logic to inform the user, refresh data, etc.
+          alert("CSV file uploaded successfully!"); // Simple alert for demo
+        })
+        .catch((error) => {
+          console.error("Upload failed:", error);
+          let errorMessage = "Error uploading CSV file. Please try again.";
+
+          // Check if the error has a 'cause' (our custom error data)
+          if (error.cause && error.cause.message) {
+            errorMessage = `Upload failed: ${error.cause.message}`;
+            // If there are failed rows, provide more detail
+            if (error.cause.failed_rows_count > 0) {
+              errorMessage += `\n${error.cause.failed_rows_count} rows had issues. Check console for details.`;
+              console.error("Failed rows details:", error.cause.failed_rows);
+            }
+          } else {
+            // Fallback for generic HTTP errors or non-JSON responses
+            errorMessage = `Upload failed: ${error.message}`;
+          }
+
+          alert(errorMessage);
+        });
+    }
+  });
+});

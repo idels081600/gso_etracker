@@ -87,13 +87,13 @@ try {
                 </td>
                 <td>
                     <div class='btn-group btn-group-sm' role='group'>
-                        <button type='button' class='btn btn-outline-primary action-view' title='View' onclick='viewRecord(\"{$row['id']}\")'>
+                        <button type='button' class='btn btn-outline-primary action-view' title='View' onclick='window.viewRecord(\"{$row['id']}\")'>
                             <i class='fas fa-eye'></i>
                         </button>
                         <button type='button' class='btn btn-outline-warning action-edit' title='Edit' onclick='editRecord(\"{$row['id']}\", this.closest(\"tr\"))'>
                             <i class='fas fa-edit'></i>
                         </button>
-                        <button type='button' class='btn btn-outline-danger action-delete' title='Delete'>
+                        <button type='button' class='btn btn-outline-danger action-delete' title='Delete' onclick='deleteRecord(\"{$row['id']}\", this.closest(\"tr\"))'>
                             <i class='fas fa-trash'></i>
                         </button>
                     </div>

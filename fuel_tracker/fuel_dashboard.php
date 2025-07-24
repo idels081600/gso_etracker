@@ -483,14 +483,13 @@ header('Expires: 0');
                             </div>
                             <div class="col-auto">
                                 <div class="d-flex gap-2 align-items-center">
-                                    <!-- Date Range Filter -->
                                     <input type="date" class="form-control form-control-sm" id="dateFilterStart" placeholder="Start Date" style="max-width: 150px;">
                                     <span class="mx-1">to</span>
                                     <input type="date" class="form-control form-control-sm" id="dateFilterEnd" placeholder="End Date" style="max-width: 150px;">
                                     <button class="btn btn-outline-secondary btn-sm" id="dateFilterBtn">
                                         <i class="fas fa-calendar-alt me-1"></i>Filter by Date
                                     </button>
-                                    <!-- Filter Dropdown -->
+
                                     <div class="dropdown">
                                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
                                             id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -508,11 +507,17 @@ header('Expires: 0');
                                             <li><a class="dropdown-item" href="#" data-filter="diesel">Diesel Only</a></li>
                                         </ul>
                                     </div>
-                                    <!-- Export Button -->
+
+                                    <div class="position-relative">
+                                        <input type="file" id="csvUploadInput" accept=".csv" class="d-none"> <button type="button" class="btn btn-outline-success btn-sm" id="uploadCsvBtn">
+                                            <i class="fas fa-upload me-1"></i>Bulk Upload CSV
+                                        </button>
+                                    </div>
+
                                     <button type="button" class="btn btn-outline-primary btn-sm" id="exportBtn">
                                         <i class="fas fa-download me-1"></i>Export
                                     </button>
-                                    <!-- Refresh Button -->
+
                                     <button class="btn btn-outline-success btn-sm" id="refreshBtn">
                                         <i class="fas fa-sync-alt me-1"></i>Refresh
                                     </button>
