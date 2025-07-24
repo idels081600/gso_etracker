@@ -247,7 +247,7 @@ $(function () {
     var formData = new FormData();
     formData.append("id", id);
     formData.append("other1", otherValue);
-    formData.append("Location1", locationValue);
+	formData.append("Location1", locationValue);
     fetch("update_data.php", {
       method: "POST",
       body: formData,
@@ -379,20 +379,21 @@ $(function () {
     updateInProgress = true;
     showUpdateStatus('Checking date statuses...', 'info');
 
-    var today = new Date();
+    var today = moment.utc();
     var redDates = [];
     var orangeDates = [];
 
+    try {
     $(".date, .retrieval-date").each(function () {
       var dateText = $(this).text();
-      var date = new Date(dateText);
+		  var date = moment.utc(dateText);
       var row = $(this).closest("tr");
       var dropdown = row.find("select.status-dropdown");
       var selectedOption = dropdown.find(":selected").val();
       var id = dropdown.find(":selected").data("id");
 
       if (selectedOption) {
-        var timeDiff = date.getTime() - today.getTime();
+        var timeDiff = date.valueOf() - today.valueOf();
         var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
         // Define which statuses can be auto-updated
@@ -422,6 +423,9 @@ $(function () {
 
     // Process updates with proper error handling
     processStatusUpdates(redDates, orangeDates);
+    } finally {
+      updateInProgress = false;
+    }
   }
 
   function processStatusUpdates(redDates, orangeDates) {
@@ -429,7 +433,6 @@ $(function () {
     let completedUpdates = 0;
 
     if (totalUpdates === 0) {
-      updateInProgress = false;
       hideUpdateStatus();
       return;
     }
@@ -506,7 +509,7 @@ $(function () {
             }, delay);
           } else {
             retryAttempts.delete(requestKey);
-            reject({ xhr, status, error, requestType });
+            reject({ xhr, status, error, requestType, responseText: xhr.responseText });
           }
         });
     });
@@ -553,7 +556,6 @@ $(function () {
 
   function checkAllUpdatesComplete(completed, total) {
     if (completed >= total) {
-      updateInProgress = false;
       
       // Process any queued updates
       if (pendingUpdates.length > 0) {
@@ -565,7 +567,8 @@ $(function () {
           processQueuedUpdates(queued);
         }, 1000);
       } else {
-        hideUpdateStatus();
+		  updateInProgress = false;
+          hideUpdateStatus();
       }
     }
   }
