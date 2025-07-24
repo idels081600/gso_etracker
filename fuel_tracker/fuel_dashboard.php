@@ -483,11 +483,18 @@ header('Expires: 0');
                             </div>
                             <div class="col-auto">
                                 <div class="d-flex gap-2 align-items-center">
+                                    <!-- Add a search bar to the top of the page -->
+                                    <div class="input-group input-group-sm">
+                                        <input type="search" id="searchBar" class="form-control" placeholder="Search for records...">
+                                        <button class="btn btn-outline-secondary" id="searchBtn" type="button">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
                                     <input type="date" class="form-control form-control-sm" id="dateFilterStart" placeholder="Start Date" style="max-width: 150px;">
                                     <span class="mx-1">to</span>
                                     <input type="date" class="form-control form-control-sm" id="dateFilterEnd" placeholder="End Date" style="max-width: 150px;">
                                     <button class="btn btn-outline-secondary btn-sm" id="dateFilterBtn">
-                                        <i class="fas fa-calendar-alt me-1"></i>Filter by Date
+                                        <i class="fas fa-calendar-alt me-1"></i>Date
                                     </button>
 
                                     <div class="dropdown">
@@ -510,7 +517,7 @@ header('Expires: 0');
 
                                     <div class="position-relative">
                                         <input type="file" id="csvUploadInput" accept=".csv" class="d-none"> <button type="button" class="btn btn-outline-success btn-sm" id="uploadCsvBtn">
-                                            <i class="fas fa-upload me-1"></i>Bulk Upload CSV
+                                            <i class="fas fa-upload me-1"></i>Bulk Upload
                                         </button>
                                     </div>
 
