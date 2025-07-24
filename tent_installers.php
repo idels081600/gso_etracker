@@ -228,7 +228,7 @@ if (!isset($_SESSION['username'])) {
                         $statusQuery = "SELECT Status FROM tent_status";
                         $statusResult = mysqli_query($conn, $statusQuery);
 
-                        for ($i = 1; $i <= 200; $i++) {
+                        for ($i = 1; $i <= 300; $i++) {
                             $status = mysqli_fetch_assoc($statusResult);
                             $boxColor = '';
 
