@@ -28,6 +28,7 @@ class PDF extends FPDF
 
         // First Copy - Left Side
         $this->SetXY(10, $leftY);
+        $this->Cell(80, 4, 'BRYAN LAUREANO', 0, 2, 'C');
         $this->Cell(80, 4, '_________________________', 0, 2, 'C');
         $this->Cell(80, 4, 'Issued by:', 0, 2, 'C');
 
@@ -39,6 +40,7 @@ class PDF extends FPDF
 
         // Second Copy - Left Side
         $this->SetXY(190, $leftY);
+        $this->Cell(80, 4, 'BRYAN LAUREANO', 0, 2, 'C');
         $this->Cell(80, 4, '_________________________', 0, 2, 'C');
         $this->Cell(80, 4, 'Issued by:', 0, 2, 'C');
 
