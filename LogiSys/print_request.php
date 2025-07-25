@@ -4,52 +4,55 @@ require_once('logi_db.php');
 
 class PDF extends FPDF
 {
+    private $officeHeadNames = [];
+
+    function setOfficeHeadName($name)
+    {
+        // Store office head name for the upcoming page
+        $this->officeHeadNames[$this->PageNo() + 1] = $name;
+    }
+
     function Header() {}
 
     function Footer()
     {
         $this->SetFont('Arial', '', 8);
 
-        // === First set of signatories for the FIRST TABLE ===
-        $this->SetY(-20); // Position near bottom of left side
+        $pageNo = $this->PageNo();
+        $headName = $this->officeHeadNames[$pageNo] ?? '';
+
+        error_log("Footer Debug - Page $pageNo Office Head Name: '$headName'");
+
+        $this->SetY(-30); // Adjusted slightly higher to fit names above lines
         $leftY = $this->GetY();
 
-        // Left - Issued by (under first table)
+        // First Copy - Left Side
         $this->SetXY(10, $leftY);
-        $this->Cell(80, 4, '_________________________', 0, 0, 'C');
-        $this->Ln(4);
-        $this->SetX(10);
-        $this->Cell(80, 4, 'Issued by:', 0, 0, 'C');
+        $this->Cell(80, 4, '_________________________', 0, 2, 'C');
+        $this->Cell(80, 4, 'Issued by:', 0, 2, 'C');
 
-        // Right - Supply Officer/Representative (under first table)
+        // First Copy - Right Side
         $this->SetXY(100, $leftY);
-        $this->Cell(80, 4, '_________________________', 0, 0, 'C');
-        $this->Ln(4);
-        $this->SetX(100);
-        $this->Cell(80, 4, 'Supply Officer/Representative:', 0, 0, 'C');
+        $this->Cell(80, 4, $headName, 0, 2, 'C');
+        $this->Cell(80, 4, '_________________________', 0, 2, 'C');
+        $this->Cell(80, 4, 'Supply Officer/Representative:', 0, 2, 'C');
 
-        // === Second set of signatories for the SECOND TABLE ===
-        $secondY = $leftY; // add vertical spacing for second set
+        // Second Copy - Left Side
+        $this->SetXY(190, $leftY);
+        $this->Cell(80, 4, '_________________________', 0, 2, 'C');
+        $this->Cell(80, 4, 'Issued by:', 0, 2, 'C');
 
-        // Left - Approved by (under second table)
-        $this->SetXY(190, $secondY);
-        $this->Cell(80, 4, '_________________________', 0, 0, 'C');
-        $this->Ln(4);
-        $this->SetX(190);
-        $this->Cell(80, 4, 'Approved by:', 0, 0, 'C');
-
-        // Right - GSO (under second table)
-        $this->SetXY(280, $secondY);
-        $this->Cell(80, 4, '_________________________', 0, 0, 'C');
-        $this->Ln(4);
-        $this->SetX(280);
-        $this->Cell(80, 4, 'GSO:', 0, 0, 'C');
-
-        // === Page Number Center Bottom ===
+        // Second Copy - Right Side
+        $this->SetXY(280, $leftY);
+        $this->Cell(80, 4, $headName, 0, 2, 'C');
+        $this->Cell(80, 4, '_________________________', 0, 2, 'C');
+        $this->Cell(80, 4, 'Supply Officer/Representative:', 0, 2, 'C');
+        // Page number
         $this->SetY(-10);
         $this->SetFont('Arial', 'I', 8);
-        $this->Cell(0, 10, 'Page ' . $this->PageNo() . '/{nb}', 0, 0, 'C');
+        $this->Cell(0, 10, 'Page ' . $pageNo . '/{nb}', 0, 0, 'C');
     }
+
 
     function renderTableHeader($x, $y)
     {
@@ -124,6 +127,30 @@ class PDF extends FPDF
     }
 }
 
+// Function to get office head name
+function getOfficeHeadName($conn, $officeName)
+{
+    $sql = "SELECT name FROM users WHERE username LIKE ? LIMIT 1";
+    $stmt = $conn->prepare($sql);
+
+    if ($stmt) {
+        $searchTerm = '%' . trim($officeName) . '%';  // Flexible match
+        $stmt->bind_param("s", $searchTerm);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($row = $result->fetch_assoc()) {
+            return $row['name'];
+        }
+
+        $stmt->close();
+    }
+
+    return ''; // No match found
+}
+
+
+
 // Handle POST data
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["offices"]) && is_array($_POST["offices"])) {
     $print_date = $_POST['print_date'] ?? date('Y-m-d');
@@ -139,6 +166,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["offices"]) && is_array
 
     // Loop through each selected office
     foreach ($selectedOffices as $officeName) {
+        // Get office head name
+        $officeHeadName = getOfficeHeadName($conn, $officeName);
+        $pdf->setOfficeHeadName($officeHeadName);
+
         // Fetch data for the current office
         $sql = "SELECT * FROM items_requested                 
         WHERE office_name = ? 
@@ -177,10 +208,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["offices"]) && is_array
 
             // Approval information for right table (same data, different context)
 
-
             // Add a new page for each office
             $pdf->AddPage();
-
+            $pdf->setOfficeHeadName($officeHeadName);
             // Calculate positions with gap
             $tableWidth = 165;
             $gapWidth = 10;
