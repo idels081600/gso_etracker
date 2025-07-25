@@ -17,43 +17,52 @@ class PDF extends FPDF
     function Footer()
     {
         $this->SetFont('Arial', '', 8);
-
         $pageNo = $this->PageNo();
         $headName = $this->officeHeadNames[$pageNo] ?? '';
 
         error_log("Footer Debug - Page $pageNo Office Head Name: '$headName'");
 
-        $this->SetY(-30); // Adjusted slightly higher to fit names above lines
+        $this->SetY(-30);
         $leftY = $this->GetY();
 
         // First Copy - Left Side
         $this->SetXY(10, $leftY);
         $this->Cell(80, 4, 'BRYAN LAUREANO', 0, 2, 'C');
+        $this->SetY($this->GetY() - 4); // Move back up to overlap
+        $this->SetX(10);
         $this->Cell(80, 4, '_________________________', 0, 2, 'C');
         $this->Cell(80, 4, 'Issued by:', 0, 2, 'C');
 
         // First Copy - Right Side
         $this->SetXY(100, $leftY);
         $this->Cell(80, 4, $headName, 0, 2, 'C');
+        $this->SetY($this->GetY() - 4); // Overlap name with underline
+        $this->SetX(100);
         $this->Cell(80, 4, '_________________________', 0, 2, 'C');
         $this->Cell(80, 4, 'Supply Officer/Representative:', 0, 2, 'C');
 
         // Second Copy - Left Side
         $this->SetXY(190, $leftY);
         $this->Cell(80, 4, 'BRYAN LAUREANO', 0, 2, 'C');
+        $this->SetY($this->GetY() - 4);
+        $this->SetX(190);
         $this->Cell(80, 4, '_________________________', 0, 2, 'C');
         $this->Cell(80, 4, 'Issued by:', 0, 2, 'C');
 
         // Second Copy - Right Side
         $this->SetXY(280, $leftY);
         $this->Cell(80, 4, $headName, 0, 2, 'C');
+        $this->SetY($this->GetY() - 4);
+        $this->SetX(280);
         $this->Cell(80, 4, '_________________________', 0, 2, 'C');
         $this->Cell(80, 4, 'Supply Officer/Representative:', 0, 2, 'C');
+
         // Page number
         $this->SetY(-10);
         $this->SetFont('Arial', 'I', 8);
         $this->Cell(0, 10, 'Page ' . $pageNo . '/{nb}', 0, 0, 'C');
     }
+
 
 
     function renderTableHeader($x, $y)
