@@ -97,7 +97,8 @@ $inventory_result = mysqli_query($conn, $inventory_query);
                                 <small class="text-muted">Requestor</small>
                             <?php endif; ?>
                         </div>
-
+                        <div class="dropdown-divider"></div>
+                        <li><a class="dropdown-item" href="Logi_my_req.php"><i class="fas fa-user"></i> My Request</a></li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>
