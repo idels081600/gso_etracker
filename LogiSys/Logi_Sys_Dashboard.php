@@ -1,14 +1,11 @@
 <?php
 session_start();
 
-// Check if user is logged in and is admin
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    header("Location: Logi_login.php");
-    exit();
-}
 
 // Include database connection
 require_once 'logi_db.php';
+$username = $_SESSION['username'];
+$user_role = $_SESSION['role'];
 
 // Get filter parameters
 $date_filter = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
@@ -109,6 +106,8 @@ while ($row = mysqli_fetch_assoc($requests_result)) {
 if (isset($requests_stmt)) {
     mysqli_stmt_close($requests_stmt);
 }
+$office_query = "SELECT DISTINCT office_name FROM items_requested ORDER BY office_name ASC";
+$office_result = $conn->query($office_query);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -117,8 +116,8 @@ if (isset($requests_stmt)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LogiSys - Admin Dashboard</title>
-    <link rel="stylesheet" href="sidebar.css">
     <link rel="stylesheet" href="Logi_Sys.css">
+    <link rel="stylesheet" href="Logi_req.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -164,30 +163,76 @@ if (isset($requests_stmt)) {
         }
 
         .main_content {
-            padding: 20px;
+            display: flex;
+            justify-content: center;
+            /* Center horizontally */
+            align-items: center;
+            /* Center vertically */
+            margin-left: 10px;
         }
     </style>
 </head>
 
 <body>
-    <div class="sidebar">
-        <div class="logo">
-            <img src="logo.png" alt="Logo">
-            <span class="role">Admin</span>
-            <span class="user-name"><?= htmlspecialchars($_SESSION['username'] ?? 'Admin') ?></span>
-        </div>
-        <hr class="divider">
-        <ul>
-            <li><a href="./Logi_Sys_Dashboard.php" class="active"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
-            <li><a href="Logi_inventory.php"><i class="fas fa-box icon-size"></i> Inventory</a></li>
-            <li><a href="Logi_app_req.php"><i class="fas fa-users icon-size"></i> Approve Request</a></li>
-            <li><a href="Logi_manage_office.php"><i class="fas fa-truck icon-size"></i> Request</a></li>
-            <li><a href="Logi_transactions.php"><i class="fas fa-exchange-alt icon-size"></i> Transactions</a></li>
-            <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
-        </ul>
-        <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
-    </div>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <a class="navbar-brand" href="Logi_req.php">
+            <img src="tagbi_seal.png" alt="Logo" class="logo-img">
+            <img src="logo.png" alt="Logo" class="logo-img">
+            <span class="logo-text">LogiSys - Admin System</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Main Navigation Menu -->
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="./Logi_Sys_Dashboard.php">
+                        <i class="fas fa-home icon-size"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="Logi_inventory.php">
+                        <i class="fas fa-box icon-size"></i> Inventory
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="Logi_app_req.php">
+                        <i class="fas fa-users icon-size"></i> Approve Request
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="Logi_transactions.php">
+                        <i class="fas fa-exchange-alt icon-size"></i> Transactions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="create_report.php">
+                        <i class="fas fa-chart-line icon-size"></i> Report
+                    </a>
+                </li>
+            </ul>
 
+            <!-- User Profile Dropdown (Right Side) -->
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle"></i> <?= htmlspecialchars($_SESSION['username']) ?>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                        <div class="dropdown-header">
+                            <strong><?= htmlspecialchars($user_role) ?></strong><br>
+                        </div>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
     <div class="main_content">
         <div class="container-fluid">
             <h2 class="mb-4"><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
@@ -249,49 +294,8 @@ if (isset($requests_stmt)) {
             </div>
 
             <div class="row">
-                <!-- Requests per Office -->
-                <div class="col-md-4">
-                    <div class="card border-light shadow-sm">
-                        <div class="card-header bg-white border-bottom">
-                            <h5 class="mb-0 text-dark">
-                                <i class="fas fa-building text-secondary"></i> Requests per Office
-                            </h5>
-                        </div>
-                        <div class="card-body bg-white">
-                            <div class="scrollable-container">
-                                <?php if (!empty($office_stats)): ?>
-                                    <?php foreach ($office_stats as $office): ?>
-                                        <div class="office-card p-3">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <h6 class="mb-0 text-dark"><?= htmlspecialchars($office['office_name']) ?></h6>
-                                                <span class="badge bg-primary"><?= $office['total_requests'] ?></span>
-                                            </div>
-                                            <div class="d-flex justify-content-between">
-                                                <small class="text-warning">
-                                                    <i class="fas fa-clock"></i> Pending: <?= $office['pending_requests'] ?>
-                                                </small>
-                                                <small class="text-success">
-                                                    <i class="fas fa-check"></i> Approved: <?= $office['approved_requests'] ?>
-                                                </small>
-                                                <small class="text-danger">
-                                                    <i class="fas fa-times"></i> Rejected: <?= $office['rejected_requests'] ?>
-                                                </small>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="text-center text-muted py-4">
-                                        <i class="fas fa-inbox fa-2x mb-2"></i>
-                                        <p>No office requests found</p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Detailed Requests -->
-                <div class="col-md-8">
+                <div class="col-12">
                     <!-- Filters -->
                     <div class="filter-card">
                         <form method="GET" action="Logi_Sys_Dashboard.php">
@@ -320,18 +324,20 @@ if (isset($requests_stmt)) {
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
-                                    <button type="submit" class="btn btn-dark btn-sm me-2">
+                                <div class="col-md-3 d-flex gap-2">
+                                    <button type="submit" class="btn btn-dark btn-sm">
                                         <i class="fas fa-search"></i> Filter
                                     </button>
                                     <a href="Logi_Sys_Dashboard.php" class="btn btn-outline-secondary btn-sm">
                                         <i class="fas fa-refresh"></i> Reset
                                     </a>
+                                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#printModal">
+                                        <i class="fas fa-print"></i> Print
+                                    </button>
                                 </div>
                             </div>
                         </form>
                     </div>
-
                     <!-- Requests Table -->
                     <div class="card border-light shadow-sm">
                         <div class="card-header bg-white border-bottom">
@@ -352,7 +358,6 @@ if (isset($requests_stmt)) {
                                             <th class="text-dark">Item</th>
                                             <th class="text-dark">Qty</th>
                                             <th class="text-dark">Status</th>
-                                            <th class="text-dark">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -398,18 +403,7 @@ if (isset($requests_stmt)) {
                                                             <?= htmlspecialchars($request['status']) ?>
                                                         </span>
                                                     </td>
-                                                    <td>
-                                                        <?php if ($request['status'] === 'Pending'): ?>
-                                                            <button class="btn btn-success btn-sm me-1" onclick="updateRequestStatus(<?= $request['id'] ?>, 'Approved')">
-                                                                <i class="fas fa-check"></i>
-                                                            </button>
-                                                            <button class="btn btn-danger btn-sm" onclick="updateRequestStatus(<?= $request['id'] ?>, 'Rejected')">
-                                                                <i class="fas fa-times"></i>
-                                                            </button>
-                                                        <?php else: ?>
-                                                            <small class="text-muted">-</small>
-                                                        <?php endif; ?>
-                                                    </td>
+
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php else: ?>
@@ -430,59 +424,115 @@ if (isset($requests_stmt)) {
                 </div>
             </div>
         </div>
+    </div><!-- Print Modal -->
+    <div class="modal fade" id="printModal" tabindex="-1" aria-labelledby="printModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="printModalLabel"><i class="fas fa-print"></i> Print Options</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p>Select how you want to print the filtered records.</p>
+
+                    <!-- Date Selection -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Select Date:</label>
+                        <input type="date" class="form-control" id="printDate" name="print_date" value="<?= date('Y-m-d') ?>">
+                        <div class="form-text">Select the date for which you want to print records.</div>
+                    </div>
+
+                    <?php if ($office_result->num_rows > 0): ?>
+                        <form id="printOfficesForm">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Select Office(s):</label>
+
+                                <!-- Select All toggle -->
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="selectAllOffices">
+                                    <label class="form-check-label" for="selectAllOffices">Select All</label>
+                                </div>
+
+                                <?php while ($row = $office_result->fetch_assoc()):
+                                    $office = htmlspecialchars($row['office_name']);
+                                    $id = 'office_' . md5($office);
+                                ?>
+                                    <div class="form-check">
+                                        <input class="form-check-input office-checkbox" type="checkbox" name="offices[]" value="<?= $office ?>" id="<?= $id ?>">
+                                        <label class="form-check-label" for="<?= $id ?>"><?= $office ?></label>
+                                    </div>
+                                <?php endwhile; ?>
+                            </div>
+                        </form>
+                    <?php else: ?>
+                        <p class="text-muted">No office names found.</p>
+                    <?php endif; ?>
+
+                    <div class="d-grid gap-2 mt-3">
+                        <button type="button" class="btn btn-outline-dark" onclick="handlePrint('summary')">Print Request</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+    <div class="modal fade" id="printModal" tabindex="-1" aria-labelledby="printModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="printModalLabel"><i class="fas fa-print"></i> Print Options</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p>Select how you want to print the filtered records.</p>
+
+                    <!-- Date Selection -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Select Date:</label>
+                        <input type="date" class="form-control" id="printDate" name="print_date" value="<?= date('Y-m-d') ?>">
+                        <div class="form-text">Select the date for which you want to print records.</div>
+                    </div>
+
+                    <?php if ($office_result->num_rows > 0): ?>
+                        <form id="printOfficesForm">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Select Office(s):</label>
+
+                                <!-- Select All toggle -->
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="selectAllOffices">
+                                    <label class="form-check-label" for="selectAllOffices">Select All</label>
+                                </div>
+
+                                <?php while ($row = $office_result->fetch_assoc()):
+                                    $office = htmlspecialchars($row['office_name']);
+                                    $id = 'office_' . md5($office);
+                                ?>
+                                    <div class="form-check">
+                                        <input class="form-check-input office-checkbox" type="checkbox" name="offices[]" value="<?= $office ?>" id="<?= $id ?>">
+                                        <label class="form-check-label" for="<?= $id ?>"><?= $office ?></label>
+                                    </div>
+                                <?php endwhile; ?>
+                            </div>
+                        </form>
+                    <?php else: ?>
+                        <p class="text-muted">No office names found.</p>
+                    <?php endif; ?>
+
+                    <div class="d-grid gap-2 mt-3">
+                        <button type="button" class="btn btn-outline-dark" onclick="handlePrint('summary')">Print Request</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="Logi_Sys_Dashboard.js"></script>
 
-    <script>
-        // Auto-submit form when filters change
-        document.addEventListener('DOMContentLoaded', function() {
-            const dateInput = document.getElementById('date');
-            const statusSelect = document.getElementById('status');
-            const officeSelect = document.getElementById('office');
-
-            dateInput.addEventListener('change', function() {
-                this.form.submit();
-            });
-
-            statusSelect.addEventListener('change', function() {
-                this.form.submit();
-            });
-
-            officeSelect.addEventListener('change', function() {
-                this.form.submit();
-            });
-        });
-
-        // Function to update request status
-        function updateRequestStatus(requestId, status) {
-            if (confirm(`Are you sure you want to ${status.toLowerCase()} this request?`)) {
-                fetch('update_request_status.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            request_id: requestId,
-                            status: status
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            location.reload();
-                        } else {
-                            alert('Error: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error updating request status');
-                    });
-            }
-        }
-    </script>
 </body>
 
 </html>

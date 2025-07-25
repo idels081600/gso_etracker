@@ -2,14 +2,15 @@
 session_start();
 
 // Check if user is logged in and is admin
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    header("Location: Logi_login.php");
-    exit();
-}
+// if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+//     header("Location: Logi_login.php");
+//     exit();
+// }
 
 // Include database connection
 require_once 'logi_db.php';
-
+$username = $_SESSION['username'];
+$user_role = $_SESSION['role'];
 // Get filter parameters
 $date_filter = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
 $status_filter = isset($_GET['status']) ? $_GET['status'] : 'Pending';
@@ -106,32 +107,75 @@ if (isset($requests_stmt)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LogiSys - Approve Requests</title>
-    <link rel="stylesheet" href="sidebar.css">
     <link rel="stylesheet" href="Logi_Sys.css">
     <link rel="stylesheet" href="Logi_app_req.css">
+    <link rel="stylesheet" href="Logi_req.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
 </head>
 
 <body>
-    <div class="sidebar">
-        <div class="logo">
-            <img src="logo.png" alt="Logo">
-            <span class="role">Admin</span>
-            <span class="user-name"><?= htmlspecialchars($_SESSION['username'] ?? 'Admin') ?></span>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <a class="navbar-brand" href="Logi_req.php">
+            <img src="tagbi_seal.png" alt="Logo" class="logo-img">
+            <img src="logo.png" alt="Logo" class="logo-img">
+            <span class="logo-text">LogiSys - Admin System</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Main Navigation Menu -->
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="./Logi_Sys_Dashboard.php">
+                        <i class="fas fa-home icon-size"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="Logi_inventory.php">
+                        <i class="fas fa-box icon-size"></i> Inventory
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="Logi_app_req.php">
+                        <i class="fas fa-users icon-size"></i> Approve Request
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="Logi_transactions.php">
+                        <i class="fas fa-exchange-alt icon-size"></i> Transactions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="create_report.php">
+                        <i class="fas fa-chart-line icon-size"></i> Report
+                    </a>
+                </li>
+            </ul>
+
+            <!-- User Profile Dropdown (Right Side) -->
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle"></i> <?= htmlspecialchars($_SESSION['username']) ?>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                        <div class="dropdown-header">
+                            <strong><?= htmlspecialchars($user_role) ?></strong><br>
+                        </div>
+
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
         </div>
-        <hr class="divider">
-        <ul>
-            <li><a href="./Logi_Sys_Dashboard.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
-            <li><a href="Logi_inventory.php"><i class="fas fa-box icon-size"></i> Inventory</a></li>
-            <li><a href="Logi_mang.php"><i class="fas fa-users icon-size"></i> Office Balances</a></li>
-            <li><a href="Logi_app_req.php" class="active"><i class="fas fa-truck icon-size"></i> Request</a></li>
-            <li><a href="Logi_transactions.php"><i class="fas fa-exchange-alt icon-size"></i> Transactions</a></li>
-            <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
-        </ul>
-        <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
-    </div>
+    </nav>
 
     <div class="main_content">
         <div class="container-fluid">

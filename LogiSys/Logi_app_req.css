@@ -42,23 +42,11 @@
 
         .main_content {
             margin-top: 20px;
-            margin-left: 250px;
             /* Adjust based on your sidebar width */
+            margin-right: 100px;
             padding: 20px;
-            position: relative;
             z-index: 1;
         }
-
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 250px;
-            /* Adjust to match your sidebar width */
-            height: 100vh;
-            z-index: 1000;
-        }
-
         .container-fluid {
             width: 100%;
             max-width: none;

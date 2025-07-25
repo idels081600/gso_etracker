@@ -65,18 +65,19 @@ try {
     $has_remarks_today = $row['count'] > 0;
     mysqli_stmt_close($check_stmt);
 
-    // Insert request items directly - Fixed the column order and bind parameters
+    // Insert request items directly - Added unit field
     $item_query = "INSERT INTO items_requested (
         office_id,
         office_name,
         item_id,
         item_name,
+        unit,
         quantity,
         approved_quantity,
         date_requested,
         remarks,
         status
-    ) VALUES (?, ?, ?, ?, ?, 0, NOW(), ?, 'Pending')";
+    ) VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), ?, 'Pending')";
 
     $item_stmt = mysqli_prepare($conn, $item_query);
 
@@ -86,9 +87,9 @@ try {
 
     $item_counter = 0;
     foreach ($items as $item) {
-        // Validate item data
-        if (!isset($item['id']) || !isset($item['name']) || !isset($item['quantity'])) {
-            throw new Exception('Invalid item data structure');
+        // Validate item data - Added unit validation
+        if (!isset($item['id']) || !isset($item['name']) || !isset($item['quantity']) || !isset($item['unit'])) {
+            throw new Exception('Invalid item data structure - missing required fields (id, name, quantity, or unit)');
         }
 
         // Only include remarks for the first item to avoid duplication
@@ -96,13 +97,14 @@ try {
 
         mysqli_stmt_bind_param(
             $item_stmt,
-            "isisis",
-            $office_id,      // i - integer
-            $username,    // s - string
-            $item['id'],     // i - string
-            $item['name'],   // s - string
+            "isissis",
+            $office_id,       // i - integer
+            $username,        // s - string
+            $item['id'],      // i - string
+            $item['name'],    // s - string
+            $item['unit'],    // s - string (added unit)
             $item['quantity'], // i - integer
-            $item_remarks    // s - string (only for first item)
+            $item_remarks     // s - string (only for first item)
         );
 
         if (!mysqli_stmt_execute($item_stmt)) {

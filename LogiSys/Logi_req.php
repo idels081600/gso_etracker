@@ -1,45 +1,32 @@
 <?php
 session_start();
-
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: Logi_login.php");
     exit();
 }
-
 // Include database connection
 require_once 'logi_db.php';
-
 // Get user information from session
-$user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'];
 $user_role = $_SESSION['role'];
 $user_office = null;
+// Get all active items from common_items or standard_items based on role
+$assigned_items = []; { { // Determine the table name based on the user role
+        $tableName = ($user_role == 'GSO') ? 'common_items' : 'standard_items';
+    }
+}
 
-// Get all active items from common_items
-$assigned_items = [];
-$items_query = "SELECT 
-                    item_no,
-                    item_name,
-                    quantity,
-                    unit,
-                    status
-                FROM common_items
-                WHERE status = 'Active'
-                ORDER BY item_name ASC";
-
+$items_query = "SELECT * FROM $tableName ORDER BY item_name ASC";
 $items_stmt = mysqli_prepare($conn, $items_query);
-
 if ($items_stmt) {
     mysqli_stmt_execute($items_stmt);
     $items_result = mysqli_stmt_get_result($items_stmt);
-
     while ($row = mysqli_fetch_assoc($items_result)) {
         $assigned_items[] = $row;
     }
     mysqli_stmt_close($items_stmt);
 }
-
 // Get all available inventory items for the request form
 $inventory_query = "SELECT item_no, item_name, current_balance, unit, status FROM inventory_items WHERE status != 'Discontinued' ORDER BY item_name";
 $inventory_result = mysqli_query($conn, $inventory_query);
@@ -110,8 +97,7 @@ $inventory_result = mysqli_query($conn, $inventory_query);
                                 <small class="text-muted">Requestor</small>
                             <?php endif; ?>
                         </div>
-                        <div class="dropdown-divider"></div>
-                        <li><a class="dropdown-item" href="Logi_my_req.php"><i class="fas fa-user"></i> My Request</a></li>
+
                         <li>
                             <hr class="dropdown-divider">
                         </li>
@@ -121,7 +107,6 @@ $inventory_result = mysqli_query($conn, $inventory_query);
             </ul>
         </div>
     </nav>
-
     <div class="container mt-4">
         <div class="row mt-4">
             <!-- First Container - Items Table -->
@@ -148,20 +133,12 @@ $inventory_result = mysqli_query($conn, $inventory_query);
                                         <?php foreach ($assigned_items as $item): ?>
                                             <tr>
                                                 <td><?= htmlspecialchars($item['item_name']) ?></td>
-
                                                 <td>
-                                                    <?php if ($item['quantity'] > 0): ?>
-                                                        <button class="btn btn-sm btn-outline-dark"
-                                                            type="button"
-                                                            onclick="openAddToRequestModal('<?= htmlspecialchars($item['item_no']) ?>', '<?= htmlspecialchars($item['item_name']) ?>', '<?= htmlspecialchars($item['unit']) ?>')">
-                                                            <i class="fas fa-plus"></i> Add
-                                                        </button>
-
-                                                    <?php else: ?>
-                                                        <button class="btn btn-sm btn-outline-secondary" disabled>
-                                                            <i class="fas fa-times"></i> Unavailable
-                                                        </button>
-                                                    <?php endif; ?>
+                                                    <button class="btn btn-sm btn-outline-dark"
+                                                        type="button"
+                                                        onclick="openAddToRequestModal('<?= htmlspecialchars($item['item_no']) ?>', '<?= htmlspecialchars($item['item_name']) ?>', '<?= htmlspecialchars($item['unit']) ?>')">
+                                                        <i class="fas fa-plus"></i> Add
+                                                    </button>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -176,12 +153,12 @@ $inventory_result = mysqli_query($conn, $inventory_query);
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
+
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
-
             <!-- Second Container - My Request -->
             <div class="col-md-4">
                 <div class="card border-light shadow-sm">
