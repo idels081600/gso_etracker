@@ -233,7 +233,7 @@ require_once 'transmit_db.php';
             openPrintReport('Services');
         });
     </script>
-    <script src="PO_sap.js"></script>
+    <script src="Po_sap.js"></script>
 </body>
 
 </html>
