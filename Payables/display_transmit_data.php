@@ -30,3 +30,28 @@ function display_transmittal_bac_data()
         echo '<tr><td colspan="12" class="text-center">No data found.</td></tr>';
     }
 }
+function display_transmittal_rfq_data()
+{
+    global $conn;
+    $sql = "SELECT * FROM PO_sap WHERE delete_status=0 ORDER BY id DESC";
+    $result = mysqli_query($conn, $sql);
+    if ($result && mysqli_num_rows($result) > 0) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            echo '<tr>';
+            echo '<td>' . htmlspecialchars($row['RFQ_no']) . '</td>';
+            echo '<td>' . htmlspecialchars($row['supplier']) . '</td>';
+            echo '<td>' . htmlspecialchars($row['description']) . '</td>';
+            echo '<td>₱' . number_format($row['amount'], 2) . '</td>';
+            echo '<td>' . htmlspecialchars($row['date_received']) . '</td>';
+            echo '<td>' . htmlspecialchars($row['office']) . '</td>';
+            echo '<td>' . htmlspecialchars($row['received_by']) . '</td>';
+            echo '<td class="text-center">';
+            echo '<button class="btn btn-sm btn-primary edit-btn" data-id="' . $row['id'] . '" title="Edit"><i class="fas fa-edit"></i></button> ';
+            echo '<button class="btn btn-sm btn-danger delete-btn" data-id="' . $row['id'] . '" title="Delete"><i class="fas fa-trash-alt"></i></button>';
+            echo '</td>';
+            echo '</tr>';
+        }
+    } else {
+        echo '<tr><td colspan="12" class="text-center">No data found.</td></tr>';
+    }
+}

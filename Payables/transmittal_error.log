@@ -500,3 +500,115 @@
     [deadline] => as needed
 )
 
+[2025-07-28 03:31:27] POST data: Array
+(
+    [rfq_no] => 123
+    [description] => VS1 Protector & Others
+    [date_received] => 2025-07-28
+    [office] =>  CMO
+    [received_by] => Mae Angelie Baculio
+    [supplier] => tabel
+    [amount] => 1000
+)
+
+[2025-07-28 09:31:27] Invalid POST data: Array
+(
+    [rfq_no] => 123
+    [description] => VS1 Protector & Others
+    [date_received] => 2025-07-28
+    [office] =>  CMO
+    [received_by] => Mae Angelie Baculio
+    [supplier] => tabel
+    [amount] => 1000
+)
+
+[2025-07-28 03:32:39 POST data: Array
+(
+    [rfq_no] => 123
+    [description] => VS1 Protector & Others
+    [date_received] => 
+    [office] => SWMO, ALERT, GSO
+    [received_by] => Mae Angelie Baculio
+    [supplier] => tabel
+    [amount] => 1000
+)
+
+[2025-07-28 09:32:39 Invalid POST data: Array
+(
+    [rfq_no] => 123
+    [description] => VS1 Protector & Others
+    [date_received] => 
+    [office] => SWMO, ALERT, GSO
+    [received_by] => Mae Angelie Baculio
+    [supplier] => tabel
+    [amount] => 1000
+)
+
+[2025-07-28 03:34:09] POST data: Array
+(
+    [rfq_no] => 123
+    [description] => VS1 Protector & Others
+    [date_received] => 2025-07-28
+    [office] => SWMO, ALERT, GSO
+    [received_by] => Mae Angelie Baculio
+    [supplier] => tabel
+    [amount] => 1000.00
+)
+
+[2025-07-28 09:34:09] Missing POST parameters: RFQ_no, transmittal_type
+[2025-07-28 03:51:11] POST data: Array
+(
+    [rfq_no] => 123
+    [description] => VS1 Protector & Others
+    [date_received] => 2025-07-28
+    [office] => SWMO, ALERT, GSO
+    [received_by] => Mae Angelie Baculio
+    [supplier] => tabel
+    [amount] => 1000
+)
+
+[2025-07-28 09:51:11] Missing POST parameters: RFQ_no
+[2025-07-28 03:51:58] POST data: Array
+(
+    [rfq_no] => 123
+    [description] => VS1 Protector & Others
+    [date_received] => 2025-07-28
+    [office] =>  CMO
+    [received_by] => Mae Angelie Baculio
+    [supplier] => tabel
+    [amount] => 1000
+)
+
+[2025-07-28 03:52:24] POST data: Array
+(
+    [rfq_no] => 123
+    [description] => VS1 Protector & Others
+    [date_received] => 2025-07-28
+    [office] =>  CMO
+    [received_by] => Mae Angelie Baculio
+    [supplier] => tabel
+    [amount] => 1000
+)
+
+[2025-07-28 03:52:50] POST data: Array
+(
+    [rfq_no] => 123
+    [description] => VS1 Protector & Others
+    [date_received] => 2025-07-28
+    [office] =>  CMO
+    [received_by] => Mae Angelie Baculio
+    [supplier] => tabel
+    [amount] => 1000
+)
+
+[2025-07-28 03:53:22] POST data: Array
+(
+    [rfq_no] => 1234
+    [description] => Tail Light Assy. and Others 
+    [date_received] => 
+    [office] => SWMO, ALERT, GSO
+    [received_by] => Mae Angelie Baculio
+    [supplier] => acas
+    [amount] => 1000
+)
+

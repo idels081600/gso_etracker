@@ -11,7 +11,7 @@ require_once 'transmit_db.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="sidebar_asset.css">
-    <link rel="stylesheet" href="transmittal_bac.css">
+    <link rel="stylesheet" href="Po_sap.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -42,40 +42,16 @@ require_once 'transmit_db.php';
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addTransmittalModal">
                     <i class="fas fa-plus"></i> Receive
                 </button>
-                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#printReportModal">
+                <!-- <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#printReportModal">
                     <i class="fas fa-print"></i> Print Report
-                </button>
+                </button> -->
             </div>
             <!-- Horizontal Card List for Projects Near Delivery -->
-            <div class="mb-4">
-                <h5 class="mb-3">Projects Near Delivery Deadline</h5>
-                <div class="d-flex flex-row overflow-auto gap-3" style="white-space: nowrap;">
-                    <?php
-                    $today = date('Y-m-d');
-                    $sql = "SELECT *, DATEDIFF(deadline, '$today') AS days_left FROM transmittal_bac WHERE deadline >= '$today' AND delete_status=0 ORDER BY days_left ASC LIMIT 3";
-                    $result = mysqli_query($conn, $sql);
-                    if ($result && mysqli_num_rows($result) > 0) {
-                        while ($row = mysqli_fetch_assoc($result)) {
-                            $days_left = (int)$row['days_left'];
-                            $days_class = $days_left <= 14 ? 'days-left-red' : ($days_left <= 28 ? 'days-left-orange' : '');
-                            echo '<div class="card shadow-sm border-0" style="min-width: 250px; max-width: 250px;">';
-                            echo '<div class="card-body">';
-                            echo '<h6 class="card-title mb-2">' . htmlspecialchars($row['project_name']) . '</h6>';
-                            echo '<p class="mb-1"><strong>Days Left:</strong> <span class="days-left-num ' . $days_class . '">' . $days_left . '</span></p>';
-                            echo '<p class="mb-0 text-muted" style="font-size: 0.9em;">' . htmlspecialchars($row['ib_no']) . '</p>';
-                            echo '<p class="mb-0" style="font-size: 0.9em;"><strong>Winning Bidders:</strong> ' . htmlspecialchars($row['winning_bidders']) . '</p>';
-                            echo '</div></div>';
-                        }
-                    } else {
-                        echo '<div class="text-muted">No upcoming deadlines.</div>';
-                    }
-                    ?>
-                </div>
-            </div>
+            
             <!-- End Horizontal Card List -->
             <div class="card shadow-sm border-0">
                 <div class="card-body">
-                    <h3 class="mb-4">Transmittal BAC</h3>
+                    <h3 class="mb-4">RFQ Receiving</h3>
                     <div class="mb-3">
                         <div class="input-group">
                             <input type="text" id="searchInput" class="form-control" placeholder="Search..." aria-label="Search">
@@ -88,22 +64,19 @@ require_once 'transmit_db.php';
                         <table class="table table-bordered table-hover align-middle bg-white rounded-3 overflow-hidden">
                             <thead class="table-light">
                                 <tr>
-                                    <th>IB no.</th>
-                                    <th>Winning Bidders</th>
-                                    <th>Project Name</th>
+                                    <th>RFQ No,</th>
+                                    <th>Supplier</th>
+                                    <th>Description</th>
                                     <th>Amount</th>
-                                    <th>Date Transmitted</th>
+                                    <th>Date Received</th>
                                     <th>Office</th>
-                                    <th>NOA no.</th>
-                                    <th>Notice to Proceed Date</th>
-                                    <th>Calendar Days of Delivery</th>
                                     <th>Received by</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php require_once 'display_transmit_data.php';
-                                display_transmittal_bac_data(); ?>
+                                display_transmittal_rfq_data(); ?>
                             </tbody>
                         </table>
                     </div>
@@ -116,28 +89,19 @@ require_once 'transmit_db.php';
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addTransmittalModalLabel">Add Transmittal</h5>
+                    <h5 class="modal-title" id="addTransmittalModalLabel">Add RFQ</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="transmittalForm" method="post" action="submit_transmittal.php">
+                <form id="transmittalForm" method="post" action="submit_rfq.php">
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="transmittal_type" class="form-label">Transmittal Type</label>
-                                <select class="form-select" id="transmittal_type" name="transmittal_type" required>
-                                    <option value="">Select Type</option>
-                                    <option value="Infrastructure">Infrastructure</option>
-                                    <option value="Goods">Goods</option>
-                                    <option value="Services">Services</option>
-                                </select>
+                                <label for="rfq_no" class="form-label">RFQ No.</label>
+                                <input type="text" class="form-control" id="rfq_no" name="rfq_no" required>
                             </div>
                             <div class="col-md-6">
-                                <label for="ib_no" class="form-label">IB no.</label>
-                                <input type="text" class="form-control" id="ib_no" name="ib_no" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="project_name" class="form-label">Project Name</label>
-                                <input type="text" class="form-control" id="project_name" name="project_name" required>
+                                <label for="description" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="description" name="description" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="date_received" class="form-label">Date Received</label>
@@ -152,28 +116,12 @@ require_once 'transmit_db.php';
                                 <input type="text" class="form-control" id="received_by" name="received_by" required value="<?php echo htmlspecialchars($full_name); ?>">
                             </div>
                             <div class="col-md-6">
-                                <label for="winning_bidders" class="form-label">Winning Bidders</label>
-                                <input type="text" class="form-control" id="winning_bidders" name="winning_bidders" required>
+                                <label for="supplier" class="form-label">Supplier</label>
+                                <input type="text" class="form-control" id="supplier" name="supplier" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="amount" class="form-label">Amount</label>
                                 <input type="text" class="form-control" id="amount" name="amount">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="NOA_no" class="form-label">NOA no.</label>
-                                <input type="text" class="form-control" id="NOA_no" name="NOA_no" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="COA_date" class="form-label">Contract of Agreement Date</label>
-                                <input type="date" class="form-control" id="COA_date" name="COA_date">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="notice_proceed" class="form-label">Notice to Proceed Date</label>
-                                <input type="date" class="form-control" id="notice_proceed" name="notice_proceed">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="deadline" class="form-label">Calendar Days of Delivery</label>
-                                <input type="text" class="form-control" id="deadline" name="deadline">
                             </div>
                         </div>
                     </div>
@@ -190,7 +138,7 @@ require_once 'transmit_db.php';
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editTransmittalModalLabel">Edit Transmittal</h5>
+                    <h5 class="modal-title" id="editTransmittalModalLabel">Edit RFQ</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="editTransmittalForm">
@@ -198,21 +146,12 @@ require_once 'transmit_db.php';
                         <input type="hidden" id="edit_id" name="id">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="edit_transmittal_type" class="form-label">Transmittal Type</label>
-                                <select class="form-select" id="edit_transmittal_type" name="transmittal_type" required>
-                                    <option value="">Select Type</option>
-                                    <option value="Infrastructure">Infrastructure</option>
-                                    <option value="Goods">Goods</option>
-                                    <option value="Services">Services</option>
-                                </select>
+                                <label for="edit_rfq_no" class="form-label">RFQ No.</label>
+                                <input type="text" class="form-control" id="edit_rfq_no" name="rfq_no">
                             </div>
                             <div class="col-md-6">
-                                <label for="edit_ib_no" class="form-label">IB no.</label>
-                                <input type="text" class="form-control" id="edit_ib_no" name="ib_no" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="edit_project_name" class="form-label">Project Name</label>
-                                <input type="text" class="form-control" id="edit_project_name" name="project_name" required>
+                                <label for="edit_description" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="edit_description" name="description">
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_date_received" class="form-label">Date Received</label>
@@ -220,35 +159,19 @@ require_once 'transmit_db.php';
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_office" class="form-label">Office</label>
-                                <input type="text" class="form-control" id="edit_office" name="office" required>
+                                <input type="text" class="form-control" id="edit_office" name="office">
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_received_by" class="form-label">Received by</label>
-                                <input type="text" class="form-control" id="edit_received_by" name="received_by" required>
+                                <input type="text" class="form-control" id="edit_received_by" name="received_by">
                             </div>
                             <div class="col-md-6">
-                                <label for="edit_winning_bidders" class="form-label">Winning Bidders</label>
-                                <input type="text" class="form-control" id="edit_winning_bidders" name="winning_bidders" required>
+                                <label for="edit_supplier" class="form-label">Supplier</label>
+                                <input type="text" class="form-control" id="edit_supplier" name="supplier">
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_amount" class="form-label">Amount</label>
                                 <input type="text" class="form-control" id="edit_amount" name="amount">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="edit_NOA_no" class="form-label">NOA no.</label>
-                                <input type="text" class="form-control" id="edit_NOA_no" name="NOA_no">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="edit_COA_date" class="form-label">Contract of Agreement Date</label>
-                                <input type="date" class="form-control" id="edit_COA_date" name="COA_date">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="edit_notice_proceed" class="form-label">Notice to Proceed Date</label>
-                                <input type="date" class="form-control" id="edit_notice_proceed" name="notice_proceed">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="edit_deadline" class="form-label">Calendar Days of Delivery</label>
-                                <input type="text" class="form-control" id="edit_deadline" name="deadline">
                             </div>
                         </div>
                     </div>
@@ -310,7 +233,7 @@ require_once 'transmit_db.php';
             openPrintReport('Services');
         });
     </script>
-    <script src="transmittal_bac.js"></script>
+    <script src="PO_sap.js"></script>
 </body>
 
 </html>

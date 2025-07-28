@@ -16,33 +16,23 @@ document.addEventListener("DOMContentLoaded", function () {
     btn.addEventListener("click", function () {
       var id = this.getAttribute("data-id");
       // Fetch data for this ID
-      fetch("fetch_transmittal_row.php?id=" + encodeURIComponent(id))
+      fetch("fetch_rfq.php?id=" + encodeURIComponent(id))
         .then((response) => response.json())
         .then((data) => {
           if (data.success) {
             document.getElementById("edit_id").value = data.row.id;
-            document.getElementById("edit_ib_no").value = data.row.ib_no;
-            document.getElementById("edit_project_name").value =
-              data.row.project_name;
+            document.getElementById("edit_rfq_no").value = data.row.RFQ_no;
+            document.getElementById("edit_supplier").value = data.row.supplier;
+            document.getElementById("edit_description").value =
+              data.row.description;
+            document.getElementById("edit_amount").value = data.row.amount;
             document.getElementById("edit_date_received").value = data.row
               .date_received
               ? data.row.date_received.split(" ")[0]
               : "";
-            document.getElementById("edit_transmittal_type").value =
-              data.row.transmittal_type;
             document.getElementById("edit_office").value = data.row.office;
             document.getElementById("edit_received_by").value =
               data.row.received_by;
-            document.getElementById("edit_winning_bidders").value =
-              data.row.winning_bidders;
-            document.getElementById("edit_NOA_no").value = data.row.NOA_no;
-            document.getElementById("edit_COA_date").value = data.row.COA_date;
-            document.getElementById("edit_notice_proceed").value =
-              data.row.notice_proceed;
-            document.getElementById("edit_deadline").value =
-              data.row.calendar_days;
-            document.getElementById("edit_amount").value =
-              data.row.amount || "";
             var editModal = new bootstrap.Modal(
               document.getElementById("editTransmittalModal")
             );
@@ -62,7 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
       e.preventDefault();
       var form = e.target;
       var formData = new FormData(form);
-      fetch("update_transmittal_row.php", {
+      fetch("update_rfq.php", {
         method: "POST",
         body: formData,
       })
@@ -88,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
     btn.addEventListener("click", function () {
       var id = this.getAttribute("data-id");
       if (confirm("Are you sure you want to delete this transmittal?")) {
-        fetch("delete_transmittal_row.php", {
+        fetch("delete_rfq_row.php", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: "id=" + encodeURIComponent(id),
