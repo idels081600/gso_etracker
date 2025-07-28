@@ -1,11 +1,10 @@
 <?php
 session_start();
 
-// Check if user is logged in and is admin
-// if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-//     header("Location: Logi_login.php");
-//     exit();
-// }
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header("Location: Logi_login.php");
+    exit();
+}
 
 // Include database connection
 require_once 'logi_db.php';

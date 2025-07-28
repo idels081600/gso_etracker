@@ -40,6 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['username'] = $row['username'];
         $_SESSION['role'] = $row['role'];
         $_SESSION['pay_name'] = $row['name'];
+        $_SESSION['logged_in'] = true;
         // Redirect based on role
         switch ($row['role']) {
             case "Admin":
