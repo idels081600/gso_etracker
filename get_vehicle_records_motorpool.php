@@ -30,6 +30,7 @@ try {
         // Add to vehicles array
         $vehicles[] = [
             'plate_no' => $row['plate_no'],
+            'id' => $row['id'],
             'car_model' => $row['car_model'] ?? '',
             'office' => $row['office'] ?? '',
             'status' => $row['status'],

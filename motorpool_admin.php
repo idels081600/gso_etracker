@@ -794,143 +794,141 @@ $office_counts_json = json_encode($office_counts);
             </div>
         </div>
     </div>
-    <div class="modal fade" id="updateVehicleModal" tabindex="-1" aria-labelledby="updateVehicleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="updateVehicleModalLabel">Update Vehicle</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="updateVehicleForm" method="post" action=" update_vehicle_record_motorpool.php">
+   <div class="modal fade" id="updateVehicleModal" tabindex="-1" aria-labelledby="updateVehicleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateVehicleModalLabel">Update Vehicle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateVehicleForm" method="post" action="update_vehicle_record_motorpool.php">
+                    <!-- Hidden field to store original plate number for updates -->
+                    <input type="hidden" id="original_plate_no" name="original_plate_no">
 
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="update_plate_no" class="form-label">Plate Number</label>
-                                <input type="text" class="form-control" id="update_plate_no" name="plate_no" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="update_car_model" class="form-label">Car Model</label>
-                                <input type="text" class="form-control" id="update_car_model" name="car_model" placeholder="e.g. Toyota Hilux, Mitsubishi L300">
-                            </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="update_plate_no" class="form-label">Plate Number</label>
+                            <input type="text" class="form-control" id="update_plate_no" name="plate_no" required>
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="update_no_dispatch" class="form-label">Number of Dispatches</label>
-                                <input type="number" class="form-control" id="update_no_dispatch" name="no_dispatch" min="0">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="update_old_mileage" class="form-label">Old Mileage</label>
-                                <input type="number" class="form-control" id="update_old_mileage" name="old_mileage" min="0">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="update_latest_mileage" class="form-label">Latest Mileage</label>
-                                <input type="number" class="form-control" id="update_latest_mileage" name="latest_mileage" min="0">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="update_no_of_repairs" class="form-label">Number of Repairs</label>
-                                <input type="number" class="form-control" id="update_no_of_repairs" name="no_of_repairs" min="0">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="update_latest_repair_date" class="form-label">Latest Repair Date</label>
-                                <input type="date" class="form-control" id="update_latest_repair_date" name="latest_repair_date">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="update_status" class="form-label">Status</label>
-                                <select class="form-select" id="update_status" name="status">
-                                    <option value="Active">Active</option>
-                                    <option value="Under Repair">Under Repair</option>
-                                    <option value="Out of Service">Out of Service</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="update_date_procured" class="form-label">Date Procured</label>
-                                <input type="date" class="form-control" id="update_date_procured" name="date_procured">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="update_office" class="form-label">Office</label>
-                                <select class="form-select" id="edit_office" name="update_office">
-                                    <option value="">Select Office</option>
-                                    <option value="ADMIN">ADMIN</option>
-                                    <option value="ALERT">ALERT</option>
-                                    <option value="BFP">BFP</option>
-                                    <option value="BJMP">BJMP</option>
-                                    <option value="BPLO">BPLO</option>
-                                    <option value="CASSO">CASSO</option>
-                                    <option value="CAVI">CAVI</option>
-                                    <option value="CAVO">CAVO</option>
-                                    <option value="CDRRMO">CDRRMO</option>
-                                    <option value="CEE">CEE</option>
-                                    <option value="CEO">CEO</option>
-                                    <option value="CGSO">CGSO</option>
-                                    <option value="CHO">CHO</option>
-                                    <option value="CITY ADMIN">CITY ADMIN</option>
-                                    <option value="CMO">CMO</option>
-                                    <option value="CSWD">CSWD</option>
-                                    <option value="CTMO">CTMO</option>
-                                    <option value="CTO">CTO</option>
-                                    <option value="CVMO">CVMO</option>
-                                    <option value="DILG">DILG</option>
-                                    <option value="HRMO">HRMO</option>
-                                    <option value="OSCA">OSCA</option>
-                                    <option value="PDAO">PDAO</option>
-                                    <option value="PNP">PNP</option>
-                                    <option value="SP">SP</option>
-                                    <option value="TCWS">TCWS</option>
-
-                                </select>
-                            </div>
-                        </div>
-                    </form>
-                    <hr class="my-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5>Select Vehicle to Update</h5>
-                        <div class="input-group" style="width: 250px;">
-                            <input type="text" id="vehicleSearchInput" class="form-control form-control-sm" placeholder="Search vehicles...">
-                            <button class="btn btn-outline-secondary btn-sm" type="button" id="clearVehicleSearch">
-                                <i class="fas fa-window-close"></i>
-                            </button>
+                        <div class="col-md-6">
+                            <label for="update_car_model" class="form-label">Car Model</label>
+                            <input type="text" class="form-control" id="update_car_model" name="car_model" placeholder="e.g. Toyota Hilux, Mitsubishi L300">
                         </div>
                     </div>
-                    <div class="table-responsive mt-3" style="max-height: 300px; overflow-y: auto;">
-                        <table class="table table-striped table-hover" id="vehicleSelectionTable">
-                            <thead class="sticky-top bg-light">
-                                <tr>
-                                    <th>Plate No.</th>
-                                    <th>Car Model</th>
-                                    <th>Office</th>
-                                    <th>Status</th>
-                                    <th>Old Mileage</th>
-                                    <th>Latest Mileage</th>
-                                    <th>NO. of Repairs</th>
-                                    <th>Latest Repair Date</th>
-                                    <th>Date Procured</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- This will be populated dynamically with JavaScript -->
-                            </tbody>
-                        </table>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="update_no_dispatch" class="form-label">Number of Dispatches</label>
+                            <input type="number" class="form-control" id="update_no_dispatch" name="no_dispatch" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="update_old_mileage" class="form-label">Old Mileage</label>
+                            <input type="number" class="form-control" id="update_old_mileage" name="old_mileage" min="0">
+                        </div>
                     </div>
-
-
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="update_latest_mileage" class="form-label">Latest Mileage</label>
+                            <input type="number" class="form-control" id="update_latest_mileage" name="latest_mileage" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="update_no_of_repairs" class="form-label">Number of Repairs</label>
+                            <input type="number" class="form-control" id="update_no_of_repairs" name="no_of_repairs" min="0">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="update_latest_repair_date" class="form-label">Latest Repair Date</label>
+                            <input type="date" class="form-control" id="update_latest_repair_date" name="latest_repair_date">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="update_status" class="form-label">Status</label>
+                            <select class="form-select" id="update_status" name="status">
+                                <option value="Active">Active</option>
+                                <option value="Under Repair">Under Repair</option>
+                                <option value="Out of Service">Out of Service</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="update_date_procured" class="form-label">Date Procured</label>
+                            <input type="date" class="form-control" id="update_date_procured" name="date_procured">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="update_office" class="form-label">Office</label>
+                            <!-- Fixed: Changed id from "edit_office" to "update_office" and name to "office" -->
+                            <select class="form-select" id="update_office" name="office">
+                                <option value="">Select Office</option>
+                                <option value="ADMIN">ADMIN</option>
+                                <option value="ALERT">ALERT</option>
+                                <option value="BFP">BFP</option>
+                                <option value="BJMP">BJMP</option>
+                                <option value="BPLO">BPLO</option>
+                                <option value="CASSO">CASSO</option>
+                                <option value="CAVI">CAVI</option>
+                                <option value="CAVO">CAVO</option>
+                                <option value="CDRRMO">CDRRMO</option>
+                                <option value="CEE">CEE</option>
+                                <option value="CEO">CEO</option>
+                                <option value="CGSO">CGSO</option>
+                                <option value="CHO">CHO</option>
+                                <option value="CITY ADMIN">CITY ADMIN</option>
+                                <option value="CMO">CMO</option>
+                                <option value="CSWD">CSWD</option>
+                                <option value="CTMO">CTMO</option>
+                                <option value="CTO">CTO</option>
+                                <option value="CVMO">CVMO</option>
+                                <option value="DILG">DILG</option>
+                                <option value="HRMO">HRMO</option>
+                                <option value="OSCA">OSCA</option>
+                                <option value="PDAO">PDAO</option>
+                                <option value="PNP">PNP</option>
+                                <option value="SP">SP</option>
+                                <option value="TCWS">TCWS</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+                <hr class="my-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>Select Vehicle to Update</h5>
+                    <div class="input-group" style="width: 250px;">
+                        <input type="text" id="vehicleSearchInput" class="form-control form-control-sm" placeholder="Search vehicles...">
+                        <button class="btn btn-outline-secondary btn-sm" type="button" id="clearVehicleSearch">
+                            <i class="fas fa-window-close"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" form="updateVehicleForm" class="btn btn-warning">Update Vehicle</button>
+                <div class="table-responsive mt-3" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-striped table-hover" id="vehicleSelectionTable">
+                        <thead class="sticky-top bg-light">
+                            <tr>
+                                <th>Plate No.</th>
+                                <th>Car Model</th>
+                                <th>Office</th>
+                                <th>Status</th>
+                                <th>Old Mileage</th>
+                                <th>Latest Mileage</th>
+                                <th>NO. of Repairs</th>
+                                <th>Latest Repair Date</th>
+                                <th>Date Procured</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- This will be populated dynamically with JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
-
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" form="updateVehicleForm" class="btn btn-warning">Update Vehicle</button>
             </div>
         </div>
     </div>
-
+</div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="motorpool_admin.js"></script>
     <script>

@@ -16,7 +16,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     // Get the plate number (used as identifier)
     $plate_no = mysqli_real_escape_string($conn, $_POST['plate_no']);
-    
+    $id = mysqli_real_escape_string($conn, $_POST['original_plate_no'] ?? '');
     // Get the updated values
     $car_model = mysqli_real_escape_string($conn, $_POST['car_model'] ?? '');
     $no_dispatch = !empty($_POST['no_dispatch']) ? intval($_POST['no_dispatch']) : 0;
@@ -29,7 +29,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $office = mysqli_real_escape_string($conn, $_POST['update_office'] ?? '');
     
     // Create SQL query for update
-    $sql = "UPDATE vehicle_records SET 
+    $sql = "UPDATE vehicle_records SET
+            plate_no = '$plate_no', 
             car_model = '$car_model',
             office = '$office',
             no_dispatch = $no_dispatch,
@@ -39,7 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             new_repair_date = " . ($latest_repair_date ? "'$latest_repair_date'" : "NULL") . ",
             status = '$status',
             date_procured = " . ($date_procured ? "'$date_procured'" : "NULL") . "
-            WHERE plate_no = '$plate_no'";
+            WHERE id = '$id'";
     
     // Log the SQL query
     error_log("SQL Query: " . $sql);

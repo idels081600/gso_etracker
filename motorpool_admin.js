@@ -135,6 +135,7 @@ function loadVehicleSelectionTable() {
                   <div class="d-flex">
                     <button class="btn btn-sm btn-primary select-vehicle me-1"
                             data-plate="${vehicle.plate_no}"
+                            data-id="${vehicle.id}"
                             data-model="${vehicle.car_model || ""}"
                             data-office="${vehicle.office}"
                             data-status="${vehicle.status}"
@@ -159,10 +160,9 @@ function loadVehicleSelectionTable() {
         document.querySelectorAll(".select-vehicle").forEach((button) => {
           button.addEventListener("click", function () {
             // Fill the update form with vehicle data
-            document.getElementById("update_plate_no").value =
-              this.dataset.plate;
-            // Store the original plate number for reference
             document.getElementById("original_plate_no").value =
+              this.dataset.id;
+               document.getElementById("update_plate_no").value =
               this.dataset.plate;
             document.getElementById("update_car_model").value =
               this.dataset.model;
