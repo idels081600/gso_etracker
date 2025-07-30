@@ -526,20 +526,21 @@ th {
 .status-dropdown.updating {
   opacity: 0.6;
   pointer-events: none;
-} /* Mobile responsive styles for sidebar *//* Mobile responsive styles for Bootstrap-based tent tracking page */
+} /* Mobile responsive styles for sidebar */ /* Mobile responsive styles for Bootstrap-based tent tracking page */
+/* Mobile responsive styles for Bootstrap-based tent tracking page */
 
 /* Hide sidebar on mobile devices (768px and below) */
 @media screen and (max-width: 768px) {
   .sidebar {
     display: none !important;
   }
-  
+
   /* Reset body/html to remove any sidebar spacing */
   body {
     margin: 0 !important;
     padding: 0 !important;
   }
-  
+
   /* Adjust main content to take full width when sidebar is hidden */
   .content {
     margin: 0 !important;
@@ -556,14 +557,14 @@ th {
     left: 0 !important;
     right: 0 !important;
   }
-  
+
   /* Center the page title */
   .content h1 {
     text-align: center;
     margin-bottom: 20px;
     width: 100%;
   }
-  
+
   /* Make tally cards responsive on mobile - Single Column Layout */
   .tally_list {
     display: flex;
@@ -575,7 +576,7 @@ th {
     max-width: 350px;
     width: 100%;
   }
-  
+
   .tally {
     width: 100%;
     min-width: unset;
@@ -585,12 +586,12 @@ th {
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  
+
   .tally:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
   }
-  
+
   /* Adjust font sizes for mobile */
   #on_stocks_value,
   #on_field_value,
@@ -599,7 +600,7 @@ th {
     font-size: 2.2rem;
     margin-top: 0;
   }
-  
+
   /* Style the tally labels */
   .available,
   .on_field,
@@ -611,7 +612,7 @@ th {
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-  
+
   /* Make table container more mobile friendly */
   .container_table {
     max-width: 100%;
@@ -620,54 +621,54 @@ th {
     height: auto;
     min-height: 60vh;
   }
-  
+
   .container_table_content {
     padding: 10px;
   }
-  
+
   .table-container {
     max-height: 50vh;
     overflow-x: auto;
   }
-  
+
   /* Adjust Bootstrap button group for mobile */
   .d-flex.justify-content-between {
     flex-direction: column;
     align-items: center !important;
     gap: 10px;
   }
-  
+
   .d-flex.align-items-center.gap-2 {
     flex-direction: row;
     justify-content: center;
     width: 100%;
   }
-  
+
   /* Make search input full width on mobile */
   #search-input {
     width: 100% !important;
     max-width: 300px;
     margin: 0 auto;
   }
-  
+
   /* Adjust buttons for mobile */
   #addButton,
   #printButton {
     font-size: 14px;
     padding: 8px 12px;
   }
-  
+
   /* Make table more mobile friendly */
   .table {
     font-size: 0.75rem;
   }
-  
+
   .table thead th,
   .table tbody td {
     padding: 6px 4px;
     vertical-align: middle;
   }
-  
+
   /* Hide some table columns on smaller screens */
   .table th:nth-child(3),
   .table td:nth-child(3),
@@ -675,46 +676,46 @@ th {
   .table td:nth-child(5) {
     display: none;
   }
-  
+
   /* Make status dropdown smaller */
   .form-select.status-dropdown {
     font-size: 0.75rem;
     padding: 4px 8px;
   }
-  
+
   /* Adjust action buttons */
   .btn-sm {
     padding: 4px 6px;
     font-size: 0.75rem;
     margin: 0 2px;
   }
-  
+
   /* Modal adjustments for mobile */
   .modal-dialog {
     margin: 10px;
     max-width: calc(100% - 20px);
   }
-  
+
   .modal-xl {
     max-width: calc(100% - 20px);
   }
-  
+
   .modal-lg {
     max-width: calc(100% - 20px);
   }
-  
+
   /* Mobile form layout - single column */
   .modal .row.g-3 {
     margin: 0;
   }
-  
+
   .modal .col-md-6 {
     flex: 0 0 100%;
     max-width: 100%;
     padding: 0 8px;
     margin-bottom: 18px;
   }
-  
+
   .modal .form-control,
   .modal .form-select {
     font-size: 16px; /* Prevents zoom on iOS */
@@ -725,21 +726,23 @@ th {
     border: 2px solid #e9ecef;
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
   }
-  
+
   .modal .form-control:focus,
   .modal .form-select:focus {
     border-color: #198754;
     box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
   }
-  
+
   .modal .form-label {
     font-size: 15px;
     font-weight: 600;
     margin-bottom: 8px;
     color: #495057;
     display: block;
+    text-align: left;
+    width: 100%;
   }
-  
+
   /* Adjust the tent number boxes in modal */
   .modal .boxes {
     grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
@@ -748,7 +751,7 @@ th {
     padding: 12px;
     justify-content: center;
   }
-  
+
   .modal .box {
     width: 32px;
     height: 32px;
@@ -779,7 +782,7 @@ th {
   .mobile-menu-toggle {
     display: block;
   }
-  
+
   /* Adjust content padding when menu button is visible */
   .content {
     padding-top: 60px;
@@ -791,58 +794,58 @@ th {
   .content {
     padding: 60px 10px 10px 10px;
   }
-  
+
   .content h1 {
     font-size: 1.8rem;
     margin-bottom: 15px;
   }
-  
+
   /* Keep single column layout for tally cards */
   .tally_list {
     max-width: 320px;
     gap: 10px;
   }
-  
+
   .tally {
     height: 85px;
   }
-  
+
   #on_stocks_value,
   #on_field_value,
   #for_retrieval_value,
   #long_term_value {
     font-size: 2rem;
   }
-  
+
   .available,
   .on_field,
   .for_retrieval,
   .long_term {
     font-size: 0.9rem;
   }
-  
+
   /* Further reduce table container */
   .container_table {
     height: auto;
     min-height: 50vh;
   }
-  
+
   .container_table_content {
     padding: 5px;
   }
-  
+
   /* Stack buttons vertically on very small screens */
   .d-flex.align-items-center.gap-2 {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   #addButton,
   #printButton {
     width: 100%;
     max-width: 200px;
   }
-  
+
   /* Hide more table columns on very small screens */
   .table th:nth-child(2),
   .table td:nth-child(2),
@@ -852,20 +855,20 @@ th {
   .table td:nth-child(7) {
     display: none;
   }
-  
+
   /* Adjust modal for very small screens */
   .modal .boxes {
     grid-template-columns: repeat(12, 28px);
     justify-content: center;
     gap: 4px;
   }
-  
+
   .modal .box {
     width: 28px;
     height: 28px;
     font-size: 0.75rem;
   }
-  
+
   /* Ensure single column on small screens */
   .modal .col-md-6 {
     flex: 0 0 100%;
@@ -873,7 +876,7 @@ th {
     padding: 0 5px;
     margin-bottom: 16px;
   }
-  
+
   /* Smaller form elements on very small screens */
   .modal .form-control,
   .modal .form-select {
@@ -881,10 +884,20 @@ th {
     padding: 10px 14px;
     height: 44px;
   }
-  
+
   .modal .form-label {
     font-size: 14px;
     margin-bottom: 6px;
+    text-align: left;
+    width: 100%;
+    display: block;
+  }
+
+  /* Ensure proper form column alignment */
+  .modal .col-md-6 {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
@@ -893,31 +906,31 @@ th {
   .content {
     padding: 10px;
   }
-  
+
   /* Keep column layout even in landscape for better readability */
   .tally_list {
     max-width: 300px;
     gap: 8px;
   }
-  
+
   .tally {
     height: 70px;
   }
-  
+
   #on_stocks_value,
   #on_field_value,
   #for_retrieval_value,
   #long_term_value {
     font-size: 1.8rem;
   }
-  
+
   .available,
   .on_field,
   .for_retrieval,
   .long_term {
     font-size: 0.85rem;
   }
-  
+
   .container_table {
     min-height: 35vh;
   }
@@ -929,26 +942,26 @@ th {
     padding: 20px;
     border-bottom: 2px solid #e9ecef;
   }
-  
+
   .modal-title {
     font-size: 1.25rem;
     font-weight: 700;
     color: #198754;
   }
-  
+
   .modal-body {
     padding: 20px;
     max-height: 70vh;
     overflow-y: auto;
   }
-  
+
   .modal-footer {
     padding: 20px;
     border-top: 2px solid #e9ecef;
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .modal-footer .btn {
     width: 100%;
     height: 48px;
@@ -957,29 +970,43 @@ th {
     border-radius: 8px;
     transition: all 0.2s ease;
   }
-  
+
   .modal-footer .btn-success {
     background-color: #198754;
     border-color: #198754;
   }
-  
+
   .modal-footer .btn-success:hover {
     background-color: #157347;
     border-color: #146c43;
     transform: translateY(-1px);
   }
-  
+
   .modal-footer .btn-secondary {
     background-color: #6c757d;
     border-color: #6c757d;
   }
-  
+
   /* Form field organization */
   .modal .form-control::placeholder {
     color: #adb5bd;
     font-style: italic;
   }
-  
+
+  /* Ensure proper label positioning */
+  .modal .form-group,
+  .modal .col-md-6 {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .modal .form-label {
+    align-self: flex-start;
+    margin-left: 0;
+    margin-right: auto;
+  }
+
   /* Special styling for select dropdowns */
   .modal .form-select {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
