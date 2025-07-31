@@ -522,3 +522,191 @@ function setRejectReason(reason) {
     rejectRemarks.focus();
   }
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+  const searchInput = document.getElementById("itemSearchInput");
+  const tableBody = document.getElementById("itemTable");
+
+  // Get only data rows (tr elements), excluding any header rows
+  const getDataRows = () => {
+    return Array.from(tableBody.querySelectorAll("tr")).filter((row) => {
+      const cells = row.getElementsByTagName("td");
+      return cells.length > 0; // Only rows with td elements (data rows)
+    });
+  };
+
+  const performSearch = () => {
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const dataRows = getDataRows();
+
+    // If search term is empty, show all rows
+    if (searchTerm === "") {
+      dataRows.forEach((row) => {
+        row.style.display = "";
+      });
+      return;
+    }
+
+    // Search through data rows
+    dataRows.forEach((row) => {
+      const cells = row.getElementsByTagName("td");
+      let found = false;
+
+      // Ensure there are enough cells in the row
+      if (cells.length >= 2) {
+        const itemName = cells[0].textContent.toLowerCase().trim();
+        const unit = cells[1].textContent.toLowerCase().trim();
+
+        // Search in item name and unit
+        if (itemName.includes(searchTerm) || unit.includes(searchTerm)) {
+          found = true;
+        }
+      }
+
+      // Show or hide the row based on search result
+      row.style.display = found ? "" : "none";
+    });
+  };
+
+  // Add event listeners
+  searchInput.addEventListener("input", performSearch);
+  searchInput.addEventListener("keyup", performSearch);
+
+  // Optional: Add search on paste event
+  searchInput.addEventListener("paste", () => {
+    // Small delay to ensure pasted content is processed
+    setTimeout(performSearch, 10);
+  });
+});
+function openItemModal(itemNo, itemName, unit) {
+  // Set hidden field values
+  document.getElementById("selectedItemNo").value = itemNo;
+  document.getElementById("selectedItemName").value = itemName;
+  document.getElementById("selectedUnit").value = unit;
+
+  // Display item information
+  document.getElementById("displayItemName").textContent = itemName;
+  document.getElementById("displayUnit").textContent = unit;
+  document.getElementById("unitDisplay").textContent = unit;
+
+  // Reset form
+  const form = document.getElementById("itemSelectionForm");
+  form.reset();
+  form.classList.remove("was-validated");
+
+  // Reset hidden fields after form reset
+  document.getElementById("selectedItemNo").value = itemNo;
+  document.getElementById("selectedItemName").value = itemName;
+  document.getElementById("selectedUnit").value = unit;
+
+  // Load offices via AJAX
+  loadOffices();
+
+  // Show the modal
+  const modal = new bootstrap.Modal(
+    document.getElementById("itemSelectionModal")
+  );
+  modal.show();
+}
+
+function loadOffices() {
+  const officeSelect = document.getElementById("officeSelect");
+
+  // Show loading
+  officeSelect.innerHTML = '<option value="">Loading offices...</option>';
+
+  // Fetch offices
+  fetch("get_offices.php")
+    .then((response) => response.json())
+    .then((data) => {
+      officeSelect.innerHTML =
+        '<option value="">Select Office/Department</option>';
+
+      if (data.success && data.offices.length > 0) {
+        data.offices.forEach((office) => {
+          const option = document.createElement("option");
+          option.value = office;
+          option.textContent = office;
+          officeSelect.appendChild(option);
+        });
+      } else {
+        officeSelect.innerHTML = '<option value="">No offices found</option>';
+      }
+    })
+    .catch((error) => {
+      console.error("Error loading offices:", error);
+      officeSelect.innerHTML =
+        '<option value="">Error loading offices</option>';
+    });
+}function confirmItemSelection() {
+  const form = document.getElementById("itemSelectionForm");
+  const officeSelect = document.getElementById("officeSelect");
+  const dateReceivedInput = document.getElementById("dateReceived");
+
+  // Validate form
+  if (!form.checkValidity()) {
+    form.classList.add("was-validated");
+    return;
+  }
+
+  // Get form data
+  const formData = {
+    itemNo: document.getElementById("selectedItemNo").value,
+    itemName: document.getElementById("selectedItemName").value,
+    unit: document.getElementById("selectedUnit").value,
+    office: officeSelect.value,
+    approved_Quantity: document.getElementById("approved_Quantity").value,
+    dateReceived: dateReceivedInput.value,
+  };
+   console.log("Form Data:", formData); // Debug: Log the form data
+
+  // Process the selection
+  processItemSelection(formData);
+
+  // Close modal
+  const modal = bootstrap.Modal.getInstance(
+    document.getElementById("itemSelectionModal")
+  );
+  modal.hide();
+}
+
+function processItemSelection(data) {
+  // This function handles what happens after the user confirms the selection
+  // You can modify this based on your specific requirements
+  console.log("Item selected:", data);
+  // Example: Add to a table, send to server, etc.
+  // You might want to:
+  // 1. Add the item to a request list
+  // 2. Send data to server via AJAX
+  // 3. Update UI to show selected items
+
+  // Show success message
+  alert(
+    `Item "${data.itemName}" added successfully!\nOffice: ${data.office}\nQuantity: ${data.approved_Quantity} ${data.unit}`
+  );
+  const formData = new URLSearchParams();
+    for (const key in data) {
+       formData.append(key, data[key]);
+    }
+  // Example AJAX call (uncomment and modify as needed):
+  fetch('process_item_selection.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body:  formData
+  })
+  .then(response => response.json())
+  .then(result => {
+    if (result.success) {
+      alert('Item added successfully!');
+      // Refresh table or update UI as needed
+    } else {
+      alert('Error: ' + result.message);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('An error occurred while processing the request.');
+  });
+}

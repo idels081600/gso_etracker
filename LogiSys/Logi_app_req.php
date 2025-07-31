@@ -116,7 +116,7 @@ if (isset($requests_stmt)) {
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <a class="navbar-brand" href="Logi_req.php">
+        <a class="navbar-brand" href="Logi_Sys_Dashboard.php">
             <img src="tagbi_seal.png" alt="Logo" class="logo-img">
             <img src="logo.png" alt="Logo" class="logo-img">
             <span class="logo-text">LogiSys - Admin System</span>
@@ -148,11 +148,11 @@ if (isset($requests_stmt)) {
                         <i class="fas fa-exchange-alt icon-size"></i> Transactions
                     </a>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link" href="create_report.php">
                         <i class="fas fa-chart-line icon-size"></i> Report
                     </a>
-                </li>
+                </li> -->
             </ul>
 
             <!-- User Profile Dropdown (Right Side) -->
@@ -249,6 +249,7 @@ if (isset($requests_stmt)) {
                         office_name,
                         item_name,
                         quantity,
+                        remarks,
                         approved_quantity,
                         DATE(date_requested) as request_date,
                         status
@@ -259,6 +260,7 @@ if (isset($requests_stmt)) {
                             quantity,
                             approved_quantity,
                             date_requested,
+                            remarks,
                             status,
                             DENSE_RANK() OVER (PARTITION BY office_name ORDER BY date_requested DESC) as date_rank
                         FROM items_requested 
@@ -353,6 +355,15 @@ if (isset($requests_stmt)) {
                                                             <i class="<?= $status_icon ?>"></i>
                                                         </span>
                                                     </td>
+                                                    <td style="padding: 0.5rem 0.75rem;">
+                                                        <small style="font-size: 0.75rem; color: #666;">
+                                                            <?php if (!empty($item['remarks'])): ?>
+                                                                <?= htmlspecialchars($item['remarks']) ?>
+                                                            <?php else: ?>
+                                                                <span class="text-muted">-</span>
+                                                            <?php endif; ?>
+                                                        </small>
+                                                    </td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php else: ?>
@@ -436,6 +447,9 @@ if (isset($requests_stmt)) {
                                     <a href="Logi_app_req.php" class="btn btn-outline-secondary btn-sm">
                                         <i class="fas fa-refresh"></i> Reset
                                     </a>
+                                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                                        <i class="fas fa-plus"></i> Add Item
+                                    </button>
                                 </div>
                             </div>
                         </form>
@@ -461,6 +475,7 @@ if (isset($requests_stmt)) {
                                             <th class="text-dark">Item</th>
                                             <th class="text-dark">Qty</th>
                                             <th class="text-dark">Appv. QTY</th>
+                                            <th class="text-dark">Remarks</th>
                                             <th class="text-dark">Status</th>
                                             <th class="text-dark">Actions</th>
                                         </tr>
@@ -479,7 +494,6 @@ if (isset($requests_stmt)) {
                                                     </td>
                                                     <td>
                                                         <strong><?= htmlspecialchars($request['item_name']) ?></strong><br>
-                                                        <small class="text-muted"><?= htmlspecialchars($request['item_id']) ?></small>
                                                     </td>
                                                     <td>
                                                         <span class="badge bg-info"><?= $request['quantity'] ?></span>
@@ -487,6 +501,52 @@ if (isset($requests_stmt)) {
                                                     <td>
                                                         <?php if ($request['approved_quantity'] > 0): ?>
                                                             <span class="badge bg-success"><?= $request['approved_quantity'] ?></span>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">-</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td style="padding: 0.5rem 0.75rem;">
+                                                        <?php if (!empty($request['remarks'])): ?>
+                                                            <?php
+                                                            // Split remarks by line breaks first, then by common delimiters
+                                                            $remarks_text = str_replace(['\n', '\r\n'], "\n", $request['remarks']);
+                                                            $remarks_items = preg_split('/\n|;|\|/', $remarks_text);
+
+                                                            // Check if preg_split failed and handle error
+                                                            if ($remarks_items === false) {
+                                                                $remarks_items = array($request['remarks']); // fallback to original text
+                                                            } else {
+                                                                $remarks_items = array_filter($remarks_items, function ($item) {
+                                                                    return !empty(trim($item));
+                                                                });
+                                                            }
+
+                                                            // If only one item and no delimiters found, try to split by pattern matching
+                                                            if (count($remarks_items) == 1) {
+                                                                $text = trim($remarks_items[0]);
+                                                                // Use a simpler approach: split after "pcs " or "pc " followed by lowercase letter
+                                                                $text = preg_replace('/(\d+\s*pcs?)\s+([a-z])/i', '$1|$2', $text);
+                                                                $split_items = explode('|', $text);
+
+                                                                if (count($split_items) > 1) {
+                                                                    $remarks_items = array_filter($split_items, function ($item) {
+                                                                        return !empty(trim($item));
+                                                                    });
+                                                                }
+                                                            }
+                                                            ?>
+
+                                                            <?php if (!empty($remarks_items)): ?>
+                                                                <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.85rem;">
+                                                                    <?php foreach ($remarks_items as $item): ?>
+                                                                        <li style="margin-bottom: 0.2rem;">
+                                                                            <strong><?= htmlspecialchars(trim($item)) ?></strong>
+                                                                        </li>
+                                                                    <?php endforeach; ?>
+                                                                </ul>
+                                                            <?php else: ?>
+                                                                <span class="text-muted">-</span>
+                                                            <?php endif; ?>
                                                         <?php else: ?>
                                                             <span class="text-muted">-</span>
                                                         <?php endif; ?>
@@ -585,6 +645,104 @@ if (isset($requests_stmt)) {
             </div>
         </div>
     </div>
+
+    <!-- Add Item Modal -->
+    <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addItemModalLabel">Add New Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="text" id="itemSearchInput" class="form-control" placeholder="Search items...">
+                    </div>
+
+                    <div class="table-responsive scrollable-table">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>Unit</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemTable">
+                                <?php
+                                try {
+                                    require_once 'logi_db.php';
+
+                                    // Prepare and execute query
+                                    $query = "SELECT item_no, item_name, unit FROM common_items ORDER BY item_name ASC";
+                                    $result = mysqli_query($conn, $query);
+
+                                    if (!$result) {
+                                        throw new Exception("Database query failed: " . mysqli_error($conn));
+                                    }
+
+                                    // Check if there are any results
+                                    if (mysqli_num_rows($result) > 0) {
+                                        // Loop through results and display rows
+                                        while ($row = mysqli_fetch_assoc($result)) {
+                                            $itemNo = htmlspecialchars($row['item_no'], ENT_QUOTES, 'UTF-8');
+                                            $itemName = htmlspecialchars($row['item_name'], ENT_QUOTES, 'UTF-8');
+                                            $unit = htmlspecialchars($row['unit'], ENT_QUOTES, 'UTF-8');
+
+                                            echo "<tr>";
+                                            echo "    <td>{$itemName}</td>";
+                                            echo "    <td>{$unit}</td>";
+                                            echo "    <td>";
+                                            echo "        <button class='btn btn-sm btn-success' ";
+                                            echo "                onclick=\"openItemModal('{$itemNo}', '{$itemName}', '{$unit}')\" ";
+                                            echo "                title='Select this item' ";
+                                            echo "                data-bs-toggle='modal' ";
+                                            echo "                data-bs-target='#itemSelectionModal'>";
+                                            echo "            <i class='fas fa-check'></i> Select";
+                                            echo "        </button>";
+                                            echo "    </td>";
+                                            echo "</tr>";
+                                        }
+                                    } else {
+                                        // No items found
+                                        echo "<tr>";
+                                        echo "    <td colspan='3' class='text-center text-muted'>";
+                                        echo "        <i class='fas fa-info-circle'></i> No items found";
+                                        echo "    </td>";
+                                        echo "</tr>";
+                                    }
+
+                                    // Free result set
+                                    mysqli_free_result($result);
+                                } catch (Exception $e) {
+                                    // Handle errors gracefully
+                                    echo "<tr>";
+                                    echo "    <td colspan='3' class='text-center text-danger'>";
+                                    echo "        <i class='fas fa-exclamation-triangle'></i> ";
+                                    echo "        Error loading items: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+                                    echo "    </td>";
+                                    echo "</tr>";
+
+                                    // Log error for debugging (optional)
+                                    error_log("Database error in common_items table: " . $e->getMessage());
+                                } finally {
+                                    // Close connection if it exists
+                                    if (isset($conn) && $conn) {
+                                        mysqli_close($conn);
+                                    }
+                                }
+                                ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Reject Modal -->
     <div class="modal fade" id="rejectModal" tabindex="-1" role="dialog" aria-labelledby="rejectModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
@@ -611,6 +769,85 @@ if (isset($requests_stmt)) {
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-danger" onclick="confirmRejection()">
                         <i class="fas fa-times"></i> Reject Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="itemSelectionModal" tabindex="-1" aria-labelledby="itemSelectionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="itemSelectionModalLabel">
+                        <i class="fas fa-plus-circle"></i> Add Item to Request
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="itemSelectionForm">
+                        <!-- Hidden fields for item data -->
+                        <input type="hidden" id="selectedItemNo" name="item_no">
+                        <input type="hidden" id="selectedItemName" name="item_name">
+                        <input type="hidden" id="selectedUnit" name="unit">
+
+                        <!-- Item Information Display -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <h6 class="mb-2"><i class="fas fa-info-circle"></i> Selected Item:</h6>
+                                    <p class="mb-1"><strong>Item:</strong> <span id="displayItemName"></span></p>
+                                    <p class="mb-0"><strong>Unit:</strong> <span id="displayUnit"></span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Office Selection -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="officeSelect" class="form-label">
+                                    <i class="fas fa-building"></i> Office/Department <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="officeSelect" name="office" required>
+                                    <option value="">Loading offices...</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Please select an office/department.
+                                </div>
+                            </div>
+                            <!-- Approved Quantity -->
+                            <div class="col-md-6">
+                                <label for="approvedQuantity" class="form-label">
+                                    <i class="fas fa-calculator"></i> Approved Quantity <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="approved_Quantity" name="approved_quantity" min="1" step="1"
+                                        placeholder="Enter quantity" required>
+                                    <span class="input-group-text" id="unitDisplay"></span>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Please enter a valid quantity (minimum 1).
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date Received -->
+                        <div class="mb-3">
+                            <label for="dateReceived" class="form-label">
+                                <i class="fas fa-calendar-alt"></i> Date Received <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="dateReceived" name="date_received" required>
+                            <div class="invalid-feedback">
+                                Please select the date the item was received.
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="confirmItemSelection()">
+                        <i class="fas fa-check"></i> Add to Request
                     </button>
                 </div>
             </div>

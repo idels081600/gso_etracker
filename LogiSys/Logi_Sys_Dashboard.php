@@ -175,7 +175,7 @@ $office_result = $conn->query($office_query);
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <a class="navbar-brand" href="Logi_req.php">
+        <a class="navbar-brand" href="Logi_Sys_Dashboard.php">
             <img src="tagbi_seal.png" alt="Logo" class="logo-img">
             <img src="logo.png" alt="Logo" class="logo-img">
             <span class="logo-text">LogiSys - Admin System</span>
@@ -207,11 +207,11 @@ $office_result = $conn->query($office_query);
                         <i class="fas fa-exchange-alt icon-size"></i> Transactions
                     </a>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link" href="create_report.php">
                         <i class="fas fa-chart-line icon-size"></i> Report
                     </a>
-                </li>
+                </li> -->
             </ul>
 
             <!-- User Profile Dropdown (Right Side) -->
