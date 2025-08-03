@@ -390,7 +390,7 @@ $(function () {
     var orangeDates = [];
 
     try {
-      $(".date, .retrieval-date").each(function () {
+      $(".retrieval-date").each(function () {
         try {
           var $element = $(this);
           var dateText = $element.text().trim();
