@@ -52,25 +52,33 @@ document.addEventListener("DOMContentLoaded", function () {
       e.preventDefault();
       var form = e.target;
       var formData = new FormData(form);
+
+      // Debug: Log all form data
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ": " + pair[1]);
+      }
+
       fetch("update_rfq.php", {
         method: "POST",
         body: formData,
       })
         .then((response) => response.json())
         .then((data) => {
+          console.log("Response from server:", data); // Debug
           if (data.success) {
-            // Optionally close the modal
             var editModal = bootstrap.Modal.getInstance(
               document.getElementById("editTransmittalModal")
             );
             if (editModal) editModal.hide();
-            // Reload the page or update the table row
             location.reload();
           } else {
             alert("Update failed: " + (data.error || "Unknown error"));
           }
         })
-        .catch(() => alert("Error updating transmittal."));
+        .catch((err) => {
+          console.error("Fetch error:", err); // Debug
+          alert("Error updating transmittal.");
+        });
     });
 
   // Delete button click handler
