@@ -92,11 +92,12 @@ require_once 'transmit_db.php';
                                     <th>Winning Bidders</th>
                                     <th>Project Name</th>
                                     <th>Amount</th>
-                                    <th>Date Transmitted</th>
+                                    <th>Date Transmitted From BAC</th>
                                     <th>Office</th>
                                     <th>NOA no.</th>
                                     <th>Notice to Proceed Date</th>
                                     <th>Calendar Days of Delivery</th>
+                                    <th>Deadline</th>
                                     <th>Received by</th>
                                     <th>Action</th>
                                 </tr>

@@ -16,8 +16,8 @@ function display_transmittal_bac_data()
             echo '<td>' . htmlspecialchars($row['date_received']) . '</td>';
             echo '<td>' . htmlspecialchars($row['office']) . '</td>';
             echo '<td>' . htmlspecialchars($row['NOA_no']) . '</td>';
-            echo '<td>' . htmlspecialchars($row['COA_date']) . '</td>';
             echo '<td>' . htmlspecialchars($row['notice_proceed']) . '</td>';
+            echo '<td>' . htmlspecialchars($row['calendar_days']) . '</td>';
             echo '<td>' . htmlspecialchars($row['deadline']) . '</td>';
             echo '<td>' . htmlspecialchars($row['received_by']) . '</td>';
             echo '<td class="text-center">';
