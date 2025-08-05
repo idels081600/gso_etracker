@@ -184,8 +184,13 @@ if (isset($_POST['save_data'])) {
                                 <?php while ($row = mysqli_fetch_assoc($result)) { ?>
                                     <tr>
                                         <td><?php echo $row["tent_no"]; ?></td>
-                                        <td><?php echo $row["date"]; ?></td>
-                                        <td class="retrieval-date"><?php echo $row["retrieval_date"]; ?></td>
+                                        <td class="date"><?php echo $row["date"]; ?></td>
+                                        <td class="retrieval-date">
+                                            <?php
+                                            echo $row["retrieval_date"];
+                                            ?>
+                                        </td>
+
                                         <td><?php echo $row["name"]; ?></td>
                                         <td><?php echo $row["Contact_no"]; ?></td>
                                         <td><?php echo $row["no_of_tents"]; ?></td>
@@ -196,6 +201,7 @@ if (isset($_POST['save_data'])) {
                                                 <div class="form-element">
                                                     <select class="form-select status-dropdown" name="status" id="drop_status">
                                                         <option value="" data-id="">Select Status</option>
+                                                        <option value="Pending" data-id="<?php echo $row['id']; ?>">Pending</option>
                                                         <option value="Installed" data-id="<?php echo $row['id']; ?>">Installed</option>
                                                         <option value="For Retrieval" data-id="<?php echo $row['id']; ?>">For Retrieval</option>
                                                         <option value="Retrieved" data-id="<?php echo $row['id']; ?>">Retrieved</option>
@@ -208,6 +214,7 @@ if (isset($_POST['save_data'])) {
                                                 <div class="form-element">
                                                     <select class="form-select status-dropdown" name="status" id="drop_status">
                                                         <option value="" data-id="">Select Status</option>
+                                                        <option value="Pending" data-id="<?php echo $row['id']; ?>" <?php echo ($row['status'] == 'Pending') ? 'selected' : ''; ?>>Pending</option>
                                                         <option value="Installed" data-id="<?php echo $row['id']; ?>" <?php echo ($row['status'] == 'Installed') ? 'selected' : ''; ?>>Installed</option>
                                                         <option value="For Retrieval" data-id="<?php echo $row['id']; ?>" <?php echo ($row['status'] == 'For Retrieval') ? 'selected' : ''; ?>>For Retrieval</option>
                                                         <option value="Retrieved" data-id="<?php echo $row['id']; ?>" <?php echo ($row['status'] == 'Retrieved') ? 'selected' : ''; ?>>Retrieved</option>
