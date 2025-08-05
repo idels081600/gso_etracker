@@ -612,3 +612,19 @@
     [amount] => 1000
 )
 
+[2025-08-05 04:10:45] POST data: Array
+(
+    [transmittal_type] => Infrastructure
+    [ib_no] => 123
+    [project_name] => testing
+    [date_received] => 2025-08-05
+    [office] => SWMO, ALERT, GSO
+    [received_by] => Mae Angelie Baculio
+    [winning_bidders] => qwe
+    [amount] => 123,000.00
+    [NOA_no] => 123
+    [COA_date] => 2025-08-05
+    [notice_proceed] => 2025-08-05
+    [deadline] => 12
+)
+
