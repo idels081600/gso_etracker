@@ -42,7 +42,14 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("edit_deadline").value =
               data.row.calendar_days;
             document.getElementById("edit_amount").value =
-              data.row.amount || "";
+              data.row.amount &&
+              data.row.amount !== "0" &&
+              data.row.amount !== "0.00"
+                ? parseFloat(data.row.amount).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                : "";
             var editModal = new bootstrap.Modal(
               document.getElementById("editTransmittalModal")
             );

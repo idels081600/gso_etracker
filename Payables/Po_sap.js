@@ -25,7 +25,15 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("edit_supplier").value = data.row.supplier;
             document.getElementById("edit_description").value =
               data.row.description;
-            document.getElementById("edit_amount").value = data.row.amount;
+            document.getElementById("edit_amount").value =
+              data.row.amount &&
+              data.row.amount !== "0" &&
+              data.row.amount !== "0.00"
+                ? parseFloat(data.row.amount).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                : "";
             document.getElementById("edit_date_received").value = data.row
               .date_received
               ? data.row.date_received.split(" ")[0]
