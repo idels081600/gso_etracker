@@ -1,523 +1,626 @@
-// All code below is moved from tracking.php's <script> blocks
-$(function () {
-  // Global variables
-  let updateInProgress = false;
-  let queueProcessingInProgress = false;
-  const MAX_RETRY_ATTEMPTS = 3;
-  const MAX_QUEUE_RETRY_ATTEMPTS = 2;
-  const RETRY_DELAY_BASE = 1000;
-  const CLEANUP_INTERVAL = 300000; // 5 minutes
-  let retryAttempts = new Map();
-  let pendingUpdates = [];
 
-  /**
-   * Updates the color of date elements based on their status and triggers automatic status updates
-   */
-  function updateDateColors() {
-    // Prevent overlapping requests
-    if (updateInProgress) {
-      console.log("Update already in progress, skipping...");
-      return;
-    }
+        $(function() {
+            // Global variables
+            let updateInProgress = false;
+            let queueProcessingInProgress = false;
+            const MAX_RETRY_ATTEMPTS = 3;
+            const MAX_QUEUE_RETRY_ATTEMPTS = 2;
+            const RETRY_DELAY_BASE = 1000;
+            const CLEANUP_INTERVAL = 300000; // 5 minutes
+            let retryAttempts = new Map();
+            let pendingUpdates = [];
 
-    updateInProgress = true;
-    showUpdateStatus("Checking date statuses...", "info");
-
-    const today = moment.utc();
-    let redDates = [];
-    let orangeDates = [];
-
-    try {
-      $(".retrieval-date").each(function () {
-        try {
-          const $element = $(this);
-          const dateText = $element.text().trim();
-
-          // Validate date text is not empty
-          if (!dateText) {
-            console.warn("Empty date text found, skipping element");
-            $element.css("color", "");
-            return true; // Continue to next iteration
-          }
-
-          // Parse and validate date
-          const date = moment.utc(dateText);
-          if (!date.isValid()) {
-            console.warn(
-              `Invalid date format: "${dateText}", skipping element`
-            );
-            $element.css("color", "");
-            return true; // Continue to next iteration
-          }
-
-          const row = $element.closest("tr");
-
-          // Validate row exists
-          if (row.length === 0) {
-            console.warn("No parent row found for date element, skipping");
-            return true; // Continue to next iteration
-          }
-
-          const dropdown = row.find("select.status-dropdown");
-
-          // Validate dropdown exists
-          if (dropdown.length === 0) {
-            console.warn("No status dropdown found in row, skipping");
-            $element.css("color", "");
-            return true; // Continue to next iteration
-          }
-
-          const selectedOption = dropdown.find(":selected");
-          const selectedValue = selectedOption.val();
-          const id = selectedOption.data("id");
-
-          // Validate selection exists and has value
-          if (!selectedValue || selectedValue.trim() === "") {
-            $element.css("color", "");
-            return true; // Continue to next iteration
-          }
-
-          // Validate ID exists
-          if (!id || id === undefined) {
-            console.warn(
-              `No data-id found for selected option in dropdown, skipping`
-            );
-            $element.css("color", "");
-            return true; // Continue to next iteration
-          }
-
-          const timeDiff = date.valueOf() - today.valueOf();
-          const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-          // Define which statuses can be auto-updated
-          const autoUpdateStatuses = ["Installed", "Pending"];
-
-          if (diffDays < 0) {
-            // Date is in the past (overdue)
-            $element.css("color", "red");
-            const tent_no = row.find("td:first").text().trim();
-
-            // Validate tent number and status for auto-update
-            if (tent_no !== "" && autoUpdateStatuses.includes(selectedValue)) {
-              redDates.push({
-                tent_no: tent_no,
-                id: id,
-                row: row,
-                dateText: dateText,
-                selectedValue: selectedValue,
-              });
-            }
-          } else if (diffDays === 0) {
-            // Date is today
-            $element.css("color", "orange");
-            const tent_no = row.find("td:first").text().trim();
-
-            // Validate tent number and status for auto-update
-            if (tent_no !== "" && autoUpdateStatuses.includes(selectedValue)) {
-              orangeDates.push({
-                tent_no: tent_no,
-                id: id,
-                row: row,
-                dateText: dateText,
-                selectedValue: selectedValue,
-              });
-            }
-          } else {
-            // Date is in the future
-            $element.css("color", "");
-          }
-        } catch (elementError) {
-          console.error("Error processing date element:", elementError);
-          // Reset color on error to prevent stale styling
-          $(this).css("color", "");
-        }
-      });
-
-      console.log(
-        `Date processing complete. Red dates: ${redDates.length}, Orange dates: ${orangeDates.length}`
-      );
-
-      // Process updates with proper error handling
-      processStatusUpdates(redDates, orangeDates);
-    } catch (error) {
-      console.error("Error in updateDateColors:", error);
-      showUpdateStatus(
-        "Error checking date statuses. Please refresh the page.",
-        "error"
-      );
-    } finally {
-      // Ensure updateInProgress is reset even if an error occurs
-      if (redDates.length === 0 && orangeDates.length === 0) {
-        updateInProgress = false;
-        hideUpdateStatus();
-      }
-    }
-  }
-
-  /**
-   * Processes status updates for red and orange dates
-   * @param {Array} redDates - Array of overdue date items
-   * @param {Array} orangeDates - Array of due today date items
-   */
-  function processStatusUpdates(redDates, orangeDates) {
-    const totalUpdates = redDates.length + orangeDates.length;
-    let completedUpdates = 0;
-
-    if (totalUpdates === 0) {
-      updateInProgress = false;
-      hideUpdateStatus();
-      return;
-    }
-
-    console.log(`Processing ${totalUpdates} status updates...`);
-
-    // Process red dates (overdue)
-    if (Array.isArray(redDates) && redDates.length > 0) {
-      makeAjaxRequestWithRetry(
-        {
-          type: "POST",
-          url: "update_status_duration.php",
-          data: {
-            redDates: JSON.stringify(redDates),
-          },
-          timeout: 10000,
-          dataType: "json",
-        },
-        "red"
-      )
-        .then((response) => {
-          handleUpdateSuccess(redDates, "Retrieved", response);
-          completedUpdates++;
-          checkAllUpdatesComplete(completedUpdates, totalUpdates);
-        })
-        .catch((error) => {
-          handleUpdateError(redDates, error, "red");
-          completedUpdates++;
-          checkAllUpdatesComplete(completedUpdates, totalUpdates);
-        });
-    }
-
-    // Process orange dates (due today)
-    if (Array.isArray(orangeDates) && orangeDates.length > 0) {
-      makeAjaxRequestWithRetry(
-        {
-          type: "POST",
-          url: "update_status_duration.php",
-          data: {
-            orangeDates: JSON.stringify(orangeDates),
-          },
-          timeout: 10000,
-          dataType: "json",
-        },
-        "orange"
-      )
-        .then((response) => {
-          handleUpdateSuccess(orangeDates, "For Retrieval", response);
-          completedUpdates++;
-          checkAllUpdatesComplete(completedUpdates, totalUpdates);
-        })
-        .catch((error) => {
-          handleUpdateError(orangeDates, error, "orange");
-          completedUpdates++;
-          checkAllUpdatesComplete(completedUpdates, totalUpdates);
-        });
-    }
-  }
-
-  /**
-   * Makes AJAX requests with automatic retry logic
-   * @param {Object} ajaxConfig - jQuery AJAX configuration object
-   * @param {string} requestType - Type of request for tracking
-   * @param {number} retryCount - Current retry attempt number
-   * @returns {Promise} Promise that resolves on success or rejects after max retries
-   */
-  function makeAjaxRequestWithRetry(ajaxConfig, requestType, retryCount = 0) {
-    return new Promise((resolve, reject) => {
-      const requestKey = `${requestType}_${Date.now()}_${retryCount}`;
-
-      // Add request tracking
-      console.log(
-        `Making AJAX request (${requestType}), attempt ${retryCount + 1}`
-      );
-
-      // Validate ajaxConfig
-      if (!ajaxConfig || !ajaxConfig.url) {
-        reject({
-          error: "Invalid AJAX configuration",
-          requestType: requestType,
-        });
-        return;
-      }
-
-      $.ajax(ajaxConfig)
-        .done(function (response) {
-          console.log(`AJAX success (${requestType}):`, response);
-          retryAttempts.delete(requestKey);
-          resolve(response);
-        })
-        .fail(function (xhr, status, error) {
-          console.error(
-            `AJAX error (${requestType}):`,
-            status,
-            error,
-            xhr.responseText
-          );
-
-          if (retryCount < MAX_RETRY_ATTEMPTS) {
-            const delay = RETRY_DELAY_BASE * Math.pow(2, retryCount); // Exponential backoff
-
-            console.log(`Retrying in ${delay}ms...`);
-            showUpdateStatus(
-              `Request failed, retrying in ${Math.ceil(delay / 1000)}s...`,
-              "warning"
-            );
-
-            retryAttempts.set(requestKey, {
-              requestType: requestType,
-              retryCount: retryCount + 1,
-              timestamp: Date.now(),
-            });
-
-            setTimeout(() => {
-              makeAjaxRequestWithRetry(ajaxConfig, requestType, retryCount + 1)
-                .then(resolve)
-                .catch(reject);
-            }, delay);
-          } else {
-            retryAttempts.delete(requestKey);
-            reject({
-              xhr: xhr,
-              status: status,
-              error: error,
-              requestType: requestType,
-              responseText: xhr.responseText,
-            });
-          }
-        });
-    });
-  }
-
-  /**
-   * Handles successful update responses
-   * @param {Array} dates - Array of date items that were updated
-   * @param {string} newStatus - New status value to set
-   * @param {Object} response - Server response object
-   */
-  function handleUpdateSuccess(dates, newStatus, response) {
-    try {
-      console.log(`Successfully updated ${dates.length} items to ${newStatus}`);
-
-      // Validate response
-      if (response && response.error) {
-        console.error("Server returned error:", response.error);
-        handleUpdateError(dates, { error: response.error }, "server");
-        return;
-      }
-
-      // Update DOM to reflect changes
-      dates.forEach((dateItem) => {
-        try {
-          if (dateItem.row && dateItem.row.length > 0) {
-            const dropdown = dateItem.row.find("select.status-dropdown");
-
-            if (dropdown.length > 0) {
-              dropdown.val(newStatus);
-
-              // Add visual feedback
-              dateItem.row.addClass("status-updated");
-              setTimeout(() => {
-                if (dateItem.row.length > 0) {
-                  dateItem.row.removeClass("status-updated");
+            /**
+             * Updates the color of date elements based on their status and triggers automatic status updates
+             */
+            function updateDateColors() {
+                // Prevent overlapping requests
+                if (updateInProgress) {
+                    console.log("Update already in progress, skipping...");
+                    return;
                 }
-              }, 2000);
+
+                updateInProgress = true;
+                showUpdateStatus("Checking date statuses...", "info");
+
+                const today = moment(); // Use local time instead of UTC
+                const tomorrow = moment().add(1, 'day'); // Add tomorrow for comparison
+                console.log("=== DATE CHECKING SESSION STARTED ===");
+                console.log("Today's date (Local):", today.format('YYYY-MM-DD HH:mm:ss'));
+                console.log("Tomorrow's date (Local):", tomorrow.format('YYYY-MM-DD HH:mm:ss'));
+                console.log("Today's date (Local) start of day:", moment().startOf('day').format('YYYY-MM-DD HH:mm:ss'));
+                console.log("Tomorrow's date (Local) start of day:", moment().add(1, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss'));
+                
+                let redDates = [];
+                let orangeDates = [];
+                let processedDates = [];
+
+                try {
+                    $(".retrieval-date").each(function(index) {
+                        try {
+                            const $element = $(this);
+                            const dateText = $element.text().trim();
+
+                            console.log(`\n--- Processing retrieval date #${index + 1} ---`);
+                            console.log("Raw date text:", `"${dateText}"`);
+
+                            // Validate date text is not empty
+                            if (!dateText) {
+                                console.warn("❌ Empty date text found, skipping element");
+                                $element.css("color", "");
+                                return true; // Continue to next iteration
+                            }
+
+                            // Parse and validate date using local time
+                            const date = moment(dateText); // Use local time instead of UTC
+                            console.log("Parsed date (Local):", date.isValid() ? date.format('YYYY-MM-DD HH:mm:ss') : "INVALID");
+                            console.log("Date start of day (Local):", date.isValid() ? moment(dateText).startOf('day').format('YYYY-MM-DD HH:mm:ss') : "INVALID");
+                            
+                            if (!date.isValid()) {
+                                console.warn(`❌ Invalid date format: "${dateText}", skipping element`);
+                                $element.css("color", "");
+                                return true; // Continue to next iteration
+                            }
+
+                            const row = $element.closest("tr");
+
+                            // Validate row exists
+                            if (row.length === 0) {
+                                console.warn("❌ No parent row found for date element, skipping");
+                                return true; // Continue to next iteration
+                            }
+
+                            const dropdown = row.find("select.status-dropdown");
+
+                            // Validate dropdown exists
+                            if (dropdown.length === 0) {
+                                console.warn("❌ No status dropdown found in row, skipping");
+                                $element.css("color", "");
+                                return true; // Continue to next iteration
+                            }
+
+                            const selectedOption = dropdown.find(":selected");
+                            const selectedValue = selectedOption.val();
+                            const id = selectedOption.data("id");
+                            const tent_no = row.find("td:first").text().trim();
+
+                            console.log("Tent number:", `"${tent_no}"`);
+                            console.log("Current status:", `"${selectedValue}"`);
+                            console.log("Data ID:", id);
+
+                            // Validate selection exists and has value
+                            if (!selectedValue || selectedValue.trim() === "") {
+                                console.warn("❌ No status selected or empty status value");
+                                $element.css("color", "");
+                                return true; // Continue to next iteration
+                            }
+
+                            // Validate ID exists
+                            if (!id || id === undefined) {
+                                console.warn("❌ No data-id found for selected option in dropdown, skipping");
+                                $element.css("color", "");
+                                return true; // Continue to next iteration
+                            }
+
+                            const timeDiff = date.valueOf() - today.valueOf();
+                            const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+                            // Alternative calculation using start of day (local time)
+                            const todayStartOfDay = moment().startOf('day');
+                            const tomorrowStartOfDay = moment().add(1, 'day').startOf('day');
+                            const dateStartOfDay = moment(dateText).startOf('day');
+                            const timeDiffStartOfDay = dateStartOfDay.valueOf() - todayStartOfDay.valueOf();
+                            const diffDaysStartOfDay = Math.ceil(timeDiffStartOfDay / (1000 * 3600 * 24));
+
+                            console.log("=== TIME COMPARISON DETAILS (LOCAL TIME) ===");
+                            console.log("Today (full):", today.format('YYYY-MM-DD HH:mm:ss'), "valueOf:", today.valueOf());
+                            console.log("Tomorrow (full):", tomorrow.format('YYYY-MM-DD HH:mm:ss'), "valueOf:", tomorrow.valueOf());
+                            console.log("Date (full):", date.format('YYYY-MM-DD HH:mm:ss'), "valueOf:", date.valueOf());
+                            console.log("Time difference (ms):", timeDiff);
+                            console.log("Days difference (original):", diffDays);
+                            console.log("---");
+                            console.log("Today (start of day):", todayStartOfDay.format('YYYY-MM-DD HH:mm:ss'), "valueOf:", todayStartOfDay.valueOf());
+                            console.log("Tomorrow (start of day):", tomorrowStartOfDay.format('YYYY-MM-DD HH:mm:ss'), "valueOf:", tomorrowStartOfDay.valueOf());
+                            console.log("Date (start of day):", dateStartOfDay.format('YYYY-MM-DD HH:mm:ss'), "valueOf:", dateStartOfDay.valueOf());
+                            console.log("Time difference start of day (ms):", timeDiffStartOfDay);
+                            console.log("Days difference (start of day):", diffDaysStartOfDay);
+                            
+                            // Additional checks
+                            const isToday = dateStartOfDay.isSame(todayStartOfDay, 'day');
+                            const isTomorrow = dateStartOfDay.isSame(tomorrowStartOfDay, 'day');
+                            const isPast = dateStartOfDay.isBefore(todayStartOfDay, 'day');
+                            console.log("Is today?", isToday);
+                            console.log("Is tomorrow?", isTomorrow);
+                            console.log("Is in the past?", isPast);
+                            console.log("=== END TIME COMPARISON ===");
+
+                            // Define which statuses can be auto-updated
+                            const autoUpdateStatuses = ["Installed", "Pending"];
+                            const canAutoUpdate = autoUpdateStatuses.includes(selectedValue);
+                            console.log("Can auto-update:", canAutoUpdate, "(Status must be 'Installed' or 'Pending')");
+
+                            // Use more precise date comparison methods
+                            let finalDiffDays;
+                            let colorStatus = "";
+                            let actionTaken = "";
+
+                            if (isPast) {
+                                // Date is in the past (overdue)
+                                finalDiffDays = -1;
+                                colorStatus = "🔴 RED (Overdue)";
+                                $element.css("color", "red");
+
+                                // Validate tent number and status for auto-update
+                                if (tent_no !== "" && canAutoUpdate) {
+                                    redDates.push({
+                                        tent_no: tent_no,
+                                        id: id,
+                                        row: row,
+                                        dateText: dateText,
+                                        selectedValue: selectedValue,
+                                    });
+                                    actionTaken = "→ Queued for auto-update to 'Retrieved'";
+                                } else {
+                                    actionTaken = tent_no === "" 
+                                        ? "→ No tent number, cannot auto-update" 
+                                        : "→ Status cannot be auto-updated";
+                                }
+                            } else if (isToday) {
+                                // Date is today
+                                finalDiffDays = 0;
+                                colorStatus = "🟠 ORANGE (Due Today)";
+                                $element.css("color", "orange");
+
+                                // Validate tent number and status for auto-update
+                                if (tent_no !== "" && canAutoUpdate) {
+                                    orangeDates.push({
+                                        tent_no: tent_no,
+                                        id: id,
+                                        row: row,
+                                        dateText: dateText,
+                                        selectedValue: selectedValue,
+                                    });
+                                    actionTaken = "→ Queued for auto-update to 'For Retrieval'";
+                                } else {
+                                    actionTaken = tent_no === "" 
+                                        ? "→ No tent number, cannot auto-update" 
+                                        : "→ Status cannot be auto-updated";
+                                }
+                            } else if (isTomorrow) {
+                                // Date is tomorrow
+                                finalDiffDays = 1;
+                                colorStatus = "🟡 YELLOW (Due Tomorrow)";
+                                $element.css("color", "orange"); // Use orange color for tomorrow as well
+                                actionTaken = "→ Due tomorrow, no action needed yet";
+                            } else {
+                                // Date is in the future (more than 1 day ahead)
+                                finalDiffDays = diffDaysStartOfDay;
+                                colorStatus = "⚪ NORMAL (Future Date)";
+                                $element.css("color", "");
+                                actionTaken = "→ No action needed";
+                            }
+
+                            console.log("FINAL DAYS DIFFERENCE USED:", finalDiffDays);
+
+                            console.log("Color status:", colorStatus);
+                            console.log("Action:", actionTaken);
+
+                            // Store processed date info for summary
+                            processedDates.push({
+                                index: index + 1,
+                                dateText: dateText,
+                                parsedDate: date.format('YYYY-MM-DD'),
+                                tentNo: tent_no,
+                                status: selectedValue,
+                                diffDays: finalDiffDays,
+                                colorStatus: colorStatus,
+                                actionTaken: actionTaken
+                            });
+
+                        } catch (elementError) {
+                            console.error("❌ Error processing date element:", elementError);
+                            // Reset color on error to prevent stale styling
+                            $(this).css("color", "");
+                        }
+                    });
+
+                    console.log("\n=== PROCESSING SUMMARY ===");
+                    console.log(`Total dates processed: ${processedDates.length}`);
+                    console.log(`Red dates (overdue): ${redDates.length}`);
+                    console.log(`Orange dates (due today): ${orangeDates.length}`);
+                    
+                    if (processedDates.length > 0) {
+                        console.log("\n=== DETAILED SUMMARY ===");
+                        processedDates.forEach(date => {
+                            console.log(`${date.index}. ${date.dateText} | Tent: ${date.tentNo} | Status: ${date.status} | ${date.colorStatus} | ${date.actionTaken}`);
+                        });
+                    }
+
+                    console.log("=== DATE CHECKING SESSION COMPLETED ===\n");
+
+                    // Process updates with proper error handling
+                    processStatusUpdates(redDates, orangeDates);
+                } catch (error) {
+                    console.error("❌ Error in updateDateColors:", error);
+                    showUpdateStatus(
+                        "Error checking date statuses. Please refresh the page.",
+                        "error"
+                    );
+                } finally {
+                    // Ensure updateInProgress is reset even if an error occurs
+                    if (redDates.length === 0 && orangeDates.length === 0) {
+                        updateInProgress = false;
+                        hideUpdateStatus();
+                    }
+                }
             }
-          }
-        } catch (itemError) {
-          console.error("Error updating individual item:", itemError, dateItem);
-        }
-      });
 
-      showUpdateStatus(
-        `Updated ${dates.length} tent(s) to ${newStatus}`,
-        "success"
-      );
-    } catch (error) {
-      console.error("Error in handleUpdateSuccess:", error);
-      showUpdateStatus(
-        "Update completed but with errors. Please refresh to verify.",
-        "warning"
-      );
-    }
-  }
+            /**
+             * Processes status updates for red and orange dates
+             * @param {Array} redDates - Array of overdue date items
+             * @param {Array} orangeDates - Array of due today date items
+             */
+            function processStatusUpdates(redDates, orangeDates) {
+                const totalUpdates = redDates.length + orangeDates.length;
+                let completedUpdates = 0;
 
-  /**
-   * Handles update errors and applies error styling
-   * @param {Array} dates - Array of date items that failed to update
-   * @param {Object} error - Error object
-   * @param {string} requestType - Type of request that failed
-   */
-  function handleUpdateError(dates, error, requestType) {
-    try {
-      console.error(
-        `Failed to update ${requestType} dates after ${MAX_RETRY_ATTEMPTS} attempts:`,
-        error
-      );
+                if (totalUpdates === 0) {
+                    updateInProgress = false;
+                    hideUpdateStatus();
+                    return;
+                }
 
-      // Add error styling to affected rows
-      dates.forEach((dateItem) => {
-        try {
-          if (dateItem.row && dateItem.row.length > 0) {
-            dateItem.row.addClass("status-error");
-            setTimeout(() => {
-              if (dateItem.row.length > 0) {
-                dateItem.row.removeClass("status-error");
-              }
-            }, 5000);
-          }
-        } catch (itemError) {
-          console.error(
-            "Error adding error styling to item:",
-            itemError,
-            dateItem
-          );
-        }
-      });
+                console.log(`🔄 Processing ${totalUpdates} status updates...`);
 
-      showUpdateStatus(
-        `Failed to update ${dates.length} tent(s). Please refresh and try again.`,
-        "error"
-      );
+                // Process red dates (overdue)
+                if (Array.isArray(redDates) && redDates.length > 0) {
+                    console.log(`📤 Sending ${redDates.length} red dates for update to 'Retrieved'`);
+                    makeAjaxRequestWithRetry({
+                                type: "POST",
+                                url: "update_status_duration.php",
+                                data: {
+                                    redDates: JSON.stringify(redDates),
+                                },
+                                timeout: 10000,
+                                dataType: "json",
+                            },
+                            "red"
+                        )
+                        .then((response) => {
+                            handleUpdateSuccess(redDates, "Retrieved", response);
+                            completedUpdates++;
+                            checkAllUpdatesComplete(completedUpdates, totalUpdates);
+                        })
+                        .catch((error) => {
+                            handleUpdateError(redDates, error, "red");
+                            completedUpdates++;
+                            checkAllUpdatesComplete(completedUpdates, totalUpdates);
+                        });
+                }
 
-      // Queue for retry on next interval (only if not a server error)
-      if (requestType !== "server") {
-        queueFailedUpdate(dates, requestType);
-      }
-    } catch (error) {
-      console.error("Error in handleUpdateError:", error);
-    }
-  }
-
-  /**
-   * Checks if all updates are complete and processes queued updates if needed
-   * @param {number} completed - Number of completed updates
-   * @param {number} total - Total number of updates
-   */
-  function checkAllUpdatesComplete(completed, total) {
-    try {
-      console.log(`Updates completed: ${completed}/${total}`);
-
-      if (completed >= total) {
-        // Process any queued updates if not already processing
-        if (pendingUpdates.length > 0 && !queueProcessingInProgress) {
-          console.log(`Processing ${pendingUpdates.length} queued updates`);
-          queueProcessingInProgress = true;
-          const queued = [...pendingUpdates];
-          pendingUpdates = [];
-
-          setTimeout(() => {
-            processQueuedUpdates(queued);
-          }, 1000);
-        } else {
-          updateInProgress = false;
-          hideUpdateStatus();
-          console.log("All updates completed successfully");
-        }
-      }
-    } catch (error) {
-      console.error("Error in checkAllUpdatesComplete:", error);
-      updateInProgress = false;
-      queueProcessingInProgress = false;
-      hideUpdateStatus();
-    }
-  }
-
-  /**
-   * Queues failed updates for retry with retry count tracking
-   * @param {Array} dates - Array of date items that failed
-   * @param {string} requestType - Type of request that failed
-   */
-  function queueFailedUpdate(dates, requestType) {
-    try {
-      if (Array.isArray(dates) && dates.length > 0) {
-        pendingUpdates.push({
-          dates: dates,
-          requestType: requestType,
-          timestamp: Date.now(),
-          retryCount: 0,
-        });
-        console.log(`Queued ${dates.length} failed updates for retry`);
-      }
-    } catch (error) {
-      console.error("Error queuing failed update:", error);
-    }
-  }
-
-  /**
-   * Processes queued updates with retry limit to prevent infinite recursion
-   * @param {Array} queuedUpdates - Array of queued update objects
-   */
-  function processQueuedUpdates(queuedUpdates) {
-    try {
-      if (!Array.isArray(queuedUpdates) || queuedUpdates.length === 0) {
-        queueProcessingInProgress = false;
-        return;
-      }
-
-      let processedCount = 0;
-      const totalQueued = queuedUpdates.length;
-
-      queuedUpdates.forEach((update) => {
-        try {
-          // Check retry limit to prevent infinite recursion
-          if (update.retryCount >= MAX_QUEUE_RETRY_ATTEMPTS) {
-            console.warn(
-              `Queue retry limit reached for ${update.dates.length} ${update.requestType} updates, skipping`
-            );
-            processedCount++;
-            if (processedCount >= totalQueued) {
-              queueProcessingInProgress = false;
+                // Process orange dates (due today)
+                if (Array.isArray(orangeDates) && orangeDates.length > 0) {
+                    console.log(`📤 Sending ${orangeDates.length} orange dates for update to 'For Retrieval'`);
+                    makeAjaxRequestWithRetry({
+                                type: "POST",
+                                url: "update_status_duration.php",
+                                data: {
+                                    orangeDates: JSON.stringify(orangeDates),
+                                },
+                                timeout: 10000,
+                                dataType: "json",
+                            },
+                            "orange"
+                        )
+                        .then((response) => {
+                            handleUpdateSuccess(orangeDates, "For Retrieval", response);
+                            completedUpdates++;
+                            checkAllUpdatesComplete(completedUpdates, totalUpdates);
+                        })
+                        .catch((error) => {
+                            handleUpdateError(orangeDates, error, "orange");
+                            completedUpdates++;
+                            checkAllUpdatesComplete(completedUpdates, totalUpdates);
+                        });
+                }
             }
-            return;
-          }
 
-          // Increment retry count
-          update.retryCount++;
+            /**
+             * Makes AJAX requests with automatic retry logic
+             * @param {Object} ajaxConfig - jQuery AJAX configuration object
+             * @param {string} requestType - Type of request for tracking
+             * @param {number} retryCount - Current retry attempt number
+             * @returns {Promise} Promise that resolves on success or rejects after max retries
+             */
+            function makeAjaxRequestWithRetry(ajaxConfig, requestType, retryCount = 0) {
+                return new Promise((resolve, reject) => {
+                    const requestKey = `${requestType}_${Date.now()}_${retryCount}`;
 
-          if (update.requestType === "red") {
-            processStatusUpdates(update.dates, []);
-          } else if (update.requestType === "orange") {
-            processStatusUpdates([], update.dates);
-          }
+                    // Add request tracking
+                    console.log(
+                        `📡 Making AJAX request (${requestType}), attempt ${retryCount + 1}`
+                    );
 
-          processedCount++;
-          if (processedCount >= totalQueued) {
-            queueProcessingInProgress = false;
-          }
-        } catch (updateError) {
-          console.error("Error processing queued update:", updateError, update);
-          processedCount++;
-          if (processedCount >= totalQueued) {
-            queueProcessingInProgress = false;
-          }
-        }
-      });
-    } catch (error) {
-      console.error("Error in processQueuedUpdates:", error);
-      queueProcessingInProgress = false;
-    }
-  }
+                    // Validate ajaxConfig
+                    if (!ajaxConfig || !ajaxConfig.url) {
+                        reject({
+                            error: "Invalid AJAX configuration",
+                            requestType: requestType,
+                        });
+                        return;
+                    }
 
-  /**
-   * Shows update status messages to the user
-   * @param {string} message - Status message to display
-   * @param {string} type - Type of status (info, success, warning, error)
-   */
-  function showUpdateStatus(message, type) {
-    try {
-      let statusElement = $("#update-status-indicator");
+                    $.ajax(ajaxConfig)
+                        .done(function(response) {
+                            console.log(`✅ AJAX success (${requestType}):`, response);
+                            retryAttempts.delete(requestKey);
+                            resolve(response);
+                        })
+                        .fail(function(xhr, status, error) {
+                            console.error(
+                                `❌ AJAX error (${requestType}):`,
+                                status,
+                                error,
+                                xhr.responseText
+                            );
 
-      if (statusElement.length === 0) {
-        statusElement = $(`
+                            if (retryCount < MAX_RETRY_ATTEMPTS) {
+                                const delay = RETRY_DELAY_BASE * Math.pow(2, retryCount); // Exponential backoff
+
+                                console.log(`🔄 Retrying in ${delay}ms...`);
+                                showUpdateStatus(
+                                    `Request failed, retrying in ${Math.ceil(delay / 1000)}s...`,
+                                    "warning"
+                                );
+
+                                retryAttempts.set(requestKey, {
+                                    requestType: requestType,
+                                    retryCount: retryCount + 1,
+                                    timestamp: Date.now(),
+                                });
+
+                                setTimeout(() => {
+                                    makeAjaxRequestWithRetry(ajaxConfig, requestType, retryCount + 1)
+                                        .then(resolve)
+                                        .catch(reject);
+                                }, delay);
+                            } else {
+                                retryAttempts.delete(requestKey);
+                                reject({
+                                    xhr: xhr,
+                                    status: status,
+                                    error: error,
+                                    requestType: requestType,
+                                    responseText: xhr.responseText,
+                                });
+                            }
+                        });
+                });
+            }
+
+            /**
+             * Handles successful update responses
+             * @param {Array} dates - Array of date items that were updated
+             * @param {string} newStatus - New status value to set
+             * @param {Object} response - Server response object
+             */
+            function handleUpdateSuccess(dates, newStatus, response) {
+                try {
+                    console.log(`✅ Successfully updated ${dates.length} items to ${newStatus}`);
+
+                    // Validate response
+                    if (response && response.error) {
+                        console.error("❌ Server returned error:", response.error);
+                        handleUpdateError(dates, {
+                            error: response.error
+                        }, "server");
+                        return;
+                    }
+
+                    // Update DOM to reflect changes
+                    dates.forEach((dateItem) => {
+                        try {
+                            if (dateItem.row && dateItem.row.length > 0) {
+                                const dropdown = dateItem.row.find("select.status-dropdown");
+
+                                if (dropdown.length > 0) {
+                                    dropdown.val(newStatus);
+
+                                    // Add visual feedback
+                                    dateItem.row.addClass("status-updated");
+                                    setTimeout(() => {
+                                        if (dateItem.row.length > 0) {
+                                            dateItem.row.removeClass("status-updated");
+                                        }
+                                    }, 2000);
+                                }
+                            }
+                        } catch (itemError) {
+                            console.error("❌ Error updating individual item:", itemError, dateItem);
+                        }
+                    });
+
+                    showUpdateStatus(
+                        `Updated ${dates.length} tent(s) to ${newStatus}`,
+                        "success"
+                    );
+                } catch (error) {
+                    console.error("❌ Error in handleUpdateSuccess:", error);
+                    showUpdateStatus(
+                        "Update completed but with errors. Please refresh to verify.",
+                        "warning"
+                    );
+                }
+            }
+
+            /**
+             * Handles update errors and applies error styling
+             * @param {Array} dates - Array of date items that failed to update
+             * @param {Object} error - Error object
+             * @param {string} requestType - Type of request that failed
+             */
+            function handleUpdateError(dates, error, requestType) {
+                try {
+                    console.error(
+                        `❌ Failed to update ${requestType} dates after ${MAX_RETRY_ATTEMPTS} attempts:`,
+                        error
+                    );
+
+                    // Add error styling to affected rows
+                    dates.forEach((dateItem) => {
+                        try {
+                            if (dateItem.row && dateItem.row.length > 0) {
+                                dateItem.row.addClass("status-error");
+                                setTimeout(() => {
+                                    if (dateItem.row.length > 0) {
+                                        dateItem.row.removeClass("status-error");
+                                    }
+                                }, 5000);
+                            }
+                        } catch (itemError) {
+                            console.error(
+                                "❌ Error adding error styling to item:",
+                                itemError,
+                                dateItem
+                            );
+                        }
+                    });
+
+                    showUpdateStatus(
+                        `Failed to update ${dates.length} tent(s). Please refresh and try again.`,
+                        "error"
+                    );
+
+                    // Queue for retry on next interval (only if not a server error)
+                    if (requestType !== "server") {
+                        queueFailedUpdate(dates, requestType);
+                    }
+                } catch (error) {
+                    console.error("❌ Error in handleUpdateError:", error);
+                }
+            }
+
+            /**
+             * Checks if all updates are complete and processes queued updates if needed
+             * @param {number} completed - Number of completed updates
+             * @param {number} total - Total number of updates
+             */
+            function checkAllUpdatesComplete(completed, total) {
+                try {
+                    console.log(`📊 Updates completed: ${completed}/${total}`);
+
+                    if (completed >= total) {
+                        // Process any queued updates if not already processing
+                        if (pendingUpdates.length > 0 && !queueProcessingInProgress) {
+                            console.log(`🔄 Processing ${pendingUpdates.length} queued updates`);
+                            queueProcessingInProgress = true;
+                            const queued = [...pendingUpdates];
+                            pendingUpdates = [];
+
+                            setTimeout(() => {
+                                processQueuedUpdates(queued);
+                            }, 1000);
+                        } else {
+                            updateInProgress = false;
+                            hideUpdateStatus();
+                            console.log("✅ All updates completed successfully");
+                        }
+                    }
+                } catch (error) {
+                    console.error("❌ Error in checkAllUpdatesComplete:", error);
+                    updateInProgress = false;
+                    queueProcessingInProgress = false;
+                    hideUpdateStatus();
+                }
+            }
+
+            /**
+             * Queues failed updates for retry with retry count tracking
+             * @param {Array} dates - Array of date items that failed
+             * @param {string} requestType - Type of request that failed
+             */
+            function queueFailedUpdate(dates, requestType) {
+                try {
+                    if (Array.isArray(dates) && dates.length > 0) {
+                        pendingUpdates.push({
+                            dates: dates,
+                            requestType: requestType,
+                            timestamp: Date.now(),
+                            retryCount: 0,
+                        });
+                        console.log(`📋 Queued ${dates.length} failed updates for retry`);
+                    }
+                } catch (error) {
+                    console.error("❌ Error queuing failed update:", error);
+                }
+            }
+
+            /**
+             * Processes queued updates with retry limit to prevent infinite recursion
+             * @param {Array} queuedUpdates - Array of queued update objects
+             */
+            function processQueuedUpdates(queuedUpdates) {
+                try {
+                    if (!Array.isArray(queuedUpdates) || queuedUpdates.length === 0) {
+                        queueProcessingInProgress = false;
+                        return;
+                    }
+
+                    let processedCount = 0;
+                    const totalQueued = queuedUpdates.length;
+
+                    queuedUpdates.forEach((update) => {
+                        try {
+                            // Check retry limit to prevent infinite recursion
+                            if (update.retryCount >= MAX_QUEUE_RETRY_ATTEMPTS) {
+                                console.warn(
+                                    `⚠️ Queue retry limit reached for ${update.dates.length} ${update.requestType} updates, skipping`
+                                );
+                                processedCount++;
+                                if (processedCount >= totalQueued) {
+                                    queueProcessingInProgress = false;
+                                }
+                                return;
+                            }
+
+                            // Increment retry count
+                            update.retryCount++;
+
+                            if (update.requestType === "red") {
+                                processStatusUpdates(update.dates, []);
+                            } else if (update.requestType === "orange") {
+                                processStatusUpdates([], update.dates);
+                            }
+
+                            processedCount++;
+                            if (processedCount >= totalQueued) {
+                                queueProcessingInProgress = false;
+                            }
+                        } catch (updateError) {
+                            console.error("❌ Error processing queued update:", updateError, update);
+                            processedCount++;
+                            if (processedCount >= totalQueued) {
+                                queueProcessingInProgress = false;
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error("❌ Error in processQueuedUpdates:", error);
+                    queueProcessingInProgress = false;
+                }
+            }
+
+            /**
+             * Shows update status messages to the user
+             * @param {string} message - Status message to display
+             * @param {string} type - Type of status (info, success, warning, error)
+             */
+            function showUpdateStatus(message, type) {
+                try {
+                    let statusElement = $("#update-status-indicator");
+
+                    if (statusElement.length === 0) {
+                        statusElement = $(`
           <div id="update-status-indicator" class="alert alert-info" style="
             position: fixed;
             top: 20px;
@@ -532,216 +635,218 @@ $(function () {
             </div>
           </div>
         `);
-        $("body").append(statusElement);
-      }
-
-      statusElement.removeClass(
-        "alert-info alert-success alert-warning alert-danger"
-      );
-      statusElement.addClass(`alert-${type === "error" ? "danger" : type}`);
-      statusElement.find(".status-message").text(message);
-
-      if (type === "info") {
-        statusElement.find(".spinner-border").show();
-      } else {
-        statusElement.find(".spinner-border").hide();
-      }
-
-      statusElement.fadeIn();
-
-      // Auto-hide success and warning messages
-      if (type === "success" || type === "warning") {
-        setTimeout(() => {
-          hideUpdateStatus();
-        }, 3000);
-      }
-    } catch (error) {
-      console.error("Error showing update status:", error);
-      // Fallback to console for critical errors
-      console.log(`STATUS: ${message} (${type})`);
-    }
-  }
-
-  /**
-   * Hides the update status indicator
-   */
-  function hideUpdateStatus() {
-    try {
-      const statusElement = $("#update-status-indicator");
-      if (statusElement.length > 0) {
-        statusElement.fadeOut();
-      }
-    } catch (error) {
-      console.error("Error hiding update status:", error);
-    }
-  }
-
-  /**
-   * Cleans up old retry attempts to prevent memory leaks
-   */
-  function cleanupOldRetryAttempts() {
-    try {
-      const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
-      let cleanedCount = 0;
-
-      for (const [key, attempt] of retryAttempts.entries()) {
-        if (attempt.timestamp < tenMinutesAgo) {
-          retryAttempts.delete(key);
-          cleanedCount++;
-        }
-      }
-
-      if (cleanedCount > 0) {
-        console.log(`Cleaned up ${cleanedCount} old retry attempts`);
-      }
-    } catch (error) {
-      console.error("Error cleaning up retry attempts:", error);
-    }
-  }
-
-  /**
-   * Syncs status dropdowns with server state
-   */
-  function syncStatusDropdowns() {
-    try {
-      $.ajax({
-        url: "fetch_all_tent_status.php",
-        type: "GET",
-        dataType: "json",
-        timeout: 5000,
-        success: function (data) {
-          try {
-            if (Array.isArray(data)) {
-              data.forEach((item) => {
-                try {
-                  if (item && item.id !== undefined) {
-                    const dropdown = $(
-                      `.status-dropdown option[data-id="${item.id}"]`
-                    ).parent();
-
-                    if (dropdown.length > 0 && dropdown.val() !== item.status) {
-                      dropdown.val(item.status);
-                      console.log(
-                        `Synced status for ID ${item.id} to ${item.status}`
-                      );
+                        $("body").append(statusElement);
                     }
-                  }
-                } catch (itemError) {
-                  console.error(
-                    "Error syncing individual dropdown:",
-                    itemError,
-                    item
-                  );
+
+                    statusElement.removeClass(
+                        "alert-info alert-success alert-warning alert-danger"
+                    );
+                    statusElement.addClass(`alert-${type === "error" ? "danger" : type}`);
+                    statusElement.find(".status-message").text(message);
+
+                    if (type === "info") {
+                        statusElement.find(".spinner-border").show();
+                    } else {
+                        statusElement.find(".spinner-border").hide();
+                    }
+
+                    statusElement.fadeIn();
+
+                    // Auto-hide success and warning messages
+                    if (type === "success" || type === "warning") {
+                        setTimeout(() => {
+                            hideUpdateStatus();
+                        }, 3000);
+                    }
+                } catch (error) {
+                    console.error("❌ Error showing update status:", error);
+                    // Fallback to console for critical errors
+                    console.log(`STATUS: ${message} (${type})`);
                 }
-              });
-            } else {
-              console.warn("Invalid data format received from server:", data);
             }
-          } catch (processError) {
-            console.error("Error processing sync data:", processError);
-          }
-        },
-        error: function (xhr, status, error) {
-          console.error("Failed to sync status dropdowns:", status, error);
-          // Don't show user error for sync failures unless it's critical
-          if (status !== "timeout") {
-            console.error("Sync error details:", xhr.responseText);
-          }
-        },
-      });
-    } catch (error) {
-      console.error("Error in syncStatusDropdowns:", error);
-    }
-  }
 
-  // Initialize the system with error handling
-  try {
-    console.log("Initializing date color update system...");
-    updateDateColors();
-  } catch (initError) {
-    console.error("Error during initialization:", initError);
-    showUpdateStatus(
-      "System initialization failed. Please refresh the page.",
-      "error"
-    );
-  }
+            /**
+             * Hides the update status indicator
+             */
+            function hideUpdateStatus() {
+                try {
+                    const statusElement = $("#update-status-indicator");
+                    if (statusElement.length > 0) {
+                        statusElement.fadeOut();
+                    }
+                } catch (error) {
+                    console.error("❌ Error hiding update status:", error);
+                }
+            }
 
-  // Set up interval with better error handling
-  const updateInterval = setInterval(() => {
-    try {
-      updateDateColors();
-    } catch (error) {
-      console.error("Error in updateDateColors interval:", error);
-      showUpdateStatus(
-        "System error occurred. Please refresh the page.",
-        "error"
-      );
-    }
-  }, 60000);
+            /**
+             * Cleans up old retry attempts to prevent memory leaks
+             */
+            function cleanupOldRetryAttempts() {
+                try {
+                    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+                    let cleanedCount = 0;
 
-  // Sync dropdowns every minute (same as date updates)
-  const syncInterval = setInterval(() => {
-    try {
-      syncStatusDropdowns();
-    } catch (error) {
-      console.error("Error in syncStatusDropdowns interval:", error);
-    }
-  }, 60000);
+                    for (const [key, attempt] of retryAttempts.entries()) {
+                        if (attempt.timestamp < tenMinutesAgo) {
+                            retryAttempts.delete(key);
+                            cleanedCount++;
+                        }
+                    }
 
-  // Set up cleanup interval for old retry attempts
-  const cleanupInterval = setInterval(() => {
-    try {
-      cleanupOldRetryAttempts();
-    } catch (error) {
-      console.error("Error in cleanup interval:", error);
-    }
-  }, CLEANUP_INTERVAL);
+                    if (cleanedCount > 0) {
+                        console.log(`🧹 Cleaned up ${cleanedCount} old retry attempts`);
+                    }
+                } catch (error) {
+                    console.error("❌ Error cleaning up retry attempts:", error);
+                }
+            }
 
-  // Handle page visibility changes
-  document.addEventListener("visibilitychange", function () {
-    try {
-      if (!document.hidden && !updateInProgress) {
-        console.log("Page became visible, checking for updates...");
-        updateDateColors();
-        syncStatusDropdowns();
-      }
-    } catch (error) {
-      console.error("Error handling visibility change:", error);
-    }
-  });
+            /**
+             * Syncs status dropdowns with server state
+             */
+            function syncStatusDropdowns() {
+                try {
+                    $.ajax({
+                        url: "fetch_all_tent_status.php",
+                        type: "GET",
+                        dataType: "json",
+                        timeout: 5000,
+                        success: function(data) {
+                            try {
+                                if (Array.isArray(data)) {
+                                    console.log(`🔄 Syncing ${data.length} dropdown statuses...`);
+                                    data.forEach((item) => {
+                                        try {
+                                            if (item && item.id !== undefined) {
+                                                const dropdown = $(
+                                                    `.status-dropdown option[data-id="${item.id}"]`
+                                                ).parent();
 
-  // Cleanup on page unload
-  window.addEventListener("beforeunload", function () {
-    try {
-      clearInterval(updateInterval);
-      clearInterval(syncInterval);
-      clearInterval(cleanupInterval);
-      updateInProgress = false;
-      queueProcessingInProgress = false;
-      retryAttempts.clear();
-      pendingUpdates = [];
-      console.log("Cleaned up intervals and state");
-    } catch (error) {
-      console.error("Error during cleanup:", error);
-    }
-  });
+                                                if (dropdown.length > 0 && dropdown.val() !== item.status) {
+                                                    dropdown.val(item.status);
+                                                    console.log(
+                                                        `🔄 Synced status for ID ${item.id} to ${item.status}`
+                                                    );
+                                                }
+                                            }
+                                        } catch (itemError) {
+                                            console.error(
+                                                "❌ Error syncing individual dropdown:",
+                                                itemError,
+                                                item
+                                            );
+                                        }
+                                    });
+                                } else {
+                                    console.warn("⚠️ Invalid data format received from server:", data);
+                                }
+                            } catch (processError) {
+                                console.error("❌ Error processing sync data:", processError);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("❌ Failed to sync status dropdowns:", status, error);
+                            // Don't show user error for sync failures unless it's critical
+                            if (status !== "timeout") {
+                                console.error("Sync error details:", xhr.responseText);
+                            }
+                        },
+                    });
+                } catch (error) {
+                    console.error("❌ Error in syncStatusDropdowns:", error);
+                }
+            }
 
-  /**
-   * Manual refresh function for debugging
-   */
-  window.debugUpdateDateColors = function () {
-    console.log("Manual date color update triggered");
-    updateInProgress = false; // Reset in case it's stuck
-    queueProcessingInProgress = false; // Reset queue processing flag
-    updateDateColors();
-  };
+            // Initialize the system with error handling
+            try {
+                console.log("🚀 Initializing date color update system...");
+                updateDateColors();
+            } catch (initError) {
+                console.error("❌ Error during initialization:", initError);
+                showUpdateStatus(
+                    "System initialization failed. Please refresh the page.",
+                    "error"
+                );
+            }
 
-  console.log("Date color update system initialized successfully");
-  $(document).ready(function () {
-    updateDateColors();
-  });
-});
-// Dropdown menu logic
+            // Set up interval with better error handling
+            const updateInterval = setInterval(() => {
+                try {
+                    updateDateColors();
+                } catch (error) {
+                    console.error("❌ Error in updateDateColors interval:", error);
+                    showUpdateStatus(
+                        "System error occurred. Please refresh the page.",
+                        "error"
+                    );
+                }
+            }, 60000);
+
+            // Sync dropdowns every minute (same as date updates)
+            const syncInterval = setInterval(() => {
+                try {
+                    syncStatusDropdowns();
+                } catch (error) {
+                    console.error("❌ Error in syncStatusDropdowns interval:", error);
+                }
+            }, 60000);
+
+            // Set up cleanup interval for old retry attempts
+            const cleanupInterval = setInterval(() => {
+                try {
+                    cleanupOldRetryAttempts();
+                } catch (error) {
+                    console.error("❌ Error in cleanup interval:", error);
+                }
+            }, CLEANUP_INTERVAL);
+
+            // Handle page visibility changes
+            document.addEventListener("visibilitychange", function() {
+                try {
+                    if (!document.hidden && !updateInProgress) {
+                        console.log("👁️ Page became visible, checking for updates...");
+                        updateDateColors();
+                        syncStatusDropdowns();
+                    }
+                } catch (error) {
+                    console.error("❌ Error handling visibility change:", error);
+                }
+            });
+
+            // Cleanup on page unload
+            window.addEventListener("beforeunload", function() {
+                try {
+                    clearInterval(updateInterval);
+                    clearInterval(syncInterval);
+                    clearInterval(cleanupInterval);
+                    updateInProgress = false;
+                    queueProcessingInProgress = false;
+                    retryAttempts.clear();
+                    pendingUpdates = [];
+                    console.log("🧹 Cleaned up intervals and state");
+                } catch (error) {
+                    console.error("❌ Error during cleanup:", error);
+                }
+            });
+
+            /**
+             * Manual refresh function for debugging
+             */
+            window.debugUpdateDateColors = function() {
+                console.log("🔧 Manual date color update triggered");
+                updateInProgress = false; // Reset in case it's stuck
+                queueProcessingInProgress = false; // Reset queue processing flag
+                updateDateColors();
+            };
+
+            console.log("✅ Date color update system initialized successfully");
+            $(document).ready(function() {
+                updateDateColors();
+            });
+        });
+
+ 
 $(function () {
   var dropdowns = document.querySelectorAll(".dropdown");
   dropdowns.forEach(function (dropdown) {
