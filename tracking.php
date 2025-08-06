@@ -863,10 +863,10 @@ if (isset($_POST['save_data'])) {
         <h1>Tent</h1>
         <ul class="tally_list" id="tallyList">
             <li class="tally" id="on_standby">
-                <div class="available">Available</div>
+                <div class="available">Available </div>
                 <div class="info">
                     <div class="amount skeleton-loader">
-                        <h1 id="on_stocks_value"><?php echo $on_stock; ?></h1>
+                        <h1 id="on_stocks_value"><?php echo $on_stock - 9; ?></h1>
                     </div>
                 </div>
             </li>
