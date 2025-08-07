@@ -54,7 +54,7 @@ function getAllFuelRecords()
         }
 
         // SQL query to select all data from fuel table
-        $sql = "SELECT * FROM fuel ORDER BY id DESC";
+        $sql = "SELECT * FROM fuel ORDER BY date DESC, id DESC";
         $result = mysqli_query($conn, $sql);
 
         if (!$result) {
@@ -89,7 +89,7 @@ function getAllFuelRecords()
     }
 }
 
-// Function to get fuel records with filters
+// Function to get fuel records with filters (simplified for date-only filtering)
 function getFuelRecordsWithFilters($filters = [])
 {
     global $conn;
@@ -100,13 +100,7 @@ function getFuelRecordsWithFilters($filters = [])
         $params = [];
         $types = "";
 
-        // Add filters if provided
-        if (!empty($filters['fuel_type'])) {
-            $sql .= " AND fuel_type = ?";
-            $params[] = $filters['fuel_type'];
-            $types .= "s";
-        }
-
+        // Add date filters if provided
         if (!empty($filters['date_from'])) {
             $sql .= " AND date >= ?";
             $params[] = $filters['date_from'];
@@ -119,26 +113,8 @@ function getFuelRecordsWithFilters($filters = [])
             $types .= "s";
         }
 
-        if (!empty($filters['office'])) {
-            $sql .= " AND office = ?";
-            $params[] = $filters['office'];
-            $types .= "s";
-        }
-
-        if (!empty($filters['vehicle'])) {
-            $sql .= " AND vehicle LIKE ?";
-            $params[] = "%" . $filters['vehicle'] . "%";
-            $types .= "s";
-        }
-
-        if (!empty($filters['driver'])) {
-            $sql .= " AND driver LIKE ?";
-            $params[] = "%" . $filters['driver'] . "%";
-            $types .= "s";
-        }
-
         // Add ordering
-        $sql .= " ORDER BY date DESC";
+        $sql .= " ORDER BY date DESC, id DESC";
 
         // Prepare and execute query
         if (!empty($params)) {
@@ -176,6 +152,10 @@ function getFuelRecordsWithFilters($filters = [])
             'data' => $fuelRecords,
             'count' => count($fuelRecords),
             'filters_applied' => $filters,
+            'date_range' => [
+                'from' => $filters['date_from'] ?? null,
+                'to' => $filters['date_to'] ?? null
+            ],
             'message' => 'Fuel records retrieved successfully'
         ];
     } catch (Exception $e) {
@@ -203,7 +183,9 @@ function getFuelStatistics()
                     SUM(CASE WHEN liters_issued IS NOT NULL AND liters_issued != '' AND liters_issued != '0' 
                         THEN CAST(liters_issued AS DECIMAL(10,2)) ELSE 0 END) as total_liters,
                     COUNT(CASE WHEN DATE(date) = CURDATE() THEN 1 END) as today_records,
-                    COUNT(CASE WHEN MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE()) THEN 1 END) as month_records
+                    COUNT(CASE WHEN MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE()) THEN 1 END) as month_records,
+                    MIN(date) as earliest_date,
+                    MAX(date) as latest_date
                 FROM fuel
                 WHERE fuel_type IS NOT NULL AND fuel_type != ''
                 GROUP BY fuel_type
@@ -224,6 +206,7 @@ function getFuelStatistics()
         return [
             'success' => true,
             'data' => $statistics,
+            'period' => 'all_time',
             'message' => 'Fuel statistics retrieved successfully'
         ];
     } catch (Exception $e) {
@@ -232,6 +215,95 @@ function getFuelStatistics()
             'success' => false,
             'data' => [],
             'message' => 'Error retrieving fuel statistics: ' . $e->getMessage()
+        ];
+    }
+}
+
+// Function to get filtered fuel statistics by date range (simplified for date-only filtering)
+function getFilteredFuelStatistics($filters = [])
+{
+    global $conn;
+
+    try {
+        // Base query for fuel type statistics
+        $sql = "SELECT 
+                    fuel_type,
+                    COUNT(*) as total_records,
+                    SUM(CASE WHEN liters_issued IS NOT NULL AND liters_issued != '' AND liters_issued != '0' 
+                        THEN CAST(liters_issued AS DECIMAL(10,2)) ELSE 0 END) as total_liters,
+                    AVG(CASE WHEN liters_issued IS NOT NULL AND liters_issued != '' AND liters_issued != '0' 
+                        THEN CAST(liters_issued AS DECIMAL(10,2)) ELSE NULL END) as avg_liters,
+                    MIN(date) as period_start,
+                    MAX(date) as period_end
+                FROM fuel
+                WHERE fuel_type IS NOT NULL AND fuel_type != ''";
+        
+        $params = [];
+        $types = "";
+
+        // Add date filters if provided
+        if (!empty($filters['date_from'])) {
+            $sql .= " AND date >= ?";
+            $params[] = $filters['date_from'];
+            $types .= "s";
+        }
+
+        if (!empty($filters['date_to'])) {
+            $sql .= " AND date <= ?";
+            $params[] = $filters['date_to'];
+            $types .= "s";
+        }
+
+        $sql .= " GROUP BY fuel_type ORDER BY fuel_type";
+
+        // Prepare and execute query
+        if (!empty($params)) {
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, $types, ...$params);
+                mysqli_stmt_execute($stmt);
+                $result = mysqli_stmt_get_result($stmt);
+            } else {
+                throw new Exception("Failed to prepare statement: " . mysqli_error($conn));
+            }
+        } else {
+            $result = mysqli_query($conn, $sql);
+        }
+
+        if (!$result) {
+            throw new Exception("Query failed: " . mysqli_error($conn));
+        }
+
+        $statistics = [];
+
+        while ($row = mysqli_fetch_assoc($result)) {
+            // Add formatted average
+            $row['avg_liters'] = $row['avg_liters'] ? round($row['avg_liters'], 2) : 0;
+            $statistics[] = $row;
+        }
+
+        // Clean up
+        if (isset($stmt)) {
+            mysqli_stmt_close($stmt);
+        }
+
+        return [
+            'success' => true,
+            'data' => $statistics,
+            'filters_applied' => $filters,
+            'date_range' => [
+                'from' => $filters['date_from'] ?? null,
+                'to' => $filters['date_to'] ?? null
+            ],
+            'period' => 'filtered',
+            'message' => 'Filtered fuel statistics retrieved successfully'
+        ];
+    } catch (Exception $e) {
+        logError("Error in getFilteredFuelStatistics: " . $e->getMessage());
+        return [
+            'success' => false,
+            'data' => [],
+            'message' => 'Error retrieving filtered fuel statistics: ' . $e->getMessage()
         ];
     }
 }
@@ -250,19 +322,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         case 'filtered':
             $filters = [];
 
-            // Get filter parameters from GET request
-            if (isset($_GET['fuel_type'])) $filters['fuel_type'] = $_GET['fuel_type'];
-            if (isset($_GET['date_from'])) $filters['date_from'] = $_GET['date_from'];
-            if (isset($_GET['date_to'])) $filters['date_to'] = $_GET['date_to'];
-            if (isset($_GET['office'])) $filters['office'] = $_GET['office'];
-            if (isset($_GET['vehicle'])) $filters['vehicle'] = $_GET['vehicle'];
-            if (isset($_GET['driver'])) $filters['driver'] = $_GET['driver'];
+            // Get filter parameters from GET request (date filters only)
+            if (isset($_GET['dateFilterStart']) && !empty($_GET['dateFilterStart'])) {
+                $filters['date_from'] = $_GET['dateFilterStart'];
+            }
+            if (isset($_GET['dateFilterEnd']) && !empty($_GET['dateFilterEnd'])) {
+                $filters['date_to'] = $_GET['dateFilterEnd'];
+            }
 
             $response = getFuelRecordsWithFilters($filters);
             break;
 
         case 'statistics':
             $response = getFuelStatistics();
+            break;
+
+        case 'filtered_statistics':
+            $filters = [];
+
+            // Get filter parameters from GET request (date filters only)
+            if (isset($_GET['date_from']) && !empty($_GET['date_from'])) {
+                $filters['date_from'] = $_GET['date_from'];
+            }
+            if (isset($_GET['date_to']) && !empty($_GET['date_to'])) {
+                $filters['date_to'] = $_GET['date_to'];
+            }
+
+            $response = getFilteredFuelStatistics($filters);
             break;
 
         case 'single':
@@ -273,19 +359,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $stmt->execute();
                 $result = $stmt->get_result();
                 $record = $result->fetch_assoc();
+                $stmt->close();
+                
                 if ($record) {
-                    echo json_encode(['success' => true, 'data' => $record]);
+                    sendResponse(['success' => true, 'data' => $record]);
                 } else {
-                    echo json_encode(['success' => false, 'message' => 'Record not found']);
+                    sendResponse(['success' => false, 'message' => 'Record not found']);
                 }
-                exit;
+            } else {
+                sendResponse(['success' => false, 'message' => 'ID parameter required']);
             }
             break;
 
         default:
             $response = [
                 'success' => false,
-                'message' => 'Invalid action specified: ' . $action
+                'message' => 'Invalid action specified: ' . $action . '. Valid actions: all, filtered, statistics, filtered_statistics, single'
             ];
     }
 
@@ -304,3 +393,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 if (isset($conn)) {
     mysqli_close($conn);
 }
+?>

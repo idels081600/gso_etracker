@@ -34,11 +34,11 @@ $fuel_type = $input['fuel_type'] ?? null;
 $liters_issued = $input['liters_issued'] ?? null;
 $remarks = $input['remarks'] ?? null;
 
-if (!$fuel_date || !$office || !$vehicle || !$plate_no || !$driver || !$purpose || !$fuel_type || $liters_issued === null) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Missing required fields']);
-    exit;
-}
+// if (!$fuel_date || !$office || !$vehicle || !$plate_no || !$driver || !$purpose || !$fuel_type || $liters_issued === null) {
+//     http_response_code(400);
+//     echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+//     exit;
+// }
 
 // Update the record in the 'fuel' table
 $sql = "UPDATE fuel SET

@@ -422,10 +422,7 @@ header('Expires: 0');
                                     <small class="text-muted d-block">Total Liters</small>
                                     <span class="fw-bold text-success" id="unleadedLiters">0.00 L</span>
                                 </div>
-                                <div class="col-6">
-                                    <small class="text-muted d-block">This Month</small>
-                                    <span class="fw-bold text-success" id="unleadedMonth">0</span>
-                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -457,10 +454,6 @@ header('Expires: 0');
                                 <div class="col-6">
                                     <small class="text-muted d-block">Total Liters</small>
                                     <span class="fw-bold text-warning" id="dieselLiters">0.00 L</span>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted d-block">This Month</small>
-                                    <span class="fw-bold text-warning" id="dieselMonth">0</span>
                                 </div>
                             </div>
                         </div>
@@ -510,8 +503,8 @@ header('Expires: 0');
                                             <li>
                                                 <hr class="dropdown-divider">
                                             </li>
-                                            <li><a class="dropdown-item" href="#" data-filter="unleaded">Unleaded Only</a></li>
-                                            <li><a class="dropdown-item" href="#" data-filter="diesel">Diesel Only</a></li>
+                                            <!-- <li><a class="dropdown-item" href="#" data-filter="unleaded">Unleaded Only</a></li>
+                                            <li><a class="dropdown-item" href="#" data-filter="diesel">Diesel Only</a></li> -->
                                         </ul>
                                     </div>
 

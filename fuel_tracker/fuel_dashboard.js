@@ -385,6 +385,8 @@ async function loadFilteredFuelRecords(filters) {
     if (!response.ok) throw new Error("Network response was not ok");
 
     const data = await response.json();
+    // Load statistics for the current filters
+    loadFuelStatistics(filters);
 
     if (data.success) {
       updateTableWithFilteredData(data);
@@ -547,15 +549,18 @@ async function loadFuelStatistics() {
   }
 }
 
-function updateFuelStatistics(statistics) {
+function updateFuelStatistics(statistics, filters = null) {
   // Reset all tallies
   document.getElementById("unleadedCount").textContent = "0";
   document.getElementById("unleadedLiters").textContent = "0.00 L";
-  document.getElementById("unleadedMonth").textContent = "0";
+
 
   document.getElementById("dieselCount").textContent = "0";
   document.getElementById("dieselLiters").textContent = "0.00 L";
-  document.getElementById("dieselMonth").textContent = "0";
+  
+
+  // Update statistics labels based on filter period
+  updateStatisticsLabels(filters);
 
   // Update with actual data
   statistics.forEach((stat) => {
@@ -565,12 +570,14 @@ function updateFuelStatistics(statistics) {
       document.getElementById("unleadedCount").textContent = stat.total_records;
       document.getElementById("unleadedLiters").textContent =
         parseFloat(stat.total_liters || 0).toFixed(2) + " L";
-      document.getElementById("unleadedMonth").textContent = stat.month_records;
+
+
     } else if (fuelType === "diesel") {
       document.getElementById("dieselCount").textContent = stat.total_records;
       document.getElementById("dieselLiters").textContent =
         parseFloat(stat.total_liters || 0).toFixed(2) + " L";
-      document.getElementById("dieselMonth").textContent = stat.month_records;
+
+
     }
   });
 }
@@ -607,23 +614,47 @@ if (document.getElementById("updateFuelRecord")) {
   document
     .getElementById("updateFuelRecord")
     .addEventListener("click", async function () {
+      console.log("=== UPDATE FUEL RECORD - START ===");
+
       const form = document.getElementById("editFuelRecordForm");
       const formData = new FormData(form);
       const recordId = formData.get("id");
+
+      // Log initial form data
+      console.log("Form element found:", !!form);
+      console.log("Record ID:", recordId);
+
       const payload = {};
       formData.forEach((value, key) => {
         payload[key] = value;
       });
 
+      console.log("Form payload:", payload);
+      console.log("Payload keys:", Object.keys(payload));
+      console.log("Payload size:", Object.keys(payload).length);
+
       try {
         // Show loading state
         const updateBtn = document.getElementById("updateFuelRecord");
         const originalHTML = updateBtn.innerHTML;
+        console.log("Button original HTML:", originalHTML);
+
         updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         updateBtn.disabled = true;
+        console.log("Button loading state applied");
+
+        // Log request details
+        const requestUrl = `update_fuel_record.php?id=${recordId}`;
+        console.log("Request URL:", requestUrl);
+        console.log("Request method: POST");
+        console.log("Request headers:", {
+          "Content-Type": "application/json",
+        });
+        console.log("Request body:", JSON.stringify(payload));
 
         // Send update request (adjust endpoint as needed)
-        const response = await fetch(`update_fuel_record.php?id=${recordId}`, {
+        console.log("Sending fetch request...");
+        const response = await fetch(requestUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -631,34 +662,145 @@ if (document.getElementById("updateFuelRecord")) {
           body: JSON.stringify(payload),
         });
 
+        console.log("Response received:");
+        console.log("- Status:", response.status);
+        console.log("- Status Text:", response.statusText);
+        console.log("- OK:", response.ok);
+        console.log(
+          "- Headers:",
+          Object.fromEntries(response.headers.entries())
+        );
+
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorDetails = {
+            status: response.status,
+            statusText: response.statusText,
+            url: response.url,
+            headers: Object.fromEntries(response.headers.entries()),
+          };
+
+          console.error("HTTP Error Details:", errorDetails);
+
+          // Try to get error response body if available
+          let errorBody = null;
+          try {
+            errorBody = await response.text();
+            console.error("Error response body:", errorBody);
+          } catch (bodyError) {
+            console.error("Could not read error response body:", bodyError);
+          }
+
+          throw new Error(
+            `HTTP error! status: ${response.status} - ${response.statusText}${
+              errorBody ? "\nResponse: " + errorBody : ""
+            }`
+          );
         }
 
+        console.log("Parsing response as JSON...");
         const data = await response.json();
+        console.log("Response data:", data);
+        console.log("Response data type:", typeof data);
+        console.log("Response success:", data.success);
+
         if (data.success) {
+          console.log("✅ Update successful");
+          console.log("Success message:", data.message);
+
           showNotification(
             `Record ${recordId} updated successfully`,
             "success"
           );
+
           // Hide modal
+          console.log("Hiding modal...");
           const editModalEl = document.getElementById("editFuelRecordModal");
-          const editModal = bootstrap.Modal.getInstance(editModalEl);
-          editModal.hide();
+          console.log("Modal element found:", !!editModalEl);
+
+          if (editModalEl) {
+            const editModal = bootstrap.Modal.getInstance(editModalEl);
+            console.log("Modal instance:", editModal);
+
+            if (editModal) {
+              editModal.hide();
+              console.log("Modal hidden successfully");
+            } else {
+              console.warn("Bootstrap modal instance not found");
+            }
+          } else {
+            console.warn("Edit modal element not found");
+          }
+
           // Reload records
-          loadFuelRecords();
+          console.log("Reloading fuel records...");
+          if (typeof loadFuelRecords === "function") {
+            await loadFuelRecords();
+            console.log("Fuel records reloaded");
+          } else {
+            console.error("loadFuelRecords function not available");
+          }
+
           // Reload statistics if needed
-          loadFuelStatistics();
+          console.log("Reloading fuel statistics...");
+          if (typeof loadFuelStatistics === "function") {
+            await loadFuelStatistics();
+            console.log("Fuel statistics reloaded");
+          } else {
+            console.error("loadFuelStatistics function not available");
+          }
         } else {
-          throw new Error(data.message || "Failed to update record");
+          console.error("❌ Update failed - Server returned success: false");
+          console.error("Server error message:", data.message);
+          console.error("Full server response:", data);
+
+          throw new Error(
+            data.message ||
+              "Failed to update record - server returned success: false"
+          );
         }
       } catch (error) {
+        console.error("=== UPDATE FUEL RECORD - ERROR ===");
+        console.error("Error type:", error.constructor.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+
+        // Additional error context
+        console.error("Error occurred at:", new Date().toISOString());
+        console.error("Record ID being updated:", recordId);
+        console.error("Payload that failed:", payload);
+
+        // Check for specific error types
+        if (error.name === "TypeError" && error.message.includes("fetch")) {
+          console.error("🌐 Network error detected - possible causes:");
+          console.error("- Server is down");
+          console.error("- Incorrect URL");
+          console.error("- CORS issues");
+          console.error("- Network connectivity problems");
+        } else if (
+          error.name === "SyntaxError" &&
+          error.message.includes("JSON")
+        ) {
+          console.error("📄 JSON parsing error detected - possible causes:");
+          console.error("- Server returned non-JSON response");
+          console.error("- Response body is empty");
+          console.error("- Server returned HTML error page");
+        }
+
         showNotification(`Failed to update record: ${error.message}`, "danger");
       } finally {
+        console.log("=== UPDATE FUEL RECORD - CLEANUP ===");
+
         // Restore button state
         const updateBtn = document.getElementById("updateFuelRecord");
-        updateBtn.innerHTML = '<i class="fas fa-save me-1"></i>Update Record';
-        updateBtn.disabled = false;
+        if (updateBtn) {
+          updateBtn.innerHTML = '<i class="fas fa-save me-1"></i>Update Record';
+          updateBtn.disabled = false;
+          console.log("Button state restored");
+        } else {
+          console.error("Update button not found during cleanup");
+        }
+
+        console.log("=== UPDATE FUEL RECORD - END ===");
       }
     });
 }
@@ -861,3 +1003,225 @@ document.getElementById("searchBar").addEventListener("keypress", function (e) {
     document.getElementById("searchBtn").click();
   }
 });
+async function loadFuelStatistics(filters = {}) {
+  try {
+    // Build query string based on filters
+    let queryParams = new URLSearchParams();
+
+    // Determine which action to use based on whether date filters are provided
+    if (filters.date_from || filters.date_to) {
+      queryParams.append("action", "filtered_statistics");
+
+      // Add date filter parameters to query
+      if (filters.date_from) queryParams.append("date_from", filters.date_from);
+      if (filters.date_to) queryParams.append("date_to", filters.date_to);
+    } else {
+      queryParams.append("action", "statistics");
+    }
+
+    const response = await fetch(`get_fuel_data.php?${queryParams.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success) {
+      updateFuelStatistics(data.data, filters);
+    } else {
+      showNotification(
+        "Error loading fuel statistics: " + data.message,
+        "danger"
+      );
+    }
+  } catch (error) {
+    console.error("Error loading fuel statistics:", error);
+    showNotification("Failed to load fuel statistics", "danger");
+  }
+}
+function applyDateFilter() {
+  const dateFrom = document.getElementById("dateFilterStart")?.value;
+  const dateTo = document.getElementById("dateFilterEnd")?.value;
+
+  if (dateFrom || dateTo) {
+    loadFilteredFuelStatistics({
+      date_from: dateFrom,
+      date_to: dateTo,
+    });
+  } else {
+    // Load regular statistics if no date filter
+    loadFuelStatistics();
+  }
+}
+function clearFilters() {
+  // Clear form inputs if they exist
+  const dateFromInput = document.getElementById("date_from");
+  const dateToInput = document.getElementById("date_to");
+
+  if (dateFromInput) dateFromInput.value = "";
+  if (dateToInput) dateToInput.value = "";
+
+  // Reload all statistics
+  loadFuelStatistics();
+}
+document.addEventListener("DOMContentLoaded", function () {
+  // If you have a filter form, attach the event listener
+  const filterForm = document.getElementById("filterForm");
+  if (filterForm) {
+    filterForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      applyDateFilter();
+    });
+  }
+
+  // If you have filter buttons
+  const applyFilterBtn = document.getElementById("applyFilter");
+  if (applyFilterBtn) {
+    applyFilterBtn.addEventListener("click", applyDateFilter);
+  }
+
+  const clearFilterBtn = document.getElementById("clearFilter");
+  if (clearFilterBtn) {
+    clearFilterBtn.addEventListener("click", clearFilters);
+  }
+});
+function updateStatisticsLabels(filters) {
+  // Find the period label elements (you may need to adjust selectors based on your HTML)
+  const periodLabels = document.querySelectorAll(
+    ".period-label, .stats-period"
+  );
+
+  let periodText = "All Time";
+
+  if (filters && (filters.date_from || filters.date_to)) {
+    if (filters.date_from && filters.date_to) {
+      // Format dates for display
+      const fromDate = new Date(filters.date_from).toLocaleDateString();
+      const toDate = new Date(filters.date_to).toLocaleDateString();
+      periodText = `${fromDate} - ${toDate}`;
+    } else if (filters.date_from) {
+      const fromDate = new Date(filters.date_from).toLocaleDateString();
+      periodText = `From ${fromDate}`;
+    } else if (filters.date_to) {
+      const toDate = new Date(filters.date_to).toLocaleDateString();
+      periodText = `Until ${toDate}`;
+    }
+  }
+
+  // Update period labels if they exist
+  periodLabels.forEach((label) => {
+    label.textContent = periodText;
+  });
+
+  // If you have specific elements for "This Month" labels, update them too
+  const monthLabels = document.querySelectorAll(".month-label");
+  monthLabels.forEach((label) => {
+    label.textContent =
+      filters && (filters.date_from || filters.date_to)
+        ? "Filtered Period"
+        : "This Month";
+  });
+}
+function onDateFilterChange() {
+  // Get current filter values from your form/inputs
+  const filters = getCurrentFilters();
+
+  // Reload statistics with new filters
+  loadFuelStatistics(filters);
+
+  // Optionally, also reload the main fuel records table
+  loadFuelData(filters);
+}
+function getCurrentFilters() {
+  const filters = {};
+
+  // Get date filter values (adjust selectors based on your HTML)
+  const dateFrom = document.getElementById("dateFilterStart")?.value;
+  const dateTo = document.getElementById("dateFilterEnd")?.value;
+
+  if (dateFrom) filters.date_from = dateFrom;
+  if (dateTo) filters.date_to = dateTo;
+
+  return filters;
+}
+document.addEventListener("DOMContentLoaded", function () {
+  // Add event listeners to date inputs only
+  const dateFromInput = document.getElementById("dateFrom");
+  const dateToInput = document.getElementById("dateTo");
+
+  if (dateFromInput) {
+    dateFromInput.addEventListener("change", onDateFilterChange);
+  }
+
+  if (dateToInput) {
+    dateToInput.addEventListener("change", onDateFilterChange);
+  }
+
+  // Load initial statistics
+  loadFuelStatistics();
+});
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// Function to reset filters and reload all data
+function resetFilters() {
+  // Clear date filter inputs only
+  const dateFromInput = document.getElementById("dateFrom");
+  const dateToInput = document.getElementById("dateTo");
+
+  if (dateFromInput) dateFromInput.value = "";
+  if (dateToInput) dateToInput.value = "";
+
+  // Reload statistics and data without filters
+  loadFuelStatistics();
+  loadFuelData();
+}
+
+// Enhanced loadFuelData function to work with filters
+async function loadFuelData(filters = {}) {
+  try {
+    let queryParams = new URLSearchParams();
+
+    if (Object.keys(filters).length > 0) {
+      queryParams.append("action", "filtered");
+
+      // Add filter parameters to query
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) {
+          queryParams.append(key, filters[key]);
+        }
+      });
+    } else {
+      queryParams.append("action", "all");
+    }
+
+    const response = await fetch(`get_fuel_data.php?${queryParams.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success) {
+      updateFuelTable(data.data);
+      // Also update statistics with the same filters
+      loadFuelStatistics(filters);
+    } else {
+      showNotification("Error loading fuel data: " + data.message, "danger");
+    }
+  } catch (error) {
+    console.error("Error loading fuel data:", error);
+    showNotification("Failed to load fuel data", "danger");
+  }
+}
