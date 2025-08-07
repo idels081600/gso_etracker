@@ -24,13 +24,9 @@ if (!isset($_SESSION['username'])) {
 <body>
     <div class="container-fluid">
         <h1 class="mt-4">Search Client</h1>
-        <div class="form-group">
+        <!-- <div class="form-group">
             <input type="text" class="form-control" id="searchInput" placeholder="Search...">
-        </div>
-        <div class="mb-3">
-            <button type="button" class="btn btn-info" id="todayBtn">Today</button>
-            <button type="button" class="btn btn-secondary ml-2" id="showAllBtn">Show All</button>
-        </div>
+        </div> -->
         <div class="table-responsive">
             <table class="table table-striped mt-4 table-fixed">
                 <thead>
@@ -51,10 +47,11 @@ if (!isset($_SESSION['username'])) {
                     $today = date('Y-m-d');
 
                     // First fetch Pending status (unchanged)
-                    $query_pending = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date, t.no_of_tents
-             FROM tent t 
-             WHERE t.status = 'Pending'
-             ORDER BY t.date DESC";
+                    $query_pending = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date, t.no_of_tents              
+FROM tent t               
+WHERE t.status = 'Pending' 
+AND DATE(t.date) = '$today'
+ORDER BY t.date DESC";
                     $result_pending = mysqli_query($conn, $query_pending);
 
                     // Fetch For Retrieval status - prioritize today's date
@@ -66,24 +63,7 @@ if (!isset($_SESSION['username'])) {
                t.retrieval_date DESC";
                     $result_for_retrieval = mysqli_query($conn, $query_for_retrieval);
 
-                    // Fetch Installed status - prioritize today's date
-                    $query_installed = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.retrieval_date, t.no_of_tents
-            FROM tent t 
-            WHERE t.status = 'Installed'
-            ORDER BY 
-                CASE WHEN t.retrieval_date = '$today' THEN 0 ELSE 1 END,
-                t.retrieval_date DESC";
-                    $result_installed = mysqli_query($conn, $query_installed);
-
-                    // Fetch Retrieved status (unchanged)
-                    $query_retrieved = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date, t.no_of_tents
-           FROM tent t 
-           WHERE t.status = 'Retrieved'
-           ORDER BY t.date DESC";
-                    $result_retrieved = mysqli_query($conn, $query_retrieved);
-
-                    $total_rows = mysqli_num_rows($result_pending) + mysqli_num_rows($result_installed) +
-                        mysqli_num_rows($result_retrieved) + mysqli_num_rows($result_for_retrieval);
+                    $total_rows = mysqli_num_rows($result_pending) + mysqli_num_rows($result_for_retrieval);
 
                     if ($total_rows > 0) {
                         // Display For Retrieval records (now sorted with today's date first)
@@ -113,35 +93,8 @@ if (!isset($_SESSION['username'])) {
             </td>';
                             echo "</tr>";
                         }
-                        
-                        // Display Installed records (now sorted with today's date first)
-                        while ($row = mysqli_fetch_assoc($result_installed)) {
-                            // Add a CSS class to highlight today's records
-                            $todayClass = ($row['retrieval_date'] == $today) ? 'today-record' : '';
-                            echo "<tr class='installed-row $todayClass'>";
-                            echo "<td>" . htmlspecialchars($row['name']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['retrieval_date']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['status']) . "</td>";
-                            echo '<td class="text-right">
-                <button class="btn btn-primary"
-                    data-toggle="modal"
-                    data-target="#editModal"
-                    data-id="' . htmlspecialchars($row['id']) . '"
-                    data-name="' . htmlspecialchars($row['name']) . '"
-                    data-address="' . htmlspecialchars($row['location']) . '"
-                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
-                    data-no_of_tents="' . htmlspecialchars($row['no_of_tents']) . '"
-                    data-date="' . htmlspecialchars($row['retrieval_date']) . '"
-                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
-                    data-status="' . htmlspecialchars($row['status']) . '">
-                    Edit
-                </button>
-            </td>';
-                            echo "</tr>";
-                        }
-                        
+
+
                         // Display Pending records (hidden by default, shown only for Today)
                         while ($row = mysqli_fetch_assoc($result_pending)) {
                             echo "<tr class='pending-row'>";
@@ -167,8 +120,8 @@ if (!isset($_SESSION['username'])) {
             </td>';
                             echo "</tr>";
                         }
-                        
-                        if (mysqli_num_rows($result_for_retrieval) + mysqli_num_rows($result_installed) + mysqli_num_rows($result_pending) == 0) {
+
+                        if (mysqli_num_rows($result_for_retrieval) + mysqli_num_rows($result_pending) == 0) {
                             echo "<tr><td colspan='6'>No data found</td></tr>";
                         }
                     } else {
