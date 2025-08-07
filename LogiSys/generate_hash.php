@@ -1,6 +1,6 @@
 <?php
 // Generate hash for password "123"
-$password = "123";
+$password = "GSO2025";
 $hash = password_hash($password, PASSWORD_DEFAULT);
 
 echo "Password: " . $password . "\n";

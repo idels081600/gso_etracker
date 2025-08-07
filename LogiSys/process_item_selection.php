@@ -15,12 +15,14 @@ ob_clean();
 header('Content-Type: application/json');
 
 // Function to log errors
-function log_error($message) {
+function log_error($message)
+{
     error_log(date('[Y-m-d H:i:s] ') . $message . "\n", 3, __DIR__ . '/error.log');
 }
 
 // Function to send JSON response and exit
-function send_json_response($success, $message, $data = []) {
+function send_json_response($success, $message, $data = [])
+{
     $response = array_merge(['success' => $success, 'message' => $message], $data);
     echo json_encode($response);
     exit;
@@ -37,7 +39,8 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 }
 
 // Function to sanitize data
-function sanitize_input($data) {
+function sanitize_input($data)
+{
     $data = trim($data);
     $data = stripslashes($data);
     $data = htmlspecialchars($data);
@@ -101,23 +104,50 @@ try {
         send_json_response(false, 'Database connection lost');
     }
 
-    // Prepare SQL statement
-    $query = "INSERT INTO items_requested (item_id, item_name, quantity, unit, approved_quantity, office_name, date_requested, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')";
-    
+    // First, get the office ID based on the office name
+    $office_query = "SELECT id FROM office_balances WHERE office_name = ?";
+    $office_stmt = mysqli_prepare($conn, $office_query);
+
+    if (!$office_stmt) {
+        log_error('Office query prepare failed: ' . mysqli_error($conn));
+        send_json_response(false, 'Failed to prepare office lookup statement');
+    }
+
+    mysqli_stmt_bind_param($office_stmt, "s", $office);
+
+    if (!mysqli_stmt_execute($office_stmt)) {
+        log_error('Office query execute failed: ' . mysqli_stmt_error($office_stmt));
+        send_json_response(false, 'Failed to execute office lookup');
+    }
+
+    $office_result = mysqli_stmt_get_result($office_stmt);
+    $office_row = mysqli_fetch_assoc($office_result);
+
+    if (!$office_row) {
+        mysqli_stmt_close($office_stmt);
+        send_json_response(false, 'Office not found: ' . $office);
+    }
+
+    $office_id = $office_row['id'];
+    mysqli_stmt_close($office_stmt);
+
+    // Now prepare SQL statement for inserting the item request
+    $query = "INSERT INTO items_requested (item_id, item_name, quantity, unit, approved_quantity, office_id, office_name, date_requested, status) VALUES (?, ?, ?, ?, ?,?, ?, ?, 'Pending')";
+
     $stmt = mysqli_prepare($conn, $query);
-    
+
     if (!$stmt) {
         log_error('Prepare failed: ' . mysqli_error($conn));
         send_json_response(false, 'Failed to prepare database statement');
     }
 
-    // Bind parameters (fixed the binding - using quantity as approved_Quantity for both fields)
-    mysqli_stmt_bind_param($stmt, "ssidsss", $itemNo, $itemName, $approved_Quantity, $unit, $approved_Quantity, $office, $dateReceived);
+    // Bind parameters - using office_id instead of office_name
+    mysqli_stmt_bind_param($stmt, "ssidisss", $itemNo, $itemName, $approved_Quantity, $unit, $approved_Quantity, $office_id, $office, $dateReceived);
 
     // Execute statement
     if (mysqli_stmt_execute($stmt)) {
         $insert_id = mysqli_insert_id($conn);
-        
+
         send_json_response(true, 'Item added successfully', [
             'id' => $insert_id,
             'itemNo' => $itemNo,
@@ -125,6 +155,7 @@ try {
             'quantity' => $approved_Quantity,
             'unit' => $unit,
             'office' => $office,
+            'office_id' => $office_id,
             'dateReceived' => $dateReceived
         ]);
     } else {
@@ -134,7 +165,6 @@ try {
 
     // Close statement
     mysqli_stmt_close($stmt);
-
 } catch (Exception $e) {
     log_error('Exception: ' . $e->getMessage());
     send_json_response(false, 'An error occurred while processing your request');
@@ -147,4 +177,3 @@ try {
 if (isset($conn) && $conn) {
     mysqli_close($conn);
 }
-?>

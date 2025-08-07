@@ -699,8 +699,7 @@ function processItemSelection(data) {
   .then(response => response.json())
   .then(result => {
     if (result.success) {
-      alert('Item added successfully!');
-      // Refresh table or update UI as needed
+      window.location.reload();
     } else {
       alert('Error: ' + result.message);
     }

@@ -591,3 +591,47 @@
 [11-Jul-2025 08:28:38 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 [11-Jul-2025 08:28:38 Europe/Berlin] Item added successfully. Insert ID: 1100
 [11-Jul-2025 08:28:38 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1100,"item_data":{"item_no":"689","item_name":"T8 led tube & box","rack_no":16,"unit":"pcs","current_balance":4,"status":"Low Stock","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}
+[04-Aug-2025 09:20:18 Europe/Berlin] === STARTING ITEM ADDITION PROCESS ===
+[04-Aug-2025 09:20:18 Europe/Berlin] Request Method: POST
+[04-Aug-2025 09:20:18 Europe/Berlin] Raw POST data: 
+[04-Aug-2025 09:20:18 Europe/Berlin] POST array: Array
+(
+    [itemNo] => 711
+    [itemName] => TESTING
+    [balance] => 100
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[04-Aug-2025 09:20:19 Europe/Berlin] === RECEIVED FORM DATA ===
+[04-Aug-2025 09:20:19 Europe/Berlin] POST data: Array
+(
+    [itemNo] => 711
+    [itemName] => TESTING
+    [balance] => 100
+    [rackNo] => 16
+    [unit] => pcs
+    [expiryDate] => 
+    [expiryAlertDays] => 30
+    [description] => 
+)
+
+[04-Aug-2025 09:20:19 Europe/Berlin] === SANITIZED DATA ===
+[04-Aug-2025 09:20:19 Europe/Berlin] Item No: 711
+[04-Aug-2025 09:20:19 Europe/Berlin] Item Name: TESTING
+[04-Aug-2025 09:20:19 Europe/Berlin] Rack No: 16
+[04-Aug-2025 09:20:19 Europe/Berlin] Unit: pcs
+[04-Aug-2025 09:20:19 Europe/Berlin] Current Balance: 100
+[04-Aug-2025 09:20:19 Europe/Berlin] Description: 
+[04-Aug-2025 09:20:19 Europe/Berlin] Expiry Date: null
+[04-Aug-2025 09:20:19 Europe/Berlin] Expiry Alert Days: 30
+[04-Aug-2025 09:20:19 Europe/Berlin] Initial Status: Available
+[04-Aug-2025 09:20:19 Europe/Berlin] Final Status: Available
+[04-Aug-2025 09:20:19 Europe/Berlin] Expiry Status: 
+[04-Aug-2025 09:20:19 Europe/Berlin] Checking for existing item: SELECT id FROM inventory_items WHERE item_no = ?
+[04-Aug-2025 09:20:19 Europe/Berlin] Insert query: INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[04-Aug-2025 09:20:20 Europe/Berlin] Item added successfully. Insert ID: 1122
+[04-Aug-2025 09:20:20 Europe/Berlin] Sending success response: {"success":true,"message":"Item added successfully!","item_id":1122,"item_data":{"item_no":"711","item_name":"TESTING","rack_no":16,"unit":"pcs","current_balance":100,"status":"Available","expiry_date":null,"expiry_alert_days":30,"expiry_status":""}}

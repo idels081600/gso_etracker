@@ -1,0 +1,11 @@
+[2025-08-04 09:52:17] Transaction failed: Unknown column 'office' in 'field list'
+[2025-08-04 09:53:39] Retrieved items from items_requested: [{"item_id":711,"item_name":"TESTING","quantity":1,"office":"ASSET"}]
+[2025-08-04 09:53:39] Transaction failed: Unknown column 'office' in 'field list'
+[2025-08-04 09:54:28] Retrieved items from items_requested: [{"item_id":711,"item_name":"TESTING","quantity":1,"office":"ASSET"}]
+[2025-08-04 09:54:28] Transaction failed: Column 'item_no' cannot be null
+[2025-08-04 09:55:23] Retrieved items from items_requested: [{"item_id":711,"item_name":"TESTING","quantity":1,"office":"ASSET"}]
+[2025-08-04 09:55:24] Transaction failed: Column 'item_no' cannot be null
+[2025-08-04 09:55:40] Retrieved items from items_requested: [{"item_id":711,"item_name":"TESTING","quantity":1,"office":"ASSET"}]
+[2025-08-04 09:55:40] Transaction failed: Column 'item_no' cannot be null
+[2025-08-04 09:59:23] Retrieved items from items_requested: [{"item_id":711,"item_name":"TESTING","quantity":1,"office":"ASSET"}]
+[2025-08-07 05:04:00] Fatal Error: The number of elements in the type definition string must match the number of bind variables

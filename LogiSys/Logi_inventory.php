@@ -124,6 +124,9 @@ function getStatusBadge($status)
                                         <button type="button" class="btn btn-info btn-sm" id="printBtn">
                                             <i class="fas fa-print"></i> Print
                                         </button>
+                                        <button type="button" class="btn btn-secondary btn-sm" id="inventoryUpdateBtn" data-bs-toggle="modal" data-bs-target="#bulkUpdateModal">
+                                            <i class="fas fa-file-upload"></i>Update Inventory
+                                        </button>
                                         <button type="button" class="btn btn-danger btn-sm" id="deleteItemBtn" disabled>
                                             <i class="fas fa-trash"></i> Delete Item
                                         </button>
@@ -253,7 +256,24 @@ function getStatusBadge($status)
             </div>
         </div>
     </div>
-
+    <div class="modal fade" id="bulkUpdateModal" tabindex="-1" aria-labelledby="bulkUpdateModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bulkUpdateModalLabel">Bulk Update Inventory</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="bulkUpdateDate" class="form-label">Effective Date:</label>
+                    <input type="date" class="form-control" id="bulkUpdateDate">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmBulkUpload">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Add Item Modal -->
     <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
