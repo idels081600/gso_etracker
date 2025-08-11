@@ -674,7 +674,7 @@ if (isset($requests_stmt)) {
                                     require_once 'logi_db.php';
 
                                     // Prepare and execute query
-                                    $query = "SELECT item_no, item_name, unit FROM common_items ORDER BY item_name ASC";
+                                    $query = "SELECT item_no, item_name, unit FROM inventory_items ORDER BY item_name ASC";
                                     $result = mysqli_query($conn, $query);
 
                                     if (!$result) {
