@@ -34,6 +34,26 @@ function sendResponse($success, $message, $data = null) {
     exit;
 }
 
+// Function to convert comma-separated string to integer or return single integer
+function sanitizeId($value) {
+    // If it's already an integer, return it
+    if (is_int($value)) {
+        return $value;
+    }
+    
+    // Convert to string and trim whitespace
+    $value = trim(strval($value));
+    
+    // If it contains commas, take only the first value
+    if (strpos($value, ',') !== false) {
+        $parts = explode(',', $value);
+        $value = trim($parts[0]);
+    }
+    
+    // Convert to integer
+    return intval($value);
+}
+
 try {
     // Validate request method
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -46,67 +66,12 @@ try {
     $updatedItems = [];
     $errors = [];
 
-    // Process red dates (overdue items)
+    // Process red dates (overdue items) - disabled per requirements
     if (isset($_POST['redDates'])) {
-        $redDates = json_decode($_POST['redDates'], true);
-        
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('Invalid JSON in redDates: ' . json_last_error_msg());
-        }
-        
-        logDebug('Processing red dates', $redDates);
-        
-        foreach ($redDates as $item) {
-            if (!isset($item['tent_no']) || !isset($item['id'])) {
-                $errors[] = 'Missing tent_no or id in red date item';
-                continue;
-            }
-            
-            $tent_no = mysqli_real_escape_string($conn, $item['tent_no']);
-            $id = mysqli_real_escape_string($conn, $item['id']);
-            
-            // Update tent table
-            $tentQuery = "UPDATE tent SET status = 'Retrieved' WHERE id = ? AND status IN ('Installed', 'Pending')";
-            $tentStmt = mysqli_prepare($conn, $tentQuery);
-            
-            if (!$tentStmt) {
-                $errors[] = "Prepare failed for tent update: " . mysqli_error($conn);
-                continue;
-            }
-            
-            mysqli_stmt_bind_param($tentStmt, "s", $id);
-            
-            if (!mysqli_stmt_execute($tentStmt)) {
-                $errors[] = "Failed to update tent {$tent_no}: " . mysqli_stmt_error($tentStmt);
-                continue;
-            }
-            
-            $affectedRows = mysqli_stmt_affected_rows($tentStmt);
-            mysqli_stmt_close($tentStmt);
-            
-            if ($affectedRows > 0) {
-                // Update tent_status table
-                $statusQuery = "UPDATE tent_status SET Status = 'On Stock' WHERE id = ?";
-                $statusStmt = mysqli_prepare($conn, $statusQuery);
-                
-                if ($statusStmt) {
-                    mysqli_stmt_bind_param($statusStmt, "s", $tent_no);
-                    mysqli_stmt_execute($statusStmt);
-                    mysqli_stmt_close($statusStmt);
-                }
-                
-                $updatedItems[] = [
-                    'tent_no' => $tent_no,
-                    'id' => $id,
-                    'new_status' => 'Retrieved',
-                    'type' => 'overdue'
-                ];
-                
-                logDebug("Successfully updated tent {$tent_no} to Retrieved");
-            } else {
-                logDebug("No rows affected for tent {$tent_no} - may already be updated or not found");
-            }
-        }
+        // Intentionally ignore red date auto-updates
+        // Keep a minimal log for observability without changing data
+        logDebug('Red date auto-update is disabled; ignoring payload');
+        // Do not decode or process to avoid side-effects
     }
     
     // Process orange dates (due today items)
@@ -125,8 +90,17 @@ try {
                 continue;
             }
             
-            $tent_no = mysqli_real_escape_string($conn, $item['tent_no']);
-            $id = mysqli_real_escape_string($conn, $item['id']);
+            // Sanitize and convert values
+            $tent_no = sanitizeId($item['tent_no']);
+            $id = sanitizeId($item['id']);
+            
+            // Additional validation
+            if ($tent_no <= 0 || $id <= 0) {
+                $errors[] = "Invalid tent_no ({$tent_no}) or id ({$id}) in orange date item";
+                continue;
+            }
+            
+            logDebug("Processing orange date item", ['tent_no' => $tent_no, 'id' => $id]);
             
             // Update tent table
             $tentQuery = "UPDATE tent SET status = 'For Retrieval' WHERE id = ? AND status IN ('Installed', 'Pending')";
@@ -137,7 +111,7 @@ try {
                 continue;
             }
             
-            mysqli_stmt_bind_param($tentStmt, "s", $id);
+            mysqli_stmt_bind_param($tentStmt, "i", $id);
             
             if (!mysqli_stmt_execute($tentStmt)) {
                 $errors[] = "Failed to update tent {$tent_no}: " . mysqli_stmt_error($tentStmt);
@@ -153,7 +127,7 @@ try {
                 $statusStmt = mysqli_prepare($conn, $statusQuery);
                 
                 if ($statusStmt) {
-                    mysqli_stmt_bind_param($statusStmt, "s", $tent_no);
+                    mysqli_stmt_bind_param($statusStmt, "i", $tent_no);
                     mysqli_stmt_execute($statusStmt);
                     mysqli_stmt_close($statusStmt);
                 }
@@ -214,3 +188,4 @@ try {
         mysqli_close($conn);
     }
 }
+?>
