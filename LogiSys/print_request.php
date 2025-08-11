@@ -85,56 +85,233 @@ class PDF extends FPDF
         return $y + 28; // Return Y position after header
     }
 
-    function renderTable($x, $y, $header, $data)
+    // Calculate dynamic layout based on total rows
+    function getDynamicLayout($totalRows)
     {
-        $this->SetFont('Arial', 'B', 10);
-        $this->SetXY($x, $y);
+        $layout = [];
+        if ($totalRows <= 20) {
+            $layout = [
+                'titleFont' => 14,
+                'infoFont' => 10,
+                'headerFont' => 10,
+                'rowFont' => 9,
+                'rowHeight' => 6,
+                'headerRowHeight' => 8,
+                'titleCellHeight' => 8,
+                'infoLineHeight' => 6,
+                'afterInfoGap' => 5,
+            ];
+        } elseif ($totalRows <= 40) {
+            $layout = [
+                'titleFont' => 12,
+                'infoFont' => 9,
+                'headerFont' => 9,
+                'rowFont' => 8,
+                'rowHeight' => 5.5,
+                'headerRowHeight' => 7,
+                'titleCellHeight' => 7,
+                'infoLineHeight' => 5,
+                'afterInfoGap' => 4,
+            ];
+        } elseif ($totalRows <= 70) {
+            $layout = [
+                'titleFont' => 11,
+                'infoFont' => 8,
+                'headerFont' => 8,
+                'rowFont' => 7,
+                'rowHeight' => 5,
+                'headerRowHeight' => 6,
+                'titleCellHeight' => 6,
+                'infoLineHeight' => 5,
+                'afterInfoGap' => 3,
+            ];
+        } else {
+            $layout = [
+                'titleFont' => 10,
+                'infoFont' => 7,
+                'headerFont' => 7,
+                'rowFont' => 6,
+                'rowHeight' => 4.5,
+                'headerRowHeight' => 5.5,
+                'titleCellHeight' => 5.5,
+                'infoLineHeight' => 4.5,
+                'afterInfoGap' => 2.5,
+            ];
+        }
+        return $layout;
+    }
 
-        // Set column widths (adjusted for 5 columns)
+    // Render one table (with header, title, info, header row, and a segment of rows)
+    function renderSingleTablePage($x, $y, $title, $info, $header, $data, $startIndex, $layout, $maxRows = null)
+    {
         $colWidths = [20, 20, 60, 30, 35]; // total: 165
 
-        // Header row with gray background
+        // Header (logos and office header)
+        $headerEndY = $this->renderTableHeader($x, $y);
+
+        // Title
+        $this->SetFont('Arial', 'B', $layout['titleFont']);
+        $this->SetXY($x, $headerEndY + 2);
+        $this->Cell(array_sum($colWidths), $layout['titleCellHeight'], $title, 0, 0, 'C');
+
+        // Info lines
+        $this->SetFont('Arial', '', $layout['infoFont']);
+        $this->SetXY($x, $headerEndY + 2 + $layout['titleCellHeight'] + 1);
+        $this->Cell(array_sum($colWidths), $layout['infoLineHeight'], 'Requesting Office: ' . ($info['office'] ?? ''), 0, 0, 'L');
+        $this->SetXY($x, $headerEndY + 2 + $layout['titleCellHeight'] + 1 + $layout['infoLineHeight']);
+        $this->Cell(array_sum($colWidths), $layout['infoLineHeight'], 'Request Date: ' . ($info['date'] ?? ''), 0, 0, 'L');
+
+        // Table position start
+        $afterInfoGap = $layout['afterInfoGap'] ?? 3;
+        $tableY = $headerEndY + 2 + $layout['titleCellHeight'] + 1 + (2 * $layout['infoLineHeight']) + $afterInfoGap;
+        $this->SetXY($x, $tableY);
+
+        // Header row
+        $this->SetFont('Arial', 'B', $layout['headerFont']);
         $this->SetFillColor(230, 230, 230);
         foreach ($header as $i => $col) {
-            $this->Cell($colWidths[$i], 8, $col, 1, 0, 'C', true);
+            $this->Cell($colWidths[$i], $layout['headerRowHeight'], $col, 1, 0, 'C', true);
         }
         $this->Ln();
 
-        // Data rows
-        $this->SetFont('Arial', '', 9);
+        // Rows calculation
         $currentY = $this->GetY();
-        foreach ($data as $row) {
-            $this->SetXY($x, $currentY); // Set both X and Y for each row
+        $pageHeight = method_exists($this, 'GetPageHeight') ? $this->GetPageHeight() : $this->h;
+        $availableHeight = $pageHeight - 40 - $currentY; // keep 40mm for footer/signatures
+        $possibleRows = (int)floor(max(0, $availableHeight) / $layout['rowHeight']);
+        $totalRows = count($data);
+        $remaining = max(0, $totalRows - $startIndex);
+        $rowsToRender = ($maxRows === null) ? min($possibleRows, $remaining) : min($possibleRows, $remaining, $maxRows);
+
+        // Data rows
+        $this->SetFont('Arial', '', $layout['rowFont']);
+        for ($r = 0; $r < $rowsToRender; $r++) {
+            $row = $data[$startIndex + $r];
+            $this->SetXY($x, $currentY);
             foreach ($row as $i => $col) {
-                $this->Cell($colWidths[$i], 6, $col, 1, 0, 'C');
+                $this->Cell($colWidths[$i], $layout['rowHeight'], $col, 1, 0, 'C');
             }
-            $currentY += 6; // Move to next row
+            $currentY += $layout['rowHeight'];
         }
 
-        return $currentY; // Return the final Y position
+        return $rowsToRender; // number of rows rendered on this table
     }
 
-    function renderTableWithTitle($x, $y, $title, $requestInfo, $header, $data)
+    // Render both left and right tables across as many pages as needed
+    function renderBothTablesPaginated($leftX, $rightX, $startY, $title, $requestInfo, $approvedInfo, $header, $data, $officeHeadName)
     {
-        // Add individual header for this table
-        $headerEndY = $this->renderTableHeader($x, $y);
+        $totalRows = count($data);
+        $layout = $this->getDynamicLayout($totalRows);
 
-        // Add table title
-        $this->SetFont('Arial', 'B', 14);
-        $this->SetXY($x, $headerEndY + 5);
-        $this->Cell(165, 8, $title, 0, 0, 'C');
+        $rowIndex = 0;
+        while ($rowIndex < $totalRows) {
+            // Set footer name for the page to be added
+            $this->setOfficeHeadName($officeHeadName);
+            $this->AddPage();
 
-        // Add request information
-        $this->SetFont('Arial', '', 10);
-        $this->SetXY($x, $headerEndY + 15);
-        $this->Cell(165, 6, 'Requesting Office: ' . $requestInfo['office'], 0, 0, 'L');
-        $this->SetXY($x, $headerEndY + 21);
-        $this->Cell(165, 6, 'Request Date: ' . $requestInfo['date'], 0, 0, 'L');
+            // Left table determines how many rows fit this page
+            $renderedLeft = $this->renderSingleTablePage($leftX, $startY, $title, $requestInfo, $header, $data, $rowIndex, $layout);
+            if ($renderedLeft <= 0) {
+                $renderedLeft = 1; // safety
+            }
+            // Right table renders exactly the same number for visual symmetry
+            $this->renderSingleTablePage($rightX, $startY, $title, $approvedInfo, $header, $data, $rowIndex, $layout, $renderedLeft);
 
-        // Render the table
-        $tableY = $headerEndY + 37;
-        $finalY = $this->renderTable($x, $tableY, $header, $data);
-        return $finalY; // Return the final Y position after the table
+            $rowIndex += $renderedLeft;
+        }
+    }
+
+    // Render both left and right tables on a single page by dynamically scaling
+    function renderBothTablesSinglePage($leftX, $rightX, $startY, $title, $requestInfo, $approvedInfo, $header, $data, $officeHeadName)
+    {
+        $totalRows = count($data);
+
+        // Base minimal sizes to allow aggressive scaling
+        $minTitleFont = 8;       // pt
+        $minInfoFont = 6;        // pt
+        $minHeaderFont = 6;      // pt
+        $minRowFont = 4.5;       // pt
+
+        $minTitleCellH = 4.5;    // mm
+        $minInfoLineH = 3.5;     // mm
+        $minHeaderRowH = 4.0;    // mm
+        $minRowH = 2.8;          // mm
+
+        // Start with compact but readable defaults
+        $layout = [
+            'titleFont' => 11,
+            'infoFont' => 8,
+            'headerFont' => 8,
+            'rowFont' => 7,
+            'titleCellHeight' => 6,
+            'infoLineHeight' => 5,
+            'headerRowHeight' => 6,
+        ];
+
+        // Compute available height analytically (without drawing) for one table
+        $pageHeight = method_exists($this, 'GetPageHeight') ? $this->GetPageHeight() : $this->h;
+        $bottomReserve = 40; // mm reserved for footer/signatures
+        $headerEndY = $startY + 28; // from renderTableHeader()
+
+        // Iteratively reduce sizes until all rows fit on one page
+        for ($iter = 0; $iter < 6; $iter++) {
+            $tableY = $headerEndY + 2 + $layout['titleCellHeight'] + 1 + (2 * $layout['infoLineHeight']) + 2.5; // afterInfoGap ~= 2.5
+            $currentY = $tableY + $layout['headerRowHeight'];
+            $availableHeight = $pageHeight - $bottomReserve - $currentY;
+            if ($availableHeight < 10) {
+                $availableHeight = 10; // avoid zero/negative
+            }
+            $rowHeight = $availableHeight / max($totalRows, 1);
+
+            if ($rowHeight >= $minRowH) {
+                // We can fit; map font size to rowHeight
+                $rowFont = max($minRowFont, min(9, $rowHeight - 0.5 + 4.5)); // simple mapping
+                $layoutFinal = [
+                    'titleFont' => max($minTitleFont, min(14, $layout['titleFont'])),
+                    'infoFont' => max($minInfoFont, min(10, $layout['infoFont'])),
+                    'headerFont' => max($minHeaderFont, min(10, $layout['headerFont'])),
+                    'rowFont' => $rowFont,
+                    'titleCellHeight' => max($minTitleCellH, $layout['titleCellHeight']),
+                    'infoLineHeight' => max($minInfoLineH, $layout['infoLineHeight']),
+                    'headerRowHeight' => max($minHeaderRowH, $layout['headerRowHeight']),
+                    'rowHeight' => $rowHeight,
+                ];
+
+                // Render once on a single page
+                $this->setOfficeHeadName($officeHeadName);
+                $this->AddPage();
+                $renderedLeft = $this->renderSingleTablePage($leftX, $startY, $title, $requestInfo, $header, $data, 0, $layoutFinal, $totalRows);
+                // Right side identical count to keep symmetry
+                $this->renderSingleTablePage($rightX, $startY, $title, $approvedInfo, $header, $data, 0, $layoutFinal, $renderedLeft);
+                return;
+            }
+
+            // Reduce sizes further and try again
+            $layout['titleFont'] = max($minTitleFont, $layout['titleFont'] - 1);
+            $layout['infoFont'] = max($minInfoFont, $layout['infoFont'] - 1);
+            $layout['headerFont'] = max($minHeaderFont, $layout['headerFont'] - 1);
+            $layout['rowFont'] = max($minRowFont, $layout['rowFont'] - 0.5);
+            $layout['titleCellHeight'] = max($minTitleCellH, $layout['titleCellHeight'] - 0.5);
+            $layout['infoLineHeight'] = max($minInfoLineH, $layout['infoLineHeight'] - 0.5);
+            $layout['headerRowHeight'] = max($minHeaderRowH, $layout['headerRowHeight'] - 0.5);
+        }
+
+        // Final fallback: force minimal layout to ensure single page
+        $layoutFinal = [
+            'titleFont' => $minTitleFont,
+            'infoFont' => $minInfoFont,
+            'headerFont' => $minHeaderFont,
+            'rowFont' => $minRowFont,
+            'titleCellHeight' => $minTitleCellH,
+            'infoLineHeight' => $minInfoLineH,
+            'headerRowHeight' => $minHeaderRowH,
+            'rowHeight' => max($minRowH, ($pageHeight - $bottomReserve - ($startY + 28 + 2 + $minTitleCellH + 1 + 2 * $minInfoLineH + 2.5 + $minHeaderRowH)) / max($totalRows, 1)),
+        ];
+
+        $this->setOfficeHeadName($officeHeadName);
+        $this->AddPage();
+        $renderedLeft = $this->renderSingleTablePage($leftX, $startY, $title, $requestInfo, $header, $data, 0, $layoutFinal, $totalRows);
+        $this->renderSingleTablePage($rightX, $startY, $title, $approvedInfo, $header, $data, 0, $layoutFinal, $renderedLeft);
     }
 }
 
@@ -219,9 +396,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["offices"]) && is_array
 
             // Approval information for right table (same data, different context)
 
-            // Add a new page for each office
-            $pdf->AddPage();
-            $pdf->setOfficeHeadName($officeHeadName);
             // Calculate positions with gap
             $tableWidth = 165;
             $gapWidth = 10;
@@ -231,24 +405,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["offices"]) && is_array
             // Starting Y position for both tables
             $startY = 10;
 
-            // Render first table (REQUEST FORM) on the left
-            $pdf->renderTableWithTitle(
+            // Render both tables on a single page by scaling down to fit
+            $pdf->renderBothTablesSinglePage(
                 $leftTableX,
-                $startY,
-                'REQUEST FORM',
-                $requestInfo,
-                $requestHeader,
-                $requestData
-            );
-
-            // Render second table (APPROVED ITEMS) on the right with same data
-            $pdf->renderTableWithTitle(
                 $rightTableX,
                 $startY,
                 'REQUEST FORM',
+                $requestInfo,
                 $approvedInfo,
                 $requestHeader,
-                $requestData
+                $requestData,
+                $officeHeadName
             );
         } else {
             // Add a new page for each office
