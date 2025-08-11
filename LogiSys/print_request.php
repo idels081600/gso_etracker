@@ -221,93 +221,55 @@ class PDF extends FPDF
         }
     }
 
-    // Render both left and right tables on a single page by dynamically scaling
+    // Render both left and right tables on a single page and FORCE all rows to fit
     function renderBothTablesSinglePage($leftX, $rightX, $startY, $title, $requestInfo, $approvedInfo, $header, $data, $officeHeadName)
     {
         $totalRows = count($data);
-
-        // Base minimal sizes to allow aggressive scaling
-        $minTitleFont = 8;       // pt
-        $minInfoFont = 6;        // pt
-        $minHeaderFont = 6;      // pt
-        $minRowFont = 4.5;       // pt
-
-        $minTitleCellH = 4.5;    // mm
-        $minInfoLineH = 3.5;     // mm
-        $minHeaderRowH = 4.0;    // mm
-        $minRowH = 2.8;          // mm
-
-        // Start with compact but readable defaults
-        $layout = [
-            'titleFont' => 11,
-            'infoFont' => 8,
-            'headerFont' => 8,
-            'rowFont' => 7,
-            'titleCellHeight' => 6,
-            'infoLineHeight' => 5,
-            'headerRowHeight' => 6,
-        ];
-
-        // Compute available height analytically (without drawing) for one table
         $pageHeight = method_exists($this, 'GetPageHeight') ? $this->GetPageHeight() : $this->h;
-        $bottomReserve = 40; // mm reserved for footer/signatures
+
+        // Reserve space for footer/signatures; keep consistent with Footer() content
+        $bottomReserve = 40; // mm
         $headerEndY = $startY + 28; // from renderTableHeader()
 
-        // Iteratively reduce sizes until all rows fit on one page
-        for ($iter = 0; $iter < 6; $iter++) {
-            $tableY = $headerEndY + 2 + $layout['titleCellHeight'] + 1 + (2 * $layout['infoLineHeight']) + 2.5; // afterInfoGap ~= 2.5
-            $currentY = $tableY + $layout['headerRowHeight'];
-            $availableHeight = $pageHeight - $bottomReserve - $currentY;
-            if ($availableHeight < 10) {
-                $availableHeight = 10; // avoid zero/negative
-            }
-            $rowHeight = $availableHeight / max($totalRows, 1);
+        // Base layout (will be scaled down aggressively)
+        $baseTitleCellH = 6.0;
+        $baseInfoLineH  = 4.0;
+        $baseHeaderRowH = 5.0;
+        $afterInfoGap   = 2.0;
 
-            if ($rowHeight >= $minRowH) {
-                // We can fit; map font size to rowHeight
-                $rowFont = max($minRowFont, min(9, $rowHeight - 0.5 + 4.5)); // simple mapping
-                $layoutFinal = [
-                    'titleFont' => max($minTitleFont, min(14, $layout['titleFont'])),
-                    'infoFont' => max($minInfoFont, min(10, $layout['infoFont'])),
-                    'headerFont' => max($minHeaderFont, min(10, $layout['headerFont'])),
-                    'rowFont' => $rowFont,
-                    'titleCellHeight' => max($minTitleCellH, $layout['titleCellHeight']),
-                    'infoLineHeight' => max($minInfoLineH, $layout['infoLineHeight']),
-                    'headerRowHeight' => max($minHeaderRowH, $layout['headerRowHeight']),
-                    'rowHeight' => $rowHeight,
-                ];
+        // Compute available height for rows given the fixed parts above
+        $tableY    = $headerEndY + 2 + $baseTitleCellH + 1 + (2 * $baseInfoLineH) + $afterInfoGap;
+        $currentY  = $tableY + $baseHeaderRowH;
+        $availH    = $pageHeight - $bottomReserve - $currentY;
+        if ($availH < 5) { $availH = 5; }
 
-                // Render once on a single page
-                $this->setOfficeHeadName($officeHeadName);
-                $this->AddPage();
-                $renderedLeft = $this->renderSingleTablePage($leftX, $startY, $title, $requestInfo, $header, $data, 0, $layoutFinal, $totalRows);
-                // Right side identical count to keep symmetry
-                $this->renderSingleTablePage($rightX, $startY, $title, $approvedInfo, $header, $data, 0, $layoutFinal, $renderedLeft);
-                return;
-            }
+        // Exact row height to make all rows fit on one page
+        $rowHeight = ($totalRows > 0) ? ($availH / $totalRows) : 4.0;
 
-            // Reduce sizes further and try again
-            $layout['titleFont'] = max($minTitleFont, $layout['titleFont'] - 1);
-            $layout['infoFont'] = max($minInfoFont, $layout['infoFont'] - 1);
-            $layout['headerFont'] = max($minHeaderFont, $layout['headerFont'] - 1);
-            $layout['rowFont'] = max($minRowFont, $layout['rowFont'] - 0.5);
-            $layout['titleCellHeight'] = max($minTitleCellH, $layout['titleCellHeight'] - 0.5);
-            $layout['infoLineHeight'] = max($minInfoLineH, $layout['infoLineHeight'] - 0.5);
-            $layout['headerRowHeight'] = max($minHeaderRowH, $layout['headerRowHeight'] - 0.5);
-        }
+        // Derive minimal but readable font sizes from the computed row height
+        $rowFont        = max(3.0, min(8.0, $rowHeight + 2.0));
+        $headerFont     = max(5.0, min(9.0, $rowFont));
+        $infoFont       = max(5.0, min(9.0, $rowFont - 1.0));
+        $titleFont      = max(7.0, min(12.0, $rowFont + 2.0));
 
-        // Final fallback: force minimal layout to ensure single page
+        // Scale non-row heights down slightly if rows are tiny
+        $titleCellH     = max(3.0, min($baseTitleCellH, $rowHeight + 2.0));
+        $infoLineH      = max(3.0, min($baseInfoLineH, $rowHeight + 1.5));
+        $headerRowH     = max(3.0, min($baseHeaderRowH, $rowHeight + 1.5));
+
         $layoutFinal = [
-            'titleFont' => $minTitleFont,
-            'infoFont' => $minInfoFont,
-            'headerFont' => $minHeaderFont,
-            'rowFont' => $minRowFont,
-            'titleCellHeight' => $minTitleCellH,
-            'infoLineHeight' => $minInfoLineH,
-            'headerRowHeight' => $minHeaderRowH,
-            'rowHeight' => max($minRowH, ($pageHeight - $bottomReserve - ($startY + 28 + 2 + $minTitleCellH + 1 + 2 * $minInfoLineH + 2.5 + $minHeaderRowH)) / max($totalRows, 1)),
+            'titleFont'       => $titleFont,
+            'infoFont'        => $infoFont,
+            'headerFont'      => $headerFont,
+            'rowFont'         => $rowFont,
+            'titleCellHeight' => $titleCellH,
+            'infoLineHeight'  => $infoLineH,
+            'headerRowHeight' => $headerRowH,
+            'rowHeight'       => $rowHeight,
+            'afterInfoGap'    => $afterInfoGap,
         ];
 
+        // Render once on a single page (both left and right sides)
         $this->setOfficeHeadName($officeHeadName);
         $this->AddPage();
         $renderedLeft = $this->renderSingleTablePage($leftX, $startY, $title, $requestInfo, $header, $data, 0, $layoutFinal, $totalRows);
@@ -359,10 +321,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["offices"]) && is_array
         $pdf->setOfficeHeadName($officeHeadName);
 
         // Fetch data for the current office
-        $sql = "SELECT * FROM items_requested                 
-        WHERE office_name = ? 
-        AND DATE(date_requested) = ?
-        ORDER BY date_requested DESC"; // Get only the latest request
+        $sql = "SELECT *
+FROM items_requested
+WHERE office_name = ?
+  AND date_requested = ?
+ORDER BY date_requested DESC;"; // Get only the latest request
 
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ss", $officeName, $print_date);
