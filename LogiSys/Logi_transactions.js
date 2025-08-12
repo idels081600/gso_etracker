@@ -805,3 +805,289 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Bulk Transactions modal logic
+document.addEventListener('DOMContentLoaded', function () {
+  const bulkModalElement = document.getElementById('bulkTransactionModal');
+  if (!bulkModalElement) return; // Exit if modal is not present on the page
+
+  // Elements inside modal
+  const bulkFilterOfficeSelect = document.getElementById('bulkFilterOffice');
+  const bulkFilterDateInput = document.getElementById('bulkFilterDate');
+  const bulkTableBody = document.getElementById('bulkTransactionsTableBody');
+  const headerSelectAllCheckbox = document.getElementById('selectAllCheckbox');
+  const selectAllBulkButton = document.getElementById('selectAllBulk');
+  const deselectAllBulkButton = document.getElementById('deselectAllBulk');
+  const selectedCountBadge = document.getElementById('selectedCount');
+  const processBulkButton = document.getElementById('processBulkTransactions');
+
+  // Helper: get all row checkboxes
+  function getAllRowCheckboxes() {
+    return Array.from(bulkTableBody.querySelectorAll('input.bulk-transaction-checkbox'));
+  }
+
+  // Helper: visibility check for row (by filters)
+  function rowMatchesFilters(row) {
+    const checkbox = row.querySelector('input.bulk-transaction-checkbox');
+    if (!checkbox) return false;
+    const selectedOffice = (bulkFilterOfficeSelect?.value || '').trim();
+    const selectedDate = (bulkFilterDateInput?.value || '').trim();
+    const rowOffice = (checkbox.dataset.officeName || '').trim();
+    const rowDate = (checkbox.dataset.date || '').trim();
+
+    const officeOk = !selectedOffice || rowOffice === selectedOffice;
+    const dateOk = !selectedDate || rowDate === selectedDate;
+    return officeOk && dateOk;
+  }
+
+  // Render rows helper
+  function renderBulkRows(rows) {
+    if (!bulkTableBody) return;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      bulkTableBody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center">
+            <div class="py-4">
+              <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+              <p class="text-muted">No requests found</p>
+            </div>
+          </td>
+        </tr>`;
+    } else {
+      const html = rows
+        .map((r) => {
+          const safeId = String(r.id ?? '');
+          const safeOffice = String(r.office_name ?? '');
+          const safeItem = String(r.item_name ?? '');
+          const safeQty = String(r.approved_quantity ?? '');
+          const safeDate = String(r.date ?? '');
+          const safeStatus = String(r.status ?? '');
+          const safeItemId = String(r.item_id ?? '');
+          const safeUploaded = String(r.uploaded ?? '');
+          return `
+            <tr>
+              <td>
+                <input type="checkbox" class="form-check-input bulk-transaction-checkbox"
+                  value="${safeId}"
+                  data-office-name="${safeOffice.replace(/"/g, '&quot;')}"
+                  data-date="${safeDate}"
+                  data-item-id="${safeItemId}"
+                  data-uploaded="${safeUploaded}">
+              </td>
+              <td>${safeDate}</td>
+              <td>${safeOffice}</td>
+              <td>${safeItem}</td>
+              <td>${safeQty}</td>
+              <td>${safeStatus}</td>
+            </tr>`;
+        })
+        .join('');
+      bulkTableBody.innerHTML = html;
+    }
+    // After re-rendering, reset header checkbox and counts
+    if (headerSelectAllCheckbox) {
+      headerSelectAllCheckbox.checked = false;
+      headerSelectAllCheckbox.indeterminate = false;
+      headerSelectAllCheckbox.disabled = !rows || rows.length === 0;
+    }
+    updateSelectedCountAndButton();
+  }
+
+  // Fetch filtered rows from server
+  function fetchBulkRows() {
+    const formData = new FormData();
+    if (bulkFilterOfficeSelect) formData.append('office', bulkFilterOfficeSelect.value || '');
+    if (bulkFilterDateInput) formData.append('date', bulkFilterDateInput.value || '');
+
+    // Optional: show a lightweight loading state
+    if (bulkTableBody) {
+      bulkTableBody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-muted py-3">
+            <i class="fas fa-spinner fa-spin"></i> Loading...
+          </td>
+        </tr>`;
+    }
+
+    fetch('Logi_fetch_bulk_candidates.php', { method: 'POST', body: formData })
+      .then(async (response) => {
+        const text = await response.text();
+        let data;
+        try { data = JSON.parse(text); } catch (e) { throw new Error('Invalid JSON response: ' + text); }
+        if (!response.ok || data.success === false) {
+          throw new Error(data && data.message ? data.message : 'Failed to load requests');
+        }
+        return data;
+      })
+      .then((data) => {
+        if (data.success) {
+          renderBulkRows(data.rows || []);
+        } else {
+          renderBulkRows([]);
+          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+          document.getElementById('errorMessage').textContent = data.message || 'Failed to load requests.';
+          errorModal.show();
+        }
+      })
+      .catch((error) => {
+        renderBulkRows([]);
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        document.getElementById('errorMessage').textContent = error.message || 'An error occurred while loading data.';
+        errorModal.show();
+      });
+  }
+
+  // Update header select all checkbox (checked/indeterminate) based on visible rows
+  function updateHeaderCheckboxState() {
+    if (!headerSelectAllCheckbox) return;
+    const visibleRowCheckboxes = getAllRowCheckboxes().filter((cb) => cb.closest('tr')?.style.display !== 'none');
+    const totalVisible = visibleRowCheckboxes.length;
+    const checkedVisible = visibleRowCheckboxes.filter((cb) => cb.checked).length;
+
+    headerSelectAllCheckbox.indeterminate = false;
+    if (totalVisible === 0) {
+      headerSelectAllCheckbox.checked = false;
+      return;
+    }
+    if (checkedVisible === 0) {
+      headerSelectAllCheckbox.checked = false;
+    } else if (checkedVisible === totalVisible) {
+      headerSelectAllCheckbox.checked = true;
+    } else {
+      headerSelectAllCheckbox.indeterminate = true;
+    }
+  }
+
+  // Update selected count badge and process button state
+  function updateSelectedCountAndButton() {
+    const allRowCheckboxes = getAllRowCheckboxes();
+    const totalSelected = allRowCheckboxes.filter((cb) => cb.checked).length;
+    if (selectedCountBadge) selectedCountBadge.textContent = `${totalSelected} selected`;
+    if (processBulkButton) processBulkButton.disabled = totalSelected === 0;
+  }
+
+  // Toggle selection for all visible rows
+  function setAllVisibleRowsChecked(checked) {
+    const visibleRowCheckboxes = getAllRowCheckboxes().filter((cb) => cb.closest('tr')?.style.display !== 'none');
+    visibleRowCheckboxes.forEach((cb) => {
+      cb.checked = checked;
+    });
+    updateHeaderCheckboxState();
+    updateSelectedCountAndButton();
+  }
+
+  // Deselect all rows (visible and hidden)
+  function clearAllSelections() {
+    const allRowCheckboxes = getAllRowCheckboxes();
+    allRowCheckboxes.forEach((cb) => (cb.checked = false));
+    if (headerSelectAllCheckbox) {
+      headerSelectAllCheckbox.checked = false;
+      headerSelectAllCheckbox.indeterminate = false;
+    }
+    updateSelectedCountAndButton();
+  }
+
+  // Event: change filters
+  bulkFilterOfficeSelect?.addEventListener('change', fetchBulkRows);
+  bulkFilterDateInput?.addEventListener('change', fetchBulkRows);
+
+  // Event: header select all checkbox
+  headerSelectAllCheckbox?.addEventListener('change', function () {
+    setAllVisibleRowsChecked(this.checked);
+  });
+
+  // Event: per-row checkbox change (delegate to tbody)
+  bulkTableBody?.addEventListener('change', function (e) {
+    const target = e.target;
+    if (target && target.classList && target.classList.contains('bulk-transaction-checkbox')) {
+      updateHeaderCheckboxState();
+      updateSelectedCountAndButton();
+    }
+  });
+
+  // Buttons: select/deselect all
+  selectAllBulkButton?.addEventListener('click', function () {
+    setAllVisibleRowsChecked(true);
+  });
+  deselectAllBulkButton?.addEventListener('click', function () {
+    clearAllSelections();
+  });
+
+  // Process button handler
+  processBulkButton?.addEventListener('click', function () {
+    const selectedCheckboxes = getAllRowCheckboxes().filter((cb) => cb.checked);
+    if (selectedCheckboxes.length === 0) return;
+
+    // Prepare payload
+    const selectedItems = selectedCheckboxes.map((cb) => ({
+      id: cb.value,
+      office_name: cb.dataset.officeName || '',
+      date: cb.dataset.date || ''
+    }));
+
+    // Button loading state
+    const originalHtml = processBulkButton.innerHTML;
+    processBulkButton.disabled = true;
+    processBulkButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+    // Build form data to align with existing PHP handling patterns
+    const formData = new FormData();
+    formData.append('selected', JSON.stringify(selectedItems));
+    if (bulkFilterOfficeSelect) formData.append('filter_office', bulkFilterOfficeSelect.value || '');
+    if (bulkFilterDateInput) formData.append('filter_date', bulkFilterDateInput.value || '');
+
+    fetch('Logi_process_bulk_transactions.php', {
+      method: 'POST',
+      body: formData
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.text().then((text) => {
+          try {
+            return JSON.parse(text);
+          } catch (err) {
+            throw new Error('Invalid JSON response: ' + text);
+          }
+        });
+      })
+      .then((data) => {
+        if (data.success) {
+          const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+          document.getElementById('successMessage').textContent = data.message || 'Bulk transactions processed successfully.';
+          successModal.show();
+
+          // Optionally close bulk modal and refresh
+          const instance = bootstrap.Modal.getInstance(bulkModalElement) || new bootstrap.Modal(bulkModalElement);
+          instance.hide();
+          setTimeout(() => {
+            location.reload();
+          }, 1500);
+        } else {
+          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+          document.getElementById('errorMessage').textContent = data.message || 'Failed to process bulk transactions.';
+          errorModal.show();
+        }
+      })
+      .catch((error) => {
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        document.getElementById('errorMessage').textContent = error.message || 'An error occurred while processing your request.';
+        errorModal.show();
+      })
+      .finally(() => {
+        processBulkButton.disabled = false;
+        processBulkButton.innerHTML = originalHtml;
+      });
+  });
+
+  // When modal is shown, reset UI and apply filters once
+  bulkModalElement.addEventListener('shown.bs.modal', function () {
+    // Reset header checkbox visuals
+    if (headerSelectAllCheckbox) {
+      headerSelectAllCheckbox.checked = false;
+      headerSelectAllCheckbox.indeterminate = false;
+    }
+    updateSelectedCountAndButton();
+    // Initial load from server using current filters
+    fetchBulkRows();
+  });
+});

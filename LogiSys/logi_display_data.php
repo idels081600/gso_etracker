@@ -25,3 +25,15 @@ function display_transactions()
 
     return $result;
 }
+function display_requested_items()
+{
+    global $conn;
+    $query = "SELECT * FROM `items_requested` WHERE status = 'Approved' AND uploaded = 0 ORDER BY `id` DESC";
+    $result = mysqli_query($conn, $query);
+
+    if (!$result) {
+        die("Query failed: " . mysqli_error($conn));
+    }
+
+    return $result;
+}

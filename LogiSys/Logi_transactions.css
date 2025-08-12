@@ -98,3 +98,29 @@ mark.bg-warning {
 .suggestion-item {
   transition: background-color 0.2s ease;
 }
+/* Make modal body scroll within viewport */
+.modal .modal-dialog {
+  height: calc(100% - 3.5rem);
+}
+
+#bulkTransactionModalContent {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal .modal-header,
+.modal .modal-footer {
+  flex: 0 0 auto;
+}
+
+.modal .modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+/* Optional: limit table height so only the table area scrolls */
+.modal .modal-body .table-responsive {
+  max-height: 60vh;
+  overflow: auto;
+}

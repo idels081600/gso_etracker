@@ -6,6 +6,7 @@ $status_filter = isset($_GET['status']) ? $_GET['status'] : 'Pending';
 $office_filter = isset($_GET['office']) ? $_GET['office'] : 'all';
 require_once 'logi_display_data.php'; // Include your database functions
 $transactions_data = display_transactions(); // Fetch transactions from the database
+$bulk_transactions_data = display_requested_items(); // Fetch transactions from the database
 $logi_all_data = display_inventory_items(); // Fetch inventory items from the database
 function getTransactionTypeBadge($type)
 {
@@ -128,6 +129,10 @@ function getTransactionTypeBadge($type)
 
                                         <button type="button" class="btn btn-outline-danger btn-sm" id="outTransactions" data-bs-toggle="modal" data-bs-target="#stockOutModal">
                                             <i class="fas fa-minus"></i> Stock Out
+                                        </button>
+
+                                        <button type="button" class="btn btn-outline-warning btn-sm" id="bulkTransactions" data-bs-toggle="modal" data-bs-target="#bulkTransactionModal">
+                                            <i class="fas fa-layer-group"></i> Bulk Transactions
                                         </button>
 
                                         <button type="button" class="btn btn-info btn-sm" id="exportBtn">
@@ -538,6 +543,139 @@ function getTransactionTypeBadge($type)
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Transaction Modal -->
+    <div class="modal fade" id="bulkTransactionModal" tabindex="-1" aria-labelledby="bulkTransactionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content" id="bulkTransactionModalContent">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bulkTransactionModalLabel">
+                        <i class="fas fa-layer-group text-warning"></i> Bulk Transactions
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Filter Controls -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="bulkFilterOffice" class="form-label">Filter by Office</label>
+                            <select class="form-select" id="bulkFilterOffice">
+                                <option value="">All Offices</option>
+                                <?php
+                                // Get unique office names for filter (use requested items which contain office_name)
+                                if (isset($bulk_transactions_data)) {
+                                    mysqli_data_seek($bulk_transactions_data, 0);
+                                    $offices = [];
+                                    while ($row = mysqli_fetch_assoc($bulk_transactions_data)) {
+                                        if (!empty($row['office_name']) && !in_array($row['office_name'], $offices)) {
+                                            $offices[] = $row['office_name'];
+                                        }
+                                    }
+                                    sort($offices);
+                                    foreach ($offices as $office) {
+                                        echo '<option value="' . htmlspecialchars($office) . '">' . htmlspecialchars($office) . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="bulkFilterDate" class="form-label">Filter by Date</label>
+                            <input type="date" class="form-control" id="bulkFilterDate" value="<?= date('Y-m-d') ?>">
+                        </div>
+                    </div>
+
+                    <!-- Bulk Actions -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-success" id="selectAllBulk">
+                                        <i class="fas fa-check-square"></i> Select All
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-secondary" id="deselectAllBulk">
+                                        <i class="fas fa-square"></i> Deselect All
+                                    </button>
+                                </div>
+                                <div>
+                                    <span class="badge bg-info" id="selectedCount">0 selected</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transactions Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;">
+                                        <input type="checkbox" class="form-check-input" id="selectAllCheckbox">
+                                    </th>
+                                    <th>Date</th>
+                                    <th>Office Name</th>
+                                    <th>Item Name</th>
+                                    <th>Approved Quantity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulkTransactionsTableBody">
+                                <?php
+                                // Reset the transactions data pointer to reuse
+                                if (isset($bulk_transactions_data)) {
+                                    mysqli_data_seek($bulk_transactions_data, 0);
+                                    // Check if there are any results
+                                    if (mysqli_num_rows($bulk_transactions_data) > 0) {
+                                        // Loop through each row
+                                        while ($row = mysqli_fetch_assoc($bulk_transactions_data)) {
+                                ?>
+                                            <tr>
+
+                                                <td>
+                                                    <input type="checkbox" class="form-check-input bulk-transaction-checkbox"
+                                                        value="<?= htmlspecialchars($row['id']) ?>"
+                                                        data-office-name="<?= htmlspecialchars($row['office_name']) ?>"
+                                                        data-date="<?= date('Y-m-d', strtotime($row['date_requested'] ?? 'now')) ?>"
+                                                        data-item-id="<?= htmlspecialchars($row['item_id']) ?>">
+                                                </td>
+                                                <td><?= date('Y-m-d', strtotime($row['date_requested'])) ?></td>
+                                                <td><?= htmlspecialchars($row['office_name']) ?></td>
+                                                <td><?= htmlspecialchars($row['item_name']) ?></td>
+                                                <td><?= htmlspecialchars($row['approved_quantity']) ?></td>
+                                                <td><?= htmlspecialchars($row['status']) ?></td>
+                                            </tr>
+                                        <?php
+                                        }
+                                    } else {
+                                        // No data found
+                                        ?>
+                                        <tr>
+                                            <td colspan="4" class="text-center">
+                                                <div class="py-4">
+                                                    <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                                    <p class="text-muted">No requests found</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                <?php
+                                    }
+                                }
+                                ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button type="button" class="btn btn-warning" id="processBulkTransactions" disabled>
+                        <i class="fas fa-layer-group"></i> Process Selected Transactions
+                    </button>
+                </div>
             </div>
         </div>
     </div>
