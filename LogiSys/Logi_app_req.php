@@ -820,7 +820,7 @@ if (isset($requests_stmt)) {
                                     <i class="fas fa-calculator"></i> Approved Quantity <span class="text-danger">*</span>
                                 </label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" id="approved_Quantity" name="approved_quantity" min="1" step="1"
+                                    <input type="number" class="form-control" id="approved_Quantity" name="approved_quantity" min="0" step="1"
                                         placeholder="Enter quantity" required>
                                     <span class="input-group-text" id="unitDisplay"></span>
                                 </div>
