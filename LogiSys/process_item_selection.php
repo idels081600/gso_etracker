@@ -130,7 +130,7 @@ try {
     mysqli_stmt_close($office_stmt);
 
     // Now prepare SQL statement for inserting the item request
-    $query = "INSERT INTO items_requested (item_id, item_name, quantity, unit, approved_quantity, office_id, office_name, date_requested, status) VALUES (?, ?, ?, ?, ?,?, ?, ?, 'Pending')";
+    $query = "INSERT INTO items_requested (item_id, item_name, quantity, unit, approved_quantity, office_id, office_name, date_requested, status, uploaded) VALUES (?, ?, ?, ?, ?,?, ?, ?, 'Pending', 0)";
 
     $stmt = mysqli_prepare($conn, $query);
 
