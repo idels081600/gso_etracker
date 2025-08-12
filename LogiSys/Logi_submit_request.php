@@ -76,8 +76,9 @@ try {
         approved_quantity,
         date_requested,
         remarks,
-        status
-    ) VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), ?, 'Pending')";
+        status,
+        uploaded
+    ) VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), ?, 'Pending', 0)";
 
     $item_stmt = mysqli_prepare($conn, $item_query);
 
