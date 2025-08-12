@@ -69,9 +69,7 @@ if (empty($unit)) {
 if (empty($office)) {
     $errors[] = 'Office is required';
 }
-if (!is_numeric($approved_Quantity) || $approved_Quantity <= 0) {
-    $errors[] = 'Approved Quantity must be a positive number';
-}
+
 if (empty($dateReceived)) {
     $errors[] = 'Date Received is required';
 } else {
