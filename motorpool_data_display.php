@@ -19,10 +19,27 @@ function get_vehicles_list()
 function get_motorpool_repairs()
 {
     global $conn;
-    $query = "SELECT * FROM motorpool_repair WHERE status IN ('Pending', 'In Progress') ORDER BY id DESC";
+    $query = "SELECT * FROM motorpool_repair WHERE status IN ('Pending', 'In Progress') ORDER BY STR_TO_DATE(repair_date, '%Y-%m-%d') DESC, id DESC";
     $result = mysqli_query($conn, $query);
 
     // Store repairs in an array
+    $repairs = [];
+    if ($result && mysqli_num_rows($result) > 0) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $repairs[] = $row;
+        }
+    }
+
+    return $repairs;
+}
+
+
+function get_completed_repairs()
+{
+    global $conn;
+    $query = "SELECT * FROM motorpool_repair WHERE status = 'Completed' ORDER BY STR_TO_DATE(repair_date, '%Y-%m-%d') DESC, id DESC";
+    $result = mysqli_query($conn, $query);
+
     $repairs = [];
     if ($result && mysqli_num_rows($result) > 0) {
         while ($row = mysqli_fetch_assoc($result)) {

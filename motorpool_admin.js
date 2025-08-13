@@ -93,6 +93,22 @@ document.getElementById("repairSearch").addEventListener("keyup", function () {
   });
 });
 
+// Simple search for Completed Repairs modal
+document.addEventListener("DOMContentLoaded", function () {
+  const searchInput = document.getElementById("completedRepairSearch");
+  const table = document.getElementById("completedRepairsTable");
+  if (searchInput && table) {
+    searchInput.addEventListener("keyup", function () {
+      const term = this.value.toLowerCase();
+      const rows = table.querySelectorAll("tbody tr");
+      rows.forEach((row) => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(term) ? "" : "none";
+      });
+    });
+  }
+});
+
 // Store loaded vehicle data for lookup
 let loadedVehicleData = [];
 

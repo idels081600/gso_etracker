@@ -289,6 +289,9 @@ $office_counts_json = json_encode($office_counts);
                         <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#updateVehicleModal">
                             <i class="fas fa-edit"></i> Update Vehicle
                         </button>
+                        <button type="button" class="btn btn-info btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#completedRepairsModal">
+                            <i class="fas fa-check-circle"></i> Show Repaired Data
+                        </button>
                     </div>
                 </div>
 
@@ -360,6 +363,61 @@ $office_counts_json = json_encode($office_counts);
                             ?>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed Repairs Modal -->
+    <div class="modal fade" id="completedRepairsModal" tabindex="-1" aria-labelledby="completedRepairsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="completedRepairsModalLabel">Completed Repairs</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="text" id="completedRepairSearch" class="form-control" placeholder="Search completed repairs...">
+                    </div>
+                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                        <table class="table table-striped" id="completedRepairsTable">
+                            <thead class="sticky-top bg-light">
+                                <tr>
+                                    <th>Plate No.</th>
+                                    <th>Date</th>
+                                    <th>Office</th>
+                                    <th>Repair Type</th>
+                                    <th>Parts Replaced</th>
+                                    <th>Remarks</th>
+                                 
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $completed_repairs = get_completed_repairs(); ?>
+                                <?php if (!empty($completed_repairs)) { ?>
+                                    <?php foreach ($completed_repairs as $repair) { ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($repair['plate_no'] ?? ''); ?></td>
+                                            <td><?php echo htmlspecialchars($repair['repair_date'] ?? ''); ?></td>
+                                            <td><?php echo htmlspecialchars($repair['office'] ?? ''); ?></td>
+                                            <td><?php echo htmlspecialchars($repair['repair_type'] ?? ''); ?></td>
+                                            <td><?php echo nl2br(htmlspecialchars(str_replace(['\\r\\n', '\\n', '\\r'], "\n", $repair['parts_replaced'] ?? ''))); ?></td>
+                                            <td><?php echo htmlspecialchars($repair['remarks'] ?? ''); ?></td>
+                                            
+                                        </tr>
+                                    <?php } ?>
+                                <?php } else { ?>
+                                    <tr>
+                                        <td colspan="7" class="text-center">No completed repair records found</td>
+                                    </tr>
+                                <?php } ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
