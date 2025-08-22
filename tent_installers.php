@@ -17,6 +17,8 @@ if (!isset($_SESSION['username'])) {
     <title>Document</title>
     <!-- Bootstrap CSS CDN -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link href="tent_installers.css" rel="stylesheet">
 
 </head>
@@ -24,9 +26,34 @@ if (!isset($_SESSION['username'])) {
 <body>
     <div class="container-fluid">
         <h1 class="mt-4">Search Client</h1>
-        <!-- <div class="form-group">
-            <input type="text" class="form-control" id="searchInput" placeholder="Search...">
-        </div> -->
+
+        <!-- Filter Controls -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <button type="button" class="btn btn-outline-success" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i> Refresh Data
+                </button>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Auto-refresh Status -->
+        <div class="row mb-2">
+            <div class="col-12">
+                <small class="text-muted">
+                    <i class="fas fa-calendar-day"></i> Showing today's data only
+                    <span class="ml-3">
+                        <i class="fas fa-sync-alt"></i> Auto-refresh: Every 10 seconds
+                        <span id="lastUpdated" class="ml-2"></span>
+                    </span>
+                </small>
+            </div>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-striped mt-4 table-fixed">
                 <thead>
@@ -40,94 +67,8 @@ if (!isset($_SESSION['username'])) {
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <?php
-                    require_once 'db_asset.php';
-
-                    // Get today's date
-                    $today = date('Y-m-d');
-
-                    // First fetch Pending status (unchanged)
-                    $query_pending = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.date, t.no_of_tents              
-FROM tent t               
-WHERE t.status = 'Pending' 
-AND DATE(t.date) = '$today'
-ORDER BY t.date DESC";
-                    $result_pending = mysqli_query($conn, $query_pending);
-
-                    // Fetch For Retrieval status - prioritize today's date
-                    $query_for_retrieval = "SELECT t.id, t.name, t.contact_no, t.location, t.status, t.tent_no, t.retrieval_date, t.no_of_tents
-           FROM tent t 
-           WHERE t.status = 'For Retrieval'
-           ORDER BY 
-               CASE WHEN t.retrieval_date = '$today' THEN 0 ELSE 1 END,
-               t.retrieval_date DESC";
-                    $result_for_retrieval = mysqli_query($conn, $query_for_retrieval);
-
-                    $total_rows = mysqli_num_rows($result_pending) + mysqli_num_rows($result_for_retrieval);
-
-                    if ($total_rows > 0) {
-                        // Display For Retrieval records (now sorted with today's date first)
-                        while ($row = mysqli_fetch_assoc($result_for_retrieval)) {
-                            // Add a CSS class to highlight today's records
-                            $todayClass = ($row['retrieval_date'] == $today) ? 'today-record' : '';
-                            echo "<tr class='for-retrieval-row $todayClass'>";
-                            echo "<td>" . htmlspecialchars($row['name']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['retrieval_date']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['status']) . "</td>";
-                            echo '<td class="text-right">
-                <button class="btn btn-primary"
-                    data-toggle="modal"
-                    data-target="#editModal"
-                    data-id="' . htmlspecialchars($row['id']) . '"
-                    data-name="' . htmlspecialchars($row['name']) . '"
-                    data-address="' . htmlspecialchars($row['location']) . '"
-                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
-                    data-no_of_tents="' . htmlspecialchars($row['no_of_tents']) . '"
-                    data-date="' . htmlspecialchars($row['retrieval_date']) . '"
-                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
-                    data-status="' . htmlspecialchars($row['status']) . '">
-                    Edit
-                </button>
-            </td>';
-                            echo "</tr>";
-                        }
-
-
-                        // Display Pending records (hidden by default, shown only for Today)
-                        while ($row = mysqli_fetch_assoc($result_pending)) {
-                            echo "<tr class='pending-row'>";
-                            echo "<td>" . htmlspecialchars($row['name']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['location']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['no_of_tents']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['date']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['status']) . "</td>";
-                            echo '<td class="text-right">
-                <button class="btn btn-primary"
-                    data-toggle="modal"
-                    data-target="#editModal"
-                    data-id="' . htmlspecialchars($row['id']) . '"
-                    data-name="' . htmlspecialchars($row['name']) . '"
-                    data-address="' . htmlspecialchars($row['location']) . '"
-                    data-contact="' . htmlspecialchars($row['contact_no']) . '"
-                    data-no_of_tents="' . htmlspecialchars($row['no_of_tents']) . '"
-                    data-date="' . htmlspecialchars($row['date']) . '"
-                    data-tent_no="' . htmlspecialchars($row['tent_no']) . '"                               
-                    data-status="' . htmlspecialchars($row['status']) . '">
-                    Edit
-                </button>
-            </td>';
-                            echo "</tr>";
-                        }
-
-                        if (mysqli_num_rows($result_for_retrieval) + mysqli_num_rows($result_pending) == 0) {
-                            echo "<tr><td colspan='6'>No data found</td></tr>";
-                        }
-                    } else {
-                        echo "<tr><td colspan='8'>No data found</td></tr>";
-                    }
-                    ?>
+                    <!-- Table data will be loaded via AJAX -->
+                    <tr><td colspan="6" class="text-center">Loading data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -178,6 +119,7 @@ ORDER BY t.date DESC";
 
                     <div class="box-grid mt-4">
                         <?php
+                        require_once 'db_asset.php';
                         $statusQuery = "SELECT Status FROM tent_status";
                         $statusResult = mysqli_query($conn, $statusQuery);
 

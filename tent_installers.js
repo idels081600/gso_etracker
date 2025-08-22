@@ -1,6 +1,152 @@
+// Auto-refresh functionality
+let refreshInterval;
+let isAutoRefreshEnabled = true;
+
+// Function to load table data via AJAX
+function loadTableData() {
+  console.log('Loading table data...');
+  $.ajax({
+    url: 'get_tent_data.php',
+    method: 'GET',
+    dataType: 'json',
+    success: function(response) {
+      console.log('AJAX Response:', response);
+      if (response.success) {
+        updateTableBody(response.data);
+        console.log('Table data refreshed at:', response.timestamp);
+        console.log('Total records loaded:', response.data.length);
+      } else {
+        console.error('Error loading data:', response.error);
+        $('#tableBody').html('<tr><td colspan="6" class="text-center text-danger">Error loading data: ' + (response.error || 'Unknown error') + '</td></tr>');
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error('AJAX Error:', status, error);
+      console.error('Response Text:', xhr.responseText);
+      $('#tableBody').html('<tr><td colspan="6" class="text-center text-danger">Failed to load data. Check console for details.</td></tr>');
+    }
+  });
+}
+
+// Function to update table body with new data
+function updateTableBody(data) {
+  console.log('updateTableBody called with data:', data);
+  const tableBody = $('#tableBody');
+  tableBody.empty();
+
+  if (data.length === 0) {
+    console.log('No data found');
+    tableBody.html('<tr><td colspan="6" class="text-center text-muted">No data found</td></tr>');
+    return;
+  }
+
+  console.log('Processing', data.length, 'records');
+  data.forEach(function(row, index) {
+    console.log('Processing row', index, ':', row);
+    const tableRow = `
+      <tr class="${row.row_class}">
+        <td>${row.name}</td>
+        <td>${row.location}</td>
+        <td>${row.no_of_tents}</td>
+        <td>${row.date}</td>
+        <td>${row.status}</td>
+        <td class="text-right">
+          <button class="btn btn-primary"
+              data-toggle="modal"
+              data-target="#editModal"
+              data-id="${row.id}"
+              data-name="${row.name}"
+              data-address="${row.location}"
+              data-contact="${row.contact_no}"
+              data-no_of_tents="${row.no_of_tents}"
+              data-date="${row.date}"
+              data-tent_no="${row.tent_no}"
+              data-status="${row.status}">
+              Edit
+          </button>
+        </td>
+      </tr>
+    `;
+    tableBody.append(tableRow);
+  });
+
+  // Update last updated timestamp
+  const now = new Date();
+  const timeString = now.toLocaleTimeString();
+  $('#lastUpdated').text(`Last updated: ${timeString}`);
+
+  console.log('Table updated with today\'s data only');
+}
+
+// Function to start auto-refresh
+function startAutoRefresh() {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
+  refreshInterval = setInterval(loadTableData, 10000); // Refresh every 10 seconds
+  isAutoRefreshEnabled = true;
+  console.log('Auto-refresh started (10 seconds interval)');
+}
+
+// Function to stop auto-refresh
+function stopAutoRefresh() {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+  }
+  isAutoRefreshEnabled = false;
+  console.log('Auto-refresh stopped');
+}
+
+// Note: Filter functions removed since we only show today's data
+
 $(document).ready(function () {
+  console.log('Document ready - initializing tent installers (today\'s data only)...');
+
+  // Load initial data
+  loadTableData();
+
+  // Start auto-refresh
+  startAutoRefresh();
+
+  // Refresh button handler
+  $("#refreshBtn").click(function() {
+    console.log('Refresh button clicked');
+
+    // Add visual feedback for refresh
+    const originalText = $(this).html();
+    $(this).html('<i class="fas fa-spinner fa-spin"></i> Refreshing...');
+    $(this).prop('disabled', true);
+
+    // Load fresh data
+    $.ajax({
+      url: 'get_tent_data.php',
+      method: 'GET',
+      dataType: 'json',
+      success: function(response) {
+        if (response.success) {
+          updateTableBody(response.data);
+          console.log('Manual refresh completed at:', response.timestamp);
+        } else {
+          console.error('Error loading data:', response.error);
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error('Manual refresh failed:', status, error);
+      },
+      complete: function() {
+        // Restore button state
+        $("#refreshBtn").html(originalText);
+        $("#refreshBtn").prop('disabled', false);
+      }
+    });
+  });
+
+  // Search functionality
   $("#searchInput").on("keyup", function () {
     var value = $(this).val().toLowerCase();
+    console.log('Search input:', value);
+
     $("#tableBody tr").filter(function () {
       $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
     });
@@ -94,18 +240,10 @@ $(document).ready(function () {
         console.log("Debug Info:", result.debug);
         if (result.success) {
           console.log("Update successful");
-          // Update the table row with the new data
-          var row = $('button[data-id="' + selectedClientId + '"]').closest(
-            "tr"
-          );
-          row.find("td:eq(0)").text($("#clientName").val());
-          row.find("td:eq(1)").text($("#clientAddress").val());
-          row.find("td:eq(2)").text($("#noOfTents").val()); // Update number of tents column
-          row.find("td:eq(4)").text(statusValue); // Update status column
           $("#editModal").modal("hide");
 
-          // Optionally reload the page to reflect changes
-          // location.reload();
+          // Refresh the table data immediately to show updated information
+          loadTableData();
         } else {
           console.log("Update failed:", result);
           alert("Update failed: " + (result.message || "Unknown error"));
@@ -171,8 +309,7 @@ $(document).ready(function () {
   });
 });
 
-// Global variables for filter state
-let lastFilter = "showAll"; // 'showAll' or 'today'
+// Global variables
 let today = new Date().toISOString().split("T")[0];
 
 // Global functions for message handling
@@ -199,302 +336,91 @@ function removeNoResultsMessage() {
   }
 }
 
-// JavaScript code for Today and Show All buttons
-document.addEventListener("DOMContentLoaded", function () {
-  const todayBtn = document.getElementById("todayBtn");
-  const tableBody = document.getElementById("tableBody");
-  const table = document.querySelector(".table");
-  const rows = table.getElementsByTagName("tr");
-
-  // Get today's date in YYYY-MM-DD format
-  today = new Date().toISOString().split("T")[0];
-
-  // Today button click event
-  todayBtn.addEventListener("click", function () {
-    todayBtn.classList.add("active");
-    lastFilter = "today";
-    filterTableForToday();
-  });
-
-  // Function to filter table for today's pending records
-  function filterTableForToday() {
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (row.classList.contains("pending-row")) {
-        const cells = row.getElementsByTagName("td");
-        const dateCell = cells[3]; // Date column (index 3)
-        const statusCell = cells[4]; // Status column (index 4)
-        if (dateCell && statusCell) {
-          const rowDate = dateCell.textContent.trim();
-          const rowStatus = statusCell.textContent.trim();
-          if (rowDate === today && rowStatus === "Pending") {
-            row.style.display = "";
-          } else {
-            row.style.display = "none";
-          }
-        }
-      } else {
-        row.style.display = "none";
-      }
-    }
-    checkIfNoResults();
-  }
-
-  // Function to check if no results are visible and show message
-  function checkIfNoResults() {
-    let visibleRows = 0;
-
-    for (let i = 1; i < rows.length; i++) {
-      if (rows[i].style.display !== "none") {
-        visibleRows++;
-      }
-    }
-
-    if (visibleRows === 0) {
-      showNoResultsMessage(
-        "No pending records found for today (" + today + ")"
-      );
-    } else {
-      removeNoResultsMessage();
-    }
-  }
-
-  // Initialize with Show All active by default
-  showAllBtn.classList.add("active");
-
-  // Also integrate with existing search functionality if it exists
-  const searchInput = document.getElementById("searchInput");
-  if (searchInput) {
-    searchInput.addEventListener("input", function () {
-      // If search is being used, reset button states
-      if (searchInput.value.trim() !== "") {
-        todayBtn.classList.remove("active");
-        showAllBtn.classList.remove("active");
-      }
-    });
-  }
-});
-// Enhanced search functionality that works with the filter buttons
-document.addEventListener("DOMContentLoaded", function () {
-  const searchInput = document.getElementById("searchInput");
-  const table = document.querySelector(".table");
-  const rows = table.getElementsByTagName("tr");
-
-  if (searchInput) {
-    searchInput.addEventListener("input", function () {
-      const filter = searchInput.value.toLowerCase();
-      if (filter === "") {
-        // Reapply last filter
-        if (lastFilter === "today") {
-          filterTableForToday();
-        } else {
-          // Show 'For Retrieval' and 'Installed' records only
-          for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
-            if (
-              row.classList.contains("for-retrieval-row") ||
-              row.classList.contains("installed-row")
-            ) {
-              row.style.display = "";
-            } else {
-              row.style.display = "none";
-            }
-          }
-          removeNoResultsMessage();
-          checkIfNoResults();
-        }
-        return;
-      }
-
-      // Search within the context of the current filter
-      let visibleRows = 0;
-
-      // First, hide all rows that don't match the current filter
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        const cells = row.getElementsByTagName("td");
-
-        if (lastFilter === "today") {
-          // For today filter, only show pending rows for today
-          if (!row.classList.contains("pending-row")) {
-            row.style.display = "none";
-            continue;
-          }
-
-          const dateCell = cells[3];
-          const statusCell = cells[4];
-          if (dateCell && statusCell) {
-            const rowDate = dateCell.textContent.trim();
-            const rowStatus = statusCell.textContent.trim();
-            if (rowDate !== today || rowStatus !== "Pending") {
-              row.style.display = "none";
-              continue;
-            }
-          } else {
-            row.style.display = "none";
-            continue;
-          }
-        } else {
-          // For show all filter, EXCLUDE pending rows and show only For Retrieval and Installed rows
-          if (row.classList.contains("pending-row")) {
-            row.style.display = "none";
-            continue;
-          }
-
-          if (
-            !row.classList.contains("for-retrieval-row") &&
-            !row.classList.contains("installed-row")
-          ) {
-            row.style.display = "none";
-            continue;
-          }
-        }
-
-        // Now check if the remaining visible rows match the search term
-        let matchesSearch = false;
-        for (let j = 0; j < cells.length; j++) {
-          const cellText = cells[j].textContent.toLowerCase();
-          if (cellText.includes(filter)) {
-            matchesSearch = true;
-            break;
-          }
-        }
-
-        if (matchesSearch) {
-          row.style.display = "";
-          visibleRows++;
-        } else {
-          row.style.display = "none";
-        }
-      }
-
-      if (visibleRows === 0) {
-        showNoResultsMessage(
-          'No results found for "' + filter + '" in current filter'
-        );
-      } else {
-        removeNoResultsMessage();
-      }
-    });
-  }
-
-  // Function to filter table for today's pending records
-  function filterTableForToday() {
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      const cells = row.getElementsByTagName("td");
-      const dateCell = cells[3]; // Date column (index 3)
-      const statusCell = cells[4]; // Status column (index 4)
-
-      if (!dateCell || !statusCell) {
-        row.style.display = "none";
-        continue;
-      }
-
-      const rowDate = dateCell.textContent.trim();
-      const rowStatus = statusCell.textContent.trim();
-
-      if (
-        (rowStatus === "Pending" && rowDate === today) ||
-        (rowStatus === "For Retrieval" && rowDate === today)
-      ) {
-        row.style.display = "";
-      } else {
-        row.style.display = "none";
-      }
-    }
-
-    checkIfNoResults();
-  }
-
-  // Function to check if no results are visible and show message
-  function checkIfNoResults() {
-    let visibleRows = 0;
-
-    for (let i = 1; i < rows.length; i++) {
-      if (rows[i].style.display !== "none") {
-        visibleRows++;
-      }
-    }
-
-    if (visibleRows === 0) {
-      if (lastFilter === "today") {
-        showNoResultsMessage(
-          "No pending records found for today (" + today + ")"
-        );
-      } else {
-        showNoResultsMessage("No installed or for retrieval records found");
-      }
-    } else {
-      removeNoResultsMessage();
-    }
-  }
-});
+// Note: Filter functionality has been integrated into the main jQuery ready function above
+// Note: Enhanced search functionality has been integrated into the main jQuery ready function above
 
 // Manage Common Use Supplies Modal functionality
 let selectedItemsForCommonUse = [];
 
-// Search functionality
-document
-  .getElementById("searchItemsBtn")
-  .addEventListener("click", function () {
-    const searchTerm = document.getElementById("itemSearchInput").value.trim();
-    if (searchTerm) {
-      searchItems(searchTerm);
-    }
-  });
-
-document
-  .getElementById("itemSearchInput")
-  .addEventListener("keypress", function (e) {
-    if (e.key === "Enter") {
-      const searchTerm = this.value.trim();
-      if (searchTerm) {
-        searchItems(searchTerm);
+// Search functionality - with null checks
+$(document).ready(function() {
+  const searchItemsBtn = document.getElementById("searchItemsBtn");
+  if (searchItemsBtn) {
+    searchItemsBtn.addEventListener("click", function () {
+      const searchInput = document.getElementById("itemSearchInput");
+      if (searchInput) {
+        const searchTerm = searchInput.value.trim();
+        if (searchTerm) {
+          searchItems(searchTerm);
+        }
       }
-    }
-  });
+    });
+  }
+});
 
-document
-  .getElementById("clearSearchBtn")
-  .addEventListener("click", function () {
-    document.getElementById("itemSearchInput").value = "";
-    clearSearchResults();
-  });
+$(document).ready(function() {
+  const itemSearchInput = document.getElementById("itemSearchInput");
+  if (itemSearchInput) {
+    itemSearchInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        const searchTerm = this.value.trim();
+        if (searchTerm) {
+          searchItems(searchTerm);
+        }
+      }
+    });
+  }
+
+  const clearSearchBtn = document.getElementById("clearSearchBtn");
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener("click", function () {
+      const searchInput = document.getElementById("itemSearchInput");
+      if (searchInput) {
+        searchInput.value = "";
+      }
+      clearSearchResults();
+    });
+  }
+});
 
 // Select all checkboxes handlers
-document
-  .getElementById("selectAllSearchItems")
-  .addEventListener("change", function () {
-    const checkboxes = document.querySelectorAll(
-      "#searchItemsTable .item-checkbox"
-    );
-    checkboxes.forEach((checkbox) => {
-      checkbox.checked = this.checked;
-      handleItemSelection(checkbox);
+$(document).ready(function() {
+  const selectAllSearchItems = document.getElementById("selectAllSearchItems");
+  if (selectAllSearchItems) {
+    selectAllSearchItems.addEventListener("change", function () {
+      const checkboxes = document.querySelectorAll(
+        "#searchItemsTable .item-checkbox"
+      );
+      checkboxes.forEach((checkbox) => {
+        checkbox.checked = this.checked;
+        handleItemSelection(checkbox);
+      });
     });
-  });
+  }
 
-document
-  .getElementById("selectAllCommonItems")
-  .addEventListener("change", function () {
-    const checkboxes = document.querySelectorAll(
-      "#commonItemsTable .common-checkbox"
-    );
-    checkboxes.forEach((checkbox) => {
-      checkbox.checked = this.checked;
+  const selectAllCommonItems = document.getElementById("selectAllCommonItems");
+  if (selectAllCommonItems) {
+    selectAllCommonItems.addEventListener("change", function () {
+      const checkboxes = document.querySelectorAll(
+        "#commonItemsTable .common-checkbox"
+      );
+      checkboxes.forEach((checkbox) => {
+        checkbox.checked = this.checked;
+      });
+      updateCommonItemsButtons();
     });
-    updateCommonItemsButtons();
-  });
+  }
 
-// Add selected items to common use table
-document
-  .getElementById("addSelectedItems")
-  .addEventListener("click", function () {
-    if (selectedItemsForCommonUse.length > 0) {
-      addItemsToCommonUse();
-    }
-  });
+  // Add selected items to common use table
+  const addSelectedItems = document.getElementById("addSelectedItems");
+  if (addSelectedItems) {
+    addSelectedItems.addEventListener("click", function () {
+      if (selectedItemsForCommonUse.length > 0) {
+        addItemsToCommonUse();
+      }
+    });
+  }
+});
 
 function searchItems(searchTerm) {
   fetch(
@@ -735,8 +661,11 @@ function getStatusBadgeClass(status) {
 }
 
 // Load common items when modal opens
-document
-  .getElementById("manageSuppliesModal")
-  .addEventListener("shown.bs.modal", function () {
-    loadCommonItems();
-  });
+$(document).ready(function() {
+  const manageSuppliesModal = document.getElementById("manageSuppliesModal");
+  if (manageSuppliesModal) {
+    manageSuppliesModal.addEventListener("shown.bs.modal", function () {
+      loadCommonItems();
+    });
+  }
+});
