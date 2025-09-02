@@ -903,6 +903,7 @@ if (isset($_POST['save_data'])) {
                     <div class="d-flex align-items-center gap-2">
                         <button class="btn btn-success" id="addButton" role="button" data-bs-toggle="modal" data-bs-target="#detailsModal">Install Tent</button>
                         <button class="btn btn-secondary" id="printButton" data-bs-toggle="modal" data-bs-target="#printModal"><i class="fas fa-print"></i> Print</button>
+                        <button class="btn btn-info" id="retrievedDataButton" data-bs-toggle="modal" data-bs-target="#retrievedDataModal"><i class="fas fa-archive"></i> Retrieved Data</button>
                     </div>
                     <input type="text" id="search-input" class="form-control w-auto" placeholder="Search...">
                 </div>
@@ -1165,10 +1166,200 @@ if (isset($_POST['save_data'])) {
             </div>
         </div>
     </div>
+
+    <!-- Retrieved Data Modal -->
+    <div class="modal fade" id="retrievedDataModal" tabindex="-1" aria-labelledby="retrievedDataModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="retrievedDataModalLabel">Retrieved Tents History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="retrievedDataSearch" placeholder="Search in table...">
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="retrievedDataTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th scope="col">Tent No.</th>
+                                    <th scope="col">Retrieval Date</th>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Purpose</th>
+                                    <th scope="col">Location</th>
+                                    <th scope="col">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="retrievedDataTableBody">
+                                <!-- Data will be loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Store retrieved data globally for searching
+    let retrievedTableData = [];
+
+    // Handle Retrieved Data Modal
+    $('#retrievedDataModal').on('show.bs.modal', function() {
+        const tbody = $('#retrievedDataTableBody');
+        // Show loading state
+        tbody.html('<tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
+
+        $.ajax({
+            url: 'fetch_retrieved_data.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                tbody.empty();
+
+                if (response.error) {
+                    console.error('Server error:', response.error);
+                    tbody.html(`<tr><td colspan="5" class="text-center text-danger">Error: ${response.error}</td></tr>`);
+                    return;
+                }
+
+                const data = response.data || [];
+
+                if (data.length === 0) {
+                    tbody.html('<tr><td colspan="5" class="text-center">No retrieved tents found</td></tr>');
+                    return;
+                }
+
+                data.forEach(function(item) {
+                    const row = `
+                            <tr>
+                                <td>${item.tent_no || 'N/A'}</td>
+                                <td>${item.retrieval_date || 'N/A'}</td>
+                                <td>${item.name || 'N/A'}</td>
+                                <td>${item.purpose || 'N/A'}</td>
+                                <td>${item.location || 'N/A'}</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm undoButton" data-tent-no="${item.id}" title="Undo Retrieved Status">
+                                        <i class="fas fa-undo"></i> Undo
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    tbody.append(row);
+                });
+                
+                // Store the data for searching
+                retrievedTableData = data;
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', status, error);
+                console.error('Response:', xhr.responseText);
+                tbody.html('<tr><td colspan="5" class="text-center text-danger">Error loading data. Please try again.</td></tr>');
+            }
+        });
+    });
+
+    // Handle search functionality
+    // Handle undo button clicks
+    $(document).on('click', '.undoButton', function() {
+        const tentid = $(this).data('tent-no');
+        const button = $(this);
+        if (confirm('Are you sure you want to undo the retrieved status for tent ' + tentid + '?')) {
+            $.ajax({
+                url: 'undo_retrieved_status.php',
+                type: 'POST',
+                data: { tent_Id: tentid },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Remove the row from the table
+                        const row = button.closest('tr');
+                        row.fadeOut(400, function() {
+                            row.remove();
+                            // Update the retrievedTableData array
+                            retrievedTableData = retrievedTableData.filter(item => item.id !== tentid);
+                            // Show success message
+                            alert('Status successfully updated to For Retrieval');
+                            // Optionally refresh the modal to show updated data
+                            $('#retrievedDataModal').modal('hide');
+                            setTimeout(() => {
+                                $('#retrievedDataModal').modal('show');
+                            }, 500);
+                        });
+                    } else {
+                        alert('Error: ' + (response.message || 'Could not update status'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', status, error);
+                    alert('Error occurred while processing your request');
+                }
+            });
+        }
+    });
+
+    $('#retrievedDataSearch').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase().trim();
+        const tbody = $('#retrievedDataTableBody');
+        
+        if (!retrievedTableData || retrievedTableData.length === 0) {
+            return;
+        }
+
+        if (searchTerm === '') {
+            // If search is empty, show all data
+            displayData(retrievedTableData);
+            return;
+        }
+
+        // Filter the data
+        const filteredData = retrievedTableData.filter(item => 
+            (item.tent_no?.toString().toLowerCase().includes(searchTerm) ||
+            item.retrieval_date?.toLowerCase().includes(searchTerm) ||
+            item.name?.toLowerCase().includes(searchTerm) ||
+            item.purpose?.toLowerCase().includes(searchTerm) ||
+            item.location?.toLowerCase().includes(searchTerm))
+        );
+
+        displayData(filteredData);
+    });
+
+    // Function to display data in the table
+    function displayData(data) {
+        const tbody = $('#retrievedDataTableBody');
+        tbody.empty();
+
+        if (data.length === 0) {
+            tbody.html('<tr><td colspan="5" class="text-center">No matching records found</td></tr>');
+            return;
+        }
+
+        data.forEach(function(item) {
+            const row = `
+                <tr>
+                    <td>${item.tent_no || 'N/A'}</td>
+                    <td>${item.retrieval_date || 'N/A'}</td>
+                    <td>${item.name || 'N/A'}</td>
+                    <td>${item.purpose || 'N/A'}</td>
+                    <td>${item.location || 'N/A'}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm undoButton" data-tent-no="${item.tent_no}" title="Undo Retrieved Status">
+                            <i class="fas fa-undo"></i> Undo
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+    };
+</script>
 <script>
     $(document).ready(function() {
         $('#printPendingBtn').on('click', function() {
