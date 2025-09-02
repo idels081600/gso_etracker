@@ -1350,7 +1350,7 @@ if (isset($_POST['save_data'])) {
                     <td>${item.purpose || 'N/A'}</td>
                     <td>${item.location || 'N/A'}</td>
                     <td>
-                        <button class="btn btn-warning btn-sm undoButton" data-tent-no="${item.tent_no}" title="Undo Retrieved Status">
+                        <button class="btn btn-warning btn-sm undoButton" data-tent-no="${item.tent_id}" title="Undo Retrieved Status">
                             <i class="fas fa-undo"></i> Undo
                         </button>
                     </td>
