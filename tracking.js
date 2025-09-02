@@ -168,26 +168,7 @@ $(function () {
             finalDiffDays = -1;
             colorStatus = "🔴 RED (Overdue)";
             $element.css("color", "red");
-
-            // Process each tent number separately if we can auto-update
-            if (tentNumbers.length > 0 && canAutoUpdate) {
-              tentNumbers.forEach((tentNo) => {
-                redDates.push({
-                  tent_no: tentNo,
-                  id: id,
-                  row: row,
-                  dateText: dateText,
-                  selectedValue: selectedValue,
-                  originalTentText: tentText, // Keep original for reference
-                });
-              });
-              actionTaken = `→ Queued ${tentNumbers.length} tent(s) for auto-update to 'Retrieved'`;
-            } else {
-              actionTaken =
-                tentNumbers.length === 0
-                  ? "→ No tent numbers found, cannot auto-update"
-                  : "→ Status cannot be auto-updated";
-            }
+            actionTaken = "→ Overdue (no auto-update)";
           } else if (isToday) {
             // Date is today
             finalDiffDays = 0;
@@ -273,8 +254,8 @@ $(function () {
 
       console.log("=== DATE CHECKING SESSION COMPLETED ===\n");
 
-      // Process updates with proper error handling
-      processStatusUpdates(redDates, orangeDates);
+      // Process updates with proper error handling (only orange dates now)
+      processStatusUpdates([], orangeDates);
     } catch (error) {
       console.error("❌ Error in updateDateColors:", error);
       showUpdateStatus(
