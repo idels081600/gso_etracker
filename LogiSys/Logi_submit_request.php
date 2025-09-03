@@ -39,8 +39,9 @@ try {
     $office_name = isset($data['office_name']) ? $data['office_name'] : ($username . "'s Office");
     $items = isset($data['items']) && is_array($data['items']) ? $data['items'] : [];
 
+    // Allow remarks-only submissions
     if (empty($reason) && empty($items)) {
-        throw new Exception('Please provide either remarks or items in the request');
+        throw new Exception('Please provide remarks or items in the request');
     }
 
     // Start transaction
