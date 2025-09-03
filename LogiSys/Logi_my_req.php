@@ -319,9 +319,11 @@ if ($stats_stmt) {
                                 <th class="text-dark">Item Name</th>
                                 <th class="text-dark">Quantity</th>
                                 <th class="text-dark">Approved Qty</th>
-                                <th class="text-dark">Status</th>
+                                <th class="text-dark">Additional Items</th>
                                 <th class="text-dark">Remarks</th>
+                                <th class="text-dark">Status</th>
                                 <th class="text-dark">Actions</th>
+
                             </tr>
                         </thead>
                         <tbody>
@@ -348,6 +350,21 @@ if ($stats_stmt) {
                                             <?php endif; ?>
                                         </td>
                                         <td>
+                                            <?php if (!empty($request['remarks']) && $request['remarks'] !== ''): ?>
+                                                <strong class="text-muted">
+                                                    <?= htmlspecialchars($request['remarks']) ?>
+                                                </strong>
+                                            <?php endif; ?>
+                                        <td>
+                                            <?php if (!empty($request['remarks_admin'])): ?>
+                                                <small class="text-muted">
+                                                    <?= htmlspecialchars($request['remarks_admin']) ?>
+                                                </small>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
                                             <?php
                                             $status_class = '';
                                             switch ($request['status']) {
@@ -367,15 +384,6 @@ if ($stats_stmt) {
                                             <span class="badge status-badge <?= $status_class ?>">
                                                 <?= htmlspecialchars($request['status']) ?>
                                             </span>
-                                        </td>
-                                        <td>
-                                            <?php if (!empty($request['remarks_admin'])): ?>
-                                                <small class="text-muted">
-                                                    <?= htmlspecialchars($request['remarks_admin']) ?>
-                                                </small>
-                                            <?php else: ?>
-                                                <span class="text-muted">-</span>
-                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <?php if ($request['status'] === 'Pending'): ?>
@@ -563,18 +571,18 @@ if ($stats_stmt) {
         // Function to open edit modal
         function openEditModal(requestId, itemName, quantity, remarks) {
             console.log('Opening edit modal for request:', requestId); // Debug log
-            
+
             if (!requestId || requestId <= 0) {
                 alert('Invalid request ID');
                 return;
             }
-            
+
             // Set form values
             document.getElementById('editRequestId').value = requestId;
             document.getElementById('editItemName').textContent = itemName;
             document.getElementById('editQuantity').value = quantity || 1;
             document.getElementById('editRemarks').value = remarks || '';
-            
+
             // Show modal
             const modalElement = document.getElementById('editRequestModal');
             if (modalElement) {
@@ -589,16 +597,16 @@ if ($stats_stmt) {
         // Function to open delete confirmation modal
         function confirmDelete(requestId, itemName) {
             console.log('Opening delete modal for request:', requestId); // Debug log
-            
+
             if (!requestId || requestId <= 0) {
                 alert('Invalid request ID');
                 return;
             }
-            
+
             // Set values
             document.getElementById('deleteRequestId').value = requestId;
             document.getElementById('deleteItemName').textContent = itemName;
-            
+
             // Show modal
             const modalElement = document.getElementById('deleteRequestModal');
             if (modalElement) {
@@ -633,39 +641,39 @@ if ($stats_stmt) {
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
 
                     fetch('update_my_request.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({
-                            request_id: requestId,
-                            quantity: parseInt(quantity),
-                            remarks: remarks
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                request_id: requestId,
+                                quantity: parseInt(quantity),
+                                remarks: remarks
+                            })
                         })
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            showBootstrapToast('Request updated successfully', 'success');
-                            setTimeout(() => {
-                                location.reload();
-                            }, 1500);
-                        } else {
-                            throw new Error(data.message || 'Unknown error occurred');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        showBootstrapToast('Error updating request: ' + error.message, 'error');
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalText;
-                    });
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                showBootstrapToast('Request updated successfully', 'success');
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 1500);
+                            } else {
+                                throw new Error(data.message || 'Unknown error occurred');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showBootstrapToast('Error updating request: ' + error.message, 'error');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                        });
                 });
             }
         });
@@ -686,44 +694,44 @@ if ($stats_stmt) {
             deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
 
             fetch('delete_my_request.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    request_id: parseInt(requestId)
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        request_id: parseInt(requestId)
+                    })
                 })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    showBootstrapToast('Request deleted successfully', 'success');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    throw new Error(data.message || 'Unknown error occurred');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showBootstrapToast('Error deleting request: ' + error.message, 'error');
-                deleteBtn.disabled = false;
-                deleteBtn.innerHTML = originalText;
-            });
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showBootstrapToast('Request deleted successfully', 'success');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        throw new Error(data.message || 'Unknown error occurred');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showBootstrapToast('Error deleting request: ' + error.message, 'error');
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = originalText;
+                });
         }
 
         // Clear modals when hidden
         document.addEventListener('DOMContentLoaded', function() {
             const editModal = document.getElementById('editRequestModal');
             const deleteModal = document.getElementById('deleteRequestModal');
-            
+
             if (editModal) {
                 editModal.addEventListener('hidden.bs.modal', function() {
                     document.getElementById('editRequestForm').reset();
@@ -731,7 +739,7 @@ if ($stats_stmt) {
                     document.getElementById('editItemName').textContent = 'Loading...';
                 });
             }
-            
+
             if (deleteModal) {
                 deleteModal.addEventListener('hidden.bs.modal', function() {
                     document.getElementById('deleteRequestId').value = '';

@@ -9,3 +9,5 @@
 [2025-08-04 09:55:40] Transaction failed: Column 'item_no' cannot be null
 [2025-08-04 09:59:23] Retrieved items from items_requested: [{"item_id":711,"item_name":"TESTING","quantity":1,"office":"ASSET"}]
 [2025-08-07 05:04:00] Fatal Error: The number of elements in the type definition string must match the number of bind variables
+[03-Sep-2025 01:52:23 UTC] PHP Warning:  Undefined array key "approvedQuantity" in C:\laragon\www\gso_test\LogiSys\process_all_items.php on line 150
+[03-Sep-2025 01:52:23 UTC] PHP Warning:  Undefined array key "approvedQuantity" in C:\laragon\www\gso_test\LogiSys\process_all_items.php on line 150

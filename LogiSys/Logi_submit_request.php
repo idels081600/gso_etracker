@@ -31,18 +31,17 @@ try {
         throw new Exception('Invalid JSON data received');
     }
 
-    // Validate required fields
-    if (!isset($data['items']) || !is_array($data['items']) || empty($data['items'])) {
-        throw new Exception('No items in request');
-    }
-
     // Get data from request
     $reason = isset($data['reason']) ? trim($data['reason']) : '';
     $user_id = $_SESSION['user_id'];
     $username = $_SESSION['username'];
     $office_id = isset($data['office_id']) ? $data['office_id'] : $user_id;
     $office_name = isset($data['office_name']) ? $data['office_name'] : ($username . "'s Office");
-    $items = $data['items'];
+    $items = isset($data['items']) && is_array($data['items']) ? $data['items'] : [];
+
+    if (empty($reason) && empty($items)) {
+        throw new Exception('Please provide either remarks or items in the request');
+    }
 
     // Start transaction
     mysqli_autocommit($conn, false);
@@ -65,57 +64,94 @@ try {
     $has_remarks_today = $row['count'] > 0;
     mysqli_stmt_close($check_stmt);
 
-    // Insert request items directly - Added unit field
-    $item_query = "INSERT INTO items_requested (
-        office_id,
-        office_name,
-        item_id,
-        item_name,
-        unit,
-        quantity,
-        approved_quantity,
-        date_requested,
-        remarks,
-        status,
-        uploaded
-    ) VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), ?, 'Pending', 0)";
+    if (!empty($items)) {
+        // Insert request items directly - Added unit field
+        $item_query = "INSERT INTO items_requested (
+            office_id,
+            office_name,
+            item_id,
+            item_name,
+            unit,
+            quantity,
+            approved_quantity,
+            date_requested,
+            remarks,
+            status,
+            uploaded
+        ) VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), ?, 'Pending', 0)";
 
-    $item_stmt = mysqli_prepare($conn, $item_query);
+        $item_stmt = mysqli_prepare($conn, $item_query);
 
-    if (!$item_stmt) {
-        throw new Exception('Failed to prepare item query: ' . mysqli_error($conn));
-    }
-
-    $item_counter = 0;
-    foreach ($items as $item) {
-        // Validate item data - Added unit validation
-        if (!isset($item['id']) || !isset($item['name']) || !isset($item['quantity']) || !isset($item['unit'])) {
-            throw new Exception('Invalid item data structure - missing required fields (id, name, quantity, or unit)');
+        if (!$item_stmt) {
+            throw new Exception('Failed to prepare item query: ' . mysqli_error($conn));
         }
 
-        // Only include remarks for the first item to avoid duplication
-        $item_remarks = ($item_counter === 0) ? $reason : '';
+        $item_counter = 0;
+        foreach ($items as $item) {
+            // Validate item data - Added unit validation
+            if (!isset($item['id']) || !isset($item['name']) || !isset($item['quantity']) || !isset($item['unit'])) {
+                throw new Exception('Invalid item data structure - missing required fields (id, name, quantity, or unit)');
+            }
+
+            // Only include remarks for the first item to avoid duplication
+            $item_remarks = ($item_counter === 0) ? $reason : '';
+
+            mysqli_stmt_bind_param(
+                $item_stmt,
+                "isissis",
+                $office_id,       // i - integer
+                $username,        // s - string
+                $item['id'],      // i - string
+                $item['name'],    // s - string
+                $item['unit'],    // s - string (added unit)
+                $item['quantity'], // i - integer
+                $item_remarks     // s - string (only for first item)
+            );
+
+            if (!mysqli_stmt_execute($item_stmt)) {
+                throw new Exception('Failed to insert request item: ' . mysqli_stmt_error($item_stmt));
+            }
+
+            $item_counter++;
+        }
+
+        mysqli_stmt_close($item_stmt);
+    } else {
+        // Insert remarks-only request
+        $remarks_query = "INSERT INTO items_requested (
+            office_id,
+            office_name,
+            item_id,
+            item_name,
+            unit,
+            quantity,
+            approved_quantity,
+            date_requested,
+            remarks,
+            status,
+            uploaded
+        ) VALUES (?, ?, NULL, NULL, NULL, 0, 0, NOW(), ?, 'Pending', 0)";
+
+        $remarks_stmt = mysqli_prepare($conn, $remarks_query);
+
+        if (!$remarks_stmt) {
+            throw new Exception('Failed to prepare remarks query: ' . mysqli_error($conn));
+        }
 
         mysqli_stmt_bind_param(
-            $item_stmt,
-            "isissis",
+            $remarks_stmt,
+            "iss",
             $office_id,       // i - integer
             $username,        // s - string
-            $item['id'],      // i - string
-            $item['name'],    // s - string
-            $item['unit'],    // s - string (added unit)
-            $item['quantity'], // i - integer
-            $item_remarks     // s - string (only for first item)
+            $reason           // s - string (remarks only)
         );
 
-        if (!mysqli_stmt_execute($item_stmt)) {
-            throw new Exception('Failed to insert request item: ' . mysqli_stmt_error($item_stmt));
+        if (!mysqli_stmt_execute($remarks_stmt)) {
+            throw new Exception('Failed to insert remarks-only request: ' . mysqli_stmt_error($remarks_stmt));
         }
 
-        $item_counter++;
+        mysqli_stmt_close($remarks_stmt);
     }
-
-    mysqli_stmt_close($item_stmt);
 
     // Commit transaction
     mysqli_commit($conn);

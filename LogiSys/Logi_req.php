@@ -178,7 +178,7 @@ $inventory_result = mysqli_query($conn, $inventory_query);
                             <!-- More items... -->
                         </div>
 
-                        <div class="mt-3" id="requestActions" style="display: none;">
+                        <div class="mt-3" id="requestActions">
                             <hr class="border-light">
                             <div class="form-group">
                                 <label for="requestReason" class="text-dark">Remarks <span class="text-muted">(Optional)</span>:</label>

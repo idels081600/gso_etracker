@@ -40,11 +40,12 @@ function removeFromRequest(itemId) {
 function updateRequestDisplay() {
   const container = document.getElementById("requestItems");
   const actions = document.getElementById("requestActions");
+  const remarksField = document.getElementById("requestRemarks");
 
   if (requestItems.length === 0) {
     container.innerHTML =
       '<p class="text-muted text-center">No items selected yet</p>';
-    actions.style.display = "none";
+    actions.style.display = "block"; // Ensure actions (including remarks) are always visible
   } else {
     let html = "";
     requestItems.forEach((item) => {
@@ -64,6 +65,11 @@ function updateRequestDisplay() {
     });
     container.innerHTML = html;
     actions.style.display = "block";
+  }
+
+  // Ensure remarks field is always visible if it exists
+  if (remarksField) {
+    remarksField.style.display = "block";
   }
 }
 
@@ -109,13 +115,12 @@ function showBootstrapToast(message, type = 'success') {
   toast.show();
 }
 function submitRequest() {
-  if (requestItems.length === 0) {
-    showBootstrapToast("Please add items to your request", "warning");
+  const reason = document.getElementById("requestReason").value;
+
+  if (!reason.trim() && requestItems.length === 0) {
+    showBootstrapToast("Please add items to your request or provide remarks", "warning");
     return;
   }
-
-  const reason = document.getElementById("requestReason").value;
-  // Remarks are now optional, so no required check
 
   // Prepare request data
   const requestData = {
@@ -171,10 +176,11 @@ function submitRequest() {
         console.log("Parsed response data:", data);
 
         if (data.success) {
-          showBootstrapToast(
-            "Request submitted successfully! Your request has been sent to the administrator.",
-            "success"
-          );
+          const message =
+            data.items_count > 0
+              ? "Request submitted successfully! Your request has been sent to the administrator."
+              : "Remarks submitted successfully!";
+          showBootstrapToast(message, "success");
           clearRequest();
         } else {
           showBootstrapToast("Error: " + data.message, "error");

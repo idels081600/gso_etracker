@@ -651,7 +651,7 @@ if (isset($requests_stmt)) {
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addItemModalLabel">Add New Item</h5>
+                    <h5 class="modal-title" id="addItemModalLabel">Add New Items</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -665,7 +665,7 @@ if (isset($requests_stmt)) {
                                 <tr>
                                     <th>Item Name</th>
                                     <th>Unit</th>
-                                    <th>Actions</th>
+                                    <th>Quantity</th>
                                 </tr>
                             </thead>
                             <tbody id="itemTable">
@@ -692,15 +692,7 @@ if (isset($requests_stmt)) {
                                             echo "<tr>";
                                             echo "    <td>{$itemName}</td>";
                                             echo "    <td>{$unit}</td>";
-                                            echo "    <td>";
-                                            echo "        <button class='btn btn-sm btn-success' ";
-                                            echo "                onclick=\"openItemModal('{$itemNo}', '{$itemName}', '{$unit}')\" ";
-                                            echo "                title='Select this item' ";
-                                            echo "                data-bs-toggle='modal' ";
-                                            echo "                data-bs-target='#itemSelectionModal'>";
-                                            echo "            <i class='fas fa-check'></i> Select";
-                                            echo "        </button>";
-                                            echo "    </td>";
+                                            echo "    <td><input type='number' class='form-control item-quantity' data-item-no='{$itemNo}' data-item-name='{$itemName}' data-unit='{$unit}' min='1' placeholder='Enter quantity'></td>";
                                             echo "</tr>";
                                         }
                                     } else {
@@ -738,7 +730,7 @@ if (isset($requests_stmt)) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary">Save changes</button>
+                    <button type="button" class="btn btn-success" onclick="addAllItemsWithQuantity()">Add All Items</button>
                 </div>
             </div>
         </div>
@@ -774,82 +766,72 @@ if (isset($requests_stmt)) {
             </div>
         </div>
     </div>
-    <div class="modal fade" id="itemSelectionModal" tabindex="-1" aria-labelledby="itemSelectionModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade" id="allItemsModal" tabindex="-1" aria-labelledby="allItemsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="itemSelectionModalLabel">
-                        <i class="fas fa-plus-circle"></i> Add Item to Request
+                <form id="itemSelectionForm"> <!-- Added form element -->
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="allItemsModalLabel">
+                        <i class="fas fa-list-check"></i> Process All Selected Items
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <form id="itemSelectionForm">
-                        <!-- Hidden fields for item data -->
-                        <input type="hidden" id="selectedItemNo" name="item_no">
-                        <input type="hidden" id="selectedItemName" name="item_name">
-                        <input type="hidden" id="selectedUnit" name="unit">
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Instructions:</strong> Review and configure each item below. All fields marked with <span class="text-danger">*</span> are required.
+                    </div>
 
-                        <!-- Item Information Display -->
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <div class="alert alert-info">
-                                    <h6 class="mb-2"><i class="fas fa-info-circle"></i> Selected Item:</h6>
-                                    <p class="mb-1"><strong>Item:</strong> <span id="displayItemName"></span></p>
-                                    <p class="mb-0"><strong>Unit:</strong> <span id="displayUnit"></span></p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Office Selection -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="officeSelect" class="form-label">
-                                    <i class="fas fa-building"></i> Office/Department <span class="text-danger">*</span>
-                                </label>
-                                <select class="form-select" id="officeSelect" name="office" required>
-                                    <option value="">Loading offices...</option>
-                                </select>
-                                <div class="invalid-feedback">
-                                    Please select an office/department.
-                                </div>
-                            </div>
-                            <!-- Approved Quantity -->
-                            <div class="col-md-6">
-                                <label for="approvedQuantity" class="form-label">
-                                    <i class="fas fa-calculator"></i> Approved Quantity <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="approved_Quantity" name="approved_quantity" min="0" step="1"
-                                        placeholder="Enter quantity" required>
-                                    <span class="input-group-text" id="unitDisplay"></span>
-                                </div>
-                                <div class="invalid-feedback">
-                                    Please enter a valid quantity (minimum 1).
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Date Received -->
-                        <div class="mb-3">
-                            <label for="dateReceived" class="form-label">
-                                <i class="fas fa-calendar-alt"></i> Date Received <span class="text-danger">*</span>
+                    <!-- Common fields for all items -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="fas fa-building"></i> Office/Department for All Items <span class="text-danger">*</span>
                             </label>
-                            <input type="date" class="form-control" id="dateReceived" name="date_received" required>
-                            <div class="invalid-feedback">
-                                Please select the date the item was received.
-                            </div>
+                            <select class="form-select" id="commonOfficeSelect" required>
+                                <option value="">Select Office/Department</option>
+                            </select>
+                            <div class="form-text">This office will be applied to all items.</div>
                         </div>
-                    </form>
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="fas fa-calendar-alt"></i> Date Received for All Items <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="commonDateReceived" required>
+                            <div class="form-text">This date will be applied to all items.</div>
+                        </div>
+                    </div>
+
+                    <!-- Items Container - This will be populated dynamically -->
+                    <div id="allItemsContainer">
+                        <!-- Items will be dynamically inserted here by JavaScript -->
+                    </div>
+
+                    <!-- Progress indicator -->
+                    <div id="processingProgress" class="mt-3" style="display: none;">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <span>Processing items...</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
+                    <div class="me-auto">
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i>
+                            Items: <span id="itemCount">0</span>
+                        </small>
+                    </div>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times"></i> Cancel
                     </button>
-                    <button type="button" class="btn btn-success" onclick="confirmItemSelection()">
-                        <i class="fas fa-check"></i> Add to Request
+                    <button type="button" class="btn btn-primary" onclick="confirmAllItemsSelection()">
+                        <i class="fas fa-check-double"></i> Process All Items
                     </button>
                 </div>
+                </form>
             </div>
         </div>
     </div>

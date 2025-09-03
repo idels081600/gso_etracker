@@ -236,7 +236,7 @@ function clearOfficeFilter() {
   if (tableHeader) {
     const currentDate =
       '<?= $date_filter ? date("F j, Y", strtotime($date_filter)) : "" ?>';
-    const dateText = currentDate ? ` - ${currentDate}` : "";
+    const dateText = currentDate ? ` - ${dateText}` : "";
 
     tableHeader.innerHTML = `
             <i class="fas fa-list text-secondary"></i> Requests to Review${dateText}
@@ -578,35 +578,696 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(performSearch, 10);
   });
 });
+
+let itemsToAdd = [];
+let currentItemIndex = 0;
+
+// ORIGINAL FUNCTION: Process items one by one
+function addAllItemsWithQuantity() {
+    const rows = document.querySelectorAll('#itemTable tr');
+    itemsToAdd = []; // Reset the items array
+
+    rows.forEach(row => {
+        const quantityInput = row.querySelector('.item-quantity');
+        if (quantityInput && quantityInput.value > 0) {
+            itemsToAdd.push({
+                itemNo: quantityInput.dataset.itemNo,
+                itemName: quantityInput.dataset.itemName,
+                unit: quantityInput.dataset.unit,
+                quantity: quantityInput.value
+            });
+        }
+    });
+
+    console.log('Items to be processed:', itemsToAdd); // Log the items being passed
+
+    if (itemsToAdd.length === 0) {
+        alert('No items with quantity to add.');
+        return;
+    }
+
+    currentItemIndex = 0; // Start with the first item
+
+    // Debugging: Log available modals
+    const availableModals = Array.from(document.querySelectorAll('.modal')).map(modal => modal.id);
+    console.log('Available modals:', availableModals);
+
+    // Check if the modal exists
+    const modalElement = document.getElementById("allItemsModal");
+    if (!modalElement) {
+        alert('Error: Modal with ID "allItemsModal" not found. Available modals: ' + availableModals.join(', '));
+        return;
+    }
+
+    openItemModalForCurrentItem();
+}
+
+// NEW FUNCTION: Display all items in a single modal (Option 2)
+function addAllItemsInSingleModal() {
+    const rows = document.querySelectorAll('#itemTable tr');
+    itemsToAdd = []; // Reset the items array
+
+    rows.forEach(row => {
+        const quantityInput = row.querySelector('.item-quantity');
+        if (quantityInput && quantityInput.value > 0) {
+            itemsToAdd.push({
+                itemNo: quantityInput.dataset.itemNo,
+                itemName: quantityInput.dataset.itemName,
+                unit: quantityInput.dataset.unit,
+                quantity: quantityInput.value
+            });
+        }
+    });
+
+    console.log('Items to be processed:', itemsToAdd);
+
+    if (itemsToAdd.length === 0) {
+        alert('No items with quantity to add.');
+        return;
+    }
+
+    openAllItemsModal();
+}
+
+// Function to open modal with all items
+function openAllItemsModal() {
+    if (itemsToAdd.length === 0) {
+        alert('No items to process.');
+        return;
+    }
+
+    // Get or create the items container in the modal
+    const itemsContainer = document.getElementById("allItemsContainer");
+    if (!itemsContainer) {
+        console.error("Items container not found. Make sure you have a div with id 'allItemsContainer' in your modal.");
+        alert("Error: Items container not found in modal.");
+        return;
+    }
+
+    // Clear existing content
+    itemsContainer.innerHTML = '';
+
+    // Update item count in modal footer
+    const itemCountElement = document.getElementById("itemCount");
+    if (itemCountElement) {
+        itemCountElement.textContent = itemsToAdd.length;
+    }
+
+    // Create form sections for each item
+    itemsToAdd.forEach((item, index) => {
+        const itemSection = document.createElement('div');
+        itemSection.className = 'border rounded p-3 mb-3 item-section';
+        itemSection.innerHTML = `
+            <div class="row">
+                <div class="col-md-5">
+                    <h6 class="text-primary mb-2">
+                        <i class="fas fa-box"></i> ${item.itemName}
+                        <span class="badge bg-secondary ms-2">#${index + 1}</span>
+                    </h6>
+                    <p class="text-muted mb-2">
+                        <strong>Item No:</strong> ${item.itemNo}
+                    </p>
+                    <p class="text-muted mb-2">
+                        <strong>Requested Quantity:</strong> ${item.quantity} ${item.unit}
+                    </p>
+                    <input type="hidden" class="item-no" value="${item.itemNo}">
+                    <input type="hidden" class="item-name" value="${item.itemName}">
+                    <input type="hidden" class="item-unit" value="${item.unit}">
+                    <input type="hidden" class="item-requested-qty" value="${item.quantity}">
+                </div>
+                <div class="col-md-7">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-building"></i> Office/Department <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select office-select" required>
+                                <option value="">Select Office/Department</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select an office/department.
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-calculator"></i> Approved Quantity <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" 
+                                       class="form-control approved-quantity" 
+                                       min="1" 
+                                       max="${item.quantity}"
+                                       value="${item.quantity}" 
+                                       required>
+                                <span class="input-group-text">${item.unit}</span>
+                            </div>
+                            <div class="invalid-feedback">
+                                Please enter a valid quantity (1-${item.quantity}).
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-calendar-alt"></i> Date Received <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control date-received" required>
+                            <div class="invalid-feedback">
+                                Please select the date received.
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-comment"></i> Remarks
+                            </label>
+                            <textarea class="form-control item-remarks" 
+                                      rows="2" 
+                                      placeholder="Optional remarks for this item"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        itemsContainer.appendChild(itemSection);
+    });
+
+    // Load offices for all office selects
+    loadOfficesForAllItems();
+
+    // Set default date to today for all date inputs
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelectorAll("#allItemsContainer .date-received").forEach(dateInput => {
+        dateInput.value = today;
+    });
+
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById("allItemsModal"));
+    modal.show();
+}
+
+// Function to load offices for all office selects in the multi-item modal
+function loadOfficesForAllItems() {
+    const officeSelects = document.querySelectorAll("#allItemsContainer .office-select");
+
+    // Show loading for all selects
+    officeSelects.forEach(select => {
+        select.innerHTML = '<option value="">Loading offices...</option>';
+    });
+
+    // Fetch offices
+    fetch("get_offices.php")
+        .then((response) => response.json())
+        .then((data) => {
+            const optionsHTML = '<option value="">Select Office/Department</option>' +
+                (data.success && data.offices.length > 0 
+                    ? data.offices.map(office => `<option value="${office}">${office}</option>`).join('')
+                    : '<option value="">No offices found</option>');
+
+            // Update all office selects
+            officeSelects.forEach(select => {
+                select.innerHTML = optionsHTML;
+            });
+        })
+        .catch((error) => {
+            console.error("Error loading offices:", error);
+            officeSelects.forEach(select => {
+                select.innerHTML = '<option value="">Error loading offices</option>';
+            });
+        });
+}
+
+// Function to confirm all items selection
+function confirmAllItemsSelection(itemsToAdd = null) {
+    console.log('confirmAllItemsSelection called');
+    console.log('itemsToAdd parameter:', itemsToAdd);
+
+    // If itemsToAdd is provided, use it directly
+    if (itemsToAdd && Array.isArray(itemsToAdd) && itemsToAdd.length > 0) {
+        console.log('Using itemsToAdd parameter directly');
+        console.log('itemsToAdd.length:', itemsToAdd.length);
+
+        // Get common fields
+        const commonOffice = document.getElementById("commonOfficeSelect")?.value;
+        const commonDate = document.getElementById("commonDateReceived")?.value;
+
+        console.log('Common office:', commonOffice);
+        console.log('Common date:', commonDate);
+
+        // Validate common fields if they exist
+        if (document.getElementById("commonOfficeSelect") && !commonOffice) {
+            alert("Please select an office/department for all items.");
+            document.getElementById("commonOfficeSelect").focus();
+            return;
+        }
+
+        if (document.getElementById("commonDateReceived") && !commonDate) {
+            alert("Please select a date received for all items.");
+            document.getElementById("commonDateReceived").focus();
+            return;
+        }
+
+        // Prepare items data with common fields
+        const allItemsData = itemsToAdd.map(item => ({
+            itemNo: item.itemNo,
+            itemName: item.itemName,
+            unit: item.unit,
+            requestedQuantity: parseInt(item.quantity),
+            office: commonOffice || item.office || '',
+            approvedQuantity: parseInt(item.quantity), // Default to requested quantity
+            dateReceived: commonDate || new Date().toISOString().split('T')[0],
+            remarks: item.remarks || ''
+        }));
+
+        console.log('Final allItemsData from itemsToAdd:', allItemsData);
+
+        // Show summary before confirmation
+        const summary = allItemsData.map((item, index) =>
+            `${index + 1}. ${item.itemName} - ${item.approvedQuantity} ${item.unit} to ${item.office}`
+        ).join('\n');
+
+        if (confirm(`Are you sure you want to process these ${allItemsData.length} items?\n\n${summary}`)) {
+            processAllItemsData(allItemsData);
+        }
+        return;
+    }
+
+    // Fallback to original DOM-based approach
+    const itemSections = document.querySelectorAll(".item-section");
+    const allItemsData = [];
+    let isValid = true;
+
+    console.log('Using DOM-based approach');
+    console.log('Number of item sections found:', itemSections.length);
+    console.log('Initial allItemsData:', allItemsData);
+
+    // Validate and collect data from all item sections
+    itemSections.forEach((section, index) => {
+        console.log(`Processing item section ${index + 1}:`, section);
+
+        const itemNo = section.querySelector(".item-no")?.value;
+        const itemName = section.querySelector(".item-name")?.value;
+        const unit = section.querySelector(".item-unit")?.value;
+        const requestedQty = section.querySelector(".item-requested-qty")?.value;
+        const officeSelect = section.querySelector(".office-select");
+        const approvedQuantity = section.querySelector(".approved-quantity");
+        const dateReceived = section.querySelector(".date-received");
+        const remarks = section.querySelector(".item-remarks")?.value;
+
+        console.log(`Item ${index + 1} data:`, {
+            itemNo,
+            itemName,
+            unit,
+            requestedQty,
+            officeSelect: officeSelect ? officeSelect.value : 'NOT FOUND',
+            approvedQuantity: approvedQuantity ? approvedQuantity.value : 'NOT FOUND',
+            dateReceived: dateReceived ? dateReceived.value : 'NOT FOUND',
+            remarks
+        });
+
+        // Validation for office selection
+        if (!officeSelect?.value) {
+            if (officeSelect) officeSelect.classList.add("is-invalid");
+            isValid = false;
+            console.log(`Item ${index + 1}: Office validation failed`);
+        } else {
+            if (officeSelect) officeSelect.classList.remove("is-invalid");
+        }
+
+        // Validation for approved quantity
+        if (!approvedQuantity?.value || approvedQuantity.value <= 0) {
+            if (approvedQuantity) approvedQuantity.classList.add("is-invalid");
+            isValid = false;
+            console.log(`Item ${index + 1}: Approved quantity validation failed`);
+        } else {
+            if (approvedQuantity) approvedQuantity.classList.remove("is-invalid");
+        }
+
+        // Validation for date received
+        if (!dateReceived?.value) {
+            if (dateReceived) dateReceived.classList.add("is-invalid");
+            isValid = false;
+            console.log(`Item ${index + 1}: Date received validation failed`);
+        } else {
+            if (dateReceived) dateReceived.classList.remove("is-invalid");
+        }
+
+        // Collect data if valid
+        const itemData = {
+            itemNo: itemNo || '',
+            itemName: itemName || '',
+            unit: unit || '',
+            requestedQuantity: parseInt(requestedQty) || 0,
+            office: officeSelect?.value || '',
+            approvedQuantity: parseInt(approvedQuantity?.value) || 0,
+            dateReceived: dateReceived?.value || '',
+            remarks: remarks || ''
+        };
+
+        console.log(`Item ${index + 1} data to be pushed:`, itemData);
+        allItemsData.push(itemData);
+        console.log(`allItemsData after pushing item ${index + 1}:`, allItemsData);
+    });
+
+    console.log('Final validation result - isValid:', isValid);
+    console.log('Final allItemsData:', allItemsData);
+    console.log('allItemsData.length:', allItemsData.length);
+
+    if (!isValid) {
+        console.log('Validation failed, showing error message');
+        alert("Please fill in all required fields for all items.");
+        // Scroll to first invalid field
+        const firstInvalid = document.querySelector(".item-section .is-invalid");
+        if (firstInvalid) {
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstInvalid.focus();
+        }
+        return;
+    }
+
+    if (allItemsData.length === 0) {
+        console.log('allItemsData is empty, showing no items message');
+        alert("No valid items to process.");
+        return;
+    }
+
+    console.log('Validation passed, proceeding with processing');
+
+    // Show summary before confirmation
+    const summary = allItemsData.map((item, index) =>
+        `${index + 1}. ${item.itemName} - ${item.approvedQuantity} ${item.unit} to ${item.office}`
+    ).join('\n');
+
+    if (confirm(`Are you sure you want to process these ${allItemsData.length} items?\n\n${summary}`)) {
+        processAllItemsData(allItemsData);
+    }
+}
+
+// Function to process all items data
+function processAllItemsData(allItemsData) {
+    console.log("Processing all items:", allItemsData);
+
+    // Show loading state
+    const submitButton = document.querySelector("#allItemsModal .btn-primary");
+    const processingProgress = document.getElementById("processingProgress");
+    let originalText = '';
+
+    if (submitButton) {
+        originalText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    }
+
+    if (processingProgress) {
+        processingProgress.style.display = 'block';
+    }
+
+    // Get common fields
+    const commonOffice = document.getElementById("commonOfficeSelect")?.value;
+    const commonDate = document.getElementById("commonDateReceived")?.value;
+
+    // Prepare items data with common fields
+    const itemsToProcess = allItemsData.map(item => ({
+        itemNo: item.itemNo,
+        itemName: item.itemName,
+        requestedQty: item.requestedQuantity,
+        unit: item.unit,
+        office: commonOffice || item.office,
+        dateReceived: commonDate || item.dateReceived
+    }));
+    console.log("Items to process with common fields:", itemsToProcess);
+    // Send all items to server
+    fetch('process_all_items.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            items: itemsToProcess
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log("Server response:", result);
+
+        if (result.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById("allItemsModal"));
+            if (modal) {
+                modal.hide();
+            }
+
+            // Show success notification
+            showNotification(`Successfully processed ${allItemsData.length} items!`, "success");
+
+            // Reload page after delay
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            alert("Error: " + (result.message || "Failed to process items"));
+            // Re-enable button
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            }
+            if (processingProgress) {
+                processingProgress.style.display = 'none';
+            }
+        }
+    })
+    .catch(error => {
+        console.error("Error processing items:", error);
+        alert("An error occurred while processing the items.");
+        // Re-enable button
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalText;
+        }
+        if (processingProgress) {
+            processingProgress.style.display = 'none';
+        }
+    });
+}
+
+function openItemModalForCurrentItem() {
+    if (itemsToAdd.length === 0) {
+        alert('No items to process.');
+        return;
+    }
+
+    console.log('Opening modal for items:', itemsToAdd); // Log all items to be processed
+
+    // Set default date to today for the common date field
+    const today = new Date().toISOString().split('T')[0];
+    const commonDateReceived = document.getElementById("commonDateReceived");
+    if (commonDateReceived) {
+        commonDateReceived.value = today;
+    }
+
+    // Load offices for the common office select
+    const commonOfficeSelect = document.getElementById("commonOfficeSelect");
+    if (commonOfficeSelect) {
+        // Show loading
+        commonOfficeSelect.innerHTML = '<option value="">Loading offices...</option>';
+
+        // Fetch offices
+        fetch("get_offices.php")
+            .then((response) => response.json())
+            .then((data) => {
+                const optionsHTML = '<option value="">Select Office/Department</option>' +
+                    (data.success && data.offices.length > 0 
+                        ? data.offices.map(office => `<option value="${office}">${office}</option>`).join('')
+                        : '<option value="">No offices found</option>');
+                commonOfficeSelect.innerHTML = optionsHTML;
+            })
+            .catch((error) => {
+                console.error("Error loading offices:", error);
+                commonOfficeSelect.innerHTML = '<option value="">Error loading offices</option>';
+            });
+
+        // Add event listener to update all items when common office changes
+        commonOfficeSelect.addEventListener('change', function() {
+            const selectedOffice = this.value;
+            const itemSections = document.querySelectorAll(".item-section");
+            itemSections.forEach(section => {
+                const officeSelect = section.querySelector(".office-select");
+                if (officeSelect) {
+                    officeSelect.value = selectedOffice;
+                }
+            });
+        });
+    }
+
+    // Add event listener to update all items when common date changes
+    const commonDateInput = document.getElementById("commonDateReceived");
+    if (commonDateInput) {
+        commonDateInput.addEventListener('change', function() {
+            const selectedDate = this.value;
+            const itemSections = document.querySelectorAll(".item-section");
+            itemSections.forEach(section => {
+                const dateInput = section.querySelector(".date-received");
+                if (dateInput) {
+                    dateInput.value = selectedDate;
+                }
+            });
+        });
+    }
+
+    // Get the allItemsContainer and clear it
+    const allItemsContainer = document.getElementById("allItemsContainer");
+    if (allItemsContainer) {
+        allItemsContainer.innerHTML = '';
+        
+        // Create sections for all items
+        itemsToAdd.forEach((item, index) => {
+            const itemSection = document.createElement('div');
+            itemSection.className = 'border rounded p-3 mb-3';
+            itemSection.innerHTML = `
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-primary mb-2">
+                            <i class="fas fa-box"></i> ${item.itemName}
+                            <span class="badge bg-secondary ms-2">#${index + 1}</span>
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p class="text-muted mb-2">
+                                    <strong>Item No:</strong> ${item.itemNo}
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="text-muted mb-2">
+                                    <strong>Quantity:</strong> ${item.quantity}
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="text-muted mb-2">
+                                    <strong>Unit:</strong> ${item.unit}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            allItemsContainer.appendChild(itemSection);
+        });
+
+        // Update item count in footer
+        const itemCount = document.getElementById("itemCount");
+        if (itemCount) {
+            itemCount.textContent = itemsToAdd.length;
+        }
+    }
+
+    // Show the modal
+    const modalElement = document.getElementById("allItemsModal");
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+
+    // Update the confirm button to pass itemsToAdd
+    const confirmButton = document.querySelector("#allItemsModal .btn-primary");
+    if (confirmButton) {
+        confirmButton.onclick = function() {
+            confirmAllItemsSelection(itemsToAdd);
+        };
+    }
+}
+
+function confirmItemSelection() {
+    const form = document.getElementById("itemSelectionForm");
+
+    // Validate form
+    if (!form.checkValidity()) {
+        form.classList.add("was-validated");
+        return;
+    }
+
+    // Get form data
+    const itemNo = document.getElementById("selectedItemNo").value;
+    const itemName = document.getElementById("selectedItemName").value;
+    const unit = document.getElementById("selectedUnit").value;
+    const approvedQuantity = document.getElementById("approved_Quantity").value;
+
+    // Check if quantity has a value
+    if (!approvedQuantity || approvedQuantity <= 0) {
+        alert("Please enter a valid quantity.");
+        return;
+    }
+
+    const formData = {
+        itemNo,
+        itemName,
+        unit,
+        approvedQuantity,
+    };
+
+    console.log("Form Data:", formData); // Debug: Log the form data
+
+    // Process the selection
+    processItemSelection(formData);
+
+    // Move to the next item
+    currentItemIndex++;
+    openItemModalForCurrentItem();
+}
+
 function openItemModal(itemNo, itemName, unit) {
-  // Set hidden field values
-  document.getElementById("selectedItemNo").value = itemNo;
-  document.getElementById("selectedItemName").value = itemName;
-  document.getElementById("selectedUnit").value = unit;
+    // Add the item to the queue
+    itemsQueue.push({ itemNo, itemName, unit });
 
-  // Display item information
-  document.getElementById("displayItemName").textContent = itemName;
-  document.getElementById("displayUnit").textContent = unit;
-  document.getElementById("unitDisplay").textContent = unit;
+    // If the modal is not already open, process the next item
+    if (itemsQueue.length === 1) {
+        processNextItemInQueue();
+    }
+}
 
-  // Reset form
-  const form = document.getElementById("itemSelectionForm");
-  form.reset();
-  form.classList.remove("was-validated");
+function processNextItemInQueue() {
+    if (itemsQueue.length === 0) {
+        return; // No more items to process
+    }
 
-  // Reset hidden fields after form reset
-  document.getElementById("selectedItemNo").value = itemNo;
-  document.getElementById("selectedItemName").value = itemName;
-  document.getElementById("selectedUnit").value = unit;
+    const currentItem = itemsQueue[0]; // Get the first item in the queue
 
-  // Load offices via AJAX
-  loadOffices();
+    // Set hidden field values
+    document.getElementById("selectedItemNo").value = currentItem.itemNo;
+    document.getElementById("selectedItemName").value = currentItem.itemName;
+    document.getElementById("selectedUnit").value = currentItem.unit;
 
-  // Show the modal
-  const modal = new bootstrap.Modal(
-    document.getElementById("itemSelectionModal")
-  );
-  modal.show();
+    // Display item information
+    document.getElementById("displayItemName").textContent = currentItem.itemName;
+    document.getElementById("displayUnit").textContent = currentItem.unit;
+    document.getElementById("unitDisplay").textContent = currentItem.unit;
+
+    // Reset form
+    const form = document.getElementById("itemSelectionForm");
+    form.reset();
+    form.classList.remove("was-validated");
+
+    // Reset hidden fields after form reset
+    document.getElementById("selectedItemNo").value = currentItem.itemNo;
+    document.getElementById("selectedItemName").value = currentItem.itemName;
+    document.getElementById("selectedUnit").value = currentItem.unit;
+
+    // Load offices via AJAX
+    loadOffices();
+
+    // Show the modal
+    const modal = new bootstrap.Modal(
+        document.getElementById("allItemsModal")
+    );
+    modal.show();
+
+    // Add an event listener to handle when the modal is hidden
+    const modalElement = document.getElementById("allItemsModal");
+    modalElement.addEventListener("hidden.bs.modal", handleModalHidden, { once: true });
+}
+
+function handleModalHidden() {
+    // Remove the processed item from the queue
+    itemsQueue.shift();
+
+    // Process the next item in the queue
+    processNextItemInQueue();
 }
 
 function loadOffices() {
@@ -638,10 +1299,15 @@ function loadOffices() {
       officeSelect.innerHTML =
         '<option value="">Error loading offices</option>';
     });
-}function confirmItemSelection() {
+}
+
+function confirmItemSelection() {
   const form = document.getElementById("itemSelectionForm");
-  const officeSelect = document.getElementById("officeSelect");
-  const dateReceivedInput = document.getElementById("dateReceived");
+  
+  if (!form) {
+    alert("Error: Form not found.");
+    return;
+  }
 
   // Validate form
   if (!form.checkValidity()) {
@@ -649,63 +1315,76 @@ function loadOffices() {
     return;
   }
 
+  // Get form elements with null checks
+  const selectedItemNo = document.getElementById("selectedItemNo");
+  const selectedItemName = document.getElementById("selectedItemName");
+  const selectedUnit = document.getElementById("selectedUnit");
+  const approvedQuantityElement = document.getElementById("approved_Quantity");
+
+  if (!selectedItemNo || !selectedItemName || !selectedUnit || !approvedQuantityElement) {
+    console.error("Required form elements not found:", {
+      selectedItemNo: !!selectedItemNo,
+      selectedItemName: !!selectedItemName,
+      selectedUnit: !!selectedUnit,
+      approvedQuantityElement: !!approvedQuantityElement
+    });
+    alert("Error: Required form elements not found.");
+    return;
+  }
+
   // Get form data
+  const itemNo = selectedItemNo.value;
+  const itemName = selectedItemName.value;
+  const unit = selectedUnit.value;
+  const approvedQuantity = approvedQuantityElement.value;
+
+  // Check if quantity has a value
+  if (!approvedQuantity || approvedQuantity <= 0) {
+    alert("Please enter a valid quantity.");
+    return;
+  }
+
   const formData = {
-    itemNo: document.getElementById("selectedItemNo").value,
-    itemName: document.getElementById("selectedItemName").value,
-    unit: document.getElementById("selectedUnit").value,
-    office: officeSelect.value,
-    approved_Quantity: document.getElementById("approved_Quantity").value,
-    dateReceived: dateReceivedInput.value,
+    itemNo,
+    itemName,
+    unit,
+    approvedQuantity,
   };
-   console.log("Form Data:", formData); // Debug: Log the form data
+
+  console.log("Form Data:", formData); // Debug: Log the form data
 
   // Process the selection
   processItemSelection(formData);
 
   // Close modal
-  const modal = bootstrap.Modal.getInstance(
-    document.getElementById("itemSelectionModal")
-  );
-  modal.hide();
+  const modalElement = document.getElementById("allItemsModal");
+  if (modalElement) {
+    const modal = bootstrap.Modal.getInstance(modalElement);
+    if (modal) {
+      modal.hide();
+    }
+  }
 }
 
 function processItemSelection(data) {
   // This function handles what happens after the user confirms the selection
-  // You can modify this based on your specific requirements
   console.log("Item selected:", data);
-  // Example: Add to a table, send to server, etc.
-  // You might want to:
-  // 1. Add the item to a request list
-  // 2. Send data to server via AJAX
-  // 3. Update UI to show selected items
 
-  // Show success message
-  alert(
-    `Item "${data.itemName}" added successfully!\nOffice: ${data.office}\nQuantity: ${data.approved_Quantity} ${data.unit}`
-  );
-  const formData = new URLSearchParams();
-    for (const key in data) {
-       formData.append(key, data[key]);
-    }
   // Example AJAX call (uncomment and modify as needed):
   fetch('process_item_selection.php', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body:  formData
+    body: new URLSearchParams(data)
   })
   .then(response => response.json())
   .then(result => {
-    if (result.success) {
-      window.location.reload();
-    } else {
-      alert('Error: ' + result.message);
-    }
+    console.log("Server response:", result);
+    alert(`Item "${data.itemName}" added successfully!`);
   })
   .catch(error => {
-    console.error('Error:', error);
-    alert('An error occurred while processing the request.');
+    console.error("Error processing item selection:", error);
+    alert("An error occurred while processing the item selection.");
   });
 }
