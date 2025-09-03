@@ -1187,7 +1187,8 @@ if (isset($_POST['save_data'])) {
                                     <th scope="col">Retrieval Date</th>
                                     <th scope="col">Name</th>
                                     <th scope="col">Purpose</th>
-                                    <th scope="col">Location</th>
+                                    <th scope="col">Barangay</th>
+                                    <th scope="col">Address</th>
                                     <th scope="col">Action</th>
                                 </tr>
                             </thead>
@@ -1245,6 +1246,7 @@ if (isset($_POST['save_data'])) {
                                 <td>${item.name || 'N/A'}</td>
                                 <td>${item.purpose || 'N/A'}</td>
                                 <td>${item.location || 'N/A'}</td>
+                                 <td>${item.address || 'N/A'}</td>
                                 <td>
                                     <button class="btn btn-warning btn-sm undoButton" data-tent-no="${item.id}" title="Undo Retrieved Status">
                                         <i class="fas fa-undo"></i> Undo
@@ -1254,7 +1256,7 @@ if (isset($_POST['save_data'])) {
                         `;
                     tbody.append(row);
                 });
-                
+
                 // Store the data for searching
                 retrievedTableData = data;
             },
@@ -1275,7 +1277,9 @@ if (isset($_POST['save_data'])) {
             $.ajax({
                 url: 'undo_retrieved_status.php',
                 type: 'POST',
-                data: { tent_Id: tentid },
+                data: {
+                    tent_Id: tentid
+                },
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
@@ -1308,7 +1312,7 @@ if (isset($_POST['save_data'])) {
     $('#retrievedDataSearch').on('input', function() {
         const searchTerm = $(this).val().toLowerCase().trim();
         const tbody = $('#retrievedDataTableBody');
-        
+
         if (!retrievedTableData || retrievedTableData.length === 0) {
             return;
         }
@@ -1320,12 +1324,12 @@ if (isset($_POST['save_data'])) {
         }
 
         // Filter the data
-        const filteredData = retrievedTableData.filter(item => 
+        const filteredData = retrievedTableData.filter(item =>
             (item.tent_no?.toString().toLowerCase().includes(searchTerm) ||
-            item.retrieval_date?.toLowerCase().includes(searchTerm) ||
-            item.name?.toLowerCase().includes(searchTerm) ||
-            item.purpose?.toLowerCase().includes(searchTerm) ||
-            item.location?.toLowerCase().includes(searchTerm))
+                item.retrieval_date?.toLowerCase().includes(searchTerm) ||
+                item.name?.toLowerCase().includes(searchTerm) ||
+                item.purpose?.toLowerCase().includes(searchTerm) ||
+                item.location?.toLowerCase().includes(searchTerm))
         );
 
         displayData(filteredData);
@@ -1349,6 +1353,7 @@ if (isset($_POST['save_data'])) {
                     <td>${item.name || 'N/A'}</td>
                     <td>${item.purpose || 'N/A'}</td>
                     <td>${item.location || 'N/A'}</td>
+                    <td>${item.address || 'N/A'}</td>
                     <td>
                         <button class="btn btn-warning btn-sm undoButton" data-tent-no="${item.tent_id}" title="Undo Retrieved Status">
                             <i class="fas fa-undo"></i> Undo
