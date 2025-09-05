@@ -89,7 +89,7 @@ function getAllFuelRecords()
     }
 }
 
-// Function to get fuel records with filters (simplified for date-only filtering)
+// Function to get fuel records with filters (simplified for date-only filtering)// Function to get fuel records with filters (enhanced with text search)
 function getFuelRecordsWithFilters($filters = [])
 {
     global $conn;
@@ -110,6 +110,21 @@ function getFuelRecordsWithFilters($filters = [])
         if (!empty($filters['date_to'])) {
             $sql .= " AND date <= ?";
             $params[] = $filters['date_to'];
+            $types .= "s";
+        }
+
+        // Add text search filter if provided
+        if (!empty($filters['search'])) {
+            $sql .= " AND (office LIKE ? OR vehicle LIKE ? OR driver LIKE ? OR plate_no LIKE ? OR purpose LIKE ? OR remarks LIKE ?)";
+            $searchTerm = "%" . $filters['search'] . "%";
+            $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+            $types .= "ssssss";
+        }
+
+        // Add fuel type filter if provided
+        if (!empty($filters['fuel_type'])) {
+            $sql .= " AND fuel_type = ?";
+            $params[] = $filters['fuel_type'];
             $types .= "s";
         }
 
@@ -152,10 +167,6 @@ function getFuelRecordsWithFilters($filters = [])
             'data' => $fuelRecords,
             'count' => count($fuelRecords),
             'filters_applied' => $filters,
-            'date_range' => [
-                'from' => $filters['date_from'] ?? null,
-                'to' => $filters['date_to'] ?? null
-            ],
             'message' => 'Fuel records retrieved successfully'
         ];
     } catch (Exception $e) {
@@ -237,7 +248,7 @@ function getFilteredFuelStatistics($filters = [])
                     MAX(date) as period_end
                 FROM fuel
                 WHERE fuel_type IS NOT NULL AND fuel_type != ''";
-        
+
         $params = [];
         $types = "";
 
@@ -322,12 +333,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         case 'filtered':
             $filters = [];
 
-            // Get filter parameters from GET request (date filters only)
-            if (isset($_GET['dateFilterStart']) && !empty($_GET['dateFilterStart'])) {
-                $filters['date_from'] = $_GET['dateFilterStart'];
+            // Get date filter parameters
+            if (isset($_GET['date_from']) && !empty($_GET['date_from'])) {
+                $filters['date_from'] = $_GET['date_from'];
             }
-            if (isset($_GET['dateFilterEnd']) && !empty($_GET['dateFilterEnd'])) {
-                $filters['date_to'] = $_GET['dateFilterEnd'];
+            if (isset($_GET['date_to']) && !empty($_GET['date_to'])) {
+                $filters['date_to'] = $_GET['date_to'];
+            }
+
+            // Get search parameter
+            if (isset($_GET['search']) && !empty($_GET['search'])) {
+                $filters['search'] = $_GET['search'];
+            }
+
+            // Get fuel type filter
+            if (isset($_GET['fuel_type']) && !empty($_GET['fuel_type'])) {
+                $filters['fuel_type'] = $_GET['fuel_type'];
             }
 
             $response = getFuelRecordsWithFilters($filters);
@@ -360,7 +381,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $result = $stmt->get_result();
                 $record = $result->fetch_assoc();
                 $stmt->close();
-                
+
                 if ($record) {
                     sendResponse(['success' => true, 'data' => $record]);
                 } else {
@@ -393,4 +414,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 if (isset($conn)) {
     mysqli_close($conn);
 }
-?>
