@@ -16,6 +16,11 @@ async function loadFuelRecords() {
   }
 }
 
+// Attach global functions to window object for inline onclick handlers
+window.viewRecord = viewRecord;
+window.editRecord = editRecord;
+window.deleteRecord = deleteRecord;
+
 function initializeTableCheckboxes() {
   const selectAllCheckbox = document.querySelector("#selectAll");
   const checkboxes = document.querySelectorAll(".row-checkbox");
@@ -231,12 +236,14 @@ function initializeActionButtons() {
   // Date Range Filter
   const dateFilterBtn = document.getElementById("dateFilterBtn");
   if (dateFilterBtn) {
+    dateFilterBtn.removeEventListener("click", handleDateFilter);
     dateFilterBtn.addEventListener("click", handleDateFilter);
   }
 
   // Filter Dropdown
   const filterItems = document.querySelectorAll(".dropdown-menu [data-filter]");
   filterItems.forEach((item) => {
+    item.removeEventListener("click", handleFilterClick);
     item.addEventListener("click", handleFilterClick);
   });
 
@@ -247,6 +254,7 @@ function initializeActionButtons() {
 
   [officeFilter, vehicleFilter, driverFilter].forEach((filter) => {
     if (filter) {
+      filter.removeEventListener("input", handleSearchFilters);
       filter.addEventListener("input", debounce(handleSearchFilters, 500));
     }
   });
@@ -254,6 +262,7 @@ function initializeActionButtons() {
   // Export Button
   const exportBtn = document.getElementById("exportBtn");
   if (exportBtn) {
+    exportBtn.removeEventListener("click", handleExportRecords);
     exportBtn.addEventListener("click", handleExportRecords);
   }
 
@@ -265,6 +274,47 @@ function initializeActionButtons() {
       showNotification("Records refreshed", "success");
     });
   }
+
+  // Initialize row action buttons
+  initializeRowActionButtons();
+}
+
+// New function to initialize row action buttons
+function initializeRowActionButtons() {
+  // View buttons
+  const viewButtons = document.querySelectorAll(".action-view");
+  viewButtons.forEach((button) => {
+    button.addEventListener("click", function(e) {
+      e.preventDefault();
+      const row = this.closest("tr");
+      const recordId = row.querySelector(".row-checkbox").value;
+      viewRecord(recordId);
+    });
+  });
+
+  // Edit buttons
+  const editButtons = document.querySelectorAll(".action-edit");
+  editButtons.forEach((button) => {
+    button.addEventListener("click", function(e) {
+      e.preventDefault();
+      const row = this.closest("tr");
+      const recordId = row.querySelector(".row-checkbox").value;
+      editRecord(recordId, row);
+    });
+  });
+
+  // Delete buttons
+  const deleteButtons = document.querySelectorAll(".action-delete");
+  deleteButtons.forEach((button) => {
+    button.addEventListener("click", function(e) {
+      e.preventDefault();
+      const row = this.closest("tr");
+      const recordId = row.querySelector(".row-checkbox").value;
+      if (confirm("Are you sure you want to delete this fuel record?")) {
+        deleteRecord(recordId, row);
+      }
+    });
+  });
 }
 
 function handleFilterClick(e) {
