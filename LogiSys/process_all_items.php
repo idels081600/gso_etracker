@@ -128,7 +128,7 @@ try {
         $office_id = $office_row['id'];
 
         // Insert item
-        mysqli_stmt_bind_param($insert_stmt, "sssisss",
+        mysqli_stmt_bind_param($insert_stmt, "ssssiss",
             $item['itemNo'],
             $item['itemName'],
             $item['requestedQty'],

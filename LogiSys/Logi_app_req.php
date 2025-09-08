@@ -827,7 +827,7 @@ if (isset($requests_stmt)) {
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times"></i> Cancel
                     </button>
-                    <button type="button" class="btn btn-primary" onclick="confirmAllItemsSelection()">
+                    <button type="button" class="btn btn-primary" onclick="confirmItemSelection()">
                         <i class="fas fa-check-double"></i> Process All Items
                     </button>
                 </div>

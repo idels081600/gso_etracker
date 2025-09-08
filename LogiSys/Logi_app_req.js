@@ -797,7 +797,7 @@ function loadOfficesForAllItems() {
 }
 
 // Function to confirm all items selection
-function confirmAllItemsSelection(itemsToAdd = null) {
+function confirmAllItemsSelection(itemsToAdd) {
     console.log('confirmAllItemsSelection called');
     console.log('itemsToAdd parameter:', itemsToAdd);
 
@@ -1371,7 +1371,7 @@ function processItemSelection(data) {
   console.log("Item selected:", data);
 
   // Example AJAX call (uncomment and modify as needed):
-  fetch('process_item_selection.php', {
+  fetch('process_all_items.php', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
