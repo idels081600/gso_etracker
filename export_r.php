@@ -1,22 +1,23 @@
 <?php
 require_once 'dbh.php';
 require_once "fpdf/fpdf.php";
-// session_start();
-// if (!isset($_SESSION['username'])) {
-//     header("location:login_v2.php");
-// } else if ($_SESSION['role'] == 'Employee') {
-//     header("location:login_v2.php");
-// } else if ($_SESSION['role'] == 'Desk Clerk') {
-//     header("location:login_v2.php");
-// }
-
+session_start();
+if (!isset($_SESSION['username'])) {
+    header("location:login_v2.php");
+} else if ($_SESSION['role'] == 'Employee') {
+    header("location:login_v2.php");
+} else if ($_SESSION['role'] == 'Desk Clerk') {
+    header("location:login_v2.php");
+}
+ 
 // Query for Official Business
-$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND Role = 'Employee' ORDER BY id";
+$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND confirmed_by = 'CAGULADA RENE ART' ORDER BY id";
 $sql_official = $conn->query($result_official);
 
 // Query for Personal Business
-$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND Role = 'Employee' ORDER BY id";
+$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND confirmed_by = 'CAGULADA RENE ART' ORDER BY id";
 $sql_personal = $conn->query($result_personal);
+
 
 class PDF extends FPDF
 {
@@ -42,12 +43,13 @@ class PDF extends FPDF
         $this->SetFont('Arial', 'B', 9);
 
         // Define header cells with green background
-        $this->Cell(10, 10, 'ID', 1, 0, 'C', true);
+        // $this->Cell(10, 10, 'ID', 1, 0, 'C', true);
         $this->Cell(45, 10, 'Name', 1, 0, 'C', true);
         $this->Cell(60, 10, 'Destination', 1, 0, 'C', true);
         $this->Cell(80, 10, 'Purpose', 1, 0, 'C', true);
         $this->Cell(21, 10, 'TimeDept', 1, 0, 'C', true);
         $this->Cell(20, 10, 'EstTime', 1, 0, 'C', true);
+        $this->Cell(28, 10, 'Time Allotted', 1, 0, 'C', true);
         $this->Cell(28, 10, 'Date', 1, 0, 'C', true);
         $this->Cell(20, 10, 'TimeRet', 1, 0, 'C', true);
         $this->Cell(40, 10, 'Confirmed By', 1, 0, 'C', true);
@@ -65,6 +67,7 @@ class PDF extends FPDF
             $id = $row->id;
             $name = $row->name;
             $destination = $row->dest2;
+            $time_alloted = $row->time_allotted;
             $purpose = $row->purpose;
             $timedept = date("h:i A", strtotime($row->timedept)); // Format the time for TimeDept
             $esttime = date("h:i A", strtotime($row->esttime)); // Format the time for EstTime
@@ -73,7 +76,7 @@ class PDF extends FPDF
             $confirmed_by = $row->confirmed_by;
             $remarks = $row->remarks;
 
-            $this->Cell(10, 15, $id, 1, 0, 'C');
+            // $this->Cell(10, 15, $id, 1, 0, 'C');
             $this->SetFont('Arial', '', 9);
             $this->Cell(45, 15, $name, 1);
             $this->SetFont('Arial', '', 8);
@@ -81,6 +84,7 @@ class PDF extends FPDF
             $this->Cell(80, 15, $purpose, 1);
             $this->Cell(21, 15, $timedept, 1);
             $this->Cell(20, 15, $esttime, 1);
+            $this->Cell(28, 15, $time_alloted, 1);
             $this->Cell(28, 15, $date, 1);
             $this->Cell(20, 15, $time_returned, 1);
             $this->Cell(40, 15, $confirmed_by, 1);
@@ -110,4 +114,4 @@ $pdf->printTableRows($sql_personal); // Print rows for Personal Business
 
 // Output the PDF
 $filename = 'pass_slip_' . date('Y-m-d') . '.pdf';
-$pdf->Output($filename, 'D');
+$pdf->Output($filename, 'I');
