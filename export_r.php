@@ -11,11 +11,11 @@ if (!isset($_SESSION['username'])) {
 }
  
 // Query for Official Business
-$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND confirmed_by = 'CAGULADA RENE ART' ORDER BY id";
+$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND confirmed_by = 'CAGULADA RENE ART' AND confirmed_by = 'Pahang Dave' AND role = 'Employee' ORDER BY id";
 $sql_official = $conn->query($result_official);
 
 // Query for Personal Business
-$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND confirmed_by = 'CAGULADA RENE ART' ORDER BY id";
+$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND confirmed_by = 'CAGULADA RENE ART' AND confirmed_by = 'Pahang Dave' AND role = 'Employee' ORDER BY id";
 $sql_personal = $conn->query($result_personal);
 
 
