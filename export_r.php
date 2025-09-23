@@ -2,13 +2,13 @@
 require_once 'dbh.php';
 require_once "fpdf/fpdf.php";
 session_start();
-if (!isset($_SESSION['username'])) {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Employee') {
-    header("location:login_v2.php");
-} else if ($_SESSION['role'] == 'Desk Clerk') {
-    header("location:login_v2.php");
-}
+// if (!isset($_SESSION['username'])) {
+//     header("location:login_v2.php");
+// } else if ($_SESSION['role'] == 'Employee') {
+//     header("location:login_v2.php");
+// } else if ($_SESSION['role'] == 'Desk Clerk') {
+//     header("location:login_v2.php");
+// }
  
 // Query for Official Business
 $result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role = 'Employee' ORDER BY id";
