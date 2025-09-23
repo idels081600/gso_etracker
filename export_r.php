@@ -11,13 +11,12 @@ if (!isset($_SESSION['username'])) {
 }
  
 // Query for Official Business
-$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND confirmed_by = 'CAGULADA RENE ART' AND confirmed_by = 'Pahang Dave' AND role = 'Employee' ORDER BY id";
+$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave' AND role = 'Employee' ORDER BY id";
 $sql_official = $conn->query($result_official);
 
 // Query for Personal Business
-$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND confirmed_by = 'CAGULADA RENE ART' AND confirmed_by = 'Pahang Dave' AND role = 'Employee' ORDER BY id";
+$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave' AND role = 'Employee' ORDER BY id";
 $sql_personal = $conn->query($result_personal);
-
 
 class PDF extends FPDF
 {
@@ -88,7 +87,6 @@ class PDF extends FPDF
             $this->Cell(28, 15, $date, 1);
             $this->Cell(20, 15, $time_returned, 1);
             $this->Cell(40, 15, $confirmed_by, 1);
-
             $this->SetFont('Arial', '', 8); // Set font size for remarks
             $this->MultiCell(50, 15, $remarks, 1, 'L'); // Use MultiCell for the Remarks column to allow text wrapping
         }
