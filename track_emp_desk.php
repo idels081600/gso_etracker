@@ -22,7 +22,7 @@ if (isset($_POST['delete_all'])) {
     $sql = "DELETE FROM request WHERE role = 'Employee'";
     if (mysqli_query($conn, $sql)) {
       $_SESSION['show_undo'] = true;
-      header("Location: track_emp_r.php");
+      header("Location: track_emp_desk.php");
       exit(0);
     }
   }
@@ -38,7 +38,7 @@ if (isset($_POST['undo_delete'])) {
   mysqli_query($conn, $restore_sql);
   mysqli_query($conn, "TRUNCATE TABLE request_backup");
   unset($_SESSION['show_undo']);
-  header("Location: track_emp_r.php");
+  header("Location: track_emp_desk.php");
   exit(0);
 }
 ?>
@@ -72,14 +72,14 @@ if (isset($_POST['undo_delete'])) {
         width: 95%;
       }
 
-      #btns {
-        flex-direction: row;
-        /* Stack the buttons vertically on smaller screens */
-        justify-content: flex-end;
-        /* Ensure buttons align to the right */
-        margin-left: 0 !important;
-        /* Remove fixed margin */
-      }
+    #btns {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      margin-left: 0;
+      margin-right: auto;
+      /* Align buttons to the left side */
+    }
 
       #btns a,
       #btns button {
@@ -110,11 +110,11 @@ if (isset($_POST['undo_delete'])) {
 
     #btns {
       display: flex;
-      justify-content: flex-end;
+      justify-content: flex-start;
       align-items: center;
-      margin-left: auto;
-      margin-right: 0;
-      /* Align buttons to the right side */
+      margin-left: 0;
+      margin-right: auto;
+      /* Align buttons to the left side */
     }
 
 
@@ -190,7 +190,7 @@ if (isset($_POST['undo_delete'])) {
         <li class="nav-item">
           <a class="nav-link" href="index_desk.php">Home</a>
         </li>
-    
+
         <li class="nav-item">
           <a class="nav-link" href="track_emp_desk.php">Track Employees</a>
         </li>
@@ -211,9 +211,10 @@ if (isset($_POST['undo_delete'])) {
         <h5 id="total_tally">Total Pass Slips: <?php echo $total_count; ?></h5>
       </div>
       <div class="col-md-3">
-        <div class="input-group mb-4 mt-5" style="display: flex; align-items: left;">
-          <div class="input-group-append" id="btns" style="margin-left: 0px; display: flex; align-items: center;">
-            <a href="export_r.php" class="btn btn-success btn-sm" style="margin: 5px;">Export</a>
+        <div class="input-group mb-2 mt-5">
+          <div class="input-group-append" id="btns">
+            <a href="export_r.php" class="btn btn-success btn-sm">Export</a>
+            <button type="button" class="btn btn-primary btn-sm" style="margin: 5px;" onclick="openFilterModal()">Filter</button>
             <form method="post" action="" style="margin-right: 5px;">
               <button type="submit" name="delete_all" class="btn btn-danger btn-sm" onclick="confirmDelete()">Delete</button>
               <input type="hidden" name="confirm" id="confirm" value="no">
@@ -260,13 +261,124 @@ if (isset($_POST['undo_delete'])) {
 
   </div>
 
+  <!-- Filter Modal -->
+  <div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="filterModalLabel">Filter Data</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Search Bar -->
+          <input type="text" class="form-control" id="searchBar" placeholder="Search by name...">
+          <br>
+          <!-- Dropdown Menu -->
+          <select class="form-control" id="statusDropdown">
+            <option value="">Select Status</option>
+            <option value="Pass-Slip">Pass-Slip</option>
+            <option value="Present">Present</option>
+            <option value="Waiting For Pass Slip Approval">Waiting For Pass Slip Approval</option>
+            <option value="Scan Qrcode">Scan Qrcode</option>
+            <!-- Add other statuses as needed -->
+          </select>
+          <br>
+          <!-- Table -->
+          <table class="table table-bordered" id="filterTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Destination</th>
+                <th>Status</th>
+                <th>Type of Business</th>
+              </tr>
+            </thead>
+            <tbody id="filterTableBody">
+              <!-- Filtered data will be populated here -->
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
+    let allEmployees = []; // Store all employee data for filtering
+
     function confirmDelete() {
       var confirmation = confirm("Are you sure you want to delete all data?");
       if (confirmation) {
         document.getElementById("confirm").value = "yes";
         document.querySelector("form").submit();
       }
+    }
+
+    function openFilterModal() {
+      $('#filterModal').modal('show');
+      loadFilterData(); // Load data when modal opens
+    }
+
+    function loadFilterData() {
+      // Fetch employee data from API
+      fetch('api_employee_data.php')
+        .then(response => response.json())
+        .then(data => {
+          allEmployees = data;
+          renderFilteredData(allEmployees); // Display all data initially
+        })
+        .catch(error => {
+          console.error('Error loading employee data:', error);
+          document.getElementById('filterTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>';
+        });
+    }
+
+    function renderFilteredData(employees) {
+      const tbody = document.getElementById('filterTableBody');
+      tbody.innerHTML = '';
+
+      if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No matching records found</td></tr>';
+        return;
+      }
+
+      employees.forEach(employee => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${employee.name}</td>
+          <td>${employee.destination}</td>
+          <td>${employee.status}</td>
+          <td>${employee.typeofbusiness}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function applyFilters() {
+      const searchValue = document.getElementById('searchBar').value.toLowerCase();
+      const statusValue = document.getElementById('statusDropdown').value;
+
+      let filtered = allEmployees;
+
+      // Filter by search text
+      if (searchValue) {
+        filtered = filtered.filter(employee =>
+          employee.name.toLowerCase().includes(searchValue)
+        );
+      }
+
+      // Filter by status
+      if (statusValue) {
+        filtered = filtered.filter(employee =>
+          employee.status === statusValue
+        );
+      }
+
+      renderFilteredData(filtered);
     }
 
     function loadDoc() {
@@ -281,6 +393,10 @@ if (isset($_POST['undo_delete'])) {
         xhttp.send();
       }, 1000);
     }
+
+    // Add event listeners for live filtering
+    document.getElementById('searchBar').addEventListener('input', applyFilters);
+    document.getElementById('statusDropdown').addEventListener('change', applyFilters);
 
     loadDoc();
   </script>

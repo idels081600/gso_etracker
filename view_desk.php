@@ -137,7 +137,7 @@ if (!isset($_SESSION['username'])) {
 
                         if (mysqli_num_rows($query_run) > 0) {
                             $data = mysqli_fetch_array($query_run);
-                            ?>
+                    ?>
                             <form action="code.php" method="POST">
                                 <div class="container">
                                     <input type="hidden" name="data_id" value="<?= $data['id']; ?>">
@@ -177,6 +177,15 @@ if (!isset($_SESSION['username'])) {
                                             <?php echo $data['timedept']; ?>
                                         </p>
                                     </div>
+                                    <div class="mb-3">
+                                        <div class="form-group">
+                                            <label>Fixed Time for Pass Slip:</label><br>
+                                            <label for="fix_hours">Hours:</label>
+                                            <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="2" placeholder="0">
+                                            <label for="fix_minutes">Minutes:</label>
+                                            <input type="number" class="form" id="fix_minutes" name="fix_minutes" min="0" max="59" placeholder="0">
+                                        </div>
+                                    </div>
                                     <div class="form-group">
                                         <label for="esttime">Estimated Time</label>
                                         <input type="time" class="form" id="esttime" name="esttime" min="08:00" max="18:00">
@@ -205,7 +214,7 @@ if (!isset($_SESSION['username'])) {
                                         <div class="form-group">
                                             <label for="sel2">Confirmed By:</label>
                                             <select class="form" id="sel2" name='confirmed_by'>
-                                                <?php if(isset($_SESSION['pay_name']) && !empty($_SESSION['pay_name'])): ?>
+                                                <?php if (isset($_SESSION['pay_name']) && !empty($_SESSION['pay_name'])): ?>
                                                     <option><?php echo htmlspecialchars($_SESSION['pay_name']); ?></option>
                                                 <?php endif; ?>
                                             </select>
@@ -221,7 +230,7 @@ if (!isset($_SESSION['username'])) {
                                     </div>
                                 </div>
                             </form>
-                            <?php
+                    <?php
                         } else {
                             echo "<h4>No Such Id Found</h4>";
                         }
@@ -237,14 +246,14 @@ if (!isset($_SESSION['username'])) {
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             // Focus on the 'esttime' input field when the page loads
-            const esttimeInput = document.getElementById("esttime");
+            const esttimeInput = document.getElementById("fix_hours");
             if (esttimeInput) {
                 esttimeInput.focus();
             }
         });
     </script>
 
-    <script>
+    <script>s
         // Add an event listener to the dropdown
         document.getElementById("sel1").addEventListener("change", function() {
             var selectedStatus = this.value;

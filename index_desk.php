@@ -277,6 +277,13 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                 </div>
 
                                 <div class="form-group mb-3">
+                                    <label>Fixed Time for Pass Slip:</label><br>
+                                    <label for="fix_hours">Hours:</label>
+                                    <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="2" placeholder="0">
+                                    <label for="fix_minutes">Minutes:</label>
+                                    <input type="number" class="form" id="fix_minutes" name="fix_minutes" min="0" max="59" placeholder="0">
+                                </div>
+                                <div class="form-group mb-3">
                                     <label for="sel1">Status:</label>
                                     <select class="form-control" id="sel1" name="status" required>
                                         <option value="Partially Approved">Partially Approved</option>
@@ -450,10 +457,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     console.log("Form submission - Est Time:", esttime);
 
                     // Validate form fields - estimated time only required if not declined
-                    if (status !== 'Declined' && !esttime) {
-                        alert('Please enter an estimated time.');
-                        return false;
-                    }
 
                     if (!status) {
                         alert('Please select a status.');
@@ -534,11 +537,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     const confirmedBy = document.getElementById('sel2');
 
                     // Only require estimated time if status is not declined
-                    if (status && status.value !== 'Declined' && (!esttime || !esttime.value)) {
-                        alert('Please enter an estimated time.');
-                        return false;
-                    }
-
                     if (!status || !status.value) {
                         alert('Please select a status.');
                         return false;

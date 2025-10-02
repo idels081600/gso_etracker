@@ -85,7 +85,22 @@ if (isset($_POST['approve_req_desk'])) {
     // Convert the $esttime to DATETIME format
     $esttime = date('Y-m-d H:i:s', strtotime($esttime));
 
-    $query = "UPDATE request SET esttime = '$esttime', Status = '$status', confirmed_by = '$confirmed_by' WHERE id = '$data_id'";
+    // Get the fixed time hours and minutes
+    $fix_hours = intval($_POST['fix_hours'] ?? 0);
+    $fix_minutes = intval($_POST['fix_minutes'] ?? 0);
+
+    // Calculate total minutes
+    $total_minutes = ($fix_hours * 60) + $fix_minutes;
+
+    // Get current time and add the total minutes
+    date_default_timezone_set('Asia/Manila'); // Ensure timezone is set
+    $current_time = new DateTime();
+    $current_time->modify("+$total_minutes minutes");
+    $time_allotted = $current_time->format('H:i:s');
+
+    $time_allotted_formatted = $fix_hours . ' hours ' . $fix_minutes . ' minutes';
+
+    $query = "UPDATE request SET esttime = '$time_allotted', Status = '$status', status1 = 'Scan Qrcode', confirmed_by = '$confirmed_by', time_allotted = '$time_allotted_formatted' WHERE id = '$data_id'";
 
     // Execute the query and check for errors
     $query_run = mysqli_query($conn, $query);
@@ -109,7 +124,22 @@ if (isset($_POST['approve_req_r'])) {
     // Convert the $esttime to DATETIME format
     $esttime = date('Y-m-d H:i:s', strtotime($esttime));
 
-    $query = "UPDATE request SET esttime = '$esttime', Status = '$status', status1 = 'Scan Qrcode', confirmed_by = '$confirmed_by' WHERE id = '$data_id'";
+    // Get the fixed time hours and minutes
+    $fix_hours = intval($_POST['fix_hours'] ?? 0);
+    $fix_minutes = intval($_POST['fix_minutes'] ?? 0);
+
+    // Calculate total minutes
+    $total_minutes = ($fix_hours * 60) + $fix_minutes;
+
+    // Get current time and add the total minutes
+    date_default_timezone_set('Asia/Manila'); // Ensure timezone is set
+    $current_time = new DateTime();
+    $current_time->modify("+$total_minutes minutes");
+    $time_allotted = $current_time->format('H:i:s');
+
+    $time_allotted_formatted = $fix_hours . ' hours ' . $fix_minutes . ' minutes';
+
+    $query = "UPDATE request SET esttime = '$time_allotted', Status = '$status', status1 = 'Scan Qrcode', confirmed_by = '$confirmed_by', time_allotted = '$time_allotted_formatted' WHERE id = '$data_id'";
 
     // Execute the query and check for errors
     $query_run = mysqli_query($conn, $query);
