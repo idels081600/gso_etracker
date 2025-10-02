@@ -282,6 +282,8 @@ if (isset($_POST['undo_delete'])) {
             <option value="Present">Present</option>
             <option value="Waiting For Pass Slip Approval">Waiting For Pass Slip Approval</option>
             <option value="Scan Qrcode">Scan Qrcode</option>
+             <option value="Personal">Personal</option>
+            <option value="Official Business">Official Business</option>
             <!-- Add other statuses as needed -->
           </select>
           <br>
@@ -371,10 +373,10 @@ if (isset($_POST['undo_delete'])) {
         );
       }
 
-      // Filter by status
+      // Filter by status or type of business
       if (statusValue) {
         filtered = filtered.filter(employee =>
-          employee.status === statusValue
+          employee.status === statusValue || employee.typeofbusiness === statusValue
         );
       }
 
