@@ -975,6 +975,16 @@ $(function () {
       $("#viewEditLocation").val(data.location);
       $("#viewEditStatus").val(data.status);
       $("#viewEditAddress").val(data.address);
+      // Pre-select boxes based on tent_no
+      if (data.tent_no) {
+        $('.modal .box').removeClass('selected');
+        var tentNumbers = data.tent_no.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+        tentNumbers.forEach(num => {
+          $('.modal .box[data-box="' + num + '"]').addClass('selected');
+        });
+        // Ensure the field reflects the selected boxes (sorted)
+        $("#viewEditTentNo").val(tentNumbers.sort((a,b) => a - b).join(','));
+      }
       // Show the new Bootstrap 5 modal
       var modal = new bootstrap.Modal(document.getElementById("viewEditModal"));
       modal.show();
@@ -1272,22 +1282,26 @@ $(function () {
   $(".form-element-other1").hide();
 });
 
-// Multi-select green boxes up to viewEditNoOfTents value
+// Multi-select boxes up to viewEditNoOfTents value (accumulate selections)
 $(document).on("click", ".modal .box", function () {
-  if (!$(this).hasClass("green")) return; // Only allow green boxes
+  if (!$(this).hasClass("green")) return; // Temporarily disabled - only allow green boxes
   var clickLimit = parseInt($("#viewEditNoOfTents").val()) || 1;
   var selectedBoxes = $(".modal .box.selected");
   var isSelected = $(this).hasClass("selected");
   if (!isSelected && selectedBoxes.length >= clickLimit) return; // Limit reached
+
   $(this).toggleClass("selected");
-  // Update Tent No. field with comma-separated selected box numbers
-  var selectedNumbers = $(".modal .box.selected")
+
+  // Get all selected box numbers
+  var allSelectedNumbers = $(".modal .box.selected")
     .map(function () {
       return $(this).data("box");
     })
     .get()
+    .sort(function(a, b) { return a - b; }) // Sort numerically
     .join(",");
-  $("#viewEditTentNo").val(selectedNumbers);
+
+  $("#viewEditTentNo").val(allSelectedNumbers);
 });
 
 // Deselect boxes if viewEditNoOfTents value is lowered below current selection

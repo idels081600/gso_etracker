@@ -937,6 +937,31 @@ th {
   }
 }
 
+/* Make modal tables scrollable */
+.modal .table-responsive {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Add custom scrollbar styling for modal tables */
+.modal .table-responsive::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal .table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.modal .table-responsive::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.modal .table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
 /* Enhanced Bootstrap modal responsiveness */
 @media screen and (max-width: 768px) {
   .modal-header {
