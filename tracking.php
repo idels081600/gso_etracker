@@ -11,10 +11,17 @@ if (!isset($_SESSION['username'])) {
     exit(); // Ensure that the script stops execution after the redirect
 }
 $result = display_data();
-if (isset($_POST['save_data'])) {
+    if (isset($_POST['save_data'])) {
     // Prevent duplicate submissions by checking if data already exists
     $name = mysqli_real_escape_string($conn, $_POST['name']);
-    $contact_no = mysqli_real_escape_string($conn, $_POST['contact']);
+
+    // Sanitize and validate contact number
+    $contact_raw = $_POST['contact'];
+    if (!preg_match('/^\+639\d{9}$/', $contact_raw)) {
+        header("Location: tracking.php?error=invalid_contact");
+        exit();
+    }
+    $contact_no = mysqli_real_escape_string($conn, $contact_raw);
     $date = mysqli_real_escape_string($conn, date('Y-m-d', strtotime($_POST['datepicker'])));
     $no_of_tents = mysqli_real_escape_string($conn, $_POST['tent_no']);
     $purpose = mysqli_real_escape_string($conn, $_POST['No_tents']);
@@ -88,6 +95,61 @@ if (isset($_POST['save_data'])) {
 </head>
 
 <body>
+    <script>
+        $(document).ready(function() {
+            // Function to validate contact number input
+            function validateContactNumber(input) {
+                let value = input.val();
+                const defaultPrefix = '+639';
+                const digitRegex = /^[0-9]*$/;
+
+                // If input doesn't start with +639, reset to default and clear extra digits
+                if (!value.startsWith('+639')) {
+                    value = '+639' + value.replace(/[^\d]/g, '').slice(0, 9);
+                    input.val(value);
+                } else {
+                    // Allow only digits after +639 and limit to 9 digits total after +639
+                    const afterPrefix = value.substring(4);
+                    const digitsOnly = afterPrefix.replace(/[^\d]/g, '').substring(0, 9);
+                    value = '+639' + digitsOnly;
+                    input.val(value);
+                }
+
+                // Validate length (must be exactly +639 followed by 9 digits = 13 chars total)
+                if (!value.match(/^\+639\d{9}$/)) {
+                    input.get(0).setCustomValidity('Contact number must be +639 followed by exactly 9 digits');
+                    input.addClass('is-invalid');
+                } else {
+                    input.get(0).setCustomValidity('');
+                    input.removeClass('is-invalid');
+                }
+            }
+
+            // Apply validation to add form contact input
+            $('#contact').on('input', function() {
+                validateContactNumber($(this));
+            });
+
+            // Apply validation to edit form contact input (when modal opens)
+            $('#viewEditModal').on('shown.bs.modal', function() {
+                $('#viewEditContactNo').on('input', function() {
+                    validateContactNumber($(this));
+                });
+            });
+
+            // Prevent form submission if contact is invalid
+            $('form').on('submit', function(e) {
+                const contactInput = $(this).find('input[name="contact"], input[name="contact_no"]');
+                if (contactInput.length > 0) {
+                    const value = contactInput.val();
+                    if (!value.match(/^\+639\d{9}$/)) {
+                        e.preventDefault();
+                        alert('Please enter a valid contact number: +639 followed by exactly 9 digits');
+                    }
+                }
+            });
+        });
+    </script>
     <div class="sidebar">
         <div class="logo">
             <img src="logo.png" alt="Logo">
@@ -112,10 +174,30 @@ if (isset($_POST['save_data'])) {
     </div>
 
     <div class="content">
-        <div id="system-status" class="alert alert-info" style="display: none; margin-bottom: 20px;">
-            <i class="fas fa-info-circle"></i>
-            <span id="system-status-message"></span>
-        </div>
+<div id="system-status" class="alert alert-info" style="<?php echo isset($_GET['error']) ? 'display: block;' : 'display: none;'; ?> margin-bottom: 20px;">
+    <i class="fas fa-info-circle"></i>
+    <span id="system-status-message"><?php
+        if (isset($_GET['error'])) {
+            switch ($_GET['error']) {
+                case 'duplicate':
+                    echo 'A duplicate entry was found. Tent installation already exists for this name, contact number, date, and location.';
+                    break;
+                case 'invalid_contact':
+                    echo 'Invalid contact number format. Please enter a number starting with +639 followed by exactly 9 digits (e.g., +639123456789).';
+                    break;
+                case 'insert_failed':
+                    echo 'Failed to add tent record. Please try again.';
+                    break;
+                default:
+                    echo 'An unknown error occurred.';
+                    break;
+            }
+        } elseif (isset($_GET['success'])) {
+            echo 'Tent record added successfully!';
+            $alertClass = str_replace('alert-info', 'alert-success', $alertClass ?? '');
+        }
+    ?></span>
+</div>
 
         <h1>Tent</h1>
         <ul class="tally_list" id="tallyList">
@@ -283,7 +365,7 @@ if (isset($_POST['save_data'])) {
                             </div>
                             <div class="col-md-6">
                                 <label for="viewEditContactNo" class="form-label">Contact Number</label>
-                                <input type="text" class="form-control" id="viewEditContactNo" name="contact_no">
+                                <input type="text" class="form-control" id="viewEditContactNo" name="contact_no" value="+639">
                             </div>
                             <div class="col-md-6">
                                 <label for="viewEditNoOfTents" class="form-label">No. of Tents</label>
@@ -347,7 +429,7 @@ if (isset($_POST['save_data'])) {
                             </div>
                             <div class="col-md-6">
                                 <label for="contact" class="form-label">Contact no.</label>
-                                <input type="text" class="form-control" id="contact" name="contact">
+                                <input type="text" class="form-control" id="contact" name="contact" value="+639">
                             </div>
                             <div class="col-md-6">
                                 <label for="address" class="form-label">Address</label>
