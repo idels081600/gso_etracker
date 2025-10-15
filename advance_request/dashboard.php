@@ -1,10 +1,14 @@
 <?php
 require_once 'display_stat.php';
-$total_amount_BQ = display_data_stat_BQ();
-$total_amount_NODAL = display_data_stat_NODAL();
-$total_amount_JETS_MARKETING = display_data_stat_JETS_MARKETING();
-$total_amount_JJS_SEAFOODS = display_data_stat_JJS_SEAFOODS();
-$total_amount_CITY_TYRE = display_data_stat_CITY_TYRE();
+$start_date_param = !empty($_GET['start_date']) ? $_GET['start_date'] : null;
+$end_date_param = !empty($_GET['end_date']) ? $_GET['end_date'] : null;
+
+$total_amount_BQ = display_data_stat_BQ($start_date_param, $end_date_param);
+$total_amount_NODAL = display_data_stat_NODAL($start_date_param, $end_date_param);
+$total_amount_JETS_MARKETING = display_data_stat_JETS_MARKETING($start_date_param, $end_date_param);
+$total_amount_JJS_SEAFOODS = display_data_stat_JJS_SEAFOODS($start_date_param, $end_date_param);
+$total_amount_CITY_TYRE = display_data_stat_CITY_TYRE($start_date_param, $end_date_param);
+$total_amount_BQ_BUILDERWARE = display_data_stat_BQ_BUILDERWARE();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -139,6 +143,15 @@ $total_amount_CITY_TYRE = display_data_stat_CITY_TYRE();
                         </div>
                     </div>
                 </div>
+                    <div class="col-auto">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">BQ BUILDERWARE</h5>
+                            <h6 class="card-subtitle mb-2 text-body-secondary">Total Expenses</h6>
+                            <p class="card-text"><?php echo display_data_stat_BQ_BUILDERWARE(); ?></p>
+                        </div>
+                    </div>
+                </div>
                 <div class="col-auto">
                     <div class="card">
                         <div class="card-body">
@@ -153,7 +166,7 @@ $total_amount_CITY_TYRE = display_data_stat_CITY_TYRE();
                         <div class="card-body">
                             <h5 class="card-title">JETS MARKETING</h5>
                             <h6 class="card-subtitle mb-2 text-body-secondary">Total Expenses</h6>
-                            <p class="card-text"><?php echo display_data_stat_JETS_MARKETING(); ?></p>
+                            <p class="card-text"><?php echo $total_amount_JETS_MARKETING; ?></p>
                         </div>
                     </div>
                 </div>
@@ -162,7 +175,7 @@ $total_amount_CITY_TYRE = display_data_stat_CITY_TYRE();
                         <div class="card-body">
                             <h5 class="card-title">JJS SEAFOODS</h5>
                             <h6 class="card-subtitle mb-2 text-body-secondary">Total Expenses</h6>
-                            <p class="card-text"><?php echo display_data_stat_JJS_SEAFOODS(); ?></p>
+                            <p class="card-text"><?php echo $total_amount_JJS_SEAFOODS; ?></p>
                         </div>
                     </div>
                 </div>
@@ -171,10 +184,11 @@ $total_amount_CITY_TYRE = display_data_stat_CITY_TYRE();
                         <div class="card-body">
                             <h5 class="card-title">CITY TYRE</h5>
                             <h6 class="card-subtitle mb-2 text-body-secondary">Total Expenses</h6>
-                            <p class="card-text"><?php echo display_data_stat_CITY_TYRE(); ?></p>
+                            <p class="card-text"><?php echo $total_amount_CITY_TYRE; ?></p>
                         </div>
                     </div>
                 </div>
+                
             </div>
         </div>
     </div>
@@ -198,6 +212,7 @@ $total_amount_CITY_TYRE = display_data_stat_CITY_TYRE();
                         <option value="JETS MARKETING" <?php echo (isset($_GET['filter_store']) && $_GET['filter_store'] == 'JETS MARKETING') ? 'selected' : ''; ?>>JETS MARKETING</option>
                         <option value="JJS SEAFOODS" <?php echo (isset($_GET['filter_store']) && $_GET['filter_store'] == 'JJS SEAFOODS') ? 'selected' : ''; ?>>JJS SEAFOODS</option>
                         <option value="CITY TYRE" <?php echo (isset($_GET['filter_store']) && $_GET['filter_store'] == 'CITY TYRE') ? 'selected' : ''; ?>>CITY TYRE</option>
+                        <option value="BQ BUILDERWARE" <?php echo (isset($_GET['filter_store']) && $_GET['filter_store'] == 'BQ BUILDERWARE') ? 'selected' : ''; ?>>BQ BUILDERWARE</option>
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -300,6 +315,7 @@ $total_amount_CITY_TYRE = display_data_stat_CITY_TYRE();
                                     <option value="JETS MARKETING">JETS MARKETING</option>
                                     <option value="JJS SEAFOODS">JJS SEAFOODS</option>
                                     <option value="CITY TYRE">CITY TYRE</option>
+                                    <option value="BQ BUILDERWARE">BQ BUILDERWARE</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -362,6 +378,7 @@ $total_amount_CITY_TYRE = display_data_stat_CITY_TYRE();
                                 <option value="JETS MARKETING">JETS MARKETING</option>
                                 <option value="JJS SEAFOODS">JJS SEAFOODS</option>
                                 <option value="CITY TYRE">CITY TYRE</option>
+                                <option value="BQ BUILDERWARE">BQ BUILDERWARE</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -464,6 +481,7 @@ $total_amount_CITY_TYRE = display_data_stat_CITY_TYRE();
                                     <option value="JETS MARKETING">JETS MARKETING</option>
                                     <option value="JJS SEAFOODS">JJS SEAFOODS</option>
                                     <option value="CITY TYRE">CITY TYRE</option>
+                                    <option value="BQ BUILDERWARE">BQ BUILDERWARE</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
