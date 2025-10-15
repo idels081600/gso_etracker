@@ -88,6 +88,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "fuel_admin":
                 header("location:fuel_tracker/fuel_dashboard.php");
                 break;
+            case "advance_PO":
+                header("location:advance_request/dashboard.php");
+                break;
             default:
                 header("location:login_v2.php");
                 break;
