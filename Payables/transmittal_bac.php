@@ -30,7 +30,7 @@ require_once 'transmit_db.php';
         </div>
         <hr class="divider">
         <ul>
-            <li><a href="transmittal_bac.php"><i class="fas fa-gavel icon-size"></i>Bidding</a></li>
+            <li><a href="transmittal_bac.php"><i class="fas fa-gavel icon-size"></i>Bidding & RFQ</a></li>
             <li><a href="Po_sap.php"><i class="fas fa-shopping-cart icon-size"></i>Purchase Order</a></li>
         </ul>
         <a href="../logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
@@ -88,7 +88,7 @@ require_once 'transmit_db.php';
                         <table class="table table-bordered table-hover align-middle bg-white rounded-3 overflow-hidden">
                             <thead class="table-light">
                                 <tr>
-                                    <th>IB no.</th>
+                                    <th>IB no./RFQ no.</th>
                                     <th>Winning Bidders</th>
                                     <th>Project Name</th>
                                     <th>Amount</th>
@@ -133,7 +133,7 @@ require_once 'transmit_db.php';
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="ib_no" class="form-label">IB no.</label>
+                                <label for="ib_no" class="form-label">IB no./RFQ no.</label>
                                 <input type="text" class="form-control" id="ib_no" name="ib_no" required>
                             </div>
                             <div class="col-md-6">
