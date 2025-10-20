@@ -1,4 +1,10 @@
 <?php
+session_start();
+// Check if user is logged in
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header("location: ../login_v2.php");
+    exit;
+}
 require_once 'display_stat.php';
 $start_date_param = !empty($_GET['start_date']) ? $_GET['start_date'] : null;
 $end_date_param = !empty($_GET['end_date']) ? $_GET['end_date'] : null;
@@ -84,7 +90,7 @@ $total_amount_BQ_BUILDERWARE = display_data_stat_BQ_BUILDERWARE();
     <?php require_once 'advance_po_db.php'; ?>
     <nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">CGSO</a>
+            <a class="navbar-brand" href="#"></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -98,6 +104,12 @@ $total_amount_BQ_BUILDERWARE = display_data_stat_BQ_BUILDERWARE();
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active" data-bs-toggle="modal" data-bs-target="#editModal">Edit data</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="modal" data-bs-target="#printModal">Report</a>
+                    </li>
+                      <li class="nav-item">
+                        <a class="nav-link active" href="Po_monitoring.php">Po Monitoring</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active" href="../logout.php">Logout</a>
@@ -503,6 +515,15 @@ $total_amount_BQ_BUILDERWARE = display_data_stat_BQ_BUILDERWARE();
                             <div class="col-md-6">
                                 <label for="edit_unit_price" class="form-label">Unit Price</label>
                                 <input type="number" class="form-control" id="edit_unit_price" name="edit_unit_price" min="0" step="0.01">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_status" class="form-label">Status</label>
+                                <select class="form-select" id="edit_status" name="edit_status">
+                                    <option value="Pending">Pending</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                    <option value="Declined">Declined</option>
+                                    <option value="Completed">Completed</option>
+                                </select>
                             </div>
                         </div>
                     </form>

@@ -1,4 +1,11 @@
 <?php
+session_start();
+// Check if user is logged in
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header('HTTP/1.1 401 Unauthorized');
+    echo 'Unauthorized access';
+    exit;
+}
 require_once 'advance_po_db.php';
 
 // First get the search term from GET parameter before closing connection

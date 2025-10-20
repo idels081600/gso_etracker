@@ -1,4 +1,11 @@
 <?php
+session_start();
+// Check if user is logged in
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header('HTTP/1.1 401 Unauthorized');
+    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+    exit;
+}
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');

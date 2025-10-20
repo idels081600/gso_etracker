@@ -7,6 +7,8 @@ $dbname = "SAP";
 // Attempt to establish a connection to the database
 $conn = mysqli_connect($servername, $username, $password, $dbname);
 
+
+
 // Check if the connection was successful
 if (!$conn) {
     // If connection fails, output the error message

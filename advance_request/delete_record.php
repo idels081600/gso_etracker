@@ -1,4 +1,10 @@
 <?php
+session_start();
+// Check if user is logged in
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+    exit;
+}
 require_once 'advance_po_db.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
