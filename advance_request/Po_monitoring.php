@@ -330,15 +330,15 @@ $total_amount_JETS_MARKETING = display_data_PO_monitoring($start_date_param, $en
                             <h6>Checklist</h6>
                             <div class="col-md-12">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="requirements_cb" name="requirements_cb">
-                                    <label class="form-check-label" for="requirements_cb">
+                                    <input class="form-check-input" type="checkbox" id="preAuditchecklist_cb" name="preAuditchecklist_cb">
+                                    <label class="form-check-label" for="preAuditchecklist_cb">
                                         PRE-AUDIT CHECKLIST
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-12" id="requirements_remarks_section" style="display: none;">
-                                <label for="audit_remarks" class="form-label">Remarks</label>
-                                <textarea class="form-control" id="audit_remarks" name="audit_remarks" rows="3" placeholder="Enter remarks for pre-audit checklist"></textarea>
+                            <div class="col-md-12" id="preAuditchecklist_remarks_section" style="display: none;">
+                                <label for="preAuditchecklist_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="preAuditchecklist_remarks" name="preAuditchecklist_remarks" rows="3" placeholder="Enter remarks for pre-audit checklist"></textarea>
                             </div>
                             <div class="col-md-12">
                                 <div class="form-check">
@@ -474,51 +474,123 @@ $total_amount_JETS_MARKETING = display_data_PO_monitoring($start_date_param, $en
                             </div>
                             <div class="col-md-12">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="RECEIPTS_cb" name="RECEIPTS_cb">
-                                    <label class="form-check-label" for="RECEIPTS_cb">
+                                    <input class="form-check-input" type="checkbox" id="receipts_cb" name="receipts_cb">
+                                    <label class="form-check-label" for="receipts_cb">
                                         RECEIPTS
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-12" id="RECEIPTS_remarks_section" style="display: none;">
-                                <label for="RECEIPTS_remarks" class="form-label">Remarks</label>
-                                <textarea class="form-control" id="RECEIPTS_remarks" name="RECEIPTS_remarks" rows="3" placeholder="Enter remarks for RECEIPTS"></textarea>
+                            <div class="col-md-12" id="receipts_remarks_section" style="display: none;">
+                                <label for="receipts_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="receipts_remarks" name="receipts_remarks" rows="3" placeholder="Enter remarks for RECEIPTS"></textarea>
                             </div>
                             <div class="col-md-12">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="DELEGATION_cb" name="DELEGATION_cb">
-                                    <label class="form-check-label" for="DELEGATION_cb">
+                                    <input class="form-check-input" type="checkbox" id="delegation_cb" name="delegation_cb">
+                                    <label class="form-check-label" for="delegation_cb">
                                         DELEGATION
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-12" id="DELEGATION_remarks_section" style="display: none;">
-                                <label for="DELEGATION_remarks" class="form-label">Remarks</label>
-                                <textarea class="form-control" id="DELEGATION_remarks" name="DELEGATION_remarks" rows="3" placeholder="Enter remarks for DELEGATION"></textarea>
+                            <div class="col-md-12" id="delegation_remarks_section" style="display: none;">
+                                <label for="delegation_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="delegation_remarks" name="delegation_remarks" rows="3" placeholder="Enter remarks for DELEGATION"></textarea>
                             </div>
                             <div class="col-md-12">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="MAYORS_PERMIT_cb" name="MAYORS_PERMIT_cb">
-                                    <label class="form-check-label" for="MAYORS_PERMIT_cb">
+                                    <input class="form-check-input" type="checkbox" id="mayorsPermit_cb" name="mayorsPermit_cb">
+                                    <label class="form-check-label" for="mayorsPermit_cb">
                                         MAYORS PERMIT
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-12" id="MAYORS_PERMIT_remarks_section" style="display: none;">
-                                <label for="MAYORS_PERMIT_remarks" class="form-label">Remarks</label>
-                                <textarea class="form-control" id="MAYORS_PERMIT_remarks" name="MAYORS_PERMIT_remarks" rows="3" placeholder="Enter remarks for MAYORS_PERMIT"></textarea>
+                            <div class="col-md-12" id="mayorsPermit_remarks_section" style="display: none;">
+                                <label for="mayorsPermit_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="mayorsPermit_remarks" name="mayorsPermit_remarks" rows="3" placeholder="Enter remarks for MAYORS_PERMIT"></textarea>
                             </div>
                             <div class="col-md-12">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="JETS_CERTIFICATION_cb" name="JETS_CERTIFICATION_cb">
-                                    <label class="form-check-label" for="JETS_CERTIFICATION_cb">
+                                    <input class="form-check-input" type="checkbox" id="Justification_cb" name="Justification_cb">
+                                    <label class="form-check-label" for="Justification_cb">
+                                        JUSTIFICATION
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="Justification_remarks_section" style="display: none;">
+                                <label for="Jutification_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="Justification_remarks" name="Justification_remarks" rows="3" placeholder="Enter remarks for Justification"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="waste_material_report_cb" name="waste_material_report_cb">
+                                    <label class="form-check-label" for="waste_material_report_cb">
+                                        WASTE MATERIAL REPORT
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="waste_material_report_remarks_section" style="display: none;">
+                                <label for="waste_material_report_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="waste_material_report_remarks" name="waste_material_report_remarks" rows="3" placeholder="Enter remarks for Waste material report"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="pre_repair_inspection_cb" name="pre_repair_inspection_cb">
+                                    <label class="form-check-label" for="pre_repair_inspection_cb">
+                                        PRE REPAIR INSPECTION
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="pre_repair_inspection_remarks_section" style="display: none;">
+                                <label for="pre_repair_inspection_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="pre_repair_inspection_remarks" name="pre_repair_inspection_remarks" rows="3" placeholder="Enter remarks for Pre Repair inspection"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="post_repair_inspection_cb" name="post_repair_inspection_cb">
+                                    <label class="form-check-label" for="post_repair_inspection_cb">
+                                        POST REPAIR INSPECTION
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="post_repair_inspection_remarks_section" style="display: none;">
+                                <label for="post_repair_inspection_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="post_repair_inspection_remarks" name="post_repair_inspection_remarks" rows="3" placeholder="Enter remarks for Post Repair inspection"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="repair_history_of_property_cb" name="repair_history_of_property_cb">
+                                    <label class="form-check-label" for="repair_history_of_property_cb">
+                                        REPAIR HISTORY OF PROPERTY
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="repair_history_of_property_remarks_section" style="display: none;">
+                                <label for="repair_history_of_property_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="repair_history_of_property_remarks" name="repair_history_of_property_remarks" rows="3" placeholder="Enter remarks for Repair History of Property"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="warranty_certificate_cb" name="warranty_certificate_cb">
+                                    <label class="form-check-label" for="warranty_certificate_cb">
+                                        WARRANTY CERTIFICATE
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="warranty_certificate_remarks_section" style="display: none;">
+                                <label for="warranty_certificate_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="warranty_certificate_remarks" name="warranty_certificate_remarks" rows="3" placeholder="Enter remarks for Warranty Certificate"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="jetsCert_cb" name="jetsCert_cb">
+                                    <label class="form-check-label" for="jetsCert_cb">
                                         JETS CERTIFICATION
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-12" id="JETS_CERTIFICATION_remarks_section" style="display: none;">
-                                <label for="JETS_CERTIFICATION_remarks" class="form-label">Remarks</label>
-                                <textarea class="form-control" id="JETS_CERTIFICATION_remarks" name="JETS_CERTIFICATION_remarks" rows="3" placeholder="Enter remarks for JETS_CERTIFICATION"></textarea>
+                            <div class="col-md-12" id="jetsCert_remarks_section" style="display: none;">
+                                <label for="jetsCert_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="jetsCert_remarks" name="jetsCert_remarks" rows="3" placeholder="Enter remarks for JETS_CERTIFICATION"></textarea>
                             </div>
                         </div>
                     </form>
@@ -650,15 +722,15 @@ $total_amount_JETS_MARKETING = display_data_PO_monitoring($start_date_param, $en
                             <!-- Copy the checklist from the add form with edit_ prefixes -->
                             <div class="col-md-12">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="edit_pre_audit_checklist_cb" name="edit_pre_audit_checklist_cb">
-                                    <label class="form-check-label" for="edit_pre_audit_checklist_cb">
+                                    <input class="form-check-input" type="checkbox" id="edit_preAuditchecklist_cb" name="edit_preAuditchecklist_cb">
+                                    <label class="form-check-label" for="edit_preAuditchecklist_cb">
                                         PRE-AUDIT CHECKLIST
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-12" id="edit_pre_audit_checklist_remarks_section" style="display: none;">
-                                <label for="pre_audit_checklist_remarks" class="form-label">Remarks</label>
-                                <textarea class="form-control" id="pre_audit_checklist_remarks" name="pre_audit_checklist_remarks" rows="3" placeholder="Enter remarks for pre-audit checklist"></textarea>
+                            <div class="col-md-12" id="edit_preAuditchecklist_remarks_section" style="display: none;">
+                                <label for="edit_preAuditchecklist_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="edit_preAuditchecklist_remarks" name="edit_preAuditchecklist_remarks" rows="3" placeholder="Enter remarks for pre-audit checklist"></textarea>
                             </div>
                             <!-- Add all other checkboxes -->
                             <div class="col-md-12">
@@ -831,15 +903,87 @@ $total_amount_JETS_MARKETING = display_data_PO_monitoring($start_date_param, $en
                             </div>
                             <div class="col-md-12">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="edit_JETS_CERTIFICATION_cb" name="edit_JETS_CERTIFICATION_cb">
-                                    <label class="form-check-label" for="edit_JETS_CERTIFICATION_cb">
+                                    <input class="form-check-input" type="checkbox" id="edit_justification_cb" name="edit_justification_cb">
+                                    <label class="form-check-label" for="edit_justification_cb">
+                                        JUSTIFICATION
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="edit_justification_remarks_section" style="display: none;">
+                                <label for="justification_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="justification_remarks" name="justification_remarks" rows="3" placeholder="Enter remarks for Justification"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="edit_waste_material_report_cb" name="edit_waste_material_report_cb">
+                                    <label class="form-check-label" for="edit_waste_material_report_cb">
+                                        WASTE MATERIAL REPORT
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="edit_waste_material_report_remarks_section" style="display: none;">
+                                <label for="waste_material_report_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="waste_material_report_remarks" name="waste_material_report_remarks" rows="3" placeholder="Enter remarks for Waste material report"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="edit_pre_repair_inspection_cb" name="edit_pre_repair_inspection_cb">
+                                    <label class="form-check-label" for="edit_pre_repair_inspection_cb">
+                                        PRE REPAIR INSPECTION
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="edit_pre_repair_inspection_remarks_section" style="display: none;">
+                                <label for="pre_repair_inspection_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="pre_repair_inspection_remarks" name="pre_repair_inspection_remarks" rows="3" placeholder="Enter remarks for Pre Repair inspection"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="edit_post_repair_inspection_cb" name="edit_post_repair_inspection_cb">
+                                    <label class="form-check-label" for="edit_post_repair_inspection_cb">
+                                        POST REPAIR INSPECTION
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="edit_post_repair_inspection_remarks_section" style="display: none;">
+                                <label for="post_repair_inspection_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="post_repair_inspection_remarks" name="post_repair_inspection_remarks" rows="3" placeholder="Enter remarks for Post Repair inspection"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="edit_repair_history_of_property_cb" name="edit_repair_history_of_property_cb">
+                                    <label class="form-check-label" for="edit_repair_history_of_property_cb">
+                                        REPAIR HISTORY OF PROPERTY
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="edit_repair_history_of_property_remarks_section" style="display: none;">
+                                <label for="repair_history_of_property_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="repair_history_of_property_remarks" name="repair_history_of_property_remarks" rows="3" placeholder="Enter remarks for Repair History of Property"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="edit_warranty_certificate_cb" name="edit_warranty_certificate_cb">
+                                    <label class="form-check-label" for="edit_warranty_certificate_cb">
+                                        WARRANTY CERTIFICATE
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12" id="edit_warranty_certificate_remarks_section" style="display: none;">
+                                <label for="warranty_certificate_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="warranty_certificate_remarks" name="warranty_certificate_remarks" rows="3" placeholder="Enter remarks for Warranty Certificate"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="edit_jetsCert_cb" name="edit_jetsCert_cb">
+                                    <label class="form-check-label" for="edit_jetsCert_cb">
                                         JETS CERTIFICATION
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-12" id="edit_JETS_CERTIFICATION_remarks_section" style="display: none;">
-                                <label for="JETS_CERTIFICATION_remarks" class="form-label">Remarks</label>
-                                <textarea class="form-control" id="JETS_CERTIFICATION_remarks" name="JETS_CERTIFICATION_remarks" rows="3" placeholder="Enter remarks for JETS CERTIFICATION"></textarea>
+                            <div class="col-md-12" id="edit_jetsCert_remarks_section" style="display: none;">
+                                <label for="jetsCert_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="jetsCert_remarks" name="jetsCert_remarks" rows="3" placeholder="Enter remarks for JETS CERTIFICATION"></textarea>
                             </div>
                         </div>
                     </form>
@@ -988,6 +1132,38 @@ $total_amount_JETS_MARKETING = display_data_PO_monitoring($start_date_param, $en
                                 <input class="form-check-input" type="checkbox" id="view_jetsCert_cb">
                                 <label class="form-check-label" for="view_jetsCert_cb" id="view_jetsCert_cb_label">
                                     JETS CERTIFICATION
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="view_waste_material_report_cb">
+                                <label class="form-check-label" for="view_waste_material_report_cb" id="view_waste_material_report_cb_label">
+                                    WASTE MATERIAL REPORT
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="view_post_repair_inspection_cb">
+                                <label class="form-check-label" for="view_post_repair_inspection_cb" id="view_post_repair_inspection_cb_label">
+                                    POST REPAIR INSPECTION
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="view_repair_history_of_property_cb">
+                                <label class="form-check-label" for="view_repair_history_of_property_cb" id="view_repair_history_of_property_cb_label">
+                                    REPAIR HISTORY OF PROPERTY
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="view_warranty_certificate_cb">
+                                <label class="form-check-label" for="view_warranty_certificate_cb" id="view_warranty_certificate_cb_label">
+                                    WARRANTY CERTIFICATE
                                 </label>
                             </div>
                         </div>

@@ -1,13 +1,14 @@
 <?php
 session_start();
 
-// Check login
+// ========================== AUTH CHECK ==========================
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header('HTTP/1.1 401 Unauthorized');
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit;
 }
 
+// ========================== HEADERS ==========================
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -20,15 +21,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'advance_po_db.php';
 
+// ========================== DEBUG SETTINGS ==========================
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+// ========================== METHOD CHECK ==========================
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Only POST requests are allowed']);
     exit;
 }
 
+// ========================== READ JSON ==========================
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
@@ -72,38 +76,61 @@ function insertSinglePOItem($conn, $item)
     $status = 'Pending';
     $edited = date('Y-m-d H:i:s');
 
+    // ✅ Field names exactly match your DB columns
     $fields = [
-        'preAuditchecklist_cb' => 'requirements_cb',
-        'preAuditchecklist_remarks' => 'audit_remarks',
-        'obr_cb', 'obr_remarks',
-        'dv_cb', 'dv_remarks',
-        'billing_request_cb', 'billing_request_remarks',
-        'certWarranty_cb', 'certWarranty_remarks',
-        'omnibus_cb', 'omnibus_remarks',
-        'ris_cb', 'ris_remarks',
-        'acceptance_cb', 'acceptance_remarks',
-        'rfq_cb', 'rfq_remarks',
-        'recommending_cb', 'recommending_remarks',
-        'PR_cb', 'PR_remarks',
-        'PO_cb', 'PO_remarks',
-        'receipts_cb' => 'RECEIPTS_cb',
-        'receipts_remarks' => 'RECEIPTS_remarks',
-        'delegation_cb' => 'DELEGATION_cb',
-        'delegation_remarks' => 'DELEGATION_remarks',
-        'mayorsPermit_cb' => 'MAYORS_PERMIT_cb',
-        'mayorsPermit_remarks' => 'MAYORS_PERMIT_remarks',
-        'jetsCert_cb' => 'JETS_CERTIFICATION_cb',
-        'jetsCert_remarks' => 'JETS_CERTIFICATION_remarks'
+        'preAuditchecklist_cb',
+        'preAuditchecklist_remarks',
+        'obr_cb',
+        'obr_remarks',
+        'dv_cb',
+        'dv_remarks',
+        'billing_request_cb',
+        'billing_request_remarks',
+        'certWarranty_cb',
+        'certWarranty_remarks',
+        'omnibus_cb',
+        'omnibus_remarks',
+        'ris_cb',
+        'ris_remarks',
+        'acceptance_cb',
+        'acceptance_remarks',
+        'rfq_cb',
+        'rfq_remarks',
+        'recommending_cb',
+        'recommending_remarks',
+        'PR_cb',
+        'PR_remarks',
+        'PO_cb',
+        'PO_remarks',
+        'receipts_cb',
+        'receipts_remarks',
+        'delegation_cb',
+        'delegation_remarks',
+        'mayorsPermit_cb',
+        'mayorsPermit_remarks',
+        'justification_cb',
+        'justification_remarks',
+        'pre_repair_inspection_cb',
+        'pre_repair_inspection_remarks',
+        'jetsCert_cb',
+        'jetsCert_remarks',
+        'waste_material_report_cb',
+        'waste_material_report_remarks',
+        'post_repair_inspection_cb',
+        'post_repair_inspection_remarks',
+        'repair_history_of_property_cb',
+        'repair_history_of_property_remarks',
+        'warranty_certificate_cb',
+        'warranty_certificate_remarks'
     ];
 
+    // Prepare values from input
     $values = [];
-    foreach ($fields as $db_field => $input_key) {
-        if (is_int($db_field)) {
-            $db_field = $input_key;
-        }
-        $values[$db_field] = trim($item[$input_key] ?? '');
+    foreach ($fields as $field) {
+        $values[$field] = trim($item[$field] ?? '');
     }
 
+    // ✅ SQL Statement — exactly 54 placeholders
     $stmt = $conn->prepare("
         INSERT INTO poMonitoring (
             supplier, po_date, po_number, description, office, price, destination,
@@ -112,11 +139,15 @@ function insertSinglePOItem($conn, $item)
             omnibus_cb, omnibus_remarks, ris_cb, ris_remarks, acceptance_cb, acceptance_remarks,
             rfq_cb, rfq_remarks, recommending_cb, recommending_remarks, PR_cb, PR_remarks,
             PO_cb, PO_remarks, receipts_cb, receipts_remarks, delegation_cb, delegation_remarks,
-            mayorsPermit_cb, mayorsPermit_remarks, jetsCert_cb, jetsCert_remarks,
+            mayorsPermit_cb, mayorsPermit_remarks, justification_cb, justification_remarks, pre_repair_inspection_cb, pre_repair_inspection_remarks, jetsCert_cb, jetsCert_remarks,
+            waste_material_report_cb, waste_material_report_remarks,
+            post_repair_inspection_cb, post_repair_inspection_remarks,
+            repair_history_of_property_cb, repair_history_of_property_remarks,
+            warranty_certificate_cb, warranty_certificate_remarks,
             delete_status, status, edited
         ) VALUES (
             ?, ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?
         )
     ");
 
@@ -124,26 +155,63 @@ function insertSinglePOItem($conn, $item)
         throw new Exception('Prepare failed: ' . $conn->error);
     }
 
+    // ✅ Bind parameters (54 total, all strings)
     $stmt->bind_param(
-        str_repeat("s", 42),
-        $supplier, $po_date, $po_number, $description, $office, $price, $destination,
-        $values['preAuditchecklist_cb'], $values['preAuditchecklist_remarks'],
-        $values['obr_cb'], $values['obr_remarks'],
-        $values['dv_cb'], $values['dv_remarks'],
-        $values['billing_request_cb'], $values['billing_request_remarks'],
-        $values['certWarranty_cb'], $values['certWarranty_remarks'],
-        $values['omnibus_cb'], $values['omnibus_remarks'],
-        $values['ris_cb'], $values['ris_remarks'],
-        $values['acceptance_cb'], $values['acceptance_remarks'],
-        $values['rfq_cb'], $values['rfq_remarks'],
-        $values['recommending_cb'], $values['recommending_remarks'],
-        $values['PR_cb'], $values['PR_remarks'],
-        $values['PO_cb'], $values['PO_remarks'],
-        $values['receipts_cb'], $values['receipts_remarks'],
-        $values['delegation_cb'], $values['delegation_remarks'],
-        $values['mayorsPermit_cb'], $values['mayorsPermit_remarks'],
-        $values['jetsCert_cb'], $values['jetsCert_remarks'],
-        $delete_status, $status, $edited
+        str_repeat('s', 54),
+        $supplier,
+        $po_date,
+        $po_number,
+        $description,
+        $office,
+        $price,
+        $destination,
+        $values['preAuditchecklist_cb'],
+        $values['preAuditchecklist_remarks'],
+        $values['obr_cb'],
+        $values['obr_remarks'],
+        $values['dv_cb'],
+        $values['dv_remarks'],
+        $values['billing_request_cb'],
+        $values['billing_request_remarks'],
+        $values['certWarranty_cb'],
+        $values['certWarranty_remarks'],
+        $values['omnibus_cb'],
+        $values['omnibus_remarks'],
+        $values['ris_cb'],
+        $values['ris_remarks'],
+        $values['acceptance_cb'],
+        $values['acceptance_remarks'],
+        $values['rfq_cb'],
+        $values['rfq_remarks'],
+        $values['recommending_cb'],
+        $values['recommending_remarks'],
+        $values['PR_cb'],
+        $values['PR_remarks'],
+        $values['PO_cb'],
+        $values['PO_remarks'],
+        $values['receipts_cb'],
+        $values['receipts_remarks'],
+        $values['delegation_cb'],
+        $values['delegation_remarks'],
+        $values['mayorsPermit_cb'],
+        $values['mayorsPermit_remarks'],
+        $values['justification_cb'],
+        $values['justification_remarks'],
+        $values['pre_repair_inspection_cb'],
+        $values['pre_repair_inspection_remarks'],
+        $values['jetsCert_cb'],
+        $values['jetsCert_remarks'],
+        $values['waste_material_report_cb'],
+        $values['waste_material_report_remarks'],
+        $values['post_repair_inspection_cb'],
+        $values['post_repair_inspection_remarks'],
+        $values['repair_history_of_property_cb'],
+        $values['repair_history_of_property_remarks'],
+        $values['warranty_certificate_cb'],
+        $values['warranty_certificate_remarks'],
+        $delete_status,
+        $status,
+        $edited
     );
 
     $success = $stmt->execute();

@@ -27,7 +27,7 @@ $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
 
 // Now query the data
 $query = "SELECT id, supplier, po_date, po_number, description, office, price, destination, "
-       . "preAuditchecklist_cb, obr_cb, dv_cb, billing_request_cb, certWarranty_cb, omnibus_cb, ris_cb, acceptance_cb, rfq_cb, recommending_cb, PR_cb, PO_cb, receipts_cb, delegation_cb, mayorsPermit_cb, jetsCert_cb, "
+       . "preAuditchecklist_cb, obr_cb, dv_cb, billing_request_cb, certWarranty_cb, omnibus_cb, ris_cb, acceptance_cb, rfq_cb, recommending_cb, PR_cb, PO_cb, receipts_cb, delegation_cb, mayorsPermit_cb, justification_cb, pre_repair_inspection_cb, jetsCert_cb, waste_material_report_cb, post_repair_inspection_cb, repair_history_of_property_cb, warranty_certificate_cb, "
        . "status FROM poMonitoring WHERE delete_status = 0 ORDER BY id DESC";
 
 $result = mysqli_query($conn, $query);
@@ -63,7 +63,7 @@ if (count($filteredRecords) > 0) {
         // Calculate lacking (count of unchecked checkboxes)
         $totalCheckboxes = 20; // Count of checkboxes in the form
         $checkedCount = 0;
-        $checkboxes = ['preAuditchecklist_cb', 'obr_cb', 'dv_cb', 'billing_request_cb', 'certWarranty_cb', 'omnibus_cb', 'ris_cb', 'acceptance_cb', 'rfq_cb', 'recommending_cb', 'PR_cb', 'PO_cb', 'receipts_cb', 'delegation_cb', 'mayorsPermit_cb', 'jetsCert_cb'];
+        $checkboxes = ['preAuditchecklist_cb', 'obr_cb', 'dv_cb', 'billing_request_cb', 'certWarranty_cb', 'omnibus_cb', 'ris_cb', 'acceptance_cb', 'rfq_cb', 'recommending_cb', 'PR_cb', 'PO_cb', 'receipts_cb', 'delegation_cb', 'mayorsPermit_cb', 'jetsCert_cb', 'waste_material_report_cb', 'post_repair_inspection_cb', 'repair_history_of_property_cb', 'warranty_certificate_cb'];
 
         foreach ($checkboxes as $cb) {
             if ($row[$cb] == '1' || $row[$cb] == 'on' || $row[$cb] == true) {

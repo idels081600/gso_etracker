@@ -160,7 +160,7 @@ $total_amount_BQ_BUILDERWARE = display_data_stat_BQ_BUILDERWARE();
                         <div class="card-body">
                             <h5 class="card-title">BQ BUILDERWARE</h5>
                             <h6 class="card-subtitle mb-2 text-body-secondary">Total Expenses</h6>
-                            <p class="card-text"><?php echo display_data_stat_BQ_BUILDERWARE(); ?></p>
+                            <p class="card-text"><?php echo $total_amount_BQ_BUILDERWARE; ?></p>
                         </div>
                     </div>
                 </div>

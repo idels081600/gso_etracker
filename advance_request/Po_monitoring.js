@@ -39,24 +39,16 @@ $(document).ready(function () {
     $("#saveSingleItemBtn").text("Saving...");
 
     // Add checklist data to the save request
-    singleItemData.requirements_cb = $("#requirements_cb").is(":checked")
-      ? 1
-      : 0;
-    singleItemData.audit_remarks = $("#audit_remarks").val();
+    singleItemData.preAuditchecklist_cb = $("#preAuditchecklist_cb").is(":checked") ? 1 : 0;
+    singleItemData.preAuditchecklist_remarks = $("#preAuditchecklist_remarks").val();
     singleItemData.obr_cb = $("#obr_cb").is(":checked") ? 1 : 0;
     singleItemData.obr_remarks = $("#obr_remarks").val();
     singleItemData.dv_cb = $("#dv_cb").is(":checked") ? 1 : 0;
     singleItemData.dv_remarks = $("#dv_remarks").val();
-    singleItemData.billing_request_cb = $("#billing_request_cb").is(":checked")
-      ? 1
-      : 0;
-    singleItemData.billing_request_remarks = $(
-      "#billing_request_remarks"
-    ).val();
-    singleItemData.cert_warranty_cb = $("#cert_warranty_cb").is(":checked")
-      ? 1
-      : 0;
-    singleItemData.cert_warranty_remarks = $("#cert_warranty_remarks").val();
+    singleItemData.billing_request_cb = $("#billing_request_cb").is(":checked") ? 1 : 0;
+    singleItemData.billing_request_remarks = $("#billing_request_remarks").val();
+    singleItemData.certWarranty_cb = $("#certWarranty_cb").is(":checked") ? 1 : 0;
+    singleItemData.certWarranty_remarks = $("#certWarranty_remarks").val();
     singleItemData.omnibus_cb = $("#omnibus_cb").is(":checked") ? 1 : 0;
     singleItemData.omnibus_remarks = $("#omnibus_remarks").val();
     singleItemData.ris_cb = $("#ris_cb").is(":checked") ? 1 : 0;
@@ -65,34 +57,32 @@ $(document).ready(function () {
     singleItemData.acceptance_remarks = $("#acceptance_remarks").val();
     singleItemData.rfq_cb = $("#rfq_cb").is(":checked") ? 1 : 0;
     singleItemData.rfq_remarks = $("#rfq_remarks").val();
-    singleItemData.recommending_cb = $("#recommending_cb").is(":checked")
-      ? 1
-      : 0;
-    singleItemData.recommending_remarks = $("#recommending_remarks").val();
-    singleItemData.recommending_cb = $("#recommending_cb").is(":checked")
-      ? 1
-      : 0;
+    singleItemData.recommending_cb = $("#recommending_cb").is(":checked") ? 1 : 0;
     singleItemData.recommending_remarks = $("#recommending_remarks").val();
     singleItemData.PR_cb = $("#PR_cb").is(":checked") ? 1 : 0;
     singleItemData.PR_remarks = $("#PR_remarks").val();
     singleItemData.PO_cb = $("#PO_cb").is(":checked") ? 1 : 0;
     singleItemData.PO_remarks = $("#PO_remarks").val();
-    singleItemData.RECEIPTS_cb = $("#RECEIPTS_cb").is(":checked") ? 1 : 0;
-    singleItemData.RECEIPTS_remarks = $("#RECEIPTS_remarks").val();
-    singleItemData.DELEGATION_cb = $("#DELEGATION_cb").is(":checked") ? 1 : 0;
-    singleItemData.DELEGATION_remarks = $("#DELEGATION_remarks").val();
-    singleItemData.MAYORS_PERMIT_cb = $("#MAYORS_PERMIT_cb").is(":checked")
-      ? 1
-      : 0;
-    singleItemData.MAYORS_PERMIT_remarks = $("#MAYORS_PERMIT_remarks").val();
-    singleItemData.JETS_CERTIFICATION_cb = $("#JETS_CERTIFICATION_cb").is(
-      ":checked"
-    )
-      ? 1
-      : 0;
-    singleItemData.JETS_CERTIFICATION_remarks = $(
-      "#JETS_CERTIFICATION_remarks"
-    ).val();
+    singleItemData.receipts_cb = $("#receipts_cb").is(":checked") ? 1 : 0;
+    singleItemData.receipts_remarks = $("#receipts_remarks").val();
+    singleItemData.delegation_cb = $("#delegation_cb").is(":checked") ? 1 : 0;
+    singleItemData.delegation_remarks = $("#delegation_remarks").val();
+    singleItemData.mayorsPermit_cb = $("#mayorsPermit_cb").is(":checked") ? 1 : 0;
+    singleItemData.mayorsPermit_remarks = $("#mayorsPermit_remarks").val();
+    singleItemData.justification_cb = $("#justification_cb").is(":checked") ? 1 : 0;
+    singleItemData.justification_remarks = $("#justification_remarks").val();
+    singleItemData.waste_material_report_cb = $("#waste_material_report_cb").is(":checked") ? 1 : 0;
+    singleItemData.waste_material_report_remarks = $("#waste_material_report_remarks").val();
+    singleItemData.pre_repair_inspection_cb = $("#pre_repair_inspection_cb").is(":checked") ? 1 : 0;
+    singleItemData.pre_repair_inspection_remarks = $("#pre_repair_inspection_remarks").val();
+    singleItemData.post_repair_inspection_cb = $("#post_repair_inspection_cb").is(":checked") ? 1 : 0;
+    singleItemData.post_repair_inspection_remarks = $("#post_repair_inspection_remarks").val();
+    singleItemData.repair_history_of_property_cb = $("#repair_history_of_property_cb").is(":checked") ? 1 : 0;
+    singleItemData.repair_history_of_property_remarks = $("#repair_history_of_property_remarks").val();
+    singleItemData.warranty_certificate_cb = $("#warranty_certificate_cb").is(":checked") ? 1 : 0;
+    singleItemData.warranty_certificate_remarks = $("#warranty_certificate_remarks").val();
+    singleItemData.jetsCert_cb = $("#jetsCert_cb").is(":checked") ? 1 : 0;
+    singleItemData.jetsCert_remarks = $("#jetsCert_remarks").val();
     // Send AJAX request
     $.ajax({
       url: "insert_po.php",
@@ -110,15 +100,12 @@ $(document).ready(function () {
             // Reset form
             $("#addDataForm")[0].reset();
             // Reset checklists and remarks
-            $("#requirements_cb, #obr_cb, #dv_cb").prop("checked", false);
-            $(
-              "#audit_remarks_section, #obr_remarks_section, #dv_remarks_section, #billing_request_remarks_section, #cert_warranty_remarks_section, #omnibus_remarks_section"
-            ).hide();
-            $(
-              "#audit_remarks, #obr_remarks, #dv_remarks, #billing_request_remarks, #cert_warranty_remarks, #omnibus_remarks"
-            ).val("");
+            $("#preAuditchecklist_cb, #obr_cb, #dv_cb, #billing_request_cb, #certWarranty_cb, #omnibus_cb, #ris_cb, #acceptance_cb, #rfq_cb, #recommending_cb, #PR_cb, #PO_cb, #receipts_cb, #delegation_cb, #mayorsPermit_cb, #justification_cb, #waste_material_report_cb, #pre_repair_inspection_cb, #post_repair_inspection_cb, #repair_history_of_property_cb, #warranty_certificate_cb, #jetsCert_cb").prop("checked", false);
+            $("#preAuditchecklist_remarks_section, #obr_remarks_section, #dv_remarks_section, #billing_request_remarks_section, #certWarranty_remarks_section, #omnibus_remarks_section, #ris_remarks_section, #acceptance_remarks_section, #rfq_remarks_section, #recommending_remarks_section, #PR_remarks_section, #PO_remarks_section, #receipts_remarks_section, #delegation_remarks_section, #mayorsPermit_remarks_section, #justification_remarks_section, #waste_material_report_remarks_section, #pre_repair_inspection_remarks_section, #post_repair_inspection_remarks_section, #repair_history_of_property_remarks_section, #warranty_certificate_remarks_section, #jetsCert_remarks_section").hide();
+            $("#preAuditchecklist_remarks, #obr_remarks, #dv_remarks, #billing_request_remarks, #certWarranty_remarks, #omnibus_remarks, #ris_remarks, #acceptance_remarks, #rfq_remarks, #recommending_remarks, #PR_remarks, #PO_remarks, #receipts_remarks, #delegation_remarks, #mayorsPermit_remarks, #justification_remarks, #waste_material_report_remarks, #pre_repair_inspection_remarks, #post_repair_inspection_remarks, #repair_history_of_property_remarks, #warranty_certificate_remarks, #jetsCert_remarks").val("");
             window.location.reload();
           } else {
+            console.log("Response error:", response);
             // Show debug info if available (for debugging column count issues)
             if (response.debug_info) {
               console.log("DEBUG INFO:", response.debug_info);
@@ -454,6 +441,10 @@ $(document).ready(function () {
               data.mayorsPermit_cb == "1"
             );
             $("#view_jetsCert_cb").prop("checked", data.jetsCert_cb == "1");
+            $("#view_waste_material_report_cb").prop("checked", data.waste_material_report_cb == "1");
+            $("#view_post_repair_inspection_cb").prop("checked", data.post_repair_inspection_cb == "1");
+            $("#view_repair_history_of_property_cb").prop("checked", data.repair_history_of_property_cb == "1");
+            $("#view_warranty_certificate_cb").prop("checked", data.warranty_certificate_cb == "1");
 
             // Clear previous remarks
             $("#checklistContainer .remarks-text").remove();
@@ -550,10 +541,18 @@ $(document).ready(function () {
               );
             }
             if (data.receipts_remarks && data.receipts_remarks.trim()) {
-              // No label id for receipts, skip
+              $("#view_receipts_cb_label").after(
+                '<br><small class="text-muted remarks-text">' +
+                  data.receipts_remarks +
+                  "</small>"
+              );
             }
             if (data.delegation_remarks && data.delegation_remarks.trim()) {
-              // No label id for delegation, skip
+              $("#view_delegation_cb_label").after(
+                '<br><small class="text-muted remarks-text">' +
+                  data.delegation_remarks +
+                  "</small>"
+              );
             }
             if (data.mayorsPermit_remarks && data.mayorsPermit_remarks.trim()) {
               $("#view_mayorsPermit_cb_label").after(
@@ -563,7 +562,39 @@ $(document).ready(function () {
               );
             }
             if (data.jetsCert_remarks && data.jetsCert_remarks.trim()) {
-              // No label id for jetsCert, skip
+              $("#view_jetsCert_cb_label").after(
+                '<br><small class="text-muted remarks-text">' +
+                  data.jetsCert_remarks +
+                  "</small>"
+              );
+            }
+            if (data.wasteMaterialReport_remarks && data.wasteMaterialReport_remarks.trim()) {
+              $("#view_wasteMaterialReport_cb_label").after(
+                '<br><small class="text-muted remarks-text">' +
+                  data.waste_material_report_remarks +
+                  "</small>"
+              );
+            }
+            if (data.postRepairInspection_remarks && data.postRepairInspection_remarks.trim()) {
+              $("#view_postRepairInspection_cb_label").after(
+                '<br><small class="text-muted remarks-text">' +
+                  data.post_repair_inspection_remarks +
+                  "</small>"
+              );
+            }
+            if (data.repairHistoryOfProperty_remarks && data.repairHistoryOfProperty_remarks.trim()) {
+              $("#view_repairHistoryOfProperty_cb_label").after(
+                '<br><small class="text-muted remarks-text">' +
+                  data.repair_history_of_property_remarks +
+                  "</small>"
+              );
+            }
+            if (data.warrantyCertificate_remarks && data.warrantyCertificate_remarks.trim()) {
+              $("#view_warrantyCertificate_cb_label").after(
+                '<br><small class="text-muted remarks-text">' +
+                  data.warranty_certificate_remarks +
+                  "</small>"
+              );
             }
           } else {
             showNotification(result.message, "error");
