@@ -14,7 +14,7 @@ $total_amount_NODAL = display_data_stat_NODAL($start_date_param, $end_date_param
 $total_amount_JETS_MARKETING = display_data_stat_JETS_MARKETING($start_date_param, $end_date_param);
 $total_amount_JJS_SEAFOODS = display_data_stat_JJS_SEAFOODS($start_date_param, $end_date_param);
 $total_amount_CITY_TYRE = display_data_stat_CITY_TYRE($start_date_param, $end_date_param);
-$total_amount_BQ_BUILDERWARE = display_data_stat_BQ_BUILDERWARE();
+$total_amount_BQ_BUILDERWARE = display_data_stat_BQ_BUILDERWARE($start_date_param, $end_date_param);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -169,7 +169,7 @@ $total_amount_BQ_BUILDERWARE = display_data_stat_BQ_BUILDERWARE();
                         <div class="card-body">
                             <h5 class="card-title">NODAL</h5>
                             <h6 class="card-subtitle mb-2 text-body-secondary">Total Expenses</h6>
-                            <p class="card-text"><?php echo display_data_stat_NODAL(); ?></p>
+                        <p class="card-text"><?php echo $total_amount_NODAL; ?></p>
                         </div>
                     </div>
                 </div>
