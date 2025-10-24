@@ -39,7 +39,7 @@ try {
 
         // Get badge class for fuel type
         $badgeClass = "bg-secondary";
-        switch(strtolower($row['fuel_type'])) {
+        switch(strtolower($row['fuel_type'] ?? '')) {
             case 'unleaded':
                 $badgeClass = "bg-success";
                 break;
