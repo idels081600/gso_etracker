@@ -29,15 +29,15 @@ $pdf->SetFillColor(39, 174, 96); // Darker green
 $pdf->SetTextColor(255, 255, 255); // White
 
 // Column widths for landscape
-$w = array(40, 40, 100, 40, 50);
-$headers = array('Item No.', 'Rack No.', 'Name', 'Balance', 'Status');
+$w = array(100, 40, 40);
+$headers = array('Name', 'Unit', 'Balance');
 for ($i = 0; $i < count($headers); $i++) {
     $pdf->Cell($w[$i], 12, $headers[$i], 1, 0, 'C', true);
 }
 $pdf->Ln();
 
 // Fetch all items ordered by rack number only
-$query = "SELECT item_no, rack_no, item_name, current_balance FROM inventory_items ORDER BY rack_no ASC";
+$query = "SELECT item_no, rack_no, item_name, unit, current_balance FROM inventory_items ORDER BY rack_no ASC";
 $result = mysqli_query($conn, $query);
 
 // Table body styling
@@ -67,19 +67,19 @@ while ($row = mysqli_fetch_assoc($result)) {
         $pdf->SetFillColor($rowColor2[0], $rowColor2[1], $rowColor2[2]);
     }
 
-    $pdf->Cell($w[0], 10, $row['item_no'], 1, 0, 'C', true);
-    $pdf->Cell($w[1], 10, $row['rack_no'], 1, 0, 'C', true);
-    $pdf->Cell($w[2], 10, $row['item_name'], 1, 0, 'L', true);
-    $pdf->Cell($w[3], 10, $row['current_balance'], 1, 0, 'C', true);
+    // $pdf->Cell($w[0], 10, $row['item_no'], 1, 0, 'C', true);
+    $pdf->Cell($w[0], 10, $row['item_name'], 1, 0, 'L', true);
+    $pdf->Cell($w[1], 10, $row['unit'], 1, 0, 'C', true);
+    $pdf->Cell($w[2], 10, '', 1, 0, 'C', true);
     // Status cell with color
-    if ($status == 'Available') {
-        $pdf->SetTextColor(39, 174, 96); // Green
-    } else if ($status == 'Low Stock') {
-        $pdf->SetTextColor(241, 196, 15); // Yellow
-    } else {
-        $pdf->SetTextColor(231, 76, 60); // Red
-    }
-    $pdf->Cell($w[4], 10, $status, 1, 0, 'C', true);
+    // if ($status == 'Available') {
+    //     $pdf->SetTextColor(39, 174, 96); // Green
+    // } else if ($status == 'Low Stock') {
+    //     $pdf->SetTextColor(241, 196, 15); // Yellow
+    // } else {
+    //     $pdf->SetTextColor(231, 76, 60); // Red
+    // }
+    // $pdf->Cell($w[3], 10, $status, 1, 0, 'C', true);
     $pdf->SetTextColor(34, 49, 63); // Reset text color
     $pdf->Ln();
     $fill = !$fill;
@@ -91,4 +91,3 @@ header('Content-Disposition: inline; filename="Inventory_Report.pdf"');
 
 // Output PDF for inline preview in browser
 $pdf->Output('I', 'Inventory_Report.pdf');
-?>

@@ -1366,6 +1366,325 @@ function confirmItemSelection() {
   }
 }
 
+// Checkbox functionality for bulk operations
+document.addEventListener("DOMContentLoaded", function() {
+  // Select all/none checkbox functionality
+  const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener("change", function() {
+      const checkboxes = document.querySelectorAll(".request-checkbox:not(:disabled)");
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+      });
+    });
+  }
+
+  // Handle individual checkbox changes to update select all state
+  document.addEventListener("change", function(e) {
+    if (e.target.classList.contains("request-checkbox")) {
+      const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+      const allCheckboxes = document.querySelectorAll(".request-checkbox:not(:disabled)");
+      const checkedBoxes = document.querySelectorAll(".request-checkbox:checked:not(:disabled)");
+
+      if (selectAllCheckbox) {
+        selectAllCheckbox.checked = allCheckboxes.length === checkedBoxes.length && allCheckboxes.length > 0;
+        selectAllCheckbox.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < allCheckboxes.length;
+      }
+    }
+  });
+});
+
+// Function to get selected request IDs
+function getSelectedRequestIds() {
+  const checkedBoxes = document.querySelectorAll(".request-checkbox:checked:not(:disabled)");
+  return Array.from(checkedBoxes).map(checkbox => parseInt(checkbox.value));
+}
+
+// Function to handle bulk approve button
+function handleBulkApprove() {
+  const selectedIds = getSelectedRequestIds();
+  if (selectedIds.length === 0) {
+    alert("Please select at least one item to approve.");
+    return;
+  }
+
+  if (confirm(`Are you sure you want to approve ${selectedIds.length} selected item(s)?`)) {
+    // For now, process one by one or create bulk approve modal
+    processBulkApproval(selectedIds);
+  }
+}
+
+// Function to handle bulk reject button
+function handleBulkReject() {
+  const selectedIds = getSelectedRequestIds();
+  if (selectedIds.length === 0) {
+    alert("Please select at least one item to reject.");
+    return;
+  }
+
+  // Open bulk reject modal
+  openBulkRejectModal(selectedIds);
+}
+
+// Function to open bulk reject modal
+function openBulkRejectModal(requestIds) {
+  // Create bulk reject modal if it doesn't exist
+  if (!document.getElementById("bulkRejectModal")) {
+    createBulkRejectModal();
+  }
+
+  // Store selected IDs
+  document.getElementById("bulkRejectModal").dataset.selectedIds = JSON.stringify(requestIds);
+
+  // Show item count
+  document.getElementById("bulkRejectCount").textContent = requestIds.length;
+
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById("bulkRejectModal"));
+  modal.show();
+}
+
+// Function to create bulk reject modal
+function createBulkRejectModal() {
+  const modalHTML = `
+    <div class="modal fade" id="bulkRejectModal" tabindex="-1" aria-labelledby="bulkRejectModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="bulkRejectModalLabel">
+              <i class="fas fa-times-circle text-danger"></i> Bulk Reject Requests
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <p>You are about to reject <strong><span id="bulkRejectCount">0</span> items</strong>.</p>
+            </div>
+            <div class="mb-3">
+              <label for="bulkRejectRemarks" class="form-label"><strong>Common Reason for Rejection (Required):</strong></label>
+              <textarea class="form-control" id="bulkRejectRemarks" rows="4" placeholder="Please provide a reason for rejecting these requests..." required>NO STOCK</textarea>
+              <div class="form-text">This reason will be applied to all selected items.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="confirmBulkRejection()">
+              <i class="fas fa-times"></i> Reject All Selected Items
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Function to confirm bulk rejection
+function confirmBulkRejection() {
+  const remarks = document.getElementById("bulkRejectRemarks")?.value?.trim();
+  if (!remarks) {
+    alert("Please provide a reason for rejection.");
+    document.getElementById("bulkRejectRemarks").focus();
+    return;
+  }
+
+  const selectedIds = JSON.parse(document.getElementById("bulkRejectModal").dataset.selectedIds || "[]");
+
+  if (confirm(`Are you sure you want to reject ${selectedIds.length} items with the reason: "${remarks}"?`)) {
+    processBulkRejection(selectedIds, remarks);
+  }
+}
+
+// Function to process bulk rejection
+function processBulkRejection(requestIds, remarks) {
+  // Show loading
+  const submitButton = document.querySelector("#bulkRejectModal .btn-danger");
+  const originalText = submitButton.innerHTML;
+  submitButton.disabled = true;
+  submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rejecting...';
+
+  fetch("update_request_status.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      request_ids: requestIds,
+      status: "Rejected",
+      admin_remarks: remarks,
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById("bulkRejectModal"));
+        if (modal) modal.hide();
+
+        showNotification(`Successfully rejected ${requestIds.length} items`, "success");
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        alert("Error: " + data.message);
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalText;
+      }
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      alert("Error rejecting items");
+      submitButton.disabled = false;
+      submitButton.innerHTML = originalText;
+    });
+}
+
+// Function to process bulk approval
+function processBulkApproval(requestIds) {
+  if (requestIds.length === 0) {
+    alert("No items selected for approval.");
+    return;
+  }
+
+  // Open bulk approve modal
+  openBulkApproveModal(requestIds);
+}
+
+// Function to open bulk approve modal
+function openBulkApproveModal(requestIds) {
+  // Create bulk approve modal if it doesn't exist
+  if (!document.getElementById("bulkApproveModal")) {
+    createBulkApproveModal();
+  }
+
+  // Store selected IDs
+  document.getElementById("bulkApproveModal").dataset.selectedIds = JSON.stringify(requestIds);
+
+  // Show item count
+  document.getElementById("bulkApproveCount").textContent = requestIds.length;
+
+  // Clear form
+  document.getElementById("bulkApproveRemarks").value = "";
+  document.getElementById("bulkApproveCommonQty").value = "";
+
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById("bulkApproveModal"));
+  modal.show();
+}
+
+// Function to create bulk approve modal
+function createBulkApproveModal() {
+  const modalHTML = `
+    <div class="modal fade" id="bulkApproveModal" tabindex="-1" aria-labelledby="bulkApproveModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="bulkApproveModalLabel">
+              <i class="fas fa-check-circle text-success"></i> Bulk Approve Requests
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <p>You are about to approve <strong><span id="bulkApproveCount">0</span> items</strong>.</p>
+            </div>
+            <div class="mb-3">
+              <label for="bulkApproveRemarks" class="form-label"><strong>Common Admin Remarks (Optional):</strong></label>
+              <textarea class="form-control" id="bulkApproveRemarks" rows="3" placeholder="Optional remarks for all approved items..."></textarea>
+              <div class="form-text">These remarks will be applied to all selected items.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-success" onclick="confirmBulkApproval()">
+              <i class="fas fa-check"></i> Approve All Selected Items
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Function to confirm bulk approval
+function confirmBulkApproval() {
+  const commonQty = document.getElementById("bulkApproveCommonQty")?.value?.trim();
+  const remarks = document.getElementById("bulkApproveRemarks")?.value?.trim();
+
+  // Validate common quantity if provided
+  if (commonQty && (isNaN(commonQty) || parseInt(commonQty) <= 0)) {
+    alert("Please enter a valid quantity.");
+    document.getElementById("bulkApproveCommonQty").focus();
+    return;
+  }
+
+  const selectedIds = JSON.parse(document.getElementById("bulkApproveModal").dataset.selectedIds || "[]");
+
+  if (confirm(`Are you sure you want to approve ${selectedIds.length} items?${commonQty ? '\nCommon approved quantity: ' + commonQty : '\nEach item will use its requested quantity.'}`)) {
+    processBulkApprovalRequest(selectedIds, commonQty ? parseInt(commonQty) : null, remarks);
+  }
+}
+
+// Function to process bulk approval request
+function processBulkApprovalRequest(requestIds, commonApprovedQty, remarks) {
+  // Show loading
+  const submitButton = document.querySelector("#bulkApproveModal .btn-success");
+  const originalText = submitButton.innerHTML;
+  submitButton.disabled = true;
+  submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Approving...';
+
+  fetch("update_request_status.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      request_ids: requestIds,
+      status: "Approved",
+      bulk_approved_quantity: commonApprovedQty,
+      admin_remarks: remarks,
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById("bulkApproveModal"));
+        if (modal) modal.hide();
+
+        showNotification(`Successfully approved ${requestIds.length} items`, "success");
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        alert("Error: " + data.message);
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalText;
+      }
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      alert("Error approving items");
+      submitButton.disabled = false;
+      submitButton.innerHTML = originalText;
+    });
+}
+
+// Add event listeners for bulk buttons
+document.addEventListener("DOMContentLoaded", function() {
+  const bulkApproveBtn = document.querySelector("button[data-bs-target='#bulkApproveModal']");
+  const bulkRejectBtn = document.querySelector("button[data-bs-target='#bulkRejectModal']");
+
+  if (bulkApproveBtn) {
+    bulkApproveBtn.addEventListener("click", function(e) {
+      e.preventDefault();
+      handleBulkApprove();
+    });
+  }
+
+  if (bulkRejectBtn) {
+    bulkRejectBtn.addEventListener("click", function(e) {
+      e.preventDefault();
+      handleBulkReject();
+    });
+  }
+});
+
 function processItemSelection(data) {
   // This function handles what happens after the user confirms the selection
   console.log("Item selected:", data);

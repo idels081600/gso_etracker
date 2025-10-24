@@ -303,12 +303,12 @@ if (isset($requests_stmt)) {
                                                 <tr class="border-bottom">
                                                     <td style="padding: 0.5rem 0.75rem;">
                                                         <strong style="font-size: 0.85rem; color: #333;">
-                                                            <?= htmlspecialchars($item['office_name']) ?>
+                                                            <?= htmlspecialchars($item['office_name'] ?? '') ?>
                                                         </strong>
                                                     </td>
                                                     <td style="padding: 0.5rem 0.75rem;">
                                                         <small style="font-size: 0.8rem;">
-                                                            <?= htmlspecialchars($item['item_name']) ?>
+                                                            <?= htmlspecialchars($item['item_name'] ?? '') ?>
                                                         </small>
                                                     </td>
                                                     <td class="text-center" style="padding: 0.5rem 0.25rem;">
@@ -351,14 +351,14 @@ if (isset($requests_stmt)) {
                                                                 $status_icon = 'fas fa-question';
                                                         }
                                                         ?>
-                                                        <span class="badge <?= $status_class ?>" style="font-size: 0.65rem;" title="<?= htmlspecialchars($item['status']) ?>">
+                                                        <span class="badge <?= $status_class ?>" style="font-size: 0.65rem;" title="<?= htmlspecialchars($item['status'] ?? '') ?>">
                                                             <i class="<?= $status_icon ?>"></i>
                                                         </span>
                                                     </td>
                                                     <td style="padding: 0.5rem 0.75rem;">
                                                         <small style="font-size: 0.75rem; color: #666;">
                                                             <?php if (!empty($item['remarks'])): ?>
-                                                                <?= htmlspecialchars($item['remarks']) ?>
+                                                                <?= htmlspecialchars($item['remarks'] ?? '') ?>
                                                             <?php else: ?>
                                                                 <span class="text-muted">-</span>
                                                             <?php endif; ?>
@@ -442,13 +442,19 @@ if (isset($requests_stmt)) {
                                 </div>
                                 <div class="col-md-3">
                                     <button type="submit" class="btn btn-dark btn-sm me-2">
-                                        <i class="fas fa-search"></i> Filter
+                                        <i class="fas fa-search"></i>
                                     </button>
-                                    <a href="Logi_app_req.php" class="btn btn-outline-secondary btn-sm">
-                                        <i class="fas fa-refresh"></i> Reset
-                                    </a>
+                                    <!-- <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.location.href='Logi_app_req.php'">
+                                        <i class="fas fa-refresh"></i>
+                                    </button> -->
                                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal">
-                                        <i class="fas fa-plus"></i> Add Item
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#bulkApproveModal">
+                                        <i class="fas fa-check-circle"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#bulkRejectModal">
+                                        <i class="fas fa-times-circle"></i>
                                     </button>
                                 </div>
                             </div>
@@ -470,6 +476,7 @@ if (isset($requests_stmt)) {
                                 <table class="table table-hover table-sm">
                                     <thead class="bg-light">
                                         <tr>
+                                            <th class="text-dark"><input type="checkbox" id="selectAllCheckbox"></th>
                                             <th class="text-dark">Date</th>
                                             <th class="text-dark">Office</th>
                                             <th class="text-dark">Item</th>
@@ -485,15 +492,18 @@ if (isset($requests_stmt)) {
                                             <?php foreach ($detailed_requests as $request): ?>
                                                 <tr>
                                                     <td>
+                                                        <input type="checkbox" class="request-checkbox" value="<?= $request['id'] ?>" <?= $request['status'] !== 'Pending' ? 'disabled' : '' ?>>
+                                                    </td>
+                                                    <td>
                                                         <small class="text-muted">
                                                             <?= date('M j, Y', strtotime($request['date_requested'])) ?>
                                                         </small>
                                                     </td>
                                                     <td>
-                                                        <small><?= htmlspecialchars($request['office_name']) ?></small>
+                                                        <small><?= htmlspecialchars($request['office_name'] ?? '') ?></small>
                                                     </td>
                                                     <td>
-                                                        <strong><?= htmlspecialchars($request['item_name']) ?></strong><br>
+                                                        <strong><?= htmlspecialchars($request['item_name'] ?? '') ?></strong><br>
                                                     </td>
                                                     <td>
                                                         <span class="badge bg-info"><?= $request['quantity'] ?></span>
@@ -569,16 +579,16 @@ if (isset($requests_stmt)) {
                                                         }
                                                         ?>
                                                         <span class="badge status-badge <?= $status_class ?>">
-                                                            <?= htmlspecialchars($request['status']) ?>
+                                                            <?= htmlspecialchars($request['status'] ?? '') ?>
                                                         </span>
                                                     </td>
                                                     <td>
                                                         <?php if ($request['status'] === 'Pending'): ?>
-                                                            <button class="btn btn-success btn-sm me-1" onclick="openApproveModal(<?= $request['id'] ?>, '<?= htmlspecialchars($request['item_name']) ?>', <?= $request['quantity'] ?>)">
+                                                            <button class="btn btn-success btn-sm me-1" onclick="openApproveModal(<?= $request['id'] ?>, '<?= htmlspecialchars($request['item_name'] ?? '') ?>', <?= $request['quantity'] ?>)">
                                                                 <i class="fas fa-check"></i>
                                                             </button>
                                                             <!-- Replace the existing reject button with this -->
-                                                            <button class="btn btn-danger btn-sm" onclick="openRejectModal(<?= $request['id'] ?>, '<?= htmlspecialchars($request['item_name']) ?>')">
+                                                            <button class="btn btn-danger btn-sm" onclick="openRejectModal(<?= $request['id'] ?>, '<?= htmlspecialchars($request['item_name'] ?? '') ?>')">
                                                                 <i class="fas fa-times"></i>
                                                             </button>
 
@@ -590,7 +600,7 @@ if (isset($requests_stmt)) {
                                             <?php endforeach; ?>
                                         <?php else: ?>
                                             <tr>
-                                                <td colspan="7" class="text-center text-muted">
+                                                <td colspan="9" class="text-center text-muted">
                                                     <div class="py-4">
                                                         <i class="fas fa-inbox fa-2x mb-2"></i>
                                                         <p>No requests found for the selected filters</p>
@@ -685,9 +695,9 @@ if (isset($requests_stmt)) {
                                     if (mysqli_num_rows($result) > 0) {
                                         // Loop through results and display rows
                                         while ($row = mysqli_fetch_assoc($result)) {
-                                            $itemNo = htmlspecialchars($row['item_no'], ENT_QUOTES, 'UTF-8');
-                                            $itemName = htmlspecialchars($row['item_name'], ENT_QUOTES, 'UTF-8');
-                                            $unit = htmlspecialchars($row['unit'], ENT_QUOTES, 'UTF-8');
+                                            $itemNo = htmlspecialchars($row['item_no'] ?? '', ENT_QUOTES, 'UTF-8');
+                                            $itemName = htmlspecialchars($row['item_name'] ?? '', ENT_QUOTES, 'UTF-8');
+                                            $unit = htmlspecialchars($row['unit'] ?? '', ENT_QUOTES, 'UTF-8');
 
                                             echo "<tr>";
                                             echo "    <td>{$itemName}</td>";
@@ -770,67 +780,67 @@ if (isset($requests_stmt)) {
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <form id="itemSelectionForm"> <!-- Added form element -->
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="allItemsModalLabel">
-                        <i class="fas fa-list-check"></i> Process All Selected Items
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
-                    <div class="alert alert-info mb-4">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>Instructions:</strong> Review and configure each item below. All fields marked with <span class="text-danger">*</span> are required.
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="allItemsModalLabel">
+                            <i class="fas fa-list-check"></i> Process All Selected Items
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-
-                    <!-- Common fields for all items -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label">
-                                <i class="fas fa-building"></i> Office/Department for All Items <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select" id="commonOfficeSelect" required>
-                                <option value="">Select Office/Department</option>
-                            </select>
-                            <div class="form-text">This office will be applied to all items.</div>
+                    <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Instructions:</strong> Review and configure each item below. All fields marked with <span class="text-danger">*</span> are required.
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">
-                                <i class="fas fa-calendar-alt"></i> Date Received for All Items <span class="text-danger">*</span>
-                            </label>
-                            <input type="date" class="form-control" id="commonDateReceived" required>
-                            <div class="form-text">This date will be applied to all items.</div>
-                        </div>
-                    </div>
 
-                    <!-- Items Container - This will be populated dynamically -->
-                    <div id="allItemsContainer">
-                        <!-- Items will be dynamically inserted here by JavaScript -->
-                    </div>
-
-                    <!-- Progress indicator -->
-                    <div id="processingProgress" class="mt-3" style="display: none;">
-                        <div class="d-flex align-items-center">
-                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
-                                <span class="visually-hidden">Loading...</span>
+                        <!-- Common fields for all items -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="fas fa-building"></i> Office/Department for All Items <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="commonOfficeSelect" required>
+                                    <option value="">Select Office/Department</option>
+                                </select>
+                                <div class="form-text">This office will be applied to all items.</div>
                             </div>
-                            <span>Processing items...</span>
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="fas fa-calendar-alt"></i> Date Received for All Items <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="commonDateReceived" required>
+                                <div class="form-text">This date will be applied to all items.</div>
+                            </div>
+                        </div>
+
+                        <!-- Items Container - This will be populated dynamically -->
+                        <div id="allItemsContainer">
+                            <!-- Items will be dynamically inserted here by JavaScript -->
+                        </div>
+
+                        <!-- Progress indicator -->
+                        <div id="processingProgress" class="mt-3" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span>Processing items...</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <div class="me-auto">
-                        <small class="text-muted">
-                            <i class="fas fa-clock"></i>
-                            Items: <span id="itemCount">0</span>
-                        </small>
+                    <div class="modal-footer">
+                        <div class="me-auto">
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i>
+                                Items: <span id="itemCount">0</span>
+                            </small>
+                        </div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="confirmItemSelection()">
+                            <i class="fas fa-check-double"></i> Process All Items
+                        </button>
                     </div>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="confirmItemSelection()">
-                        <i class="fas fa-check-double"></i> Process All Items
-                    </button>
-                </div>
                 </form>
             </div>
         </div>
