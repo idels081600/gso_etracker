@@ -181,7 +181,7 @@ if (!isset($_SESSION['username'])) {
                                         <div class="form-group">
                                             <label>Fixed Time for Pass Slip:</label><br>
                                             <label for="fix_hours">Hours:</label>
-                                            <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="2" placeholder="0">
+                                            <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="5" placeholder="0">
                                             <label for="fix_minutes">Minutes:</label>
                                             <input type="number" class="form" id="fix_minutes" name="fix_minutes" min="0" max="59" placeholder="0">
                                         </div>
