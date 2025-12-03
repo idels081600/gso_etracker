@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("edit_office").value = data.row.office;
             document.getElementById("edit_received_by").value =
               data.row.received_by;
+            document.getElementById("edit_status").value = data.row.status;
             var editModal = new bootstrap.Modal(
               document.getElementById("editTransmittalModal")
             );

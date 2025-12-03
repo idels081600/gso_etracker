@@ -628,3 +628,15 @@
     [deadline] => 12
 )
 
+[2025-12-03 03:31:51] POST data: Array
+(
+    [rfq_no] => 213
+    [description] => 123
+    [date_received] => 2025-12-03
+    [office] => SWMO, ALERT, GSO
+    [received_by] => Mae Angelie Baculio
+    [supplier] => PHILIPPINE DUPLICATORS INC.
+    [amount] => 1000
+    [status] => Pending
+)
+

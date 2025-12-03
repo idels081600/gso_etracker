@@ -47,7 +47,7 @@ require_once 'transmit_db.php';
                 </button> -->
             </div>
             <!-- Horizontal Card List for Projects Near Delivery -->
-            
+
             <!-- End Horizontal Card List -->
             <div class="card shadow-sm border-0">
                 <div class="card-body">
@@ -71,6 +71,7 @@ require_once 'transmit_db.php';
                                     <th>Date Received</th>
                                     <th>Office</th>
                                     <th>Received by</th>
+                                    <th>Status</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -123,6 +124,10 @@ require_once 'transmit_db.php';
                                 <label for="amount" class="form-label">Amount</label>
                                 <input type="text" class="form-control" id="amount" name="amount">
                             </div>
+                            <div class="col-md-6">
+                                <label for="status" class="form-label">Status</label>
+                                <input type="text" class="form-control" id="status" name="status">
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -172,6 +177,10 @@ require_once 'transmit_db.php';
                             <div class="col-md-6">
                                 <label for="edit_amount" class="form-label">Amount</label>
                                 <input type="text" class="form-control" id="edit_amount" name="amount">
+                            </div>
+                              <div class="col-md-6">
+                                <label for="edit_status" class="form-label">Status</label>
+                                <input type="text" class="form-control" id="edit_status" name="status">
                             </div>
                         </div>
                     </div>

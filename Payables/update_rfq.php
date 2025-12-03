@@ -96,7 +96,8 @@ $required = [
     'received_by',
     'supplier',
     'amount',
-    'date_received'
+    'date_received',
+    'status'
 ];
 
 foreach ($required as $field) {
@@ -108,7 +109,7 @@ foreach ($required as $field) {
 
 $id = intval($_POST['id']);
 
-$stmt = $conn->prepare("UPDATE PO_sap SET RFQ_no=?, description=?, office=?, received_by=?, supplier=?, amount=?, date_received=? WHERE id=?");
+$stmt = $conn->prepare("UPDATE PO_sap SET RFQ_no=?, description=?, office=?, received_by=?, supplier=?, amount=?, date_received=?, status=? WHERE id=?");
 
 if (!$stmt) {
     log_error('Prepare failed: ' . $conn->error);
@@ -119,9 +120,10 @@ if (!$stmt) {
 // Sanitize and cast amount to double
 $amount = sanitize_amount($_POST['amount']);
 $date_received = $_POST['date_received'];
+$status = $_POST['status'];
 
 $stmt->bind_param(
-    "sssssdsi",
+    "sssssdssi",
     $_POST['rfq_no'],
     $_POST['description'],
     $_POST['office'],
@@ -129,6 +131,7 @@ $stmt->bind_param(
     $_POST['supplier'],
     $amount,
     $date_received,
+    $status,
     $id
 );
 

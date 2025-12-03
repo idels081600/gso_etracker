@@ -102,7 +102,8 @@ if (
         $_POST['amount'],
         $_POST['date_received'],
         $_POST['office'],
-        $_POST['received_by']
+        $_POST['received_by'],
+        $_POST['status']
     )
 ) {
     // Use date_received from input if provided, else use current date and time
@@ -119,22 +120,23 @@ if (
     $amount = isset($_POST['amount']) ? sanitize_amount($_POST['amount']) : 0.00;
     
     $stmt = $conn->prepare("INSERT INTO PO_sap (
-        RFQ_no, supplier, description, amount, date_received, office, received_by, delete_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
+        RFQ_no, supplier, description, amount, date_received, office, received_by, status, delete_status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)");
     
     if (!$stmt) {
         log_error('Prepare failed: ' . $conn->error);
         $error_message = 'An error occurred while preparing the statement.';
     } else {
         $stmt->bind_param(
-            "sssdsss",
+            "sssdsssi",
             $_POST['rfq_no'],
             $_POST['supplier'],
             $_POST['description'],
             $amount,
             $date_received,
             $_POST['office'],
-            $_POST['received_by']
+            $_POST['received_by'],
+            $_POST['status']
         );
 
         if (!$stmt->execute()) {
@@ -159,6 +161,7 @@ if (
     if (!isset($_POST['date_received'])) $missing_params[] = 'date_received';
     if (!isset($_POST['office'])) $missing_params[] = 'office';
     if (!isset($_POST['received_by'])) $missing_params[] = 'received_by';
+    if (!isset($_POST['status'])) $missing_params[] = 'status';
 
     log_error('Missing POST parameters: ' . implode(', ', $missing_params));
 
