@@ -90,11 +90,11 @@ function getTransactionTypeBadge($type)
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-user-circle"></i> <?= htmlspecialchars($_SESSION['username']) ?>
+                     
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
                         <div class="dropdown-header">
-                            <strong><?= htmlspecialchars($user_role) ?></strong><br>
+                            <strong><?= htmlspecialchars($user_role ?? '') ?></strong><br>
                         </div>
 
                         <li>
@@ -197,7 +197,7 @@ function getTransactionTypeBadge($type)
                                         ?>
                                                 <tr>
                                                     <td><?= date('Y-m-d H:i:s', strtotime($row['created_at'] ?? 'now')) ?></td>
-                                                    <td><?= htmlspecialchars($row['item_name']) ?></td>
+                                                    <td><?= htmlspecialchars($row['item_name'] ?? '') ?></td>
                                                     <td>
                                                         <?php
                                                         $quantity = (int)$row['quantity'];
@@ -211,10 +211,10 @@ function getTransactionTypeBadge($type)
                                                         }
                                                         ?>
                                                     </td>
-                                                    <td><?= htmlspecialchars($row['previous_balance']) ?></td>
-                                                    <td><?= htmlspecialchars($row['new_balance']) ?></td>
-                                                    <td><?= htmlspecialchars($row['reason']) ?></td>
-                                                    <td><?= htmlspecialchars($row['requestor']) ?></td>
+                                                    <td><?= htmlspecialchars($row['previous_balance'] ?? '') ?></td>
+                                                    <td><?= htmlspecialchars($row['new_balance'] ?? '') ?></td>
+                                                    <td><?= htmlspecialchars($row['reason'] ?? '') ?></td>
+                                                    <td><?= htmlspecialchars($row['requestor'] ?? '') ?></td>
                                                     <td>
                                                         <?php
                                                         $previousBalance = (int)$row['previous_balance'];
@@ -229,12 +229,12 @@ function getTransactionTypeBadge($type)
                                                         }
                                                         ?>
                                                         <span class="badge <?= $badgeClass ?>">
-                                                            <i class="<?= $icon ?>"></i> <?= htmlspecialchars($row['transaction_type']) ?>
+                                                            <i class="<?= $icon ?>"></i> <?= htmlspecialchars($row['transaction_type'] ?? '') ?>
                                                         </span>
                                                     </td>
                                                     <td>
                                                         <button class="btn btn-warning btn-sm undo-transaction-btn"
-                                                            data-transaction-id="<?= htmlspecialchars($row['id']) ?>">
+                                                            data-transaction-id="<?= htmlspecialchars($row['id'] ?? '') ?>">
                                                             <i class="fas fa-undo"></i> Undo
                                                         </button>
                                                     </td>
@@ -277,7 +277,7 @@ function getTransactionTypeBadge($type)
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="stockInForm">
+                <form id="stockInForm" method="post" action="Logi_stock_in.php">
                     <div class="modal-body">
                         <div class="row">
                             <!-- Left Column -->
@@ -342,6 +342,12 @@ function getTransactionTypeBadge($type)
                                     </select>
                                 </div>
 
+                                <div class="mb-3">
+                                    <label for="stockInDate" class="form-label">Transaction Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="stockInDate" name="transaction_date" value="<?= date('Y-m-d') ?>" required>
+                                    <div class="form-text">Select the date of the transaction</div>
+                                </div>
+
                                 <div class="mb-3" id="customReasonDiv" style="display: none;">
                                     <label for="customReason" class="form-label">Custom Reason</label>
                                     <input type="text" class="form-control" id="customReason" name="custom_reason" placeholder="Enter custom reason">
@@ -391,7 +397,7 @@ function getTransactionTypeBadge($type)
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i class="fas fa-times"></i> Cancel
                         </button>
-                        <button type="submit" class="btn btn-success" id="submitStockIn">
+                        <button type="button" class="btn btn-success" id="submitStockIn">
                             <i class="fas fa-plus"></i> Add Stock
                         </button>
                     </div>
@@ -576,7 +582,7 @@ function getTransactionTypeBadge($type)
                                     }
                                     sort($offices);
                                     foreach ($offices as $office) {
-                                        echo '<option value="' . htmlspecialchars($office) . '">' . htmlspecialchars($office) . '</option>';
+                                        echo '<option value="' . htmlspecialchars($office ?? '') . '">' . htmlspecialchars($office ?? '') . '</option>';
                                     }
                                 }
                                 ?>
@@ -636,16 +642,16 @@ function getTransactionTypeBadge($type)
 
                                                 <td>
                                                     <input type="checkbox" class="form-check-input bulk-transaction-checkbox"
-                                                        value="<?= htmlspecialchars($row['id']) ?>"
-                                                        data-office-name="<?= htmlspecialchars($row['office_name']) ?>"
+                                                        value="<?= htmlspecialchars($row['id'] ?? '') ?>"
+                                                        data-office-name="<?= htmlspecialchars($row['office_name'] ?? '') ?>"
                                                         data-date="<?= date('Y-m-d', strtotime($row['date_requested'] ?? 'now')) ?>"
-                                                        data-item-id="<?= htmlspecialchars($row['item_id']) ?>">
+                                                        data-item-id="<?= htmlspecialchars($row['item_id'] ?? '') ?>">
                                                 </td>
-                                                <td><?= date('Y-m-d', strtotime($row['date_requested'])) ?></td>
-                                                <td><?= htmlspecialchars($row['office_name']) ?></td>
-                                                <td><?= htmlspecialchars($row['item_name']) ?></td>
-                                                <td><?= htmlspecialchars($row['approved_quantity']) ?></td>
-                                                <td><?= htmlspecialchars($row['status']) ?></td>
+                                                <td><?= date('Y-m-d', strtotime($row['date_requested'] ?? 'now')) ?></td>
+                                                <td><?= htmlspecialchars($row['office_name'] ?? '') ?></td>
+                                                <td><?= htmlspecialchars($row['item_name'] ?? '') ?></td>
+                                                <td><?= htmlspecialchars($row['approved_quantity'] ?? '') ?></td>
+                                                <td><?= htmlspecialchars($row['status'] ?? '') ?></td>
                                             </tr>
                                         <?php
                                         }

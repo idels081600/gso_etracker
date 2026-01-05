@@ -538,10 +538,9 @@ function updateNewBalance() {
 }
 
 // Stock In form submission handler
-const stockInForm = document.getElementById('stockInForm');
-if (stockInForm) {
-  stockInForm.addEventListener('submit', function(e) {
-    e.preventDefault();
+const submitStockInBtn = document.getElementById('submitStockIn');
+if (submitStockInBtn) {
+  submitStockInBtn.addEventListener('click', function(e) {
     
     // Collect all required fields
     const itemNo = document.getElementById('selectedItemNo').value;
@@ -557,17 +556,23 @@ if (stockInForm) {
       }
       reason = customReason;
     }
+    let transactionDate = document.getElementById('stockInDate').value;
+    if (!transactionDate) {
+      // Set default to today's date if no date selected
+      const today = new Date();
+      transactionDate = today.toISOString().split('T')[0];
+    }
     const previousBalance = document.getElementById('previousBalance').value;
     const newBalance = document.getElementById('calculatedNewBalance').value;
 
     // Validate required fields
-    if (!itemNo || !itemName || !quantity || !reason || !previousBalance || !newBalance) {
+    if (!itemNo || !itemName || !quantity || !reason || !transactionDate || !previousBalance || !newBalance) {
       alert('Please fill in all required fields');
       return;
     }
 
     // Show loading state
-    const submitButton = this.querySelector('button[type="submit"]');
+    const submitButton = this;
     const originalButtonText = submitButton.innerHTML;
     submitButton.disabled = true;
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
@@ -578,6 +583,7 @@ if (stockInForm) {
     formData.append('itemName', itemName);
     formData.append('quantity', quantity);
     formData.append('reason', reason);
+    formData.append('transaction_date', transactionDate);
     formData.append('previous_balance', previousBalance);
     formData.append('new_balance', newBalance);
     formData.append('transaction_type', 'Stock In');

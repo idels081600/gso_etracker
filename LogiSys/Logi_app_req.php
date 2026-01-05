@@ -762,7 +762,7 @@ if (isset($requests_stmt)) {
                     </div>
                     <div class="mb-3">
                         <label for="rejectRemarks" class="form-label"><strong>Reason for Rejection (Required):</strong></label>
-                        <textarea class="form-control" id="rejectRemarks" rows="4" placeholder="Please provide a reason for rejecting this request..." required></textarea>
+                        <textarea class="form-control" id="rejectRemarks" rows="4" placeholder="Please provide a reason for rejecting this request..." required>NO STOCK</textarea>
                         <div class="form-text">This information will be sent to the requestor.</div>
                     </div>
                     <input type="hidden" id="rejectModalRequestId">

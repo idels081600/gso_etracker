@@ -332,7 +332,7 @@ function openRejectModal(requestId, itemName) {
   // Set values
   modalRequestId.value = requestId;
   modalItemName.textContent = itemName;
-  rejectRemarks.value = "";
+  // rejectRemarks.value = ""; // Removed to keep default "No Stock"
 
   // Show the modal
   const modalElement = document.getElementById("rejectModal");
