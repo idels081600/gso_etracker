@@ -8,10 +8,117 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <style>
         .table td {
             font-size: 14px;
+        }
+
+        #qr-reader {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        #qr-reader__dashboard_section_swaplink {
+            display: none !important;
+        }
+
+        #qr-reader video {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .scanner-overlay {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 3px;
+            margin-bottom: 1rem;
+        }
+
+        .scanner-inner {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #17C37B;
+            top: 50%;
+            animation: scanLine 2s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        @keyframes scanLine {
+
+            0%,
+            100% {
+                transform: translateY(-100px);
+            }
+
+            50% {
+                transform: translateY(100px);
+            }
+        }
+
+        .scanner-corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #17C37B;
+        }
+
+        .scanner-corner.top-left {
+            top: 20px;
+            left: 20px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .scanner-corner.top-right {
+            top: 20px;
+            right: 20px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .scanner-corner.bottom-left {
+            bottom: 20px;
+            left: 20px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .scanner-corner.bottom-right {
+            bottom: 20px;
+            right: 20px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .modal-body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        #scanResult {
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
@@ -29,7 +136,7 @@
                         <a class="nav-link active" aria-current="page" href="#">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Features</a>
+                        <a class="nav-link active" href="#" id="addMemberLink">add member</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">Pricing</a>
@@ -70,20 +177,16 @@
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th scope="col">#</th>
+                                    <th scope="col">Number</th>
                                     <th scope="col">Name</th>
                                     <th scope="col">Role</th>
                                     <th scope="col">Status</th>
                                     <th scope="col">Action</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="membersTableBody">
                                 <tr>
-                                    <th scope="row">1</th>
-                                    <td>Bryan Laureano</td>
-                                    <td>Dancer</td>
-                                    <td><span class="badge bg-success">Present</span></td>
-                                    <td><button class="viewBtn btn btn-primary btn-sm"><i class="bi bi-eye"></i></button></td>
+                                    <td colspan="7" class="text-center">Loading...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -95,15 +198,32 @@
 
     <!-- QR Scan Modal -->
     <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="qrModalLabel">Scan QR Code</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h5 class="modal-title" id="qrModalLabel">
+                        <i class="bi bi-qr-code-scan me-2"></i>Scan QR Code
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body text-center">
-                    <video id="previewModal" style="width: 100%; max-height: 400px; transform: scaleX(1);"></video>
-                    <div id="scanResult" class="alert alert-success mt-3" style="display: none;" role="alert"></div>
+                <div class="modal-body text-center p-4">
+                    <div class="scanner-overlay">
+                        <div class="scanner-inner">
+                            <div id="qr-reader" style="position: relative;"></div>
+                            <div class="scanner-corner top-left"></div>
+                            <div class="scanner-corner top-right"></div>
+                            <div class="scanner-corner bottom-left"></div>
+                            <div class="scanner-corner bottom-right"></div>
+                        </div>
+                    </div>
+                    <div id="scanResult" class="alert alert-success mt-3" style="display: none;" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <strong>Success!</strong> <span id="scanResultText"></span>
+                    </div>
+                    <p class="text-muted mt-2">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Position the QR code within the frame
+                    </p>
                 </div>
             </div>
         </div>
@@ -142,6 +262,47 @@
         </div>
     </div>
 
+    <!-- Add Member Modal -->
+    <div class="modal fade" id="addMemberModal" tabindex="-1" aria-labelledby="addMemberModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addMemberModalLabel">Add New Member</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addMemberForm">
+                        <div class="mb-3">
+                            <label for="memberName" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="memberName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="memberNumber" class="form-label">Number</label>
+                            <input type="number" class="form-control" id="memberNumber" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="memberRole" class="form-label">Role</label>
+                            <select class="form-control" id="memberRole" required>
+                                <option value="">Select Role</option>
+                                <option value="Dancer">Dancer</option>
+                                <option value="Propsmen">Propsmen</option>
+                                <option value="Instrumental">Instrumental</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="memberPhone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="memberPhone" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveMemberBtn">Save Member</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const ctx = document.getElementById('statusChart').getContext('2d');
@@ -174,7 +335,7 @@
             }],
             options: {
                 responsive: false,
-                cutout: '75 %',
+                cutout: '75%',
                 plugins: {
                     legend: {
                         display: false
@@ -186,68 +347,7 @@
             }
         });
     </script>
-    <script>
-        document.getElementById('scanQR').addEventListener('click', function() {
-            // Request camera permission first
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(function(stream) {
-                    // Permission granted, stop the stream as we don't need it yet
-                    stream.getTracks().forEach(track => track.stop());
-                    // Reset modal content
-                    document.getElementById('scanResult').style.display = 'none';
-                    var myModal = new bootstrap.Modal(document.getElementById('qrModal'));
-                    myModal.show();
-                    // Create scanner after modal is shown
-                    let scanner = new Instascan.Scanner({
-                        video: document.getElementById('previewModal'),
-                        facingMode: 'environment'
-                    });
-                    scanner.addListener('scan', function(content) {
-                        const resultDiv = document.getElementById('scanResult');
-                        resultDiv.textContent = 'Scanned QR Code: ' + content;
-                        resultDiv.style.display = 'block';
-                        // Hide after 1 second
-                        setTimeout(() => {
-                            resultDiv.style.display = 'none';
-                        }, 500);
-                    });
-                    // Start scanning after modal is shown
-                    setTimeout(() => {
-                        Instascan.Camera.getCameras().then(function(cameras) {
-                            if (cameras.length > 0) {
-                                // Try to find back camera by name
-                                let backCam = cameras.find(cam => cam.name.toLowerCase().includes('back')) || cameras[cameras.length - 1];
-                                scanner.start(backCam);
-                            } else {
-                                alert('No cameras found.');
-                            }
-                        }).catch(function(e) {
-                            console.error(e);
-                            alert('Error accessing camera.');
-                        });
-                    }, 500); // Small delay to ensure modal is rendered
-                })
-                .catch(function(err) {
-                    alert('Camera permission denied or not available.');
-                    console.error('Camera permission error:', err);
-                });
-        });
-
-        // Stop scanner when modal is hidden
-        document.getElementById('qrModal').addEventListener('hidden.bs.modal', function() {
-            if (typeof scanner !== 'undefined') {
-                scanner.stop();
-            }
-        });
-
-        // View details buttons
-        document.querySelectorAll('.viewBtn').forEach(button => {
-            button.addEventListener('click', function() {
-                var modal = new bootstrap.Modal(document.getElementById('viewModal'));
-                modal.show();
-            });
-        });
-    </script>
+    <script src="dashboard.js"></script>
 </body>
 
 </html>
