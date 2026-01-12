@@ -29,9 +29,12 @@ try {
     
     // Count active members by role
     $countSql = "SELECT 
-                    SUM(CASE WHEN LOWER(role) LIKE '%dancer%' AND LOWER(status) = 'present' THEN 1 ELSE 0 END) as dancers,
-                    SUM(CASE WHEN LOWER(role) LIKE '%props%' AND LOWER(status) = 'present' THEN 1 ELSE 0 END) as propsmen,
-                    SUM(CASE WHEN LOWER(role) LIKE '%instrument%' AND LOWER(status) = 'present' THEN 1 ELSE 0 END) as instrumentals
+                    SUM(CASE WHEN LOWER(role) LIKE '%dancer%' AND LOWER(status) = 'Present' THEN 1 ELSE 0 END) as dancers,
+                    SUM(CASE WHEN LOWER(role) LIKE '%props%' AND LOWER(status) = 'Present' THEN 1 ELSE 0 END) as propsmen,
+                    SUM(CASE WHEN LOWER(role) LIKE '%instrument%' AND LOWER(status) = 'Present' THEN 1 ELSE 0 END) as instrumentals,
+                    SUM(CASE WHEN LOWER(role) LIKE '%dancer%' THEN 1 ELSE 0 END) as total_dancers,
+                    SUM(CASE WHEN LOWER(role) LIKE '%props%' THEN 1 ELSE 0 END) as total_propsmen,
+                    SUM(CASE WHEN LOWER(role) LIKE '%instrument%' THEN 1 ELSE 0 END) as total_instrumentals
                  FROM Sinulog";
     
     $countResult = $conn->query($countSql);
@@ -47,7 +50,10 @@ try {
         'roleCounts' => [
             'dancers' => (int)$counts['dancers'],
             'propsmen' => (int)$counts['propsmen'],
-            'instrumentals' => (int)$counts['instrumentals']
+            'instrumentals' => (int)$counts['instrumentals'],
+            'total_dancers' => (int)$counts['total_dancers'],
+            'total_propsmen' => (int)$counts['total_propsmen'],
+            'total_instrumentals' => (int)$counts['total_instrumentals']
         ]
     ]);
     

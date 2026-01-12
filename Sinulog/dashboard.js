@@ -1,4 +1,5 @@
 let html5QrCode;
+let allMembers = [];
 
 document.getElementById("scanQR").addEventListener("click", function () {
   var myModal = new bootstrap.Modal(document.getElementById("qrModal"));
@@ -183,13 +184,17 @@ function loadMembers() {
             console.log('Loaded members:', data);
             
             if (data.success) {
-                displayMembers(data.data);
+                allMembers = data.data;
+                filterMembers();
                 
                 // Use pre-calculated counts from database
                 if (data.roleCounts) {
                     document.getElementById('dancersCount').textContent = data.roleCounts.dancers;
                     document.getElementById('propsmenCount').textContent = data.roleCounts.propsmen;
                     document.getElementById('instrumentalsCount').textContent = data.roleCounts.instrumentals;
+                    document.getElementById('dancersTotal').textContent = 'Out Of ' + data.roleCounts.total_dancers;
+                    document.getElementById('propsmenTotal').textContent = 'Out Of ' + data.roleCounts.total_propsmen;
+                    document.getElementById('instrumentalsTotal').textContent = 'Out Of ' + data.roleCounts.total_instrumentals;
                 } else {
                     // Fallback to client-side counting
                     updateRoleCounts(data.data);
@@ -204,6 +209,21 @@ function loadMembers() {
             document.getElementById('membersTableBody').innerHTML = 
                 '<tr><td colspan="7" class="text-center text-danger">Failed to load members</td></tr>';
         });
+}
+
+// Filter members based on search and role
+function filterMembers() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const roleFilter = document.getElementById('roleFilter').value.toLowerCase();
+
+    const filtered = allMembers.filter(member => {
+        const matchesSearch = (member.name && member.name.toLowerCase().includes(searchTerm)) || 
+                              (member.number && member.number.toString().toLowerCase().includes(searchTerm));
+        const matchesRole = roleFilter === '' || (member.role && member.role.toLowerCase().includes(roleFilter));
+        return matchesSearch && matchesRole;
+    });
+
+    displayMembers(filtered);
 }
 
 // Function to display members in the table
@@ -256,21 +276,33 @@ function updateRoleCounts(members) {
   let dancers = 0;
   let propsmen = 0;
   let instrumentals = 0;
+  let totalDancers = 0;
+  let totalPropsmen = 0;
+  let totalInstrumentals = 0;
 
   members.forEach((member) => {
     // Only count if status is active
     const status = member.status ? member.status.toLowerCase() : "";
+    const role = member.role.toLowerCase();
 
-    if (status === "active") {
-      const role = member.role.toLowerCase();
+    if (status === "present") {
 
       if (role.includes("dancer")) {
         dancers++;
-      } else if (role.includes("props")) {
+      } else if (role.includes("propsmen")) {
         propsmen++;
-      } else if (role.includes("instrument")) {
+      } else if (role.includes("instrumentals")) {
         instrumentals++;
       }
+    }
+
+    // Count totals regardless of status
+    if (role.includes("dancer")) {
+      totalDancers++;
+    } else if (role.includes("propsmen")) {
+      totalPropsmen++;
+    } else if (role.includes("instrumentals")) {
+      totalInstrumentals++;
     }
   });
 
@@ -278,8 +310,60 @@ function updateRoleCounts(members) {
   document.getElementById("dancersCount").textContent = dancers;
   document.getElementById("propsmenCount").textContent = propsmen;
   document.getElementById("instrumentalsCount").textContent = instrumentals;
+  document.getElementById("dancersTotal").textContent = "Out Of " + totalDancers;
+  document.getElementById("propsmenTotal").textContent = "Out Of " + totalPropsmen;
+  document.getElementById("instrumentalsTotal").textContent = "Out Of " + totalInstrumentals;
 }
 // Load members when page loads
 document.addEventListener("DOMContentLoaded", function () {
   loadMembers();
+
+  // Check Attendance button
+  const checkAttendanceBtn = document.getElementById("checkAttendance");
+  if (checkAttendanceBtn) {
+    checkAttendanceBtn.addEventListener("click", function () {
+      var myModal = new bootstrap.Modal(document.getElementById("attendanceModal"));
+      myModal.show();
+    });
+  }
+
+  // Handle attendance group buttons
+  document.querySelectorAll(".attendance-btn").forEach((button) => {
+    button.addEventListener("click", function () {
+      const role = this.getAttribute("data-role");
+      if (confirm(`Are you sure you want to mark all ${role}s as Absent?`)) {
+        fetch("update_attendance.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: "role=" + encodeURIComponent(role),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              alert(data.message);
+              const modalEl = document.getElementById("attendanceModal");
+              const modal = bootstrap.Modal.getInstance(modalEl);
+              modal.hide();
+              loadMembers(); // Refresh table
+            } else {
+              alert("Error: " + data.message);
+            }
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+    });
+  });
+
+  // Search and Filter Event Listeners
+  const searchInput = document.getElementById('searchInput');
+  const roleFilter = document.getElementById('roleFilter');
+  
+  if (searchInput) {
+      searchInput.addEventListener('input', filterMembers);
+  }
+  if (roleFilter) {
+      roleFilter.addEventListener('change', filterMembers);
+  }
 });
