@@ -157,13 +157,39 @@
         <div class="row justify-content-center">
             <div class="col-12">
                 <div class="d-flex flex-column align-items-center">
-                    <div style="width: 350px; height: 218px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem; margin-bottom: 28px;">
-                        <h5 id="cont1_title">Status</h5>
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <canvas id="statusChart" width="125" height="125" style="margin-top: 10px; margin-left:20px"></canvas>
-                            <div style="margin-right: 1.5rem;">
-                                <p style="font-size: 3rem; font-weight: bold; color: #17C37B;">75</p>
-                                <p style="font-size: 1rem; color: #6c757d;">Out Of 100</p>
+                    <div style="width: 350px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem; margin-bottom: 28px;">
+                        <h5 style="margin-bottom: 1rem;">Team Overview</h5>
+
+                        <!-- Dancers -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #dee2e6;">
+                            <div>
+                                <p style="font-size: 1.1rem; font-weight: 600; margin: 0; color: #333;">Dancers</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="font-size: 1.5rem; font-weight: bold; color: #17C37B; margin: 0;" id="dancersCount">1</p>
+                                <p style="font-size: 0.875rem; color: #6c757d; margin: 0;">Out Of 100</p>
+                            </div>
+                        </div>
+
+                        <!-- Propsmen -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #dee2e6;">
+                            <div>
+                                <p style="font-size: 1.1rem; font-weight: 600; margin: 0; color: #333;">Propsmen</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="font-size: 1.5rem; font-weight: bold; color: #FFA500; margin: 0;" id="propsmenCount">1</p>
+                                <p style="font-size: 0.875rem; color: #6c757d; margin: 0;">Out Of 100</p>
+                            </div>
+                        </div>
+
+                        <!-- Instrumentals -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0;">
+                            <div>
+                                <p style="font-size: 1.1rem; font-weight: 600; margin: 0; color: #333;">Instrumentals</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="font-size: 1.5rem; font-weight: bold; color: #0D6EFD; margin: 0;" id="instrumentalsCount">1</p>
+                                <p style="font-size: 0.875rem; color: #6c757d; margin: 0;">Out Of 100</p>
                             </div>
                         </div>
                     </div>

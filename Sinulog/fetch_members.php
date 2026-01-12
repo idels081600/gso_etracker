@@ -1,8 +1,6 @@
 <?php
-// Prevent any output before JSON
+// In fetch_members.php - only fetch active members for counting
 ob_start();
-
-// Report errors to log file instead of output
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
@@ -12,12 +10,11 @@ header('Content-Type: application/json');
 try {
     include 'sinulog_db.php';
     
-    // Check if connection exists
     if (!isset($conn) || !$conn) {
         throw new Exception('Database connection failed');
     }
 
-    // Fetch all members from Sinulog table
+    // Fetch all members
     $sql = "SELECT * FROM Sinulog ORDER BY id DESC";
     $result = $conn->query($sql);
     
@@ -30,20 +27,33 @@ try {
         $members[] = $row;
     }
     
+    // Count active members by role
+    $countSql = "SELECT 
+                    SUM(CASE WHEN LOWER(role) LIKE '%dancer%' AND LOWER(status) = 'present' THEN 1 ELSE 0 END) as dancers,
+                    SUM(CASE WHEN LOWER(role) LIKE '%props%' AND LOWER(status) = 'present' THEN 1 ELSE 0 END) as propsmen,
+                    SUM(CASE WHEN LOWER(role) LIKE '%instrument%' AND LOWER(status) = 'present' THEN 1 ELSE 0 END) as instrumentals
+                 FROM Sinulog";
+    
+    $countResult = $conn->query($countSql);
+    $counts = $countResult->fetch_assoc();
+    
     $conn->close();
     
-    // Clear output buffer and send JSON
     ob_clean();
     echo json_encode([
         'success' => true,
         'data' => $members,
-        'count' => count($members)
+        'count' => count($members),
+        'roleCounts' => [
+            'dancers' => (int)$counts['dancers'],
+            'propsmen' => (int)$counts['propsmen'],
+            'instrumentals' => (int)$counts['instrumentals']
+        ]
     ]);
     
 } catch (Exception $e) {
     error_log('Fetch Members Error: ' . $e->getMessage());
     
-    // Clear output buffer and send JSON
     ob_clean();
     echo json_encode([
         'success' => false,
@@ -53,6 +63,5 @@ try {
     if (isset($conn)) $conn->close();
 }
 
-// End output buffering
 ob_end_flush();
 ?>
