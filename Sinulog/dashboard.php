@@ -265,34 +265,36 @@
         </div>
     </div>
 
-    <!-- View Details Modal -->
-    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
+    <!-- Edit Details Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="viewModalLabel">Contingent Details</h5>
+                    <h5 class="modal-title" id="editModalLabel">Edit Contingent Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <input type="hidden" id="editId">
                     <div class="mb-3">
-                        <label for="detailName" class="form-label">Name</label>
-                        <input type="text" class="form-control" id="detailName" value="Bryan Laureano" readonly>
+                        <label for="editNumber" class="form-label">Number</label>
+                        <input type="number" class="form-control" id="editNumber">
                     </div>
                     <div class="mb-3">
-                        <label for="detailRole" class="form-label">Role</label>
-                        <input type="text" class="form-control" id="detailRole" value="Dancer" readonly>
+                        <label for="editName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="editName">
                     </div>
                     <div class="mb-3">
-                        <label for="detailStatus" class="form-label">Status</label>
-                        <input type="text" class="form-control" id="detailStatus" value="Active" readonly>
+                        <label for="editRole" class="form-label">Role</label>
+                        <input type="text" class="form-control" id="editRole" readonly>
                     </div>
                     <div class="mb-3">
-                        <label for="detailPhone" class="form-label">Phone</label>
-                        <input type="tel" class="form-control" id="detailPhone" value="+1234567890" readonly>
+                        <label for="editStatus" class="form-label">Status</label>
+                        <input type="text" class="form-control" id="editStatus" readonly>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveEditBtn">Save Changes</button>
                 </div>
             </div>
         </div>

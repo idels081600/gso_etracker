@@ -67,12 +67,24 @@ document
     document.getElementById("scanResult").style.display = "none";
   });
 
-// View details buttons
-document.querySelectorAll(".viewBtn").forEach((button) => {
-  button.addEventListener("click", function () {
-    var modal = new bootstrap.Modal(document.getElementById("viewModal"));
-    modal.show();
-  });
+// Edit details buttons
+document.addEventListener('click', function(e) {
+    const editBtn = e.target.closest('.editBtn');
+    if (editBtn) {
+        const memberId = editBtn.getAttribute('data-id');
+        const member = allMembers.find(m => m.id == memberId);
+
+        if (member) {
+            document.getElementById('editId').value = member.id;
+            document.getElementById('editNumber').value = member.number || '';
+            document.getElementById('editName').value = member.name || '';
+            document.getElementById('editRole').value = member.role || '';
+            document.getElementById('editStatus').value = member.status || '';
+
+            var modal = new bootstrap.Modal(document.getElementById("editModal"));
+            modal.show();
+        }
+    }
 });
 
 // Add member link
@@ -171,6 +183,86 @@ document.getElementById("saveMemberBtn").addEventListener("click", function () {
   }
 });
 
+// Save edit button
+document.getElementById("saveEditBtn").addEventListener("click", function () {
+  var id = document.getElementById("editId").value;
+  var number = document.getElementById("editNumber").value;
+  var name = document.getElementById("editName").value;
+
+  if (name && number) {
+    console.log("Sending edit data:", {
+      id,
+      number,
+      name,
+    });
+
+    // Send AJAX request
+    fetch("update_member.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body:
+        "id=" +
+        encodeURIComponent(id) +
+        "&number=" +
+        encodeURIComponent(number) +
+        "&name=" +
+        encodeURIComponent(name),
+    })
+      .then((response) => {
+        console.log("Fetch response status:", response.status);
+
+        // Check if response is ok
+        if (!response.ok) {
+          throw new Error("HTTP error! status: " + response.status);
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Response data:", data);
+
+        if (data.success) {
+          // Success case
+          alert(data.message);
+
+          var modal = bootstrap.Modal.getInstance(
+            document.getElementById("editModal")
+          );
+          modal.hide();
+
+          // Refresh the table
+          loadMembers();
+        } else {
+          // Error case - display detailed error
+          let errorMessage = data.message;
+
+          // If there are multiple validation errors, display them all
+          if (data.errors && Array.isArray(data.errors)) {
+            errorMessage += "\n\nDetails:\n- " + data.errors.join("\n- ");
+          }
+
+          // Log error type if available
+          if (data.error_type) {
+            console.error("Error Type:", data.error_type);
+          }
+
+          alert(errorMessage);
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert(
+          "An error occurred while updating the member.\n\nError: " +
+            error.message
+        );
+      });
+  } else {
+    alert("Please fill all required fields");
+  }
+});
+
 
 function loadMembers() {
     fetch('fetch_members.php')
@@ -246,10 +338,10 @@ function displayMembers(members) {
                 <td>${escapeHtml(member.role)}</td>
                 <td><span class="badge ${badgeClass}">${escapeHtml(member.status)}</span></td>
                 <td>
-                    <button class="viewBtn btn btn-primary btn-sm" data-id="${
+                    <button class="editBtn btn btn-primary btn-sm" data-id="${
                       member.id
                     }" data-member='${JSON.stringify(member)}'>
-                        <i class="bi bi-eye"></i>
+                        <i class="bi bi-pencil"></i>
                     </button>
                 </td>
             </tr>
