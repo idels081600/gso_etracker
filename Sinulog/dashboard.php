@@ -167,7 +167,7 @@
                             </div>
                             <div style="text-align: right;">
                                 <p style="font-size: 1.5rem; font-weight: bold; color: #17C37B; margin: 0;" id="dancersCount">1</p>
-                                <p style="font-size: 0.875rem; color: #6c757d; margin: 0;">Out Of 100</p>
+                                <p style="font-size: 0.875rem; color: #6c757d; margin: 0;" id="dancersTotal">Out Of 0</p>
                             </div>
                         </div>
 
@@ -178,7 +178,7 @@
                             </div>
                             <div style="text-align: right;">
                                 <p style="font-size: 1.5rem; font-weight: bold; color: #FFA500; margin: 0;" id="propsmenCount">1</p>
-                                <p style="font-size: 0.875rem; color: #6c757d; margin: 0;">Out Of 100</p>
+                                <p style="font-size: 0.875rem; color: #6c757d; margin: 0;" id="propsmenTotal">Out Of 0</p>
                             </div>
                         </div>
 
@@ -189,16 +189,26 @@
                             </div>
                             <div style="text-align: right;">
                                 <p style="font-size: 1.5rem; font-weight: bold; color: #0D6EFD; margin: 0;" id="instrumentalsCount">1</p>
-                                <p style="font-size: 0.875rem; color: #6c757d; margin: 0;">Out Of 100</p>
+                                <p style="font-size: 0.875rem; color: #6c757d; margin: 0;" id="instrumentalsTotal">Out Of 0</p>
                             </div>
                         </div>
                     </div>
                     <div style="width: 375px; height: 549px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem;">
                         <h5>Contingents</h5>
-                        <div class="d-flex justify-content-between mb-2">
-                            <input type="text" class="form-control" placeholder="Search..." style="width: 70%;">
-                            <button id="scanQR" class="btn btn-primary"><i class="bi bi-qr-code-scan"></i></button>
-                            <button id="checkAttendance" class="btn btn-success"><i class="bi bi-check-circle"></i></button>
+                        <div class="d-flex flex-column gap-2 mb-2">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search name or number...">
+                            <div class="d-flex justify-content-between gap-2">
+                                <select id="roleFilter" class="form-select">
+                                    <option value="">All Roles</option>
+                                    <option value="Dancer">Dancers</option>
+                                    <option value="Propsmen">Propsmen</option>
+                                    <option value="Instrumental">Instrumentals</option>
+                                </select>
+                                <div class="d-flex gap-1">
+                                    <button id="scanQR" class="btn btn-primary"><i class="bi bi-qr-code-scan"></i></button>
+                                    <button id="checkAttendance" class="btn btn-success"><i class="bi bi-check-circle"></i></button>
+                                </div>
+                            </div>
                         </div>
                         <table class="table table-striped">
                             <thead>
@@ -255,34 +265,36 @@
         </div>
     </div>
 
-    <!-- View Details Modal -->
-    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
+    <!-- Edit Details Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="viewModalLabel">Contingent Details</h5>
+                    <h5 class="modal-title" id="editModalLabel">Edit Contingent Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <input type="hidden" id="editId">
                     <div class="mb-3">
-                        <label for="detailName" class="form-label">Name</label>
-                        <input type="text" class="form-control" id="detailName" value="Bryan Laureano" readonly>
+                        <label for="editNumber" class="form-label">Number</label>
+                        <input type="number" class="form-control" id="editNumber">
                     </div>
                     <div class="mb-3">
-                        <label for="detailRole" class="form-label">Role</label>
-                        <input type="text" class="form-control" id="detailRole" value="Dancer" readonly>
+                        <label for="editName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="editName">
                     </div>
                     <div class="mb-3">
-                        <label for="detailStatus" class="form-label">Status</label>
-                        <input type="text" class="form-control" id="detailStatus" value="Active" readonly>
+                        <label for="editRole" class="form-label">Role</label>
+                        <input type="text" class="form-control" id="editRole" readonly>
                     </div>
                     <div class="mb-3">
-                        <label for="detailPhone" class="form-label">Phone</label>
-                        <input type="tel" class="form-control" id="detailPhone" value="+1234567890" readonly>
+                        <label for="editStatus" class="form-label">Status</label>
+                        <input type="text" class="form-control" id="editStatus" readonly>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveEditBtn">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -324,6 +336,26 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" id="saveMemberBtn">Save Member</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Modal -->
+    <div class="modal fade" id="attendanceModal" tabindex="-1" aria-labelledby="attendanceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="attendanceModalLabel">Reset Attendance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Select a group to mark as <strong>Absent</strong>:</p>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary attendance-btn" data-role="Dancer">Dancers</button>
+                        <button class="btn btn-outline-warning attendance-btn" data-role="Propsmen">Propsmen</button>
+                        <button class="btn btn-outline-info attendance-btn" data-role="Instrumental">Instrumentals</button>
+                    </div>
                 </div>
             </div>
         </div>
