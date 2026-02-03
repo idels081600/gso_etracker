@@ -1,21 +1,4 @@
-<?php
-// Start session at the very beginning
-session_start();
 
-// Check if user is logged in
-if (!isset($_SESSION['username']) || !isset($_SESSION['role'])) {
-    // User is not logged in, redirect to login page
-    header("Location: ../login_v2.php");
-    exit();
-}
-
-// Check if user has the correct role for this page
-if ($_SESSION['role'] !== 'pr_admin') {
-    // User doesn't have the right role, redirect to login
-    header("Location: ../login_v2.php");
-    exit();
-}
-?>
 
 <!DOCTYPE html>
 <html lang="en">
