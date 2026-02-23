@@ -26,3 +26,15 @@
 [24-Oct-2025 01:37:13 UTC] PHP Warning:  Undefined array key "approvedQuantity" in C:\laragon\www\gso_test\LogiSys\process_all_items.php on line 150
 [24-Oct-2025 01:40:27 UTC] PHP Warning:  Undefined array key "approvedQuantity" in C:\laragon\www\gso_test\LogiSys\process_all_items.php on line 150
 [24-Oct-2025 01:40:27 UTC] PHP Warning:  Undefined array key "approvedQuantity" in C:\laragon\www\gso_test\LogiSys\process_all_items.php on line 150
+[2025-12-10 01:16:57] Bulk process failed: Insufficient stock for item Bondpaper, Long subs.20  (26). Available: 2, Requested: 10
+[2025-12-10 01:23:28] Bulk process failed: Item not found in inventory: 
+[2025-12-10 02:07:38] Bulk process failed: Insufficient stock for item Correction tape 5mm 8meters (74). Available: 0, Requested: 2
+[2025-12-10 02:09:52] Bulk process failed: Insufficient stock for item Staple wire # 35 (271). Available: 0, Requested: 1
+[2025-12-10 02:10:04] Bulk process failed: Insufficient stock for item Staple wire # 35 (271). Available: 0, Requested: 1
+[2025-12-10 02:11:55] Bulk process failed: Insufficient stock for item Staple wire # 35 (271). Available: 0, Requested: 1
+[2025-12-10 02:12:55] Bulk process failed: Insufficient stock for item Staple wire # 35 (271). Available: 0, Requested: 1
+[2025-12-10 02:17:13] Bulk process failed: Insufficient stock for item Cartolina Assorted Colors (37). Available: 0, Requested: 25
+[05-Jan-2026 06:13:10 UTC] PHP Warning:  Undefined array key "approvedQuantity" in C:\laragon\www\gso_test\LogiSys\process_all_items.php on line 150
+[04-Feb-2026 01:35:06 UTC] PHP Warning:  Undefined array key "approvedQuantity" in C:\laragon\www\gso_test\LogiSys\process_all_items.php on line 150
+[04-Feb-2026 01:35:09 UTC] PHP Warning:  Undefined array key "approvedQuantity" in C:\laragon\www\gso_test\LogiSys\process_all_items.php on line 150
+[04-Feb-2026 01:35:12 UTC] PHP Warning:  Undefined array key "approvedQuantity" in C:\laragon\www\gso_test\LogiSys\process_all_items.php on line 150

@@ -812,6 +812,483 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Edit Quantity Modal functionality
+document.addEventListener('DOMContentLoaded', function () {
+  const editQuantityModal = document.getElementById('editQuantityModal');
+  
+  if (editQuantityModal) {
+    // Populate modal when edit button is clicked
+    editQuantityModal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget; // Button that triggered the modal
+      
+      // Extract info from data-* attributes
+      const requestId = button.getAttribute('data-id');
+      const itemName = button.getAttribute('data-item-name');
+      const officeName = button.getAttribute('data-office-name');
+      const approvedQuantity = button.getAttribute('data-approved-quantity');
+      
+      // Update modal fields
+      document.getElementById('editRequestId').value = requestId;
+      document.getElementById('editItemName').textContent = itemName;
+      document.getElementById('editOfficeName').textContent = officeName;
+      document.getElementById('editApprovedQuantity').value = approvedQuantity;
+    });
+
+    // Handle form submission
+    const editQuantityForm = document.getElementById('editQuantityForm');
+    if (editQuantityForm) {
+      editQuantityForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        
+        const requestId = document.getElementById('editRequestId').value;
+        const newQuantity = document.getElementById('editApprovedQuantity').value;
+        
+        // Validate
+        if (!requestId || !newQuantity) {
+          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+          document.getElementById('errorMessage').textContent = 'Please enter a valid quantity.';
+          errorModal.show();
+          return;
+        }
+        
+        // Show loading state
+        const submitButton = document.getElementById('saveQuantityChange');
+        const originalButtonText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('request_id', requestId);
+        formData.append('approved_quantity', newQuantity);
+        
+        // Send AJAX request
+        fetch('Logi_update_approved_quantity.php', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.text().then(text => {
+            try {
+              return JSON.parse(text);
+            } catch (e) {
+              throw new Error('Invalid JSON response: ' + text);
+            }
+          });
+        })
+        .then(data => {
+          if (data.success) {
+            // Close edit modal
+            const editModalInstance = bootstrap.Modal.getInstance(editQuantityModal);
+            if (editModalInstance) {
+              editModalInstance.hide();
+            }
+            
+            // Show success modal
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            document.getElementById('successMessage').textContent = data.message || 'Quantity updated successfully!';
+            successModal.show();
+            
+            // Update the table cell directly
+            const quantityCell = document.querySelector(`.approved-quantity-cell[data-id="${requestId}"]`);
+            if (quantityCell) {
+              quantityCell.textContent = newQuantity;
+            }
+            
+            // Also update the edit button's data attribute
+            const editBtn = document.querySelector(`.edit-quantity-btn[data-id="${requestId}"]`);
+            if (editBtn) {
+              editBtn.setAttribute('data-approved-quantity', newQuantity);
+            }
+            
+            // Refresh the bulk table data from server (optional - for full refresh)
+            // Uncomment the line below if you want to reload the page instead
+            // location.reload();
+          } else {
+            // Show error modal
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            document.getElementById('errorMessage').textContent = data.message || 'Failed to update quantity.';
+            errorModal.show();
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+          document.getElementById('errorMessage').textContent = error.message || 'An error occurred while updating the quantity.';
+          errorModal.show();
+        })
+        .finally(() => {
+          // Reset button state
+          submitButton.disabled = false;
+          submitButton.innerHTML = originalButtonText;
+        });
+      });
+    }
+  }
+});
+
+// Change Item Modal functionality
+document.addEventListener('DOMContentLoaded', function () {
+  const changeItemModal = document.getElementById('changeItemModal');
+  
+  if (changeItemModal) {
+    const changeNewItemSearch = document.getElementById('changeNewItemSearch');
+    const changeItemDropdown = document.getElementById('changeItemDropdown');
+    
+    // Populate modal when change button is clicked
+    changeItemModal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      
+      const requestId = button.getAttribute('data-id');
+      const itemName = button.getAttribute('data-item-name');
+      const officeName = button.getAttribute('data-office-name');
+      const approvedQuantity = button.getAttribute('data-approved-quantity');
+      
+      document.getElementById('changeRequestId').value = requestId;
+      document.getElementById('changeCurrentItemName').textContent = itemName;
+      document.getElementById('changeOfficeName').textContent = officeName;
+      document.getElementById('changeCurrentQuantity').textContent = approvedQuantity;
+      
+      // Reset search field
+      if (changeNewItemSearch) changeNewItemSearch.value = '';
+      document.getElementById('changeNewItemNo').value = '';
+      document.getElementById('changeNewItemName').value = '';
+      document.getElementById('changeApprovedQuantity').value = '';
+    });
+
+    // Item search functionality
+    if (changeNewItemSearch) {
+      changeNewItemSearch.addEventListener('input', function () {
+        const searchTerm = this.value.toLowerCase();
+        if (searchTerm.length < 1) {
+          changeItemDropdown.style.display = 'none';
+          return;
+        }
+
+        const filteredItems = window.inventoryItems.filter(
+          (item) =>
+            item.item_name.toLowerCase().includes(searchTerm) ||
+            item.item_no.toLowerCase().includes(searchTerm)
+        );
+
+        if (filteredItems.length > 0) {
+          changeItemDropdown.innerHTML = filteredItems
+            .map(
+              (item) => `
+                <div class="p-2 border-bottom item-option"
+                     data-item-no="${item.item_no}"
+                     data-item-name="${item.item_name}"
+                     style="cursor: pointer;">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>${item.item_name}</strong>
+                            <br>
+                            <small class="text-muted">Item No: ${item.item_no}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-info">Balance: ${item.current_balance}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+          changeItemDropdown.style.display = 'block';
+        } else {
+          changeItemDropdown.innerHTML = '<div class="p-2 text-muted">No items found</div>';
+          changeItemDropdown.style.display = 'block';
+        }
+      });
+
+      // Handle item selection
+      changeItemDropdown.addEventListener('click', function (e) {
+        const itemOption = e.target.closest('.item-option');
+        if (itemOption) {
+          const itemNo = itemOption.dataset.itemNo;
+          const itemName = itemOption.dataset.itemName;
+          
+          document.getElementById('changeNewItemNo').value = itemNo;
+          document.getElementById('changeNewItemName').value = itemName;
+          changeNewItemSearch.value = itemName;
+          changeItemDropdown.style.display = 'none';
+        }
+      });
+    }
+
+    // Handle form submission
+    const changeItemForm = document.getElementById('changeItemForm');
+    if (changeItemForm) {
+      changeItemForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        
+        const requestId = document.getElementById('changeRequestId').value;
+        const newItemNo = document.getElementById('changeNewItemNo').value;
+        const newItemName = document.getElementById('changeNewItemName').value;
+        const approvedQuantity = document.getElementById('changeApprovedQuantity').value;
+        
+        if (!requestId || !newItemNo || !newItemName || !approvedQuantity) {
+          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+          document.getElementById('errorMessage').textContent = 'Please select a new item and enter approved quantity.';
+          errorModal.show();
+          return;
+        }
+        
+        const submitButton = document.getElementById('saveItemChange');
+        const originalButtonText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        
+        const formData = new FormData();
+        formData.append('request_id', requestId);
+        formData.append('new_item_no', newItemNo);
+        formData.append('new_item_name', newItemName);
+        formData.append('approved_quantity', approvedQuantity);
+        
+        fetch('Logi_change_item.php', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const editModalInstance = bootstrap.Modal.getInstance(changeItemModal);
+            if (editModalInstance) editModalInstance.hide();
+            
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            document.getElementById('successMessage').textContent = data.message;
+            successModal.show();
+            
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            document.getElementById('errorMessage').textContent = data.message || 'Failed to change item.';
+            errorModal.show();
+          }
+        })
+        .catch(error => {
+          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+          document.getElementById('errorMessage').textContent = error.message || 'An error occurred.';
+          errorModal.show();
+        })
+        .finally(() => {
+          submitButton.disabled = false;
+          submitButton.innerHTML = originalButtonText;
+        });
+      });
+    }
+  }
+});
+
+// Add Item Modal functionality
+document.addEventListener('DOMContentLoaded', function () {
+  const addItemModal = document.getElementById('addItemModal');
+  
+  if (addItemModal) {
+    const addItemSearch = document.getElementById('addItemSearch');
+    const addItemDropdown = document.getElementById('addItemDropdown');
+    
+    // Reset form when modal opens
+    addItemModal.addEventListener('show.bs.modal', function () {
+      document.getElementById('addItemForm').reset();
+      document.getElementById('addItemNo').value = '';
+      document.getElementById('addItemName').value = '';
+      if (addItemSearch) addItemSearch.value = '';
+    });
+
+    // Item search functionality
+    if (addItemSearch) {
+      addItemSearch.addEventListener('input', function () {
+        const searchTerm = this.value.toLowerCase();
+        if (searchTerm.length < 1) {
+          addItemDropdown.style.display = 'none';
+          return;
+        }
+
+        const filteredItems = window.inventoryItems.filter(
+          (item) =>
+            item.item_name.toLowerCase().includes(searchTerm) ||
+            item.item_no.toLowerCase().includes(searchTerm)
+        );
+
+        if (filteredItems.length > 0) {
+          addItemDropdown.innerHTML = filteredItems
+            .map(
+              (item) => `
+                <div class="p-2 border-bottom item-option"
+                     data-item-no="${item.item_no}"
+                     data-item-name="${item.item_name}"
+                     style="cursor: pointer;">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>${item.item_name}</strong>
+                            <br>
+                            <small class="text-muted">Item No: ${item.item_no}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-info">Balance: ${item.current_balance}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+          addItemDropdown.style.display = 'block';
+        } else {
+          addItemDropdown.innerHTML = '<div class="p-2 text-muted">No items found</div>';
+          addItemDropdown.style.display = 'block';
+        }
+      });
+
+      // Handle item selection
+      addItemDropdown.addEventListener('click', function (e) {
+        const itemOption = e.target.closest('.item-option');
+        if (itemOption) {
+          const itemNo = itemOption.dataset.itemNo;
+          const itemName = itemOption.dataset.itemName;
+          
+          document.getElementById('addItemNo').value = itemNo;
+          document.getElementById('addItemName').value = itemName;
+          addItemSearch.value = itemName;
+          addItemDropdown.style.display = 'none';
+        }
+      });
+    }
+
+    // Handle form submission
+    const addItemForm = document.getElementById('addItemForm');
+    if (addItemForm) {
+      addItemForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        
+        const officeName = document.getElementById('addItemOfficeName').value;
+        const itemNo = document.getElementById('addItemNo').value;
+        const itemName = document.getElementById('addItemName').value;
+        const approvedQuantity = document.getElementById('addApprovedQuantity').value;
+        const dateRequested = document.getElementById('addDateRequested').value;
+        
+        if (!officeName || !itemNo || !itemName || !approvedQuantity || !dateRequested) {
+          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+          document.getElementById('errorMessage').textContent = 'Please fill in all required fields.';
+          errorModal.show();
+          return;
+        }
+        
+        const submitButton = document.getElementById('saveNewItem');
+        const originalButtonText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+        
+        const formData = new FormData();
+        formData.append('office_name', officeName);
+        formData.append('item_no', itemNo);
+        formData.append('item_name', itemName);
+        formData.append('approved_quantity', approvedQuantity);
+        formData.append('date_requested', dateRequested);
+        formData.append('status', 'Approved');
+        
+        fetch('Logi_add_item_request.php', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const modalInstance = bootstrap.Modal.getInstance(addItemModal);
+            if (modalInstance) modalInstance.hide();
+            
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            document.getElementById('successMessage').textContent = data.message;
+            successModal.show();
+            
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            document.getElementById('errorMessage').textContent = data.message || 'Failed to add item.';
+            errorModal.show();
+          }
+        })
+        .catch(error => {
+          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+          document.getElementById('errorMessage').textContent = error.message || 'An error occurred.';
+          errorModal.show();
+        })
+        .finally(() => {
+          submitButton.disabled = false;
+          submitButton.innerHTML = originalButtonText;
+        });
+      });
+    }
+  }
+});
+
+// Delete Item functionality
+document.addEventListener('DOMContentLoaded', function () {
+  const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+  
+  if (confirmDeleteModal) {
+    // Handle delete button clicks in the table using event delegation
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('.delete-item-btn')) {
+        const btn = e.target.closest('.delete-item-btn');
+        const requestId = btn.getAttribute('data-id');
+        document.getElementById('deleteRequestId').value = requestId;
+        
+        const deleteModal = new bootstrap.Modal(confirmDeleteModal);
+        deleteModal.show();
+      }
+    });
+
+    // Handle confirm delete
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.addEventListener('click', function() {
+        const requestId = document.getElementById('deleteRequestId').value;
+        
+        if (!requestId) {
+          return;
+        }
+        
+        const originalButtonText = this.innerHTML;
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        
+        const formData = new FormData();
+        formData.append('request_id', requestId);
+        
+        fetch('Logi_delete_item_request.php', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const modalInstance = bootstrap.Modal.getInstance(confirmDeleteModal);
+            if (modalInstance) modalInstance.hide();
+            
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            document.getElementById('successMessage').textContent = data.message;
+            successModal.show();
+            
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            document.getElementById('errorMessage').textContent = data.message || 'Failed to delete item.';
+            errorModal.show();
+          }
+        })
+        .catch(error => {
+          const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+          document.getElementById('errorMessage').textContent = error.message || 'An error occurred.';
+          errorModal.show();
+        })
+        .finally(() => {
+          this.disabled = false;
+          this.innerHTML = originalButtonText;
+        });
+      });
+    }
+  }
+});
+
 // Bulk Transactions modal logic
 document.addEventListener('DOMContentLoaded', function () {
   const bulkModalElement = document.getElementById('bulkTransactionModal');
@@ -852,7 +1329,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!Array.isArray(rows) || rows.length === 0) {
       bulkTableBody.innerHTML = `
         <tr>
-          <td colspan="5" class="text-center">
+          <td colspan="7" class="text-center">
             <div class="py-4">
               <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
               <p class="text-muted">No requests found</p>
@@ -875,7 +1352,7 @@ document.addEventListener('DOMContentLoaded', function () {
               <td>
                 <input type="checkbox" class="form-check-input bulk-transaction-checkbox"
                   value="${safeId}"
-                  data-office-name="${safeOffice.replace(/"/g, '&quot;')}"
+                  data-office-name="${safeOffice.replace(/"/g, '"')}"
                   data-date="${safeDate}"
                   data-item-id="${safeItemId}"
                   data-uploaded="${safeUploaded}">
@@ -883,8 +1360,30 @@ document.addEventListener('DOMContentLoaded', function () {
               <td>${safeDate}</td>
               <td>${safeOffice}</td>
               <td>${safeItem}</td>
-              <td>${safeQty}</td>
+              <td class="approved-quantity-cell" data-id="${safeId}">${safeQty}</td>
               <td>${safeStatus}</td>
+              <td>
+                <button type="button" class="btn btn-sm btn-primary edit-quantity-btn"
+                  data-id="${safeId}"
+                  data-item-name="${safeItem.replace(/"/g, '"')}"
+                  data-office-name="${safeOffice.replace(/"/g, '"')}"
+                  data-approved-quantity="${safeQty}"
+                  data-bs-toggle="modal" data-bs-target="#editQuantityModal">
+                  <i class="fas fa-edit"></i> Edit
+                </button>
+                <button type="button" class="btn btn-sm btn-success change-item-btn"
+                  data-id="${safeId}"
+                  data-item-name="${safeItem.replace(/"/g, '"')}"
+                  data-office-name="${safeOffice.replace(/"/g, '"')}"
+                  data-approved-quantity="${safeQty}"
+                  data-bs-toggle="modal" data-bs-target="#changeItemModal">
+                  <i class="fas fa-exchange-alt"></i> Change
+                </button>
+                <button type="button" class="btn btn-sm btn-danger delete-item-btn"
+                  data-id="${safeId}">
+                  <i class="fas fa-ban"></i> Reject
+                </button>
+              </td>
             </tr>`;
         })
         .join('');

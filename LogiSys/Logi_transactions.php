@@ -8,6 +8,22 @@ require_once 'logi_display_data.php'; // Include your database functions
 $transactions_data = display_transactions(); // Fetch transactions from the database
 $bulk_transactions_data = display_requested_items(); // Fetch transactions from the database
 $logi_all_data = display_inventory_items(); // Fetch inventory items from the database
+
+// Function to get all unique office names from the database
+function getAllOffices($conn) {
+    $offices = [];
+    $query = "SELECT DISTINCT office_name FROM items_requested WHERE office_name IS NOT NULL AND office_name != '' ORDER BY office_name ASC";
+    $result = mysqli_query($conn, $query);
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $offices[] = $row['office_name'];
+        }
+    }
+    return $offices;
+}
+
+// Get all offices for dropdown
+$all_offices = getAllOffices($conn);
 function getTransactionTypeBadge($type)
 {
     switch (strtolower($type)) {
@@ -599,6 +615,9 @@ function getTransactionTypeBadge($type)
                         <div class="col-12">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                                        <i class="fas fa-plus"></i> Add Item
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-success" id="selectAllBulk">
                                         <i class="fas fa-check-square"></i> Select All
                                     </button>
@@ -626,6 +645,7 @@ function getTransactionTypeBadge($type)
                                     <th>Item Name</th>
                                     <th>Approved Quantity</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="bulkTransactionsTableBody">
@@ -639,7 +659,6 @@ function getTransactionTypeBadge($type)
                                         while ($row = mysqli_fetch_assoc($bulk_transactions_data)) {
                                 ?>
                                             <tr>
-
                                                 <td>
                                                     <input type="checkbox" class="form-check-input bulk-transaction-checkbox"
                                                         value="<?= htmlspecialchars($row['id'] ?? '') ?>"
@@ -650,8 +669,30 @@ function getTransactionTypeBadge($type)
                                                 <td><?= date('Y-m-d', strtotime($row['date_requested'] ?? 'now')) ?></td>
                                                 <td><?= htmlspecialchars($row['office_name'] ?? '') ?></td>
                                                 <td><?= htmlspecialchars($row['item_name'] ?? '') ?></td>
-                                                <td><?= htmlspecialchars($row['approved_quantity'] ?? '') ?></td>
+                                                <td class="approved-quantity-cell" data-id="<?= htmlspecialchars($row['id'] ?? '') ?>"><?= htmlspecialchars($row['approved_quantity'] ?? '') ?></td>
                                                 <td><?= htmlspecialchars($row['status'] ?? '') ?></td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-primary edit-quantity-btn"
+                                                        data-id="<?= htmlspecialchars($row['id'] ?? '') ?>"
+                                                        data-item-name="<?= htmlspecialchars($row['item_name'] ?? '') ?>"
+                                                        data-office-name="<?= htmlspecialchars($row['office_name'] ?? '') ?>"
+                                                        data-approved-quantity="<?= htmlspecialchars($row['approved_quantity'] ?? '') ?>"
+                                                        data-bs-toggle="modal" data-bs-target="#editQuantityModal">
+                                                        <i class="fas fa-edit"></i> Edit
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-success change-item-btn"
+                                                        data-id="<?= htmlspecialchars($row['id'] ?? '') ?>"
+                                                        data-item-name="<?= htmlspecialchars($row['item_name'] ?? '') ?>"
+                                                        data-office-name="<?= htmlspecialchars($row['office_name'] ?? '') ?>"
+                                                        data-approved-quantity="<?= htmlspecialchars($row['approved_quantity'] ?? '') ?>"
+                                                        data-bs-toggle="modal" data-bs-target="#changeItemModal">
+                                                        <i class="fas fa-exchange-alt"></i> Change
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-danger delete-item-btn"
+                                                        data-id="<?= htmlspecialchars($row['id'] ?? '') ?>">
+                                                        <i class="fas fa-ban"></i> Reject
+                                                    </button>
+                                                </td>
                                             </tr>
                                         <?php
                                         }
@@ -749,6 +790,51 @@ function getTransactionTypeBadge($type)
         });
     </script>
 
+    <!-- Edit Quantity Modal -->
+    <div class="modal fade" id="editQuantityModal" tabindex="-1" aria-labelledby="editQuantityModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editQuantityModalLabel">
+                        <i class="fas fa-edit text-primary"></i> Edit Approved Quantity
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editQuantityForm">
+                    <div class="modal-body">
+                        <!-- Hidden field for request ID -->
+                        <input type="hidden" id="editRequestId">
+
+                        <!-- Item Info -->
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Item Name:</strong></label>
+                            <p id="editItemName" class="form-control-plaintext fw-bold"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Office:</strong></label>
+                            <p id="editOfficeName" class="form-control-plaintext"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editApprovedQuantity" class="form-label">Approved Quantity <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="editApprovedQuantity" name="approved_quantity" min="0" required>
+                            <div class="form-text">Enter the new approved quantity</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="saveQuantityChange">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Success Modal -->
     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -784,6 +870,149 @@ function getTransactionTypeBadge($type)
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Change Item Modal -->
+    <div class="modal fade" id="changeItemModal" tabindex="-1" aria-labelledby="changeItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changeItemModalLabel">
+                        <i class="fas fa-exchange-alt text-success"></i> Change Item
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="changeItemForm">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Current Item:</strong></label>
+                                    <p id="changeCurrentItemName" class="form-control-plaintext fw-bold"></p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Office:</strong></label>
+                                    <p id="changeOfficeName" class="form-control-plaintext"></p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Current Approved Quantity:</strong></label>
+                                    <p id="changeCurrentQuantity" class="form-control-plaintext"></p>
+                                </div>
+                                <input type="hidden" id="changeRequestId">
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="changeNewItemSearch" class="form-label">Select New Item <span class="text-danger">*</span></label>
+                                    <div class="position-relative">
+                                        <input type="text" class="form-control" id="changeNewItemSearch" name="new_item_search" placeholder="Type to search for an item..." autocomplete="off" required>
+                                        <div class="position-absolute top-100 start-0 w-100 bg-white border rounded-bottom shadow-sm" id="changeItemDropdown" style="display: none; max-height: 250px; overflow-y: auto; z-index: 1050;"></div>
+                                    </div>
+                                    <input type="hidden" id="changeNewItemNo" name="new_item_no">
+                                    <input type="hidden" id="changeNewItemName" name="new_item_name">
+                                    <div class="form-text">Type to search and select a new item</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="changeApprovedQuantity" class="form-label">Approved Quantity <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="changeApprovedQuantity" name="approved_quantity" min="1" required>
+                                    <div class="form-text">Enter the approved quantity for the new item</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i> Cancel</button>
+                        <button type="submit" class="btn btn-success" id="saveItemChange"><i class="fas fa-exchange-alt"></i> Change Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addItemModalLabel">
+                        <i class="fas fa-plus text-primary"></i> Add New Item Request
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addItemForm">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="addItemOfficeName" class="form-label">Office Name <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="addItemOfficeName" name="office_name" required>
+                                        <option value="">Select Office...</option>
+                                        <?php
+                                        // Populate dropdown with all offices
+                                        if (!empty($all_offices)) {
+                                            foreach ($all_offices as $office) {
+                                                echo '<option value="' . htmlspecialchars($office) . '">' . htmlspecialchars($office) . '</option>';
+                                            }
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="addItemSearch" class="form-label">Select Item <span class="text-danger">*</span></label>
+                                    <div class="position-relative">
+                                        <input type="text" class="form-control" id="addItemSearch" name="item_search" placeholder="Type to search for an item..." autocomplete="off" required>
+                                        <div class="position-absolute top-100 start-0 w-100 bg-white border rounded-bottom shadow-sm" id="addItemDropdown" style="display: none; max-height: 250px; overflow-y: auto; z-index: 1050;"></div>
+                                    </div>
+                                    <input type="hidden" id="addItemNo" name="item_no">
+                                    <input type="hidden" id="addItemName" name="item_name">
+                                    <div class="form-text">Type to search and select an item</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="addApprovedQuantity" class="form-label">Approved Quantity <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="addApprovedQuantity" name="approved_quantity" min="1" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="addDateRequested" class="form-label">Date Requested <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="addDateRequested" name="date_requested" value="<?= date('Y-m-d') ?>" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Status:</strong></label>
+                                    <p class="form-control-plaintext"><span class="badge bg-success">Approved</span></p>
+                                    <input type="hidden" name="status" value="Approved">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i> Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="saveNewItem"><i class="fas fa-plus"></i> Add Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="confirmDeleteModalLabel">
+                        <i class="fas fa-ban"></i> Confirm Reject
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to reject this item request?</p>
+                    <p class="text-muted small">The request status will be set to 'Rejected' and will no longer appear in the list.</p>
+                    <input type="hidden" id="deleteRequestId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i> Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn"><i class="fas fa-ban"></i> Reject</button>
                 </div>
             </div>
         </div>
