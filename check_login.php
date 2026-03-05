@@ -94,6 +94,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "pr_admin":
                 header("location:prtracking/dashboard.php");
                 break;
+            case "Docu_admin":
+                header("location:document_tracker/dashboard.php");
+                break;
             default:
                 header("location:login_v2.php");
                 break;
