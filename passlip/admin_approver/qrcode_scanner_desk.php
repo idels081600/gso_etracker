@@ -260,7 +260,7 @@ if (!isset($_SESSION['username'])) {
                 textDisplay.textContent = "";
             }
 
-            function showSuccess(name, status) {
+            function showSuccess(name, status, scannedData) {
                 // Hide error message
                 errorMessage.style.display = "none";
                 errorMessage.classList.add("d-none");
@@ -280,8 +280,8 @@ if (!isset($_SESSION['username'])) {
                     textHead.textContent = "Success!";
                 }
 
-                // Display name
-                textDisplay.textContent = name || "Unknown";
+                // Display the scanned data as is
+                textDisplay.textContent = scannedData;
             }
 
             function showError(message) {
@@ -338,7 +338,7 @@ if (!isset($_SESSION['username'])) {
                         if (isSuccessStatus || isArrivedStatus) {
                             // Handle success cases
                             const name = response.name || scannedData;
-                            showSuccess(name, response.status);
+                            showSuccess(name, response.status, scannedData);
                         } else {
                             // Handle error cases
                             let errorMsg = "An unexpected error occurred.";
