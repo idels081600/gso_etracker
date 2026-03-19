@@ -1,7 +1,7 @@
 <?php
 session_start();
 $full_name = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : '';
-require_once 'dbh.php';
+require_once 'passlip/dbh.php';
 
 if ($conn === false) {
     die("Connection error");
@@ -39,15 +39,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // User found, set session variables based on role
         $_SESSION['username'] = $row['username'];
         $_SESSION['role'] = $row['role'];
+        // new: store office so other modules can filter data
+        $_SESSION['office'] = isset($row['office']) ? $row['office'] : 'ASSET';
         $_SESSION['pay_name'] = $row['name'];
         $_SESSION['logged_in'] = true;
         // Redirect based on role
         switch ($row['role']) {
             case "Admin":
-                header("location:index.php");
+                header("location:passlip/super_admin/index.php");
                 break;
             case "Employee":
-                header("location:add_req_emp.php");
+                header("location:passlip/requestor/add_req_emp.php");
                 break;
             // case "Desk Clerk":
             //     header("location:qrcode_scanner_dept.php");
@@ -65,7 +67,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("location:index_r.php");
                 break;
             case "Admin1":
-                header("location:index_desk.php");
+                header("location:passlip/admin_approver/index_desk.php");
                 break;
             case "TCWS Scanner":
                 header("location:qrcode_scanner_desk_tcws.php");
