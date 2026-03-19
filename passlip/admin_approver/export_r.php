@@ -33,12 +33,18 @@ $sql_personal = $conn->query($result_personal);
 class PDF extends FPDF
 {
     var $printedHeader = false;
+    var $title = 'Request Summary';
+
+    function __construct($title = 'Request Summary') {
+        parent::__construct();
+        $this->title = $title;
+    }
 
     function Header()
     {
         if (!$this->printedHeader) {
             $this->SetFont('Arial', 'B', 14);
-            $this->Cell(0, 10, 'Request Summary', 0, 1, 'C');
+            $this->Cell(0, 10, $this->title, 0, 1, 'C');
             $this->Ln(10);
             $this->printedHeader = true;
         }
@@ -154,7 +160,15 @@ if ($range == 'today') {
         $totals['Personal'][$row->name] += $minutes;
     }
 
-    $pdf = new PDF();
+    if ($range == 'first15') {
+        $title = '1st Kinsena';
+    } elseif ($range == 'second15') {
+        $title = '2nd Kinsena';
+    } else {
+        $title = 'Request Summary';
+    }
+
+    $pdf = new PDF($title);
     $pdf->AddPage('L', array(215.9, 400)); // Landscape orientation
 
     // For each type
