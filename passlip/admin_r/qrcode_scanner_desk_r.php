@@ -116,7 +116,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <a class="navbar-brand" href="index_r.php" aria-label="Go to home page">
-            <img src="logo.png" alt="Logo" class="logo-img" />
+            <img src="../logo.png" alt="Logo" class="logo-img" />
             <span class="logo-text">E-Pass Slip</span>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
@@ -130,7 +130,7 @@
                 <li class="nav-item" role="none"><a class="nav-link" href="declined_r.php" role="menuitem">Declined Request</a></li>
                 <li class="nav-item" role="none"><a class="nav-link" href="track_emp_r.php" role="menuitem">Track Employees</a></li>
                 <li class="nav-item" role="none"><a class="nav-link" href="qrcode_scanner_desk_r.php" role="menuitem">Scanner</a></li>
-                <li class="nav-item" role="none"><a class="nav-link" href="logout.php" role="menuitem">Logout</a></li>
+                <li class="nav-item" role="none"><a class="nav-link" href="../../logout.php" role="menuitem">Logout</a></li>
             </ul>
         </div>
     </nav>
@@ -312,7 +312,7 @@
                 textHead.textContent = "Processing...";
 
                 $.ajax({
-                    url: "code_dept.php",
+                    url: "../code_dept.php",
                     type: "POST",
                     data: {
                         scannedData: scannedData
