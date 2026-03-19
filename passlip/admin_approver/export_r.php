@@ -167,7 +167,7 @@ if ($range == 'today') {
         $pdf->SetTextColor(255, 255, 255);
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->Cell(100, 10, 'Name', 1, 0, 'C', true);
-        $pdf->Cell(100, 10, 'Total Time', 1, 0, 'C', true);
+        $pdf->Cell(100, 10, 'Total Time Outside the Office', 1, 0, 'C', true);
         $pdf->Ln();
         $pdf->SetTextColor(0, 0, 0);
         $pdf->SetFont('Arial', '', 9);
