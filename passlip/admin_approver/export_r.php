@@ -64,7 +64,7 @@ class PDF extends FPDF
         $this->Cell(28, 10, 'Date', 1, 0, 'C', true);
         $this->Cell(20, 10, 'TimeRet', 1, 0, 'C', true);
         $this->Cell(40, 10, 'Confirmed By', 1, 0, 'C', true);
-        $this->Cell(50, 10, 'Remarks', 1, 0, 'C', true);
+        $this->Cell(50, 10, 'Duration Outside Office', 1, 0, 'C', true);
         $this->Ln();
 
         // Reset text color to black for table content
