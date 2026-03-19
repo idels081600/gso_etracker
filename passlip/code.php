@@ -107,11 +107,11 @@ if (isset($_POST['approve_req_desk'])) {
 
     if ($query_run) {
         $_SESSION['message'] = "Request Updated Successfully";
-        header("Location: index_desk.php");
+        header("Location: passlip/admin_approver/index_desk.php");
         exit(0);
     } else {
         $_SESSION['message'] = "Request Not Updated. Error: " . mysqli_error($conn);
-        header("Location: index_desk.php");
+        header("Location: passlip/admin_approver/index_desk.php");
         exit(0);
     }
 }
