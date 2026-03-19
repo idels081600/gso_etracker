@@ -64,7 +64,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("location:add_req_emp.php");
                 break;
             case "Admin2":
-                header("location:index_r.php");
+                header("location:passlip/admin_r/index_r.php");
                 break;
             case "Admin1":
                 header("location:passlip/admin_approver/index_desk.php");
