@@ -100,7 +100,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <a class="navbar-brand" href="index_desk.php">
+        <a class="navbar-brand" href="index_r.php">
             <img src="../logo.png" alt="Logo" class="logo-img">
             <span class="logo-text">E-Pass Slip </span>
         </a>
@@ -112,14 +112,19 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="nav navbar-nav navbar-right">
                 <li class="nav-item">
-                    <a class="nav-link" href="index_desk.php">Home <span class="sr-only">(current)</span></a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="track_emp_desk.php">Track Employees</a>
+                    <a class="nav-link" href="index_r.php">Home <span class="sr-only">(current)</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_desk.php">Scanner</a>
+                    <a class="nav-link" href="add_req_r.php">Add Request</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="declined_r.php">Declined Request</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="track_emp_r.php">Track Employees</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="qrcode_scanner_desk_r.php">Scanner</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="../../logout.php">Logout</a>
@@ -188,7 +193,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                         setTimeout(restoreCheckboxStates, 10); // Small delay to ensure DOM is updated
                     }
                 };
-                xhttp.open("GET", "data_desk.php", true);
+                xhttp.open("GET", "data_r.php", true);
                 xhttp.send();
             }, 1000);
         }
@@ -236,7 +241,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                     <?php echo $row["Status"]; ?>
                                 </td>
                                 <td>
-                                    <a href="view_desk.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a>
+                                    <a href="view_r.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a>
                                     <input type="checkbox" name="selected[]" value="<?= $row['id']; ?>" class="form-check-input ml-2">
                                 </td>
                         </tr>
@@ -272,14 +277,9 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                             </div>
                             <div class="card-body">
                                 <div class="form-group mb-3">
-                                    <label for="esttime">Estimated Time</label>
-                                    <input type="time" class="form-control" id="esttime" name="esttime" min="08:00" max="18:00">
-                                </div>
-
-                                <div class="form-group mb-3">
                                     <label>Fixed Time for Pass Slip:</label><br>
                                     <label for="fix_hours">Hours:</label>
-                                    <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="8" placeholder="0">
+                                    <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="2" placeholder="0">
                                     <label for="fix_minutes">Minutes:</label>
                                     <input type="number" class="form" id="fix_minutes" name="fix_minutes" min="0" max="59" placeholder="0">
                                 </div>
@@ -294,9 +294,8 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                 <div class="form-group mb-3">
                                     <label for="sel2">Confirmed By:</label>
                                     <select class="form-control" id="sel2" name="confirmed_by" required>
-                                        <?php if (isset($_SESSION['pay_name']) && !empty($_SESSION['pay_name'])): ?>
-                                            <option><?php echo htmlspecialchars($_SESSION['pay_name']); ?></option>
-                                        <?php endif; ?>
+                                        <option>CAGULADA RENE ART</option>
+                                        <option>CASAS RUBY</option>
                                     </select>
                                 </div>
                             </div>
@@ -472,7 +471,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     console.log("Form submission - Est Time:", esttime);
 
                     // Validate form fields - estimated time only required if not declined
-
                     if (!status) {
                         alert('Please select a status.');
                         return false;
@@ -507,7 +505,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                         console.log(pair[0] + ': ' + pair[1]);
                     }
 
-                    fetch('bulk_accept.php', {
+                    fetch('../admin_approver/bulk_accept.php', {
                             method: 'POST',
                             body: formData
                         })
@@ -524,7 +522,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
 
                             // Success - show message and redirect
                             alert('Requests processed successfully!');
-                            window.location.href = 'index_desk.php';
+                            window.location.href = 'index_r.php';
                         })
                         .catch(error => {
                             // Error handling
@@ -552,6 +550,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     const confirmedBy = document.getElementById('sel2');
 
                     // Only require estimated time if status is not declined
+
                     if (!status || !status.value) {
                         alert('Please select a status.');
                         return false;
@@ -648,7 +647,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
 
             // Create a request to fetch detailed information
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', 'get_request_details.php', true);
+            xhr.open('POST', '../get_request_details.php', true);
             xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 
             xhr.onreadystatechange = function() {
@@ -656,21 +655,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     console.log("XHR status:", this.status);
                     if (this.status === 200) {
                         detailedListContainer.innerHTML = this.responseText;
-
-                        // Check Type of Business and adjust inputs
-                        const hasOfficial = detailedListContainer.textContent.includes('Official Business');
-                        const hasPersonal = detailedListContainer.textContent.includes('Personal');
-                        const hoursInput = document.getElementById('fix_hours');
-                        const minutesInput = document.getElementById('fix_minutes');
-
-                        if (hasOfficial) {
-                            hoursInput.max = 4;
-                            hoursInput.disabled = false;
-                        } else if (hasPersonal) {
-                            hoursInput.disabled = true;
-                            hoursInput.value = '';
-                            minutesInput.max = 30;
-                        }
                     } else {
                         console.error("Error loading request details:", this.statusText);
                         detailedListContainer.innerHTML = '<div class="alert alert-danger">Error loading request details</div>';

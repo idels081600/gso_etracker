@@ -1,13 +1,19 @@
 <?php
 session_start();
-require_once '../dbh.php'; // Assuming this file contains your database connection logic
+require_once '../dbh.php';
+
+
+
+if (!$conn) {
+    die("Connection failed: " . mysqli_connect_error());
+}
 
 if (!isset($_SESSION['username'])) {
     header("location:../../login_v2.php");
-    exit();
-} else if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Admin' || $_SESSION['role'] == 'TCWS Employee') {
+} else if ($_SESSION['role'] == 'Employee') {
     header("location:../../login_v2.php");
-    exit();
+} else if ($_SESSION['role'] == 'Desk Clerk' || $_SESSION['role'] == 'TCWS Employee') {
+    header("location:../../login_v2.php");
 }
 ?>
 
@@ -20,8 +26,7 @@ if (!isset($_SESSION['username'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-        integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
@@ -69,6 +74,7 @@ if (!isset($_SESSION['username'])) {
             display: flex;
             flex-direction: row;
             margin-top: 10px;
+
         }
 
         #declineButtonContainer {
@@ -79,33 +85,49 @@ if (!isset($_SESSION['username'])) {
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <a class="navbar-brand" href="index_desk.php">
+        <a class="navbar-brand" href="index_r.php">
             <img src="../logo.png" alt="Logo" class="logo-img">
             <span class="logo-text">E-Pass Slip </span>
         </a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="nav navbar-nav navbar-right">
                 <li class="nav-item">
-                    <a class="nav-link" href="index_desk.php">Home <span class="sr-only">(current)</span></a>
+                    <a class="nav-link" href="index_r.php">Home <span class="sr-only">(current)</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="track_emp_desk.php">Track Employees</a>
+                    <a class="nav-link" href="add_req_r.php">Add Request</a>
+                </li>
+                <!-- <li class="nav-item">
+                    <a class="nav-link" href="approved_tcws.php">Approved</a>
+                </li> -->
+                <li class="nav-item">
+                    <a class="nav-link" href="declined_r.php">Declined Request</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_desk.php">Scanner</a>
+                    <a class="nav-link" href="track_emp_r.php">Track Employees</a>
+                </li>
+                <!-- <li class="nav-item">
+                    <a class="nav-link" href="register.php">Register</a>
+                </li> -->
+                <!-- <li class="nav-item">
+                    <a class="nav-link" href="qrcode_scanner.php">Scan QRcode</a>
+                </li> -->
+                <!-- <li class="nav-item">
+                    <a class="nav-link" href="qrcode_scanner_dept_r.php">Arrival</a>
+                </li> -->
+                <li class="nav-item">
+                    <a class="nav-link" href="qrcode_scanner_desk_r.php">Scanner</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="../logout.php">Logout</a>
+                    <a class="nav-link" href="../../logout.php">Logout</a>
                 </li>
             </ul>
         </div>
     </nav>
-
     <style>
         /* Remove the white box on hover */
         .navbar-nav .nav-link {
@@ -125,7 +147,7 @@ if (!isset($_SESSION['username'])) {
             <div class="card">
                 <div class="card-header">
                     <h4>Request Details
-                        <a href="index_desk.php" id="btn_back" class="btn btn-danger float-end">Back</a>
+                        <a href="index_r.php" id="btn_back" class="btn btn-danger float-end">Back</a>
                     </h4>
                 </div>
                 <div class="card-body">
@@ -181,10 +203,14 @@ if (!isset($_SESSION['username'])) {
                                         <div class="form-group">
                                             <label>Fixed Time for Pass Slip:</label><br>
                                             <label for="fix_hours">Hours:</label>
-                                            <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="8" placeholder="0">
+                                            <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="2" placeholder="0">
                                             <label for="fix_minutes">Minutes:</label>
                                             <input type="number" class="form" id="fix_minutes" name="fix_minutes" min="0" max="59" placeholder="0">
                                         </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="esttime">Estimated Time</label>
+                                        <input type="time" class="form" id="esttime" name="esttime" min="08:00" max="18:00">
                                     </div>
                                     <div class="mb-3">
                                         <label>Type of Request:</label>
@@ -197,6 +223,7 @@ if (!isset($_SESSION['username'])) {
                                         <div class="form-group">
                                             <label for="sel1">Status:</label>
                                             <select class="form" id="sel1" name='status'>
+
                                                 <option>Partially Approved</option>
                                                 <option>Declined</option>
                                             </select>
@@ -210,18 +237,17 @@ if (!isset($_SESSION['username'])) {
                                         <div class="form-group">
                                             <label for="sel2">Confirmed By:</label>
                                             <select class="form" id="sel2" name='confirmed_by'>
-                                                <?php if (isset($_SESSION['pay_name']) && !empty($_SESSION['pay_name'])): ?>
-                                                    <option><?php echo htmlspecialchars($_SESSION['pay_name']); ?></option>
-                                                <?php endif; ?>
+                                                <option>CAGULADA RENE ART</option>
+                                                <option>CASAS RUBY</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="button-row">
                                         <div id="approveButtonContainer">
-                                            <button type="submit" name="approve_req_desk" class="btn btn-success">Approve</button>
+                                            <button type="submit" name="approve_req_r" class="btn btn-success">Approve</button>
                                         </div>
                                         <div id="declineButtonContainer">
-                                            <button type="submit" name="decline_req_desk" class="btn btn-danger">Decline</button>
+                                            <button type="submit" name="decline_req_r" class="btn btn-danger">Decline</button>
                                         </div>
                                     </div>
                                 </div>
@@ -236,13 +262,11 @@ if (!isset($_SESSION['username'])) {
             </div>
         </div>
     </div>
-
     </div>
-
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             // Focus on the 'esttime' input field when the page loads
-            const esttimeInput = document.getElementById("fix_hours");
+            const esttimeInput = document.getElementById("esttime");
             if (esttimeInput) {
                 esttimeInput.focus();
             }
@@ -262,7 +286,7 @@ if (!isset($_SESSION['username'])) {
         });
     </script>
 
-    <script>s
+    <script>
         // Add an event listener to the dropdown
         document.getElementById("sel1").addEventListener("change", function() {
             var selectedStatus = this.value;
@@ -336,19 +360,15 @@ if (!isset($_SESSION['username'])) {
                     // Check if the event target is an input field
                     if (!event.target.tagName || event.target.tagName.toLowerCase() !== 'input') {
                         // Simulate a click on the approve button
-                        document.querySelector('[name="approve_req_desk"]').click();
+                        document.querySelector('[name="approve_req_r"]').click();
                     }
                 }
             });
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
-        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
-        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
 </body>
 
 </html>
