@@ -1,5 +1,5 @@
 <?php
-require_once './/dbh.php';
+require_once '../dbh.php';
 require_once '../functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ids'])) {

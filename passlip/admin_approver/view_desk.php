@@ -186,10 +186,6 @@ if (!isset($_SESSION['username'])) {
                                             <input type="number" class="form" id="fix_minutes" name="fix_minutes" min="0" max="59" placeholder="0">
                                         </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="esttime">Estimated Time</label>
-                                        <input type="time" class="form" id="esttime" name="esttime" min="08:00" max="18:00">
-                                    </div>
                                     <div class="mb-3">
                                         <label>Type of Request:</label>
                                         <p class="form-control-static">
@@ -249,6 +245,19 @@ if (!isset($_SESSION['username'])) {
             const esttimeInput = document.getElementById("fix_hours");
             if (esttimeInput) {
                 esttimeInput.focus();
+            }
+
+            // Check Type of Business and adjust inputs
+            var typeOfBusiness = "<?php echo isset($data['typeofbusiness']) ? $data['typeofbusiness'] : ''; ?>";
+            var hoursInput = document.getElementById("fix_hours");
+            var minutesInput = document.getElementById("fix_minutes");
+
+            if (typeOfBusiness === "Official Business") {
+                hoursInput.max = 4;
+            } else if (typeOfBusiness === "Personal") {
+                hoursInput.disabled = true;
+                hoursInput.value = ""; // Clear any value
+                minutesInput.max = 30;
             }
         });
     </script>
