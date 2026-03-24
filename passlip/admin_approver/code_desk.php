@@ -56,11 +56,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $remarks = "Arrived $timeDifference late";
         }
 
+        // Calculate duration outside office
+        $timedept_dt = new DateTime($row['timedept']);
+        $timeret_dt = new DateTime();
+        $interval = $timedept_dt->diff($timeret_dt);
+        $duration_seconds = ($interval->h * 3600) + ($interval->i * 60) + $interval->s;
+
         $update_query = "UPDATE request 
                          SET `time_returned` = DATE_FORMAT(CURRENT_TIMESTAMP, '%H:%i'), 
                              Status = 'Done', 
                              `status1` = 'Present', 
-                             `remarks` = '$remarks' 
+                             `remarks` = '$remarks',
+                             `duration_seconds` = $duration_seconds
                          WHERE id = " . intval($row['id']);
 
         if (mysqli_query($conn, $update_query)) {

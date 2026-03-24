@@ -91,11 +91,12 @@ class PDF extends FPDF
             $date = $row->date;
             $time_returned = date("h:i A", strtotime($row->time_returned));
             $confirmed_by = $row->confirmed_by;
-            // Calculate time difference for remarks
-            $timedept_dt = new DateTime($row->timedept);
-            $timeret_dt = new DateTime($row->time_returned);
-            $interval = $timedept_dt->diff($timeret_dt);
-            $remarks = $interval->format('%h hours %i minutes');
+            // Convert duration_seconds to time format
+            $duration_seconds = $row->duration_seconds;
+            $hours = floor($duration_seconds / 3600);
+            $minutes = floor(($duration_seconds % 3600) / 60);
+            $seconds = $duration_seconds % 60;
+            $remarks = $hours . ' hours ' . $minutes . ' minutes ' . $seconds . ' seconds';
 
             // $this->Cell(10, 15, $id, 1, 0, 'C');
             $this->SetFont('Arial', '', 9);
@@ -138,26 +139,20 @@ if ($range == 'today') {
 
     // Process Official Business
     while ($row = $sql_official->fetch_object()) {
-        $timedept_dt = new DateTime($row->timedept);
-        $timeret_dt = new DateTime($row->time_returned);
-        $interval = $timedept_dt->diff($timeret_dt);
-        $minutes = $interval->h * 60 + $interval->i;
+        $duration_seconds = $row->duration_seconds;
         if (!isset($totals['Official Business'][$row->name])) {
             $totals['Official Business'][$row->name] = 0;
         }
-        $totals['Official Business'][$row->name] += $minutes;
+        $totals['Official Business'][$row->name] += $duration_seconds;
     }
 
     // Process Personal Business
     while ($row = $sql_personal->fetch_object()) {
-        $timedept_dt = new DateTime($row->timedept);
-        $timeret_dt = new DateTime($row->time_returned);
-        $interval = $timedept_dt->diff($timeret_dt);
-        $minutes = $interval->h * 60 + $interval->i;
+        $duration_seconds = $row->duration_seconds;
         if (!isset($totals['Personal'][$row->name])) {
             $totals['Personal'][$row->name] = 0;
         }
-        $totals['Personal'][$row->name] += $minutes;
+        $totals['Personal'][$row->name] += $duration_seconds;
     }
 
     if ($range == 'first15') {
@@ -186,10 +181,11 @@ if ($range == 'today') {
         $pdf->SetTextColor(0, 0, 0);
         $pdf->SetFont('Arial', '', 9);
 
-        foreach ($totals[$type] as $name => $total_minutes) {
-            $hours = floor($total_minutes / 60);
-            $mins = $total_minutes % 60;
-            $time_str = $hours . ' hours ' . $mins . ' minutes';
+        foreach ($totals[$type] as $name => $total_seconds) {
+            $hours = floor($total_seconds / 3600);
+            $mins = floor(($total_seconds % 3600) / 60);
+            $secs = $total_seconds % 60;
+            $time_str = $hours . ' hours ' . $mins . ' minutes ' . $secs . ' seconds';
             $pdf->Cell(100, 15, $name, 1);
             $pdf->Cell(100, 15, $time_str, 1);
             $pdf->Ln();
