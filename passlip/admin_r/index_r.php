@@ -276,7 +276,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                 <h4>Batch Approval Details</h4>
                             </div>
                             <div class="card-body">
-                                <div class="form-group mb-3">
+                                <div class="form-group mb-3" id="timeInputs">
                                     <label>Fixed Time for Pass Slip:</label><br>
                                     <label for="fix_hours">Hours:</label>
                                     <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="2" placeholder="0">
@@ -428,20 +428,20 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             // Function to toggle estimated time requirement based on status
             function toggleEstTimeRequirement() {
                 const status = document.getElementById('sel1').value;
-                const esttimeField = document.getElementById('esttime');
-                const esttimeContainer = esttimeField.closest('.form-group');
+                const timeContainer = document.getElementById('timeInputs');
 
                 if (status === 'Declined') {
-                    // Hide estimated time field for declined status
-                    if (esttimeContainer) {
-                        esttimeContainer.style.display = 'none';
+                    // Hide time inputs for declined status
+                    if (timeContainer) {
+                        timeContainer.style.display = 'none';
                     }
-                    // Clear the value when hiding
-                    esttimeField.value = '';
+                    // Clear the values when hiding
+                    document.getElementById('fix_hours').value = '';
+                    document.getElementById('fix_minutes').value = '';
                 } else {
-                    // Show estimated time field for other statuses
-                    if (esttimeContainer) {
-                        esttimeContainer.style.display = 'block';
+                    // Show time inputs for other statuses
+                    if (timeContainer) {
+                        timeContainer.style.display = 'block';
                     }
                 }
             }
@@ -460,7 +460,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     e.preventDefault(); // Prevent default form submission
 
                     // Get form fields
-                    const esttime = document.getElementById('esttime').value;
                     const status = document.getElementById('sel1').value;
                     const confirmedBy = document.getElementById('sel2').value;
                     const selectedIds = selectedIdsInput ? selectedIdsInput.value : '[]';
@@ -468,7 +467,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     console.log("Form submission - Selected IDs:", selectedIds);
                     console.log("Form submission - Status:", status);
                     console.log("Form submission - Confirmed By:", confirmedBy);
-                    console.log("Form submission - Est Time:", esttime);
 
                     // Validate form fields - estimated time only required if not declined
                     if (!status) {
@@ -545,7 +543,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             if (approveAllBtn) {
                 approveAllBtn.addEventListener('click', function() {
                     // This is a backup validation in case the form submission event doesn't trigger
-                    const esttime = document.getElementById('esttime');
                     const status = document.getElementById('sel1');
                     const confirmedBy = document.getElementById('sel2');
 
