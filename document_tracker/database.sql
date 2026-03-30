@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS `doc_tracker` (
   `date_deadline` date DEFAULT NULL COMMENT 'Return deadline for outgoing documents',
   `destination` varchar(255) DEFAULT NULL COMMENT 'Destination for outgoing documents',
   `doc_direction` enum('incoming','outgoing') NOT NULL DEFAULT 'incoming' COMMENT 'Document direction: incoming or outgoing',
+  `office` varchar(32) NOT NULL DEFAULT 'ASSET' COMMENT 'Owning office',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),

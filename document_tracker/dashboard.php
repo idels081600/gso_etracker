@@ -169,6 +169,7 @@ session_regenerate_id(true);
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li><span class="dropdown-item-text"><small class="text-muted">Role: <?php echo $user_role; ?></small></span></li>
+                            <li><span class="dropdown-item-text"><small class="text-muted">Office: <?php echo htmlspecialchars($_SESSION['office'] ?? ''); ?></small></span></li>
                             <li><span class="dropdown-item-text"><small class="text-muted">User: <?php echo $username; ?></small></span></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
@@ -380,6 +381,7 @@ session_regenerate_id(true);
                     </div>
                     <form id="addIncomingForm">
                         <input type="hidden" id="incomingBarcodeHidden">
+                        <input type="hidden" id="incomingOffice" value="<?php echo htmlspecialchars($_SESSION['office'] ?? ''); ?>">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="incomingSubject" class="form-label">Document Subject <span class="text-danger">*</span></label>
@@ -439,6 +441,7 @@ session_regenerate_id(true);
                     </div>
                     <form id="addOutgoingForm">
                         <input type="hidden" id="outgoingBarcodeHidden">
+                        <input type="hidden" id="outgoingOffice" value="<?php echo htmlspecialchars($_SESSION['office'] ?? ''); ?>">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="outgoingSubject" class="form-label">Document Subject <span class="text-danger">*</span></label>
@@ -567,6 +570,8 @@ session_regenerate_id(true);
                     <div class="alert alert-warning mb-3">
                         <i class="bi bi-upc-scan me-2"></i><strong>Barcode:</strong> <span id="existingBarcodeDisplay"></span>
                     </div>
+                    <!-- editability notice -->
+                    <div id="existingEditableAlert"></div>
                     <div class="card mb-3">
                         <div class="card-header bg-light">
                             <strong><i class="bi bi-file-text me-2"></i>Document Information</strong>
@@ -600,10 +605,10 @@ session_regenerate_id(true);
                             <button type="button" class="btn btn-primary btn-lg" onclick="trackExistingDocument()">
                                 <i class="bi bi-geo-alt me-2"></i>Track Document
                             </button>
-                            <button type="button" class="btn btn-success btn-lg" onclick="showUpdateDocumentForm()">
+                            <button type="button" id="existingEditBtn" class="btn btn-success btn-lg" onclick="showUpdateDocumentForm()">
                                 <i class="bi bi-pencil-square me-2"></i>Update Document
                             </button>
-                            <button type="button" class="btn btn-warning btn-lg" onclick="showOutgoingForm()">
+                            <button type="button" id="existingOutgoingBtn" class="btn btn-warning btn-lg" onclick="showOutgoingForm()">
                                 <i class="bi bi-box-arrow-up me-2"></i>Mark as Outgoing
                             </button>
                             <button type="button" class="btn btn-danger btn-lg" id="markReturnedBtn" onclick="markDocumentAsReturned()" style="display: none;">

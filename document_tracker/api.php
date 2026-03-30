@@ -7,6 +7,18 @@ ini_set('display_errors', 0);
 // Security: Start session and check authentication
 session_start();
 
+// ensure any uncaught error/exception returns JSON instead of blank/HTML
+set_exception_handler(function($e){
+    header('Content-Type: application/json');
+    echo json_encode(['success'=>false,'message'=>'Server exception: '.$e->getMessage()]);
+    exit();
+});
+set_error_handler(function($errno,$errstr,$errfile,$errline){
+    header('Content-Type: application/json');
+    echo json_encode(['success'=>false,'message'=>"PHP error: $errstr in $errfile:$errline"]);
+    exit();
+});
+
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header('Content-Type: application/json');
@@ -16,6 +28,9 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
 // Security: Regenerate session ID to prevent session fixation
 session_regenerate_id(true);
+
+// scope documents to the user's office
+$office = isset($_SESSION['office']) ? $_SESSION['office'] : 'ASSET';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -72,7 +87,10 @@ switch ($action) {
 
 // Create new document
 function createDocument($conn) {
-    global $response;
+    global $response, $office;
+    
+    // make a safe copy of office for queries
+    $officeValue = sanitizeInput($conn, $office);
     
     $tracking_no = generateTrackingNumber($conn, $_POST['doc_direction'] ?? 'incoming');
     $description = sanitizeInput($conn, $_POST['description'] ?? '');
@@ -94,9 +112,9 @@ function createDocument($conn) {
     
     // Check if barcode already exists
     if (!empty($barcode)) {
-        $checkSql = "SELECT id FROM doc_tracker WHERE barcode = ?";
+        $checkSql = "SELECT id FROM doc_tracker WHERE barcode = ? AND office = ?";
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bind_param('s', $barcode);
+        $checkStmt->bind_param('ss', $barcode, $officeValue);
         $checkStmt->execute();
         $checkResult = $checkStmt->get_result();
         
@@ -108,11 +126,11 @@ function createDocument($conn) {
         }
     }
     
-    $sql = "INSERT INTO doc_tracker (tracking_no, description, doc_type, date_received, status, date_released, date_deadline, destination, barcode, doc_direction) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO doc_tracker (tracking_no, description, doc_type, date_received, status, date_released, date_deadline, destination, barcode, doc_direction, office) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('ssssssssss', $tracking_no, $description, $doc_type, $date_received, $status, $date_released, $date_deadline, $destination, $barcode, $doc_direction);
+    $stmt->bind_param('sssssssssss', $tracking_no, $description, $doc_type, $date_received, $status, $date_released, $date_deadline, $destination, $barcode, $doc_direction, $officeValue);
     
     if ($stmt->execute()) {
         $response['success'] = true;
@@ -128,7 +146,8 @@ function createDocument($conn) {
             'date_deadline' => $date_deadline,
             'destination' => $destination,
             'barcode' => $barcode,
-            'doc_direction' => $doc_direction
+            'doc_direction' => $doc_direction,
+            'office' => $officeValue
         ];
     } else {
         $response['message'] = 'Error saving document: ' . $conn->error;
@@ -139,13 +158,14 @@ function createDocument($conn) {
 
 // Read all documents
 function readDocuments($conn) {
-    global $response;
+    global $response, $office;
     
     $doc_direction = sanitizeInput($conn, $_GET['doc_direction'] ?? 'incoming');
+    $office = sanitizeInput($conn, $office);
     
-    $sql = "SELECT * FROM doc_tracker WHERE doc_direction = ? ORDER BY date_received DESC, id DESC";
+    $sql = "SELECT * FROM doc_tracker WHERE doc_direction = ? AND office = ? ORDER BY date_received DESC, id DESC";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('s', $doc_direction);
+    $stmt->bind_param('ss', $doc_direction, $office);
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -161,9 +181,10 @@ function readDocuments($conn) {
 
 // Read one document
 function readOneDocument($conn) {
-    global $response;
+    global $response, $office;
     
     $id = sanitizeInput($conn, $_GET['id'] ?? '');
+    $office = sanitizeInput($conn, $office);
     
     if (empty($id)) {
         $response['message'] = 'Document ID is required';
@@ -171,9 +192,9 @@ function readOneDocument($conn) {
         return;
     }
     
-    $sql = "SELECT * FROM doc_tracker WHERE id = ? OR tracking_no = ?";
+    $sql = "SELECT * FROM doc_tracker WHERE (id = ? OR tracking_no = ?) AND office = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('ss', $id, $id);
+    $stmt->bind_param('sss', $id, $id, $office);
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -189,9 +210,10 @@ function readOneDocument($conn) {
 
 // Update document
 function updateDocument($conn) {
-    global $response;
+    global $response, $office;
     
     $id = sanitizeInput($conn, $_POST['id'] ?? '');
+    $office = sanitizeInput($conn, $office);
     $description = sanitizeInput($conn, $_POST['description'] ?? '');
     $doc_type = sanitizeInput($conn, $_POST['doc_type'] ?? '');
     $date_received = sanitizeInput($conn, $_POST['date_received'] ?? '');
@@ -214,10 +236,10 @@ function updateDocument($conn) {
             date_released = ?, 
             date_deadline = ?, 
             destination = ? 
-            WHERE id = ? OR tracking_no = ?";
+            WHERE (id = ? OR tracking_no = ?) AND office = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('sssssssss', $description, $doc_type, $date_received, $status, $date_released, $date_deadline, $destination, $id, $id);
+    $stmt->bind_param('ssssssssss', $description, $doc_type, $date_received, $status, $date_released, $date_deadline, $destination, $id, $id, $office);
     
     if ($stmt->execute()) {
         $response['success'] = true;
@@ -231,9 +253,10 @@ function updateDocument($conn) {
 
 // Update document direction (mark as outgoing)
 function updateDocumentDirection($conn) {
-    global $response;
+    global $response, $office;
     
     $id = sanitizeInput($conn, $_POST['id'] ?? '');
+    $office = sanitizeInput($conn, $office);
     $description = sanitizeInput($conn, $_POST['description'] ?? '');
     $doc_type = sanitizeInput($conn, $_POST['doc_type'] ?? '');
     $date_received = sanitizeInput($conn, $_POST['date_received'] ?? date('Y-m-d'));
@@ -263,10 +286,10 @@ function updateDocumentDirection($conn) {
             destination = ?, 
             date_deadline = ?, 
             doc_direction = ? 
-            WHERE id = ? OR tracking_no = ?";
+            WHERE (id = ? OR tracking_no = ?) AND office = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('sssssssss', $description, $doc_type, $date_received, $status, $destination, $date_deadline, $doc_direction, $id, $id);
+    $stmt->bind_param('ssssssssss', $description, $doc_type, $date_received, $status, $destination, $date_deadline, $doc_direction, $id, $id, $office);
     
     if ($stmt->execute()) {
         $response['success'] = true;
@@ -280,9 +303,10 @@ function updateDocumentDirection($conn) {
 
 // Delete document
 function deleteDocument($conn) {
-    global $response;
+    global $response, $office;
     
     $id = sanitizeInput($conn, $_REQUEST['id'] ?? '');
+    $office = sanitizeInput($conn, $office);
     
     if (empty($id)) {
         $response['message'] = 'Document ID is required';
@@ -290,9 +314,9 @@ function deleteDocument($conn) {
         return;
     }
     
-    $sql = "DELETE FROM doc_tracker WHERE id = ? OR tracking_no = ?";
+    $sql = "DELETE FROM doc_tracker WHERE (id = ? OR tracking_no = ?) AND office = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('ss', $id, $id);
+    $stmt->bind_param('sss', $id, $id, $office);
     
     if ($stmt->execute()) {
         $response['success'] = true;
@@ -306,7 +330,7 @@ function deleteDocument($conn) {
 
 // Update document status (mark as returned)
 function updateDocumentStatus($conn) {
-    global $response;
+    global $response, $office;
     
     $id = sanitizeInput($conn, $_POST['id'] ?? '');
     $status = sanitizeInput($conn, $_POST['status'] ?? 'Returned');
@@ -318,9 +342,9 @@ function updateDocumentStatus($conn) {
         return;
     }
     
-    $sql = "UPDATE doc_tracker SET status = ?, date_released = ? WHERE id = ? OR tracking_no = ?";
+    $sql = "UPDATE doc_tracker SET status = ?, date_released = ? WHERE (id = ? OR tracking_no = ?) AND office = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('ssss', $status, $date_released, $id, $id);
+    $stmt->bind_param('sssss', $status, $date_released, $id, $id, $office);
     
     if ($stmt->execute()) {
         $response['success'] = true;
@@ -334,7 +358,7 @@ function updateDocumentStatus($conn) {
 
 // Track document
 function trackDocument($conn) {
-    global $response;
+    global $response, $office;
     
     $search = sanitizeInput($conn, $_GET['search'] ?? '');
     
@@ -344,6 +368,7 @@ function trackDocument($conn) {
         return;
     }
     
+    // allow lookup across offices; we will later mark editable
     $sql = "SELECT * FROM doc_tracker WHERE tracking_no = ? OR barcode = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param('ss', $search, $search);
@@ -359,6 +384,8 @@ function trackDocument($conn) {
         $response['success'] = true;
         $response['data'] = $doc;
         $response['history'] = $history;
+        // indicate whether this user may modify it
+        $response['editable'] = ($doc['office'] === $office);
     } else {
         $response['message'] = 'Document not found';
     }
@@ -368,7 +395,7 @@ function trackDocument($conn) {
 
 // Check if barcode exists
 function checkBarcode($conn) {
-    global $response;
+    global $response, $office;
     
     $barcode = sanitizeInput($conn, $_GET['barcode'] ?? '');
     
@@ -378,6 +405,7 @@ function checkBarcode($conn) {
         return;
     }
     
+    // lookup regardless of office
     $sql = "SELECT * FROM doc_tracker WHERE barcode = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param('s', $barcode);
@@ -392,6 +420,7 @@ function checkBarcode($conn) {
         $response['exists'] = true;
         $response['data'] = $doc;
         $response['history'] = $history;
+        $response['editable'] = ($doc['office'] === $office);
     } else {
         $response['success'] = true;
         $response['exists'] = false;
@@ -402,25 +431,26 @@ function checkBarcode($conn) {
 
 // Get statistics
 function getStatistics($conn) {
-    global $response;
+    global $response, $office;
+    $office = sanitizeInput($conn, $office);
     
     // Count incoming documents
-    $incomingSql = "SELECT COUNT(*) as count FROM doc_tracker WHERE doc_direction = 'incoming'";
+    $incomingSql = "SELECT COUNT(*) as count FROM doc_tracker WHERE doc_direction = 'incoming' AND office = '$office'";
     $incomingResult = $conn->query($incomingSql);
     $incomingCount = $incomingResult->fetch_assoc()['count'];
     
     // Count outgoing documents
-    $outgoingSql = "SELECT COUNT(*) as count FROM doc_tracker WHERE doc_direction = 'outgoing'";
+    $outgoingSql = "SELECT COUNT(*) as count FROM doc_tracker WHERE doc_direction = 'outgoing' AND office = '$office'";
     $outgoingResult = $conn->query($outgoingSql);
     $outgoingCount = $outgoingResult->fetch_assoc()['count'];
     
     // Count pending documents
-    $pendingSql = "SELECT COUNT(*) as count FROM doc_tracker WHERE status IN ('Pending', 'In Transit')";
+    $pendingSql = "SELECT COUNT(*) as count FROM doc_tracker WHERE status IN ('Pending', 'In Transit') AND office = '$office'";
     $pendingResult = $conn->query($pendingSql);
     $pendingCount = $pendingResult->fetch_assoc()['count'];
     
     // Count processed/completed documents
-    $processedSql = "SELECT COUNT(*) as count FROM doc_tracker WHERE status IN ('Processed', 'Delivered', 'Received', 'Returned')";
+    $processedSql = "SELECT COUNT(*) as count FROM doc_tracker WHERE status IN ('Processed', 'Delivered', 'Received', 'Returned') AND office = '$office'";
     $processedResult = $conn->query($processedSql);
     $processedCount = $processedResult->fetch_assoc()['count'];
     
@@ -437,19 +467,50 @@ function getStatistics($conn) {
 
 // Generate tracking number
 function generateTrackingNumber($conn, $doc_direction) {
+    global $office;
     $year = date('Y');
-    $prefix = $doc_direction === 'incoming' ? 'INC' : 'OUT';
+    $officeValue = sanitizeInput($conn, $office);
+    // use office code so each office has its own sequence
+    $prefixDir = $doc_direction === 'incoming' ? 'INC' : 'OUT';
+    // office identifier should be safe (already sanitized)
+    $officeCode = strtoupper(str_replace(' ', '_', $officeValue));
     
-    // Get the count of documents for this year and direction
-    $sql = "SELECT COUNT(*) as count FROM doc_tracker WHERE doc_direction = ? AND YEAR(date_received) = ?";
+    // find the latest tracking number for this year/direction/office
+    // the stored tracking_no now begins with officeCode, so we search by office too
+    $sql = "SELECT tracking_no FROM doc_tracker
+            WHERE doc_direction = ? AND YEAR(date_received) = ? AND office = ?
+            ORDER BY id DESC LIMIT 1";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('si', $doc_direction, $year);
+    $stmt->bind_param('sis', $doc_direction, $year, $officeValue);
     $stmt->execute();
     $result = $stmt->get_result();
-    $count = $result->fetch_assoc()['count'] + 1;
-    
-    $number = str_pad($count, 4, '0', STR_PAD_LEFT);
-    return "{$prefix}-{$year}-{$number}";
+
+    $nextNum = 1;
+    if ($row = $result->fetch_assoc()) {
+        // tracking_no looks like OFFICE-INC-2026-0001 or OFFICE-OUT-2026-0001
+        if (preg_match('/(\d{4})$/', $row['tracking_no'], $m)) {
+            $nextNum = intval($m[1]) + 1;
+        }
+    }
+
+    // build tracking number and ensure uniqueness
+    do {
+        $number = str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+        // include office code at beginning so numbers are disjoint
+        $trackingNo = "{$officeCode}-{$prefixDir}-{$year}-{$number}";
+
+        $chkSql = "SELECT 1 FROM doc_tracker WHERE tracking_no = ? LIMIT 1";
+        $chkStmt = $conn->prepare($chkSql);
+        $chkStmt->bind_param('s', $trackingNo);
+        $chkStmt->execute();
+        $chkRes = $chkStmt->get_result();
+        if ($chkRes->num_rows === 0) {
+            break;
+        }
+        $nextNum++;
+    } while (true);
+
+    return $trackingNo;
 }
 
 // Build document history for tracking

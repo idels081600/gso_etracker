@@ -66,7 +66,13 @@ async function apiRequest(action, method = 'GET', data = null) {
     
     try {
         const response = await fetch(url, options);
-        return await response.json();
+        const text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch (parseErr) {
+            console.error('API returned invalid JSON:', text);
+            return { success: false, message: 'Invalid server response' };
+        }
     } catch (error) {
         console.error('API Error:', error);
         return { success: false, message: 'Network error occurred' };
@@ -111,7 +117,8 @@ async function processBarcode() {
     if (result.success && result.exists) {
         // Barcode exists - show options modal for existing document
         const doc = result.data;
-        showExistingBarcodeOptions(doc, result.history);
+        // pass editable flag from API
+        showExistingBarcodeOptions(doc, result.history, result.editable);
         return;
     }
     
@@ -121,13 +128,20 @@ async function processBarcode() {
 }
 
 // Show options for existing barcode
-function showExistingBarcodeOptions(doc, history) {
+function showExistingBarcodeOptions(doc, history, editable = true) {
     // Store document data for later use
     window.existingDoc = doc;
     window.existingDocHistory = history;
+    window.existingDocEditable = editable;
     
     // Update modal content
     document.getElementById('existingBarcodeDisplay').textContent = doc.barcode || doc.tracking_no;
+    const editableAlert = document.getElementById('existingEditableAlert');
+    if (!editable) {
+        editableAlert.innerHTML = '<div class="alert alert-secondary">This document belongs to another office; you may view its details but modifications are disabled.</div>';
+    } else {
+        editableAlert.innerHTML = '';
+    }
     document.getElementById('existingTrackingNo').textContent = doc.tracking_no;
     document.getElementById('existingDescription').textContent = truncateText(doc.description, 50);
     document.getElementById('existingDocType').textContent = doc.doc_type;
@@ -167,13 +181,29 @@ function showExistingBarcodeOptions(doc, history) {
     document.getElementById('updateDocId').value = doc.id;
     document.getElementById('updateStatus').value = doc.status;
     document.getElementById('updateDescription').value = doc.description;
-    
+
+    // hide action buttons if not editable
+    const editBtn = document.getElementById('existingEditBtn');
+    const outBtn = document.getElementById('existingOutgoingBtn');
+    if (!editable) {
+        if (editBtn) editBtn.style.display = 'none';
+        if (outBtn) outBtn.style.display = 'none';
+        document.getElementById('markReturnedBtn').style.display = 'none';
+    } else {
+        if (editBtn) editBtn.style.display = 'inline-block';
+        if (outBtn) outBtn.style.display = 'inline-block';
+    }
+
     // Show existing barcode options modal
     new bootstrap.Modal(document.getElementById('existingBarcodeModal')).show();
 }
 
 // Mark document as returned
 async function markDocumentAsReturned() {
+    if (!window.existingDocEditable) {
+        showAlert('You are not allowed to modify this document.', 'warning');
+        return;
+    }
     const doc = window.existingDoc;
     
     if (!doc) {
@@ -201,6 +231,11 @@ async function markDocumentAsReturned() {
 
 // Show update form for existing document
 function showUpdateDocumentForm() {
+    // only allow if editable
+    if (!window.existingDocEditable) {
+        showAlert('You are not allowed to edit this document.', 'warning');
+        return;
+    }
     // Hide existing barcode modal
     bootstrap.Modal.getInstance(document.getElementById('existingBarcodeModal')).hide();
     
@@ -285,6 +320,10 @@ function trackExistingDocument() {
 
 // Show mark as outgoing form for existing document
 function showOutgoingForm() {
+    if (!window.existingDocEditable) {
+        showAlert('You are not allowed to modify this document.', 'warning');
+        return;
+    }
     // Hide existing barcode modal
     bootstrap.Modal.getInstance(document.getElementById('existingBarcodeModal')).hide();
     
@@ -453,7 +492,8 @@ async function saveIncomingDocument() {
         doc_type: type,
         date_received: date,
         status: status,
-        doc_direction: 'incoming'
+        doc_direction: 'incoming',
+        office: document.getElementById('incomingOffice').value
     };
 
     const result = await apiRequest('create', 'POST', data);
@@ -504,7 +544,8 @@ async function saveOutgoingDocument() {
         destination: destination,
         status: status,
         date_deadline: date_deadline,
-        doc_direction: 'outgoing'
+        doc_direction: 'outgoing',
+        office: document.getElementById('outgoingOffice').value
     };
 
     const result = await apiRequest('create', 'POST', data);
@@ -544,6 +585,7 @@ async function loadIncomingDocuments() {
     tbody.innerHTML = result.data.map(doc => `
         <tr>
             <td><span class="badge bg-primary">${doc.tracking_no}</span></td>
+
             <td>${truncateText(doc.description, 25)}</td>
             <td>${doc.doc_type}</td>
             <td>${formatDate(doc.date_received)}</td>
@@ -563,51 +605,60 @@ async function loadIncomingDocuments() {
 // Load outgoing documents table
 async function loadOutgoingDocuments() {
     const tbody = document.getElementById('outgoingTableBody');
-    
-    const result = await apiRequest('read', 'GET', { doc_direction: 'outgoing' });
-    
-    if (!result.success || !result.data || result.data.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center text-muted py-4">
-                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                    No outgoing documents yet
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    tbody.innerHTML = result.data.map(doc => {
-        // Check if document is returnable and overdue
-        let returnableBadge = '';
-        if (doc.date_deadline && doc.status !== 'Returned') {
-            const isOverdue = doc.date_deadline && new Date(doc.date_deadline) < new Date();
-            if (isOverdue) {
-                returnableBadge = '<span class="badge bg-danger ms-1"><i class="bi bi-exclamation-triangle"></i> Overdue</span>';
-            } else {
-                returnableBadge = '<span class="badge bg-info ms-1"><i class="bi bi-arrow-return-left"></i> Returnable</span>';
-            }
+    try {
+        const result = await apiRequest('read', 'GET', { doc_direction: 'outgoing' });
+        console.log('loadOutgoingDocuments result', result);
+        if (!result.success || !result.data || result.data.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        No outgoing documents yet
+                    </td>
+                </tr>
+            `;
+            return;
         }
-        
-        return `
-            <tr>
-                <td><span class="badge bg-success">${doc.tracking_no}</span></td>
-                <td>${truncateText(doc.description, 25)}</td>
-                <td>${doc.destination || '-'}</td>
-                <td>${formatDate(doc.date_received)}</td>
-                <td>${getStatusBadge(doc.status)}${returnableBadge}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="viewDocument('outgoing', '${doc.id}')" title="View">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-info" onclick="trackDocumentById('${doc.tracking_no}')" title="Track">
-                        <i class="bi bi-geo-alt"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-    }).join('');
+
+        tbody.innerHTML = result.data.map(doc => {
+            try {
+                // Check if document is returnable and overdue
+                let returnableBadge = '';
+                if (doc.date_deadline && doc.status !== 'Returned') {
+                    const isOverdue = doc.date_deadline && new Date(doc.date_deadline) < new Date();
+                    if (isOverdue) {
+                        returnableBadge = '<span class="badge bg-danger ms-1"><i class="bi bi-exclamation-triangle"></i> Overdue</span>';
+                    } else {
+                        returnableBadge = '<span class="badge bg-info ms-1"><i class="bi bi-arrow-return-left"></i> Returnable</span>';
+                    }
+                }
+                
+                return `
+                    <tr>
+                        <td><span class="badge bg-success">${doc.tracking_no}</span></td>
+                        <td>${truncateText(doc.description, 25)}</td>
+                        <td>${doc.destination || '-'}</td>
+                        <td>${formatDate(doc.date_received)}</td>
+                        <td>${getStatusBadge(doc.status)}${returnableBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="viewDocument('outgoing', '${doc.id}')" title="View">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-info" onclick="trackDocumentById('${doc.tracking_no}')" title="Track">
+                                <i class="bi bi-geo-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            } catch (innerErr) {
+                console.error('error rendering outgoing row', innerErr, doc);
+                return `<tr><td colspan="6" class="text-danger">Error displaying row</td></tr>`;
+            }
+        }).join('');
+    } catch (err) {
+        console.error('loadOutgoingDocuments exception', err);
+        tbody.innerHTML = `<tr><td colspan="6" class="text-danger py-4">Unable to load outgoing documents</td></tr>`;
+    }
 }
 
 // View document details
@@ -697,6 +748,7 @@ async function trackDocument() {
     }
 
     const result = await apiRequest('track', 'GET', { search: trackingNumber });
+    // no editing buttons shown when tracking from track modal    // track doesn't have editable flag normally; but we don't enable editing here anyway
 
     if (!result.success || !result.data) {
         showAlert('Document not found! Please check the tracking number or barcode.', 'danger');
