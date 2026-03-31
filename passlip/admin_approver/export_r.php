@@ -65,10 +65,10 @@ class PDF extends FPDF
         $this->Cell(60, 10, 'Destination', 1, 0, 'C', true);
         $this->Cell(80, 10, 'Purpose', 1, 0, 'C', true);
         $this->Cell(21, 10, 'TimeDept', 1, 0, 'C', true);
+        $this->Cell(20, 10, 'TimeRet', 1, 0, 'C', true);
         $this->Cell(20, 10, 'EstTime', 1, 0, 'C', true);
         $this->Cell(28, 10, 'Time Allotted', 1, 0, 'C', true);
         $this->Cell(28, 10, 'Date', 1, 0, 'C', true);
-        $this->Cell(20, 10, 'TimeRet', 1, 0, 'C', true);
         $this->Cell(40, 10, 'Confirmed By', 1, 0, 'C', true);
         $this->Cell(50, 10, 'Duration Outside Office', 1, 0, 'C', true);
         $this->Ln();
@@ -104,10 +104,10 @@ class PDF extends FPDF
             $this->Cell(60, 15, $destination, 1);
             $this->Cell(80, 15, $purpose, 1);
             $this->Cell(21, 15, $timedept, 1);
+            $this->Cell(20, 15, $time_returned, 1);
             $this->Cell(20, 15, $esttime, 1);
             $this->Cell(28, 15, $time_alloted, 1);
             $this->Cell(28, 15, $date, 1);
-            $this->Cell(20, 15, $time_returned, 1);
             $this->Cell(40, 15, $confirmed_by, 1);
             $this->SetFont('Arial', '', 8); // Set font size for remarks
             $this->MultiCell(50, 15, $remarks, 1, 'L'); // Use MultiCell for the Remarks column to allow text wrapping
