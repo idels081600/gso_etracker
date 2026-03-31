@@ -95,8 +95,7 @@ class PDF extends FPDF
             $duration_seconds = $row->duration_seconds;
             $hours = floor($duration_seconds / 3600);
             $minutes = floor(($duration_seconds % 3600) / 60);
-            $seconds = $duration_seconds % 60;
-            $remarks = $hours . ' hours ' . $minutes . ' minutes ' . $seconds . ' seconds';
+            $remarks = $hours . ' hours ' . $minutes . ' minutes';
 
             // $this->Cell(10, 15, $id, 1, 0, 'C');
             $this->SetFont('Arial', '', 9);
@@ -184,8 +183,7 @@ if ($range == 'today') {
         foreach ($totals[$type] as $name => $total_seconds) {
             $hours = floor($total_seconds / 3600);
             $mins = floor(($total_seconds % 3600) / 60);
-            $secs = $total_seconds % 60;
-            $time_str = $hours . ' hours ' . $mins . ' minutes ' . $secs . ' seconds';
+            $time_str = $hours . ' hours ' . $mins . ' minutes';
             $pdf->Cell(100, 15, $name, 1);
             $pdf->Cell(100, 15, $time_str, 1);
             $pdf->Ln();
