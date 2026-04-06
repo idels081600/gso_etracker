@@ -11,23 +11,34 @@ session_start();
 // }
 
 $range = isset($_GET['range']) ? $_GET['range'] : 'today';
+$selected_month = isset($_GET['month']) ? $_GET['month'] : date('Y-m');
+$filter_duration = isset($_GET['filter_duration']) ? $_GET['filter_duration'] : '0';
+
+// Duration filter condition (greater than 1 hour = 3600 seconds)
+$duration_condition = ($filter_duration == '1') ? "AND duration_seconds > 3600" : "";
 
 if ($range == 'today') {
     $date_condition = "AND DATE(date) = CURDATE()";
 } elseif ($range == 'first15') {
-    $date_condition = "AND DAY(date) BETWEEN 1 AND 15 AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())";
+    $month_year = explode('-', $selected_month);
+    $year = $month_year[0];
+    $month = $month_year[1];
+    $date_condition = "AND DAY(date) BETWEEN 1 AND 15 AND MONTH(date) = $month AND YEAR(date) = $year";
 } elseif ($range == 'second15') {
-    $date_condition = "AND DAY(date) BETWEEN 16 AND 31 AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())";
+    $month_year = explode('-', $selected_month);
+    $year = $month_year[0];
+    $month = $month_year[1];
+    $date_condition = "AND DAY(date) BETWEEN 16 AND 31 AND MONTH(date) = $month AND YEAR(date) = $year";
 } else {
     $date_condition = "AND DATE(date) = CURDATE()";
 }
  
-// Query for Official Business
-$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role = 'Employee' $date_condition ORDER BY id";
+// Query for Official Business (sorted alphabetically by name)
+$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role = 'Employee' $date_condition $duration_condition ORDER BY name";
 $sql_official = $conn->query($result_official);
 
-// Query for Personal Business
-$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role = 'Employee' $date_condition ORDER BY id";
+// Query for Personal Business (sorted alphabetically by name)
+$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role = 'Employee' $date_condition $duration_condition ORDER BY name";
 $sql_personal = $conn->query($result_personal);
 
 class PDF extends FPDF
@@ -57,20 +68,15 @@ class PDF extends FPDF
         $this->SetTextColor(255, 255, 255); // Set text color to white
 
         // Set font for table header
-        $this->SetFont('Arial', 'B', 9);
+        $this->SetFont('Arial', 'B', 10);
 
-        // Define header cells with green background
-        // $this->Cell(10, 10, 'ID', 1, 0, 'C', true);
+        // Define header cells with green background - includes Date column
         $this->Cell(45, 10, 'Name', 1, 0, 'C', true);
         $this->Cell(60, 10, 'Destination', 1, 0, 'C', true);
-        $this->Cell(80, 10, 'Purpose', 1, 0, 'C', true);
-        $this->Cell(21, 10, 'TimeDept', 1, 0, 'C', true);
-        $this->Cell(20, 10, 'TimeRet', 1, 0, 'C', true);
-        $this->Cell(20, 10, 'EstTime', 1, 0, 'C', true);
-        $this->Cell(28, 10, 'Time Allotted', 1, 0, 'C', true);
-        $this->Cell(28, 10, 'Date', 1, 0, 'C', true);
-        $this->Cell(40, 10, 'Confirmed By', 1, 0, 'C', true);
-        $this->Cell(50, 10, 'Duration Outside Office', 1, 0, 'C', true);
+        $this->Cell(30, 10, 'Date', 1, 0, 'C', true);
+        $this->Cell(30, 10, 'TimeDept', 1, 0, 'C', true);
+        $this->Cell(30, 10, 'TimeRet', 1, 0, 'C', true);
+        $this->Cell(45, 10, 'Duration Outside Office', 1, 0, 'C', true);
         $this->Ln();
 
         // Reset text color to black for table content
@@ -79,38 +85,28 @@ class PDF extends FPDF
 
     function printTableRows($sql)
     {
-        $this->SetFont('Arial', '', 10); // Set font size for all data except remarks
+        $this->SetFont('Arial', '', 10);
         while ($row = $sql->fetch_object()) {
-            $id = $row->id;
             $name = $row->name;
             $destination = $row->dest2;
-            $time_alloted = $row->time_allotted;
-            $purpose = $row->purpose;
-            $timedept = date("h:i A", strtotime($row->timedept)); // Format the time for TimeDept
-            $esttime = date("h:i A", strtotime($row->esttime)); // Format the time for EstTime
-            $date = $row->date;
+            $date = date("m/d/Y", strtotime($row->date));
+            $timedept = date("h:i A", strtotime($row->timedept));
             $time_returned = date("h:i A", strtotime($row->time_returned));
-            $confirmed_by = $row->confirmed_by;
+            
             // Convert duration_seconds to time format
             $duration_seconds = $row->duration_seconds;
             $hours = floor($duration_seconds / 3600);
             $minutes = floor(($duration_seconds % 3600) / 60);
-            $remarks = $hours . ' hours ' . $minutes . ' minutes';
+            $duration_str = $hours . ' hours ' . $minutes . ' minutes';
 
-            // $this->Cell(10, 15, $id, 1, 0, 'C');
-            $this->SetFont('Arial', '', 9);
-            $this->Cell(45, 15, $name, 1);
-            $this->SetFont('Arial', '', 8);
-            $this->Cell(60, 15, $destination, 1);
-            $this->Cell(80, 15, $purpose, 1);
-            $this->Cell(21, 15, $timedept, 1);
-            $this->Cell(20, 15, $time_returned, 1);
-            $this->Cell(20, 15, $esttime, 1);
-            $this->Cell(28, 15, $time_alloted, 1);
-            $this->Cell(28, 15, $date, 1);
-            $this->Cell(40, 15, $confirmed_by, 1);
-            $this->SetFont('Arial', '', 8); // Set font size for remarks
-            $this->MultiCell(50, 15, $remarks, 1, 'L'); // Use MultiCell for the Remarks column to allow text wrapping
+            // Columns with Date included
+            $this->Cell(45, 12, $name, 1);
+            $this->Cell(60, 12, $destination, 1);
+            $this->Cell(30, 12, $date, 1, 0, 'C');
+            $this->Cell(30, 12, $timedept, 1, 0, 'C');
+            $this->Cell(30, 12, $time_returned, 1, 0, 'C');
+            $this->Cell(45, 12, $duration_str, 1, 0, 'C');
+            $this->Ln();
         }
     }
 }
@@ -133,66 +129,102 @@ if ($range == 'today') {
     $pdf->printTableHeader(); // Table header
     $pdf->printTableRows($sql_personal); // Print rows for Personal Business
 } else {
-    // Summary for first15 and second15
-    $totals = ['Official Business' => [], 'Personal' => []];
-
-    // Process Official Business
-    while ($row = $sql_official->fetch_object()) {
-        $duration_seconds = $row->duration_seconds;
-        if (!isset($totals['Official Business'][$row->name])) {
-            $totals['Official Business'][$row->name] = 0;
+    // For first15 and second15 with duration filter - show detailed records
+    if ($filter_duration == '1') {
+        if ($range == 'first15') {
+            $month_name = date('F Y', strtotime($selected_month));
+            $title = '1st 15 Days - ' . $month_name . ' (Duration > 1 Hour)';
+        } elseif ($range == 'second15') {
+            $month_name = date('F Y', strtotime($selected_month));
+            $title = '2nd 15 Days - ' . $month_name . ' (Duration > 1 Hour)';
+        } else {
+            $title = 'Request Summary (Duration > 1 Hour)';
         }
-        $totals['Official Business'][$row->name] += $duration_seconds;
-    }
 
-    // Process Personal Business
-    while ($row = $sql_personal->fetch_object()) {
-        $duration_seconds = $row->duration_seconds;
-        if (!isset($totals['Personal'][$row->name])) {
-            $totals['Personal'][$row->name] = 0;
-        }
-        $totals['Personal'][$row->name] += $duration_seconds;
-    }
+        $pdf = new PDF($title);
+        $pdf->AddPage('L', array(215.9, 400)); // Landscape orientation
 
-    if ($range == 'first15') {
-        $title = '1st Kinsena';
-    } elseif ($range == 'second15') {
-        $title = '2nd Kinsena';
-    } else {
-        $title = 'Request Summary';
-    }
-
-    $pdf = new PDF($title);
-    $pdf->AddPage('L', array(215.9, 400)); // Landscape orientation
-
-    // For each type
-    foreach (['Official Business', 'Personal'] as $type) {
+        // Official Business Section with detailed records
         $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(0, 10, $type . ' Summary', 0, 1, 'L'); // Section Title
+        $pdf->Cell(0, 10, 'Official Business - Records > 1 Hour', 0, 1, 'L');
+        $pdf->printTableHeader();
+        $pdf->printTableRows($sql_official);
 
-        // Summary table header
-        $pdf->SetFillColor(0, 128, 0);
-        $pdf->SetTextColor(255, 255, 255);
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(100, 10, 'Name', 1, 0, 'C', true);
-        $pdf->Cell(100, 10, 'Total Time Outside the Office', 1, 0, 'C', true);
-        $pdf->Ln();
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetFont('Arial', '', 9);
+        $pdf->Ln(10);
 
-        foreach ($totals[$type] as $name => $total_seconds) {
-            $hours = floor($total_seconds / 3600);
-            $mins = floor(($total_seconds % 3600) / 60);
-            $time_str = $hours . ' hours ' . $mins . ' minutes';
-            $pdf->Cell(100, 15, $name, 1);
-            $pdf->Cell(100, 15, $time_str, 1);
-            $pdf->Ln();
+        // Personal Business Section with detailed records
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->Cell(0, 10, 'Personal Business - Records > 1 Hour', 0, 1, 'L');
+        $pdf->printTableHeader();
+        $pdf->printTableRows($sql_personal);
+    } else {
+        // Summary for first15 and second15 (without duration filter)
+        $totals = ['Official Business' => [], 'Personal' => []];
+
+        // Process Official Business
+        while ($row = $sql_official->fetch_object()) {
+            $duration_seconds = $row->duration_seconds;
+            if (!isset($totals['Official Business'][$row->name])) {
+                $totals['Official Business'][$row->name] = 0;
+            }
+            $totals['Official Business'][$row->name] += $duration_seconds;
         }
 
-        $pdf->Ln(10); // Add space between sections
+        // Process Personal Business
+        while ($row = $sql_personal->fetch_object()) {
+            $duration_seconds = $row->duration_seconds;
+            if (!isset($totals['Personal'][$row->name])) {
+                $totals['Personal'][$row->name] = 0;
+            }
+            $totals['Personal'][$row->name] += $duration_seconds;
+        }
+
+        if ($range == 'first15') {
+            $month_name = date('F Y', strtotime($selected_month));
+            $title = '1st 15 Days - ' . $month_name;
+        } elseif ($range == 'second15') {
+            $month_name = date('F Y', strtotime($selected_month));
+            $title = '2nd 15 Days - ' . $month_name;
+        } else {
+            $title = 'Request Summary';
+        }
+
+        $pdf = new PDF($title);
+        $pdf->AddPage('L', array(215.9, 400)); // Landscape orientation
+
+        // For each type
+        foreach (['Official Business', 'Personal'] as $type) {
+            $pdf->SetFont('Arial', 'B', 12);
+            $pdf->Cell(0, 10, $type . ' Summary', 0, 1, 'L'); // Section Title
+
+            // Summary table header
+            $pdf->SetFillColor(0, 128, 0);
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(100, 10, 'Name', 1, 0, 'C', true);
+            $pdf->Cell(100, 10, 'Total Time Outside the Office', 1, 0, 'C', true);
+            $pdf->Ln();
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFont('Arial', '', 9);
+
+            // Sort names alphabetically
+            ksort($totals[$type]);
+            
+            foreach ($totals[$type] as $name => $total_seconds) {
+                $hours = floor($total_seconds / 3600);
+                $mins = floor(($total_seconds % 3600) / 60);
+                $time_str = $hours . ' hours ' . $mins . ' minutes';
+                $pdf->Cell(100, 15, $name, 1);
+                $pdf->Cell(100, 15, $time_str, 1);
+                $pdf->Ln();
+            }
+
+            $pdf->Ln(10); // Add space between sections
+        }
     }
 }
 
 // Output the PDF
-$filename = 'pass_slip_' . $range . '_' . date('Y-m-d') . '.pdf';
+$month_suffix = ($range == 'today') ? '' : '_' . str_replace('-', '', $selected_month);
+$filename = 'pass_slip_' . $range . $month_suffix . '_' . date('Y-m-d') . '.pdf';
 $pdf->Output($filename, 'D');

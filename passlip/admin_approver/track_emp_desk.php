@@ -321,10 +321,29 @@ if (isset($_POST['undo_delete'])) {
         </div>
         <div class="modal-body">
           <p>Choose the date range for export:</p>
+          <div class="mb-3">
+            <label for="exportMonth" class="form-label">Select Month:</label>
+            <select class="form-control" id="exportMonth">
+              <option value="<?php echo date('Y-m'); ?>"><?php echo date('F Y'); ?> (Current)</option>
+              <option value="<?php echo date('Y-m', strtotime('-1 month')); ?>"><?php echo date('F Y', strtotime('-1 month')); ?></option>
+              <option value="<?php echo date('Y-m', strtotime('-2 months')); ?>"><?php echo date('F Y', strtotime('-2 months')); ?></option>
+              <option value="<?php echo date('Y-m', strtotime('-3 months')); ?>"><?php echo date('F Y', strtotime('-3 months')); ?></option>
+              <option value="<?php echo date('Y-m', strtotime('-4 months')); ?>"><?php echo date('F Y', strtotime('-4 months')); ?></option>
+              <option value="<?php echo date('Y-m', strtotime('-5 months')); ?>"><?php echo date('F Y', strtotime('-5 months')); ?></option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="durationFilter" value="1">
+              <label class="form-check-label" for="durationFilter">
+                Export only records with Duration Outside Office > 1 hour
+              </label>
+            </div>
+          </div>
           <div class="d-flex flex-column">
-            <a href="export_r.php?range=today" class="btn btn-primary mb-2">Export Current Date Data</a>
-            <a href="export_r.php?range=first15" class="btn btn-primary mb-2">Export 1st 15 Days of Current Month</a>
-            <a href="export_r.php?range=second15" class="btn btn-primary">Export 2nd 15 Days of Current Month</a>
+            <button type="button" class="btn btn-primary mb-2" onclick="exportToday()">Export Current Date Data</button>
+            <button type="button" class="btn btn-primary mb-2" onclick="exportFirst15()">Export 1st 15 Days of Selected Month</button>
+            <button type="button" class="btn btn-primary" onclick="exportSecond15()">Export 2nd 15 Days of Selected Month</button>
           </div>
         </div>
         <div class="modal-footer">
@@ -352,6 +371,23 @@ if (isset($_POST['undo_delete'])) {
 
     function openExportModal() {
       $('#exportModal').modal('show');
+    }
+
+    function exportToday() {
+      const month = document.getElementById('exportMonth').value;
+      window.location.href = `export_r.php?range=today&month=${month}`;
+    }
+
+    function exportFirst15() {
+      const month = document.getElementById('exportMonth').value;
+      const filterDuration = document.getElementById('durationFilter').checked ? '1' : '0';
+      window.location.href = `export_r.php?range=first15&month=${month}&filter_duration=${filterDuration}`;
+    }
+
+    function exportSecond15() {
+      const month = document.getElementById('exportMonth').value;
+      const filterDuration = document.getElementById('durationFilter').checked ? '1' : '0';
+      window.location.href = `export_r.php?range=second15&month=${month}&filter_duration=${filterDuration}`;
     }
 
     function loadFilterData() {

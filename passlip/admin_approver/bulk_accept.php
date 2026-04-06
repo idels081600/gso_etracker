@@ -27,18 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $status = mysqli_real_escape_string($conn, $_POST['status']);
         $confirmed_by = mysqli_real_escape_string($conn, $_POST['confirmed_by']);
-        $esttime = mysqli_real_escape_string($conn, $_POST['esttime']);
 
         // Determine status1 based on the status
         $status1 = ($status === 'Declined') ? 'Declined' : 'Scan Qrcode';
-
-        // Convert the $esttime to DATETIME format only if it's not empty
-        if (!empty($esttime)) {
-            $esttime = date('Y-m-d H:i:s', strtotime($esttime));
-        } else {
-            // Set to NULL or empty string for declined requests
-            $esttime = null;
-        }
         // Get the fixed time hours and minutes
         $fix_hours = intval($_POST['fix_hours'] ?? 0);
         $fix_minutes = intval($_POST['fix_minutes'] ?? 0);
@@ -61,11 +52,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($data_ids as $data_id) {
             $data_id = mysqli_real_escape_string($conn, $data_id);
 
-            // Build query based on whether esttime is provided
-            if ($esttime !== null) {
-                $query = "UPDATE request SET esttime = '$time_allotted', time_allotted = '$time_allotted_formatted', Status = '$status', status1 = '$status1', confirmed_by = '$confirmed_by' WHERE id = '$data_id'";
+            // Build query based on whether it's declined
+            if ($status === 'Declined') {
+                $query = "UPDATE request SET Status = '$status', status1 = '$status1', confirmed_by = '$confirmed_by' WHERE id = '$data_id'";
             } else {
-                $query = "UPDATE request SET esttime = '$time_allotted', time_allotted= '$time_allotted_formatted', Status = '$status', status1 = '$status1', confirmed_by = '$confirmed_by' WHERE id = '$data_id'";
+                $query = "UPDATE request SET esttime = '$time_allotted', time_allotted = '$time_allotted_formatted', Status = '$status', status1 = '$status1', confirmed_by = '$confirmed_by' WHERE id = '$data_id'";
             }
 
             // Log the query for debugging
