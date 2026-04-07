@@ -124,7 +124,7 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                         <table class="table table-bordered table-striped align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
