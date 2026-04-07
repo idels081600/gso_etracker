@@ -220,8 +220,15 @@ if (!isset($_SESSION['username'])) {
                                     <div class="mb-3">
                                         <label for="time_ret">Time of Actual Return: </label>
                                         <p class="form-control-static">
-                                            <?php echo date('g:i A', strtotime($data['time_returned'])); ?>
-
+                                            <?php 
+                                            // Only display time if it exists and is not '00:00:00' or empty
+                                            $timeReturned = $data['time_returned'];
+                                            if (!empty($timeReturned) && $timeReturned != '00:00:00' && $timeReturned != '00:00') {
+                                                echo date('g:i A', strtotime($timeReturned));
+                                            } else {
+                                                echo '<span class="text-muted">Not yet returned</span>';
+                                            }
+                                            ?>
                                         </p>
                                     </div>
                                     <div class="mb-3">
