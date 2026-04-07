@@ -136,8 +136,14 @@ function resizeCanvas() {
     signatureCanvas.width = rect.width;
     signatureCanvas.height = 150;
 }
-resizeCanvas();
+
+// Initial resize and window resize handler
 window.addEventListener('resize', resizeCanvas);
+
+// Resize canvas when modal is shown
+document.getElementById('submitModal').addEventListener('shown.bs.modal', () => {
+    resizeCanvas();
+});
 
 // Drawing functions
 function startDrawing(e) {

@@ -12,7 +12,7 @@ require_once 'db_fuel.php';
 
 header('Content-Type: application/json');
 
-// Get all tricycle records
+// Get all tricycle records - sort numerically by tricycle_no
 $sql = "SELECT 
     id,
     tricycle_no,
@@ -24,7 +24,7 @@ $sql = "SELECT
     last_claim_date,
     created_at
 FROM tricycle_records
-ORDER BY tricycle_no";
+ORDER BY CAST(tricycle_no AS UNSIGNED)";
 
 $result = mysqli_query($conn, $sql);
 
