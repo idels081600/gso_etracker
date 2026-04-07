@@ -99,6 +99,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "Docu_admin":
                 header("location:document_tracker/dashboard.php");
                 break;
+            case "super_admin":
+                header("location:document_tracker/super_admin.php");
+                break;
+            case "Fuel_admin":
+                header("location:subsidy/FUEL/dashboard_fuel.php");
+                break;
             default:
                 header("location:login_v2.php");
                 break;
