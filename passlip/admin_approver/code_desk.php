@@ -2,11 +2,15 @@
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     include '../dbh.php';
 
+    // Set timezone to Asia/Manila (UTC+8)
+    date_default_timezone_set('Asia/Manila');
+    
+    // Get current timestamp in PHP (ensures correct timezone)
+    $currentDateTime = date('Y-m-d H:i:s');
+    $currentTime = date('H:i');
+
     // Sanitize input
     $scannedData = mysqli_real_escape_string($conn, $_POST['scannedData']);
-
-
-    date_default_timezone_set('Asia/Manila');
 
     // STEP 1: Check if Status is 'Partially Approved'
     $query_in = "SELECT * FROM request WHERE name = '$scannedData' AND Status = 'Partially Approved' AND DATE(date) = CURDATE() ORDER BY id DESC LIMIT 1";
@@ -16,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $row_in = mysqli_fetch_assoc($result_in);
 
         $update_query = "UPDATE request 
-                         SET `timedept` = NOW(), 
+                         SET `timedept` = '$currentDateTime', 
                              Status = 'Approved', 
                              `status1` = 'Pass-Slip',  
                              `ImageName` = 'Check-Approved.png' 
@@ -63,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $duration_seconds = ($interval->h * 3600) + ($interval->i * 60) + $interval->s;
 
         $update_query = "UPDATE request 
-                         SET `time_returned` = DATE_FORMAT(CURRENT_TIMESTAMP, '%H:%i'), 
+                         SET `time_returned` = '$currentTime', 
                              Status = 'Done', 
                              `status1` = 'Present', 
                              `remarks` = '$remarks',

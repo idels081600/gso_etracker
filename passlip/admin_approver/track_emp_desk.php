@@ -198,6 +198,12 @@ if (isset($_POST['undo_delete'])) {
           <a class="nav-link" href="qrcode_scanner_desk.php">Scanner</a>
         </li>
         <li class="nav-item">
+          <a class="nav-link" href="#" id="notificationBtn" data-toggle="modal" data-target="#notificationModal">
+            <i class="fas fa-bell"></i>
+            <span class="badge badge-danger" id="notificationBadge" style="display: none;">0</span>
+          </a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="../../logout.php">Logout</a>
         </li>
       </ul>
@@ -304,6 +310,65 @@ if (isset($_POST['undo_delete'])) {
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Modal -->
+  <div class="modal fade" id="notificationModal" tabindex="-1" role="dialog" aria-labelledby="notificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="notificationModalLabel">
+            <i class="fas fa-exclamation-triangle me-2"></i>Overdue Employees (>1hr past Estimated Time)
+          </h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="notificationLoading" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="sr-only">Loading...</span>
+            </div>
+            <p class="mt-2">Checking for overdue employees...</p>
+          </div>
+          <div id="notificationContent" style="display: none;">
+            <div class="alert alert-info mb-3">
+              <i class="fas fa-info-circle me-2"></i>
+              <span id="notificationSummary"></span>
+              <small class="d-block mt-1">Last checked: <span id="lastCheckedTime">-</span></small>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover">
+                <thead class="thead-light">
+                  <tr>
+                    <th>Name</th>
+                    <th>Destination</th>
+                    <th>Type of Business</th>
+                    <th>Est. Time</th>
+                    <th>Time Departed</th>
+                    <th>Time Overdue</th>
+                  </tr>
+                </thead>
+                <tbody id="notificationTableBody">
+                  <!-- Overdue employees will be populated here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div id="noOverdueMessage" class="text-center py-4" style="display: none;">
+            <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+            <h5 class="text-success">All employees are within their estimated time!</h5>
+            <p class="text-muted">No overdue employees at the moment.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="refreshNotificationBtn">
+            <i class="fas fa-sync-alt me-1"></i>Refresh
+          </button>
         </div>
       </div>
     </div>
@@ -464,6 +529,139 @@ if (isset($_POST['undo_delete'])) {
     // Add event listeners for live filtering
     document.getElementById('searchBar').addEventListener('input', applyFilters);
     document.getElementById('statusDropdown').addEventListener('change', applyFilters);
+
+    // ===== NOTIFICATION SYSTEM FOR OVERDUE EMPLOYEES =====
+    let notifiedEmployeeIds = []; // Track employees already notified (notify only once)
+    let notificationCheckInterval = null;
+    const NOTIFICATION_CHECK_INTERVAL = 60000; // Check every 60 seconds
+
+    // Check for overdue employees
+    async function checkOverdueEmployees() {
+      try {
+        const response = await fetch('api_overdue_employees.php');
+        const data = await response.json();
+        
+        if (data.success) {
+          const badge = document.getElementById('notificationBadge');
+          const count = data.count;
+          
+          // Update badge
+          if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline';
+            
+            // Check for new overdue employees (not yet notified)
+            const newOverdueEmployees = data.data.filter(emp => !notifiedEmployeeIds.includes(emp.id));
+            
+            // Mark these employees as notified
+            newOverdueEmployees.forEach(emp => {
+              notifiedEmployeeIds.push(emp.id);
+            });
+            
+            // Show browser notification if there are new overdue employees
+            if (newOverdueEmployees.length > 0 && Notification.permission === 'granted') {
+              const notification = new Notification('Overdue Employees Alert', {
+                body: `${newOverdueEmployees.length} employee(s) are overdue (>1hr past estimated time)`,
+                icon: '../logo.png'
+              });
+            }
+          } else {
+            badge.style.display = 'none';
+            // Reset notified list when all employees have returned
+            notifiedEmployeeIds = [];
+          }
+          
+          // Update modal content if it's open
+          updateNotificationModal(data);
+        }
+      } catch (error) {
+        console.error('Error checking overdue employees:', error);
+      }
+    }
+
+    // Update notification modal content
+    function updateNotificationModal(data) {
+      const loadingDiv = document.getElementById('notificationLoading');
+      const contentDiv = document.getElementById('notificationContent');
+      const noOverdueDiv = document.getElementById('noOverdueMessage');
+      const summarySpan = document.getElementById('notificationSummary');
+      const tbody = document.getElementById('notificationTableBody');
+      const lastCheckedSpan = document.getElementById('lastCheckedTime');
+      
+      // Hide loading
+      loadingDiv.style.display = 'none';
+      
+      // Update last checked time
+      lastCheckedSpan.textContent = new Date().toLocaleTimeString();
+      
+      if (data.count > 0) {
+        // Show content, hide no overdue message
+        contentDiv.style.display = 'block';
+        noOverdueDiv.style.display = 'none';
+        
+        // Update summary
+        summarySpan.textContent = `Found ${data.count} employee(s) overdue by more than 1 hour from their estimated return time.`;
+        
+        // Populate table
+        tbody.innerHTML = '';
+        data.data.forEach(employee => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><strong>${employee.name}</strong></td>
+            <td>${employee.destination}</td>
+            <td>${employee.typeofbusiness}</td>
+            <td>${employee.esttime}</td>
+            <td>${employee.timedept}</td>
+            <td><span class="badge badge-danger">${employee.time_overdue_display}</span></td>
+          `;
+          tbody.appendChild(row);
+        });
+      } else {
+        // Show no overdue message, hide content
+        contentDiv.style.display = 'none';
+        noOverdueDiv.style.display = 'block';
+      }
+    }
+
+    // Request notification permission on page load
+    function requestNotificationPermission() {
+      if ('Notification' in window) {
+        if (Notification.permission === 'default') {
+          Notification.requestPermission().then(permission => {
+            console.log('Notification permission:', permission);
+          });
+        }
+      }
+    }
+
+    // Refresh notification button
+    document.getElementById('refreshNotificationBtn').addEventListener('click', async () => {
+      document.getElementById('notificationLoading').style.display = 'block';
+      document.getElementById('notificationContent').style.display = 'none';
+      document.getElementById('noOverdueMessage').style.display = 'none';
+      await checkOverdueEmployees();
+    });
+
+    // Load notification data when modal opens
+    document.getElementById('notificationModal').addEventListener('show.bs.modal', async () => {
+      document.getElementById('notificationLoading').style.display = 'block';
+      document.getElementById('notificationContent').style.display = 'none';
+      document.getElementById('noOverdueMessage').style.display = 'none';
+      await checkOverdueEmployees();
+    });
+
+    // Start notification polling
+    function startNotificationPolling() {
+      // Initial check
+      checkOverdueEmployees();
+      
+      // Set up interval
+      notificationCheckInterval = setInterval(checkOverdueEmployees, NOTIFICATION_CHECK_INTERVAL);
+    }
+
+    // Initialize notification system
+    requestNotificationPermission();
+    startNotificationPolling();
 
     loadDoc();
   </script>
