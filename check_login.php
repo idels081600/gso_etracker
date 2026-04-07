@@ -103,7 +103,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("location:document_tracker/super_admin.php");
                 break;
             case "Fuel_admin":
-                header("location:subsidy/FUEL/dashboard_fuel.php");
+                header("location:subsidy/fuel/dashboard_fuel.php");
                 break;
             default:
                 header("location:login_v2.php");
