@@ -24,10 +24,16 @@ $tricycle_no = isset($input['tricycle_no']) ? mysqli_real_escape_string($conn, $
 $vouchers = isset($input['vouchers']) ? $input['vouchers'] : [];
 $claimant_name = isset($input['claimant_name']) ? mysqli_real_escape_string($conn, $input['claimant_name']) : '';
 $e_signature = isset($input['e_signature']) ? $input['e_signature'] : '';
+$station_id = isset($_SESSION['station_id']) ? (int)$_SESSION['station_id'] : 0;
 
 // Validation
 if (empty($tricycle_no)) {
     echo json_encode(['success' => false, 'message' => 'Tricycle number is required']);
+    exit;
+}
+
+if ($station_id <= 0) {
+    echo json_encode(['success' => false, 'message' => 'No station selected. Please select a station first.']);
     exit;
 }
 
@@ -62,10 +68,10 @@ try {
         $check_result = mysqli_query($conn, $check_sql);
         
         if (mysqli_num_rows($check_result) === 0) {
-            // Insert voucher claim
+            // Insert voucher claim with station_id
             $signature_escaped = mysqli_real_escape_string($conn, $e_signature);
-            $insert_sql = "INSERT INTO voucher_claims (tricycle_id, voucher_number, claimant_name, e_signature) 
-                           VALUES ($tricycle_id, $voucher_num, '$claimant_name', '$signature_escaped')";
+            $insert_sql = "INSERT INTO voucher_claims (tricycle_id, voucher_number, claimant_name, e_signature, station_id) 
+                           VALUES ($tricycle_id, $voucher_num, '$claimant_name', '$signature_escaped', $station_id)";
             
             if (mysqli_query($conn, $insert_sql)) {
                 $claimed_count++;

@@ -133,5 +133,111 @@ document.getElementById('tableSearch').addEventListener('input', (e) => {
     });
 });
 
+// Bulk Import functionality
+document.getElementById('processImportBtn').addEventListener('click', async () => {
+    const fileInput = document.getElementById('csvFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a CSV file to import.');
+        return;
+    }
+    
+    // Show progress
+    const progressDiv = document.getElementById('importProgress');
+    const resultDiv = document.getElementById('importResult');
+    const progressBar = progressDiv.querySelector('.progress-bar');
+    const statusText = document.getElementById('importStatus');
+    const importBtn = document.getElementById('processImportBtn');
+    
+    progressDiv.style.display = 'block';
+    resultDiv.style.display = 'none';
+    progressBar.style.width = '0%';
+    statusText.textContent = 'Uploading file...';
+    importBtn.disabled = true;
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('csv_file', file);
+    
+    try {
+        progressBar.style.width = '50%';
+        statusText.textContent = 'Processing CSV...';
+        
+        const response = await fetch('api_bulk_import.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        progressBar.style.width = '100%';
+        statusText.textContent = 'Complete!';
+        
+        // Show result
+        resultDiv.style.display = 'block';
+        
+        if (data.success) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <strong>Success!</strong> ${data.message}
+                    <hr>
+                    <small>Inserted: ${data.inserted} | Duplicates skipped: ${data.duplicates}</small>
+                </div>
+            `;
+            
+            // Clear file input
+            fileInput.value = '';
+            
+            // Reload records
+            loadRecords();
+        } else {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    <strong>Error:</strong> ${data.message}
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Error importing data:', error);
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-circle me-2"></i>
+                <strong>Error:</strong> Failed to process the import. Please try again.
+            </div>
+        `;
+    } finally {
+        importBtn.disabled = false;
+        setTimeout(() => {
+            progressDiv.style.display = 'none';
+        }, 2000);
+    }
+});
+
+// Export PDF button handler
+document.getElementById('exportPdfBtn').addEventListener('click', () => {
+    const stationSelect = document.getElementById('exportStationSelect');
+    const stationId = stationSelect.value;
+    
+    if (!stationId) {
+        alert('Please select a gas station.');
+        return;
+    }
+    
+    // Open PDF in new tab with station_id parameter
+    window.open('export_claimed_vouchers.php?station_id=' + stationId, '_blank');
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('exportPdfModal'));
+    modal.hide();
+    
+    // Reset select
+    stationSelect.value = '';
+});
+
 // Load records on page load
 document.addEventListener('DOMContentLoaded', loadRecords);

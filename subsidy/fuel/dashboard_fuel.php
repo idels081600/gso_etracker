@@ -1,11 +1,36 @@
 <?php
 session_start();
+require_once 'db_fuel.php';
 
 // Security check - redirect to login if not logged in
 if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: ../../login_v2.php");
     exit();
 }
+
+// Check if user has station assigned
+if (!isset($_SESSION['station_id']) || empty($_SESSION['station_id'])) {
+    // Check if user has station in database
+    $username = mysqli_real_escape_string($conn, $_SESSION['username']);
+    $check_sql = "SELECT us.station_id, gs.station_name 
+                  FROM user_stations us 
+                  JOIN gas_stations gs ON us.station_id = gs.id 
+                  WHERE us.username = '$username'";
+    $check_result = mysqli_query($conn, $check_sql);
+    
+    if (mysqli_num_rows($check_result) > 0) {
+        // Set session
+        $station_data = mysqli_fetch_assoc($check_result);
+        $_SESSION['station_id'] = $station_data['station_id'];
+        $_SESSION['station_name'] = $station_data['station_name'];
+    } else {
+        // Redirect to station selection
+        header("Location: select_station.php");
+        exit();
+    }
+}
+
+$station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : 'Unknown Station';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,7 +46,7 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
 <body>
     <nav class="navbar bg-body-tertiary fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">Fuel Subsidy</a>
+            <a class="navbar-brand" href="#">Fuel Subsidy - <?php echo htmlspecialchars($station_name); ?></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -48,6 +73,7 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
+                                <li><a class="dropdown-item" href="select_station.php"><i class="bi bi-arrow-repeat me-2"></i>Change Gas Station</a></li>
                                 <li><a class="dropdown-item" href="#">Help</a></li>
                             </ul>
                         </li>
@@ -114,8 +140,14 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
                             <h5 class="mb-0">Fuel Subsidy Records</h5>
                         </div>
                         <div class="col-auto">
-                            <div class="d-flex gap-2">
+                        <div class="d-flex gap-2">
                                 <input type="text" class="form-control form-control-sm" placeholder="Search records..." id="tableSearch" style="width: 200px;">
+                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#exportPdfModal">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+                                </button>
+                                <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#bulkImportModal">
+                                    <i class="bi bi-file-earmark-spreadsheet me-1"></i>Bulk Import
+                                </button>
                                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDataModal">
                                     <i class="bi bi-plus-circle me-1"></i>Add Data
                                 </button>
@@ -144,6 +176,91 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
                 </div>
             </div>
         </section>
+
+        <!-- Bulk Import Modal -->
+        <div class="modal fade" id="bulkImportModal" tabindex="-1" aria-labelledby="bulkImportModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="bulkImportModalLabel">Bulk Import Tricycle Records</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Instructions:</strong> Download the CSV template, fill in your data, then upload the file.
+                        </div>
+                        <div class="mb-3">
+                            <a href="template_fuel_subsidy.csv" class="btn btn-outline-primary btn-sm" download>
+                                <i class="bi bi-download me-1"></i>Download CSV Template
+                            </a>
+                        </div>
+                        <hr>
+                        <form id="bulkImportForm">
+                            <div class="mb-3">
+                                <label for="csvFile" class="form-label">Upload CSV File</label>
+                                <input type="file" class="form-control" id="csvFile" accept=".csv" required>
+                            </div>
+                            <div class="form-text">
+                                <strong>CSV Format:</strong><br>
+                                tricycle_no, driver_name, address, contact_number, total_vouchers
+                            </div>
+                        </form>
+                        <div id="importProgress" class="mt-3" style="display: none;">
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted mt-1" id="importStatus">Processing...</small>
+                        </div>
+                        <div id="importResult" class="mt-3" style="display: none;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" id="processImportBtn">
+                            <i class="bi bi-upload me-1"></i>Import Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export PDF Modal -->
+        <div class="modal fade" id="exportPdfModal" tabindex="-1" aria-labelledby="exportPdfModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exportPdfModalLabel">Export Claimed Vouchers PDF</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="exportStationSelect" class="form-label">Select Gas Station</label>
+                            <select class="form-select" id="exportStationSelect" required>
+                                <option value="">-- Select Station --</option>
+                                <?php
+                                // Fetch all active gas stations
+                                $station_sql = "SELECT id, station_name FROM gas_stations WHERE is_active = 1 ORDER BY station_name";
+                                $station_result = mysqli_query($conn, $station_sql);
+                                while ($station_row = mysqli_fetch_assoc($station_result)) {
+                                    echo '<option value="' . $station_row['id'] . '">' . htmlspecialchars($station_row['station_name']) . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            The PDF will contain all claimed vouchers for the selected gas station.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="exportPdfBtn">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Add Data Modal -->
         <div class="modal fade" id="addDataModal" tabindex="-1" aria-labelledby="addDataModalLabel" aria-hidden="true">

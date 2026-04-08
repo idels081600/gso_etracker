@@ -1,11 +1,36 @@
 <?php
 session_start();
+require_once 'db_fuel.php';
 
 // Security check - redirect to login if not logged in
 if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: ../../login_v2.php");
     exit();
 }
+
+// Check if user has station assigned
+if (!isset($_SESSION['station_id']) || empty($_SESSION['station_id'])) {
+    // Check if user has station in database
+    $username = mysqli_real_escape_string($conn, $_SESSION['username']);
+    $check_sql = "SELECT us.station_id, gs.station_name 
+                  FROM user_stations us 
+                  JOIN gas_stations gs ON us.station_id = gs.id 
+                  WHERE us.username = '$username'";
+    $check_result = mysqli_query($conn, $check_sql);
+    
+    if (mysqli_num_rows($check_result) > 0) {
+        // Set session
+        $station_data = mysqli_fetch_assoc($check_result);
+        $_SESSION['station_id'] = $station_data['station_id'];
+        $_SESSION['station_name'] = $station_data['station_name'];
+    } else {
+        // Redirect to station selection
+        header("Location: select_station.php");
+        exit();
+    }
+}
+
+$station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : 'Unknown Station';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,7 +46,7 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
 <body>
     <nav class="navbar bg-body-tertiary fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">Fuel Subsidy</a>
+            <a class="navbar-brand" href="#">Fuel Subsidy - <?php echo htmlspecialchars($station_name); ?></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -48,6 +73,7 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
+                                <li><a class="dropdown-item" href="select_station.php"><i class="bi bi-arrow-repeat me-2"></i>Change Gas Station</a></li>
                                 <li><a class="dropdown-item" href="#">Help</a></li>
                             </ul>
                         </li>
