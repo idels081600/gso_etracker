@@ -72,6 +72,7 @@ class PDF extends FPDF
 
         // Define header cells with green background - includes Date column
         $this->Cell(45, 10, 'Name', 1, 0, 'C', true);
+        $this->Cell(50, 10, 'Purpose', 1, 0, 'C', true);
         $this->Cell(60, 10, 'Destination', 1, 0, 'C', true);
         $this->Cell(30, 10, 'Date', 1, 0, 'C', true);
         $this->Cell(30, 10, 'TimeDept', 1, 0, 'C', true);
@@ -88,6 +89,7 @@ class PDF extends FPDF
         $this->SetFont('Arial', '', 10);
         while ($row = $sql->fetch_object()) {
             $name = $row->name;
+            $purpose = isset($row->purpose) ? $row->purpose : '';
             $destination = $row->dest2;
             $date = date("m/d/Y", strtotime($row->date));
             $timedept = date("h:i A", strtotime($row->timedept));
@@ -101,6 +103,7 @@ class PDF extends FPDF
 
             // Columns with Date included
             $this->Cell(45, 12, $name, 1);
+            $this->Cell(50, 12, $purpose, 1);
             $this->Cell(60, 12, $destination, 1);
             $this->Cell(30, 12, $date, 1, 0, 'C');
             $this->Cell(30, 12, $timedept, 1, 0, 'C');
