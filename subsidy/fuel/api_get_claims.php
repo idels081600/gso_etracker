@@ -24,7 +24,7 @@ if (empty($tricycle_no)) {
 $sql = "SELECT tr.id, tr.tricycle_no, tr.driver_name, tr.address, tr.contact_number,
         tr.total_vouchers, tr.claimed_vouchers, tr.status, tr.last_claim_date
         FROM tricycle_records tr 
-        WHERE tr.tricycle_no = '$tricycle_no'";
+        WHERE tr.tricycle_no LIKE '%$tricycle_no%'";
 
 $result = mysqli_query($conn, $sql);
 
