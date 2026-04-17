@@ -96,9 +96,13 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                                 <div class="col-md-8 mb-4 mb-md-0">
                                     <h2 class="fw-bold mb-2">Fuel Subsidy Releasing</h2>
                                     <p class="text-muted mb-4">Search for a tricycle and confirm voucher release details.</p>
-                                    <div class="input-group input-group-lg">
-                                        <input id="mainSearch" type="text" class="form-control" placeholder="Search tricycle number" aria-label="Search tricycle">
+                                    <div class="input-group input-group-lg position-relative">
+                                        <input id="mainSearch" type="text" class="form-control" placeholder="Search tricycle number or driver name" aria-label="Search tricycle" autocomplete="off">
                                         <button class="btn btn-primary" type="button" id="searchBtn"><i class="bi bi-search me-2"></i>Search</button>
+                                        <!-- Autocomplete Dropdown -->
+                                        <div id="searchDropdown" class="dropdown-menu w-100 shadow" style="display: none; top: 100%; left: 0; border-radius: 0 0 8px 8px; z-index: 1050;">
+                                            <div class="text-muted text-center py-2 small" id="searchLoading">Searching...</div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -153,6 +157,8 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             </div>
         </div>
     </div>
+
+
 
     <!-- Submit Modal -->
     <div class="modal fade" id="submitModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">

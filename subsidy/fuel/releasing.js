@@ -43,7 +43,16 @@ function createVoucherCard(voucherId, index, isClaimed = false) {
         `;
         
         card.addEventListener('click', () => {
-            if (!card.classList.contains('claimed')) {
+            if (card.classList.contains('claimed')) {
+                // Unclaim if this is not an actual submitted voucher (no view proof)
+                card.classList.remove('claimed');
+                card.innerHTML = `
+                    <div class="card-body py-3 px-2">
+                        <p class="voucher-label text-muted mb-1">Voucher #${index}</p>
+                        <p class="voucher-number text-success mb-0">${voucherId}</p>
+                    </div>
+                `;
+            } else {
                 card.classList.add('claimed');
                 card.innerHTML = `
                     <div class="card-body py-3 px-2">
@@ -71,6 +80,11 @@ function renderVoucherButtons(tricycleNo, alreadyClaimed = []) {
     }
 }
 
+// Debounce timer
+let searchDebounceTimer = null;
+const searchDropdown = document.getElementById('searchDropdown');
+const searchLoading = document.getElementById('searchLoading');
+
 // Search tricycle
 async function searchTricycle(tricycleNo) {
     try {
@@ -93,6 +107,9 @@ async function searchTricycle(tricycleNo) {
             driverSelect.value = currentDriverName;
             
             renderVoucherButtons(data.data.tricycle_no, claimedVouchersList);
+            
+            // Hide dropdown
+            hideSearchDropdown();
         } else {
             alert('Tricycle not found. Please check the number and try again.');
             currentTricycleEl.textContent = '----';
@@ -103,6 +120,61 @@ async function searchTricycle(tricycleNo) {
         console.error('Error searching tricycle:', error);
         alert('Error searching for tricycle. Please try again.');
     }
+}
+
+// Autocomplete search suggestions
+async function searchSuggestions(query) {
+    if (query.length < 2) {
+        hideSearchDropdown();
+        return;
+    }
+    
+    clearTimeout(searchDebounceTimer);
+    
+    // Show loading state
+    searchDropdown.innerHTML = '<div class="text-muted text-center py-2 small">Searching...</div>';
+    showSearchDropdown();
+    
+    searchDebounceTimer = setTimeout(async () => {
+        try {
+            const response = await fetch(`api_search_suggestions.php?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            
+            searchDropdown.innerHTML = '';
+            
+            if (data.success && data.results.length > 0) {
+                data.results.forEach(item => {
+                    const option = document.createElement('button');
+                    option.className = 'dropdown-item d-flex justify-content-between align-items-center';
+                    option.innerHTML = `
+                        <div>
+                            <strong>${item.tricycle_no}</strong>
+                            <div class="small text-muted">${item.driver_name}</div>
+                        </div>
+                        <span class="badge bg-light text-dark">${item.remaining} left</span>
+                    `;
+                    option.addEventListener('click', () => {
+                        mainSearch.value = item.tricycle_no;
+                        searchTricycle(item.tricycle_no);
+                    });
+                    searchDropdown.appendChild(option);
+                });
+            } else {
+                searchDropdown.innerHTML = '<div class="text-muted text-center py-2 small">No matches found</div>';
+            }
+        } catch (error) {
+            console.error('Error fetching suggestions:', error);
+            searchDropdown.innerHTML = '<div class="text-danger text-center py-2 small">Error loading results</div>';
+        }
+    }, 300);
+}
+
+function showSearchDropdown() {
+    searchDropdown.style.display = 'block';
+}
+
+function hideSearchDropdown() {
+    searchDropdown.style.display = 'none';
 }
 
 // Search button click
@@ -230,6 +302,25 @@ function showProofModal(voucherIndex, voucherId) {
         alert('No proof data found for this voucher.');
     }
 }
+
+// Autocomplete events
+mainSearch.addEventListener('input', (e) => {
+    searchSuggestions(e.target.value);
+});
+
+// Hide dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.input-group')) {
+        hideSearchDropdown();
+    }
+});
+
+// Keep dropdown open when focusing search
+mainSearch.addEventListener('focus', () => {
+    if (mainSearch.value.length >= 2) {
+        showSearchDropdown();
+    }
+});
 
 // Clear button - resets all claimed vouchers
 document.getElementById('clearBtn').addEventListener('click', () => {
