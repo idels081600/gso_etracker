@@ -222,21 +222,36 @@ document.getElementById('processImportBtn').addEventListener('click', async () =
 document.getElementById('exportPdfBtn').addEventListener('click', () => {
     const stationSelect = document.getElementById('exportStationSelect');
     const stationId = stationSelect.value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
     
     if (!stationId) {
         alert('Please select a gas station.');
         return;
     }
     
-    // Open PDF in new tab with station_id parameter
-    window.open('export_claimed_vouchers.php?station_id=' + stationId, '_blank');
+    // Build URL with parameters
+    let exportUrl = 'export_claimed_vouchers.php?station_id=' + stationId;
+    
+    if (startDate) {
+        exportUrl += '&start_date=' + encodeURIComponent(startDate);
+    }
+    
+    if (endDate) {
+        exportUrl += '&end_date=' + encodeURIComponent(endDate);
+    }
+    
+    // Open PDF in new tab
+    window.open(exportUrl, '_blank');
     
     // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('exportPdfModal'));
     modal.hide();
     
-    // Reset select
+    // Reset form
     stationSelect.value = '';
+    document.getElementById('startDate').value = '';
+    document.getElementById('endDate').value = '';
 });
 
 // Load records on page load

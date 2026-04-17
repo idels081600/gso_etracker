@@ -247,9 +247,19 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                                 ?>
                             </select>
                         </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="startDate" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="startDate">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="endDate" class="form-label">End Date</label>
+                                <input type="date" class="form-control" id="endDate">
+                            </div>
+                        </div>
                         <div class="form-text">
                             <i class="bi bi-info-circle me-1"></i>
-                            The PDF will contain all claimed vouchers for the selected gas station.
+                            Select date range to filter exported records. Leave blank to export all records.
                         </div>
                     </div>
                     <div class="modal-footer">

@@ -46,9 +46,25 @@ if (isset($_GET['station_id']) && !empty($_GET['station_id'])) {
             exit();
         }
     } else {
-        $station_id = (int)$_SESSION['station_id'];
-        $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : 'Unknown Station';
+$station_id = (int)$_SESSION['station_id'];
+$station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : 'Unknown Station';
     }
+}
+
+// Get date range filters
+$dateFilter = '';
+$dateRangeText = 'All Dates';
+
+if (isset($_GET['start_date']) && !empty($_GET['start_date'])) {
+    $startDate = mysqli_real_escape_string($conn, $_GET['start_date']);
+    $dateFilter .= " AND DATE(vc.claim_date) >= '$startDate' ";
+    $dateRangeText = 'From ' . date('F j, Y', strtotime($startDate));
+}
+
+if (isset($_GET['end_date']) && !empty($_GET['end_date'])) {
+    $endDate = mysqli_real_escape_string($conn, $_GET['end_date']);
+    $dateFilter .= " AND DATE(vc.claim_date) <= '$endDate' ";
+    $dateRangeText = isset($startDate) ? $dateRangeText . ' to ' . date('F j, Y', strtotime($endDate)) : 'Until ' . date('F j, Y', strtotime($endDate));
 }
 
 require_once '../../fpdf/fpdf.php';
@@ -63,6 +79,7 @@ $sql = "SELECT tr.driver_name, tr.tricycle_no, vc.voucher_number, vc.claim_date,
         LEFT JOIN gas_stations gs ON vc.station_id = gs.id
         WHERE vc.e_signature IS NOT NULL AND vc.e_signature != ''
         AND vc.station_id = $station_id
+        $dateFilter
         ORDER BY tr.tricycle_no, vc.claim_date, vc.voucher_number";
 
 $result = mysqli_query($conn, $sql);
@@ -97,6 +114,10 @@ class PDF extends FPDF {
         // Title
         $this->SetFont('Arial', 'B', 16);
         $this->Cell(0, 10, 'CLAIMED VOUCHERS AS OF ' . $GLOBALS['currentDate'], 0, 1, 'C');
+        
+        // Date range
+        $this->SetFont('Arial', 'I', 10);
+        $this->Cell(0, 6, $GLOBALS['dateRangeText'], 0, 1, 'C');
         $this->Ln(5);
     }
     
