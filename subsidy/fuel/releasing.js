@@ -83,7 +83,10 @@ function renderVoucherButtons(tricycleNo, alreadyClaimed = []) {
 // Debounce timer
 let searchDebounceTimer = null;
 const searchDropdown = document.getElementById('searchDropdown');
-const searchLoading = document.getElementById('searchLoading');
+let currentPage = 1;
+let currentQuery = '';
+let isLoadingMore = false;
+let hasMoreResults = false;
 
 // Search tricycle
 async function searchTricycle(tricycleNo) {
@@ -123,50 +126,108 @@ async function searchTricycle(tricycleNo) {
 }
 
 // Autocomplete search suggestions
-async function searchSuggestions(query) {
+async function searchSuggestions(query, page = 1, append = false) {
     if (query.length < 2) {
         hideSearchDropdown();
         return;
     }
     
-    clearTimeout(searchDebounceTimer);
+    if (!append) {
+        clearTimeout(searchDebounceTimer);
+        currentPage = 1;
+        currentQuery = query;
+        hasMoreResults = false;
+        
+        // Show loading state
+        searchDropdown.innerHTML = '<div class="text-muted text-center py-2 small">Searching...</div>';
+        showSearchDropdown();
+        
+        searchDebounceTimer = setTimeout(async () => {
+            await loadSearchResults(query, 1, false);
+        }, 300);
+    } else {
+        await loadSearchResults(query, page, true);
+    }
+}
+
+// Load search results
+async function loadSearchResults(query, page, append) {
+    if (isLoadingMore) return;
     
-    // Show loading state
-    searchDropdown.innerHTML = '<div class="text-muted text-center py-2 small">Searching...</div>';
-    showSearchDropdown();
+    isLoadingMore = true;
     
-    searchDebounceTimer = setTimeout(async () => {
-        try {
-            const response = await fetch(`api_search_suggestions.php?q=${encodeURIComponent(query)}`);
-            const data = await response.json();
-            
+    if (append) {
+        // Add loading footer
+        const loadingEl = document.createElement('div');
+        loadingEl.id = 'loadMoreSpinner';
+        loadingEl.className = 'text-center py-2 small text-muted';
+        loadingEl.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Loading more...';
+        searchDropdown.appendChild(loadingEl);
+    }
+    
+    try {
+        const response = await fetch(`api_search_suggestions.php?q=${encodeURIComponent(query)}&page=${page}`);
+        const data = await response.json();
+        
+        if (append) {
+            // Remove loading spinner
+            const spinner = document.getElementById('loadMoreSpinner');
+            if (spinner) spinner.remove();
+        } else {
             searchDropdown.innerHTML = '';
-            
-            if (data.success && data.results.length > 0) {
-                data.results.forEach(item => {
-                    const option = document.createElement('button');
-                    option.className = 'dropdown-item d-flex justify-content-between align-items-center';
-                    option.innerHTML = `
-                        <div>
-                            <strong>${item.tricycle_no}</strong>
-                            <div class="small text-muted">${item.driver_name}</div>
-                        </div>
-                        <span class="badge bg-light text-dark">${item.remaining} left</span>
-                    `;
-                    option.addEventListener('click', () => {
-                        mainSearch.value = item.tricycle_no;
-                        searchTricycle(item.tricycle_no);
-                    });
-                    searchDropdown.appendChild(option);
+        }
+        
+        if (data.success && data.results.length > 0) {
+            data.results.forEach(item => {
+                const option = document.createElement('button');
+                option.className = 'dropdown-item d-flex justify-content-between align-items-center';
+                option.innerHTML = `
+                    <div>
+                        <strong>${item.tricycle_no}</strong>
+                        <div class="small text-muted">${item.driver_name}</div>
+                    </div>
+                    <span class="badge bg-light text-dark">${item.remaining} left</span>
+                `;
+                option.addEventListener('click', () => {
+                    mainSearch.value = item.tricycle_no;
+                    searchTricycle(item.tricycle_no);
                 });
-            } else {
-                searchDropdown.innerHTML = '<div class="text-muted text-center py-2 small">No matches found</div>';
+                searchDropdown.appendChild(option);
+            });
+            
+            hasMoreResults = data.has_more;
+            currentPage = data.page;
+            
+            if (data.has_more) {
+                // Add load more trigger element
+                const loadMoreTrigger = document.createElement('div');
+                loadMoreTrigger.id = 'loadMoreTrigger';
+                loadMoreTrigger.className = 'p-1';
+                searchDropdown.appendChild(loadMoreTrigger);
+                
+                // Setup intersection observer for infinite scroll
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting && hasMoreResults) {
+                            searchSuggestions(currentQuery, currentPage + 1, true);
+                            observer.disconnect();
+                        }
+                    });
+                }, { root: searchDropdown, threshold: 0.1 });
+                
+                observer.observe(loadMoreTrigger);
             }
-        } catch (error) {
-            console.error('Error fetching suggestions:', error);
+        } else if (!append) {
+            searchDropdown.innerHTML = '<div class="text-muted text-center py-2 small">No matches found</div>';
+        }
+    } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        if (!append) {
             searchDropdown.innerHTML = '<div class="text-danger text-center py-2 small">Error loading results</div>';
         }
-    }, 300);
+    }
+    
+    isLoadingMore = false;
 }
 
 function showSearchDropdown() {

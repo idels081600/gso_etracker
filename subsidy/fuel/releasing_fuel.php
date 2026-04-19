@@ -100,7 +100,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                                         <input id="mainSearch" type="text" class="form-control" placeholder="Search tricycle number or driver name" aria-label="Search tricycle" autocomplete="off">
                                         <button class="btn btn-primary" type="button" id="searchBtn"><i class="bi bi-search me-2"></i>Search</button>
                                         <!-- Autocomplete Dropdown -->
-                                        <div id="searchDropdown" class="dropdown-menu w-100 shadow" style="display: none; top: 100%; left: 0; border-radius: 0 0 8px 8px; z-index: 1050;">
+                                        <div id="searchDropdown" class="dropdown-menu w-100 shadow" style="display: none; top: 100%; left: 0; border-radius: 0 0 8px 8px; z-index: 1050; max-height: 320px; overflow-y: auto;">
                                             <div class="text-muted text-center py-2 small" id="searchLoading">Searching...</div>
                                         </div>
                                     </div>
@@ -214,6 +214,14 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="releasing.js"></script>
     <style>
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+        
         .voucher-card {
             cursor: pointer;
             transition: all 0.2s ease-in-out;

@@ -15,7 +15,17 @@ if (!isset($_GET['q']) || strlen(trim($_GET['q'])) < 2) {
     exit();
 }
 
-$query = mysqli_real_escape_string($conn, trim($_GET['q']));
+$query = trim($_GET['q']);
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$per_page = 10;
+$offset = ($page - 1) * $per_page;
+
+$search_string = '%' . mysqli_real_escape_string($conn, $query) . '%';
+
+// Get total count first
+$count_sql = "SELECT COUNT(*) as total FROM tricycle_records tr WHERE tr.tricycle_no LIKE '$search_string' OR tr.driver_name LIKE '$search_string'";
+$count_result = mysqli_query($conn, $count_sql);
+$total = mysqli_fetch_assoc($count_result)['total'];
 
 // Search for tricycle numbers or driver names
 $sql = "SELECT 
@@ -25,9 +35,9 @@ $sql = "SELECT
             tr.claimed_vouchers
         FROM tricycle_records tr
         WHERE 
-            tr.tricycle_no LIKE '%$query%' 
-            OR tr.driver_name LIKE '%$query%'
-        LIMIT 10";
+            tr.tricycle_no LIKE '$search_string' 
+            OR tr.driver_name LIKE '$search_string'
+        LIMIT $per_page OFFSET $offset";
 
 $result = mysqli_query($conn, $sql);
 
@@ -43,6 +53,10 @@ while ($row = mysqli_fetch_assoc($result)) {
 
 echo json_encode([
     'success' => true,
-    'results' => $results
+    'results' => $results,
+    'page' => $page,
+    'per_page' => $per_page,
+    'total' => intval($total),
+    'has_more' => ($page * $per_page) < $total
 ]);
 ?>

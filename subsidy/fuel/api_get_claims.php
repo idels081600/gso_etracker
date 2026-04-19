@@ -24,7 +24,7 @@ if (empty($tricycle_no)) {
 $sql = "SELECT tr.id, tr.tricycle_no, tr.driver_name, tr.address, tr.contact_number,
         tr.total_vouchers, tr.claimed_vouchers, tr.status, tr.last_claim_date
         FROM tricycle_records tr 
-        WHERE tr.tricycle_no LIKE '%$tricycle_no%'";
+        WHERE tr.tricycle_no = '$tricycle_no' OR tr.driver_name LIKE '%$tricycle_no%'";
 
 $result = mysqli_query($conn, $sql);
 
@@ -57,6 +57,7 @@ while ($row = mysqli_fetch_assoc($claims_result)) {
 }
 
 $tricycle['claimed_vouchers_list'] = $claimed_vouchers;
+
 $tricycle['claims_data'] = $claims_data;
 
 echo json_encode([
