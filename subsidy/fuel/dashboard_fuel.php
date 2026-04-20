@@ -129,6 +129,49 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                         </div>
                     </div>
                 </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase text-secondary mb-3">Today's Fuel Ups</h6>
+                            <p class="display-6 mb-0" id="todayTricycles">0</p>
+                            <small class="text-muted">Tricycles fueled today</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase text-secondary mb-3">Today's Liters</h6>
+                            <p class="display-6 mb-0" id="todayLiters">0</p>
+                            <small class="text-muted">Liters dispensed today</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase text-secondary mb-3">Total Liters</h6>
+                            <p class="display-6 mb-0" id="totalLiters">0</p>
+                            <small class="text-muted">All time total liters</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-2">
+                <div class="col-12 col-md-6 col-xl-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase text-secondary mb-3">Set Pump Price</h6>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text">₱</span>
+                                <input type="number" step="0.01" class="form-control" id="dashboardPumpPrice" placeholder="Current pump price per liter">
+                                <button class="btn btn-primary" type="button" id="updateLitersBtn">Update Liters</button>
+                            </div>
+                            <small class="text-muted">Enter today's pump price to calculate actual liters dispensed</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -246,6 +289,10 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                                 }
                                 ?>
                             </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="pumpPrice" class="form-label">Pump Price (Per Liter)</label>
+                            <input type="number" step="0.01" class="form-control" id="pumpPrice" placeholder="Enter current pump price" required>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">

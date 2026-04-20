@@ -12,7 +12,6 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
 if (isset($_GET['station_id']) && !empty($_GET['station_id'])) {
     $station_id = (int)$_GET['station_id'];
     
-    // Get station name from database
     $station_sql = "SELECT station_name FROM gas_stations WHERE id = $station_id";
     $station_result = mysqli_query($conn, $station_sql);
     
@@ -23,9 +22,7 @@ if (isset($_GET['station_id']) && !empty($_GET['station_id'])) {
         die('Invalid station selected.');
     }
 } else {
-    // Fallback to session station_id if no parameter provided
     if (!isset($_SESSION['station_id']) || empty($_SESSION['station_id'])) {
-        // Check if user has station in database
         $username = mysqli_real_escape_string($conn, $_SESSION['username']);
         $check_sql = "SELECT us.station_id, gs.station_name 
                       FROM user_stations us 
@@ -34,22 +31,23 @@ if (isset($_GET['station_id']) && !empty($_GET['station_id'])) {
         $check_result = mysqli_query($conn, $check_sql);
         
         if (mysqli_num_rows($check_result) > 0) {
-            // Set session
             $station_data = mysqli_fetch_assoc($check_result);
             $_SESSION['station_id'] = $station_data['station_id'];
             $_SESSION['station_name'] = $station_data['station_name'];
             $station_id = (int)$_SESSION['station_id'];
             $station_name = $_SESSION['station_name'];
         } else {
-            // Redirect to station selection
             header("Location: select_station.php");
             exit();
         }
     } else {
-$station_id = (int)$_SESSION['station_id'];
-$station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : 'Unknown Station';
+        $station_id = (int)$_SESSION['station_id'];
+        $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : 'Unknown Station';
     }
 }
+
+// Get pump price
+$pumpPrice = isset($_GET['pump_price']) ? (float)$_GET['pump_price'] : 0;
 
 // Get date range filters
 $dateFilter = '';
@@ -64,15 +62,16 @@ if (isset($_GET['start_date']) && !empty($_GET['start_date'])) {
 if (isset($_GET['end_date']) && !empty($_GET['end_date'])) {
     $endDate = mysqli_real_escape_string($conn, $_GET['end_date']);
     $dateFilter .= " AND DATE(vc.claim_date) <= '$endDate' ";
-    $dateRangeText = isset($startDate) ? $dateRangeText . ' to ' . date('F j, Y', strtotime($endDate)) : 'Until ' . date('F j, Y', strtotime($endDate));
+    $dateRangeText = isset($startDate) 
+        ? $dateRangeText . ' to ' . date('F j, Y', strtotime($endDate)) 
+        : 'Until ' . date('F j, Y', strtotime($endDate));
 }
 
 require_once '../../fpdf/fpdf.php';
 
-// Get current date for title
 $currentDate = date('F j, Y');
 
-// Fetch claimed vouchers with driver info filtered by station
+// Fetch claimed vouchers
 $sql = "SELECT tr.driver_name, tr.tricycle_no, vc.voucher_number, vc.claim_date, vc.e_signature, gs.station_name
         FROM voucher_claims vc
         INNER JOIN tricycle_records tr ON vc.tricycle_id = tr.id
@@ -84,11 +83,11 @@ $sql = "SELECT tr.driver_name, tr.tricycle_no, vc.voucher_number, vc.claim_date,
 
 $result = mysqli_query($conn, $sql);
 
-// Group data by tricycle and date to handle multiple vouchers with single signature
+// Group data
 $groupedData = [];
+$totalVouchers = 0;
 while ($row = mysqli_fetch_assoc($result)) {
     $key = $row['tricycle_no'] . '_' . date('Y-m-d', strtotime($row['claim_date']));
-    
     if (!isset($groupedData[$key])) {
         $groupedData[$key] = [
             'driver_name' => $row['driver_name'],
@@ -99,111 +98,235 @@ while ($row = mysqli_fetch_assoc($result)) {
         ];
     }
     $groupedData[$key]['vouchers'][] = $row['voucher_number'];
+    $totalVouchers++;
 }
 
-// Create PDF
-class PDF extends FPDF {
+// Correct calculation: Each voucher = ₱200 worth of fuel
+$totalFueledPrice = $totalVouchers * 200;
+$totalLiters = $pumpPrice > 0 ? $totalFueledPrice / $pumpPrice : 0;
+
+// ── Column widths ──────────────────────────────────────────
+define('COL_NAME',    50);
+define('COL_TRIC',    30);
+define('COL_VOUCH',   50);
+define('COL_DATE',    40);
+define('COL_SIG',    100);
+define('LINE_HEIGHT',  5);   // line height inside multi-line cell
+define('MIN_ROW_H',   20);   // minimum row height
+define('LEFT_MARGIN',  10);  // page left margin
+
+class PDF extends FPDF
+{
     function Header() {
-        // Logo (optional - uncomment if you have a logo)
-        // $this->Image('../../logo.png', 10, 10, 30);
-        
-        // Station Name
         $this->SetFont('Arial', 'B', 12);
         $this->Cell(0, 8, $GLOBALS['station_name'], 0, 1, 'C');
-        
-        // Title
         $this->SetFont('Arial', 'B', 16);
         $this->Cell(0, 10, 'CLAIMED VOUCHERS AS OF ' . $GLOBALS['currentDate'], 0, 1, 'C');
-        
-        // Date range
         $this->SetFont('Arial', 'I', 10);
         $this->Cell(0, 6, $GLOBALS['dateRangeText'], 0, 1, 'C');
         $this->Ln(5);
     }
-    
+
     function Footer() {
         $this->SetY(-15);
         $this->SetFont('Arial', 'I', 8);
         $this->Cell(0, 10, 'Page ' . $this->PageNo() . '/{nb}', 0, 0, 'C');
     }
+
+    /**
+     * Draw a bordered rectangle that exactly fills the cell area,
+     * then write text centered inside it — supports multiple lines.
+     *
+     * @param float  $x         Left edge of cell
+     * @param float  $y         Top edge of cell
+     * @param float  $w         Cell width
+     * @param float  $h         Cell height  (full row height)
+     * @param string $txt       Text to display
+     * @param int    $lineH     Height of each text line
+     */
+    function FixedCell($x, $y, $w, $h, $txt, $lineH = LINE_HEIGHT) {
+        // Draw the border rectangle
+        $this->Rect($x, $y, $w, $h);
+
+        if ($txt === '') return;
+
+        // Word-wrap the text to fit inside the cell (with 3 mm padding each side)
+        $innerW = $w - 6;
+        $lines  = $this->wordWrapText($txt, $innerW);
+
+        // Calculate vertical starting position to center the block of lines
+        $blockH   = count($lines) * $lineH;
+        $startY   = $y + ($h - $blockH) / 2;
+
+        foreach ($lines as $i => $line) {
+            $lineY = $startY + $i * $lineH;
+            // Clip to cell bounds just in case
+            $this->SetXY($x, $lineY);
+            $this->Cell($w, $lineH, $line, 0, 0, 'C');
+        }
+    }
+
+    /**
+     * Break text into lines that fit within $maxW mm using GetStringWidth.
+     */
+    function wordWrapText($txt, $maxW) {
+        $words  = explode(' ', $txt);
+        $lines  = [];
+        $current = '';
+
+        foreach ($words as $word) {
+            $test = $current === '' ? $word : $current . ' ' . $word;
+            if ($this->GetStringWidth($test) <= $maxW) {
+                $current = $test;
+            } else {
+                if ($current !== '') $lines[] = $current;
+                // If a single word is wider than the cell, force it
+                $current = $word;
+            }
+        }
+        if ($current !== '') $lines[] = $current;
+
+        return $lines;
+    }
+
+    /**
+     * Calculate the row height needed for a given text in a given column width.
+     */
+    function calcRowHeight($txt, $colW, $lineH = LINE_HEIGHT, $minH = MIN_ROW_H) {
+        $innerW = $colW - 6;
+        $lines  = $this->wordWrapText($txt, $innerW);
+        $needed = count($lines) * $lineH + 10;   // +10 padding top & bottom
+        return max($minH, $needed);
+    }
 }
 
-$pdf = new PDF('L', 'mm', 'A4'); // Landscape orientation
+// ── Build PDF ──────────────────────────────────────────────
+$pdf = new PDF('L', 'mm', 'A4');
 $pdf->AliasNbPages();
+$pdf->SetMargins(LEFT_MARGIN, 10, 10);
 $pdf->AddPage();
-$pdf->SetFont('Arial', '', 10);
-
-// Table header
-$pdf->SetFillColor(200, 200, 200);
-$pdf->SetFont('Arial', 'B', 10);
-$pdf->Cell(50, 10, 'Name', 1, 0, 'C', true);
-$pdf->Cell(30, 10, 'Tricycle No.', 1, 0, 'C', true);
-$pdf->Cell(50, 10, 'Voucher No. Claimed', 1, 0, 'C', true);
-$pdf->Cell(40, 10, 'Date Claimed', 1, 0, 'C', true);
-$pdf->Cell(100, 10, 'E-Signature', 1, 1, 'C', true);
-
-// Table data
 $pdf->SetFont('Arial', '', 9);
 
+// ── Table header ──
+$pdf->SetFillColor(200, 200, 200);
+$pdf->SetFont('Arial', 'B', 10);
+$headerH = 10;
+$hx = LEFT_MARGIN;
+$hy = $pdf->GetY();
+
+$pdf->SetXY($hx, $hy);
+$pdf->Cell(COL_NAME,  $headerH, 'Name',                 1, 0, 'C', true);
+$pdf->Cell(COL_TRIC,  $headerH, 'Tricycle No.',          1, 0, 'C', true);
+$pdf->Cell(COL_VOUCH, $headerH, 'Voucher No. Claimed',   1, 0, 'C', true);
+$pdf->Cell(COL_DATE,  $headerH, 'Date Claimed',          1, 0, 'C', true);
+$pdf->Cell(COL_SIG,   $headerH, 'E-Signature',           1, 1, 'C', true);
+
+$pdf->SetFont('Arial', '', 9);
+
+// ── Table rows ──
 if (empty($groupedData)) {
-    $pdf->Cell(270, 10, 'No claimed vouchers found.', 1, 1, 'C');
+    $pdf->Cell(COL_NAME + COL_TRIC + COL_VOUCH + COL_DATE + COL_SIG, 10,
+               'No claimed vouchers found.', 1, 1, 'C');
 } else {
     foreach ($groupedData as $data) {
-        // Calculate row height based on signature
-        $rowHeight = 20;
-        
-        // Name
-        $pdf->Cell(50, $rowHeight, $data['driver_name'], 1, 0, 'C');
-        
-        // Tricycle Number
-        $pdf->Cell(30, $rowHeight, $data['tricycle_no'], 1, 0, 'C');
-        
-        // Voucher numbers claimed (format: tricycle_no-voucher_number)
+
+        // Build voucher string
         $formattedVouchers = [];
         foreach ($data['vouchers'] as $vnum) {
             $formattedVouchers[] = $data['tricycle_no'] . '-' . $vnum;
         }
         $voucherStr = implode(', ', $formattedVouchers);
-        $pdf->Cell(50, $rowHeight, $voucherStr, 1, 0, 'C');
-        
-        // Date Claimed
-        $claimDateFormatted = date('M j, Y', strtotime($data['claim_date']));
-        $pdf->Cell(40, $rowHeight, $claimDateFormatted, 1, 0, 'C');
-        
-        // E-Signature (as image)
-        $sigX = $pdf->GetX();
-        $sigY = $pdf->GetY();
-        $pdf->Rect($sigX, $sigY, 100, $rowHeight);
-        
-        // Add signature image if it's base64
-        if (!empty($data['e_signature'])) {
-            // Check if it's base64 data
-            if (strpos($data['e_signature'], 'data:image') === 0) {
-                // Extract the image type from the data URI
-                preg_match('/data:image\/(\w+);base64,/', $data['e_signature'], $typeMatch);
-                $imageType = isset($typeMatch[1]) ? strtolower($typeMatch[1]) : 'png';
-                
-                $base64String = preg_replace('/^data:image\/\w+;base64,/', '', $data['e_signature']);
-                $imageData = base64_decode($base64String);
-                
-                // Create temp file for image with proper extension
-                $tempFile = tempnam(sys_get_temp_dir(), 'sig_') . '.' . $imageType;
-                file_put_contents($tempFile, $imageData);
-                
-                // Add image to PDF (centered in cell)
-                $pdf->Image($tempFile, $sigX + 20, $sigY + 2, 60, 16);
-                
-                // Delete temp file
-                unlink($tempFile);
-            }
+
+        // Calculate the required row height from each column's content
+        $h1 = $pdf->calcRowHeight($data['driver_name'], COL_NAME);
+        $h2 = $pdf->calcRowHeight($data['tricycle_no'],  COL_TRIC);
+        $h3 = $pdf->calcRowHeight($voucherStr,           COL_VOUCH);
+        $h4 = $pdf->calcRowHeight(date('M j, Y', strtotime($data['claim_date'])), COL_DATE);
+
+        // All cells in the row share the tallest required height
+        $rowH = max($h1, $h2, $h3, $h4, MIN_ROW_H);
+
+        // Check for page break
+        if ($pdf->GetY() + $rowH > $pdf->GetPageHeight() - 20) {
+            $pdf->AddPage();
+            // Redraw header
+            $pdf->SetFillColor(200, 200, 200);
+            $pdf->SetFont('Arial', 'B', 10);
+            $hx2 = LEFT_MARGIN;
+            $hy2 = $pdf->GetY();
+            $pdf->SetXY($hx2, $hy2);
+            $pdf->Cell(COL_NAME,  $headerH, 'Name',                1, 0, 'C', true);
+            $pdf->Cell(COL_TRIC,  $headerH, 'Tricycle No.',         1, 0, 'C', true);
+            $pdf->Cell(COL_VOUCH, $headerH, 'Voucher No. Claimed',  1, 0, 'C', true);
+            $pdf->Cell(COL_DATE,  $headerH, 'Date Claimed',         1, 0, 'C', true);
+            $pdf->Cell(COL_SIG,   $headerH, 'E-Signature',          1, 1, 'C', true);
+            $pdf->SetFont('Arial', '', 9);
         }
-        
-        $pdf->SetXY($sigX + 100, $sigY);
-        $pdf->Ln($rowHeight);
+
+        // Top-left corner of this row
+        $rowX = LEFT_MARGIN;
+        $rowY = $pdf->GetY();
+
+        // Column X positions
+        $xName  = $rowX;
+        $xTric  = $xName  + COL_NAME;
+        $xVouch = $xTric  + COL_TRIC;
+        $xDate  = $xVouch + COL_VOUCH;
+        $xSig   = $xDate  + COL_DATE;
+
+        // Draw all cells with the same $rowH
+        $pdf->FixedCell($xName,  $rowY, COL_NAME,  $rowH, $data['driver_name']);
+        $pdf->FixedCell($xTric,  $rowY, COL_TRIC,  $rowH, $data['tricycle_no']);
+        $pdf->FixedCell($xVouch, $rowY, COL_VOUCH, $rowH, $voucherStr);
+        $pdf->FixedCell($xDate,  $rowY, COL_DATE,  $rowH, date('M j, Y', strtotime($data['claim_date'])));
+
+        // Signature cell border (no text)
+        $pdf->Rect($xSig, $rowY, COL_SIG, $rowH);
+
+        // Draw signature image if available
+        if (!empty($data['e_signature']) && strpos($data['e_signature'], 'data:image') === 0) {
+            preg_match('/data:image\/(\w+);base64,/', $data['e_signature'], $typeMatch);
+            $imageType   = isset($typeMatch[1]) ? strtolower($typeMatch[1]) : 'png';
+            $base64String = preg_replace('/^data:image\/\w+;base64,/', '', $data['e_signature']);
+            $imageData   = base64_decode($base64String);
+
+            $tempFile = tempnam(sys_get_temp_dir(), 'sig_') . '.' . $imageType;
+            file_put_contents($tempFile, $imageData);
+
+            // Max signature image size
+            $imgW  = 60;
+            $imgH  = min(16, $rowH - 4);
+            $imgX  = $xSig + (COL_SIG - $imgW) / 2;
+            $imgY  = $rowY + ($rowH - $imgH) / 2;
+
+            $pdf->Image($tempFile, $imgX, $imgY, $imgW, $imgH);
+            unlink($tempFile);
+        }
+
+        // Advance cursor past this row
+        $pdf->SetXY($rowX, $rowY + $rowH);
     }
 }
 
-// Add signature line at the bottom right of the last page
+// ── Summary ──
+$pdf->Ln(10);
+$pdf->SetFont('Arial', 'B', 11);
+$pdf->Cell(100, 10, 'SUMMARY TOTALS:', 0, 1, 'L');
+
+$pdf->SetFont('Arial', '', 10);
+$pdf->Cell(60, 8, 'Pump Price used:',          0, 0, 'L');
+$pdf->Cell(50, 8, 'PHP ' . number_format($pumpPrice, 2) . ' / Liter', 0, 1, 'L');
+
+$pdf->Cell(60, 8, 'Total Vouchers Claimed:',   0, 0, 'L');
+$pdf->Cell(50, 8, $totalVouchers . ' vouchers', 0, 1, 'L');
+
+$pdf->Cell(60, 8, 'Total Fueled Price:',        0, 0, 'L');
+$pdf->Cell(50, 8, 'PHP ' . number_format($totalFueledPrice, 2), 0, 1, 'L');
+
+$pdf->Cell(60, 8, 'Total Liters Dispensed:',    0, 0, 'L');
+$pdf->Cell(50, 8, number_format($totalLiters, 2) . ' Liters', 0, 1, 'L');
+
+// Signature line bottom-right
 $pdf->SetY(-50);
 $pdf->SetX(-80);
 $pdf->SetFont('Arial', '', 10);
@@ -211,6 +334,5 @@ $pdf->Cell(70, 0, '', 'B', 1, 'C');
 $pdf->SetX(-80);
 $pdf->Cell(70, 8, 'Signature:', 0, 1, 'C');
 
-// Output PDF
-$pdf->Output('D', 'Claimed_Vouchers_' . date('Y-m-d') . '.pdf');
+$pdf->Output('I', 'Claimed_Vouchers_' . date('Y-m-d') . '.pdf');
 ?>

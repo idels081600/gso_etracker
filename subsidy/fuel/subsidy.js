@@ -3,6 +3,7 @@
 // Load records from API
 async function loadRecords() {
     try {
+        // Load main records
         const response = await fetch('api_get_records.php');
         const data = await response.json();
         
@@ -10,6 +11,17 @@ async function loadRecords() {
             updateDashboard(data.data);
             renderTable(data.data);
         }
+        
+        // Load today's fuel up count from voucher_claims table
+        const dailyResponse = await fetch('api_get_daily_fuel_count.php');
+        const dailyData = await dailyResponse.json();
+        
+        if (dailyData.success) {
+            document.getElementById('todayTricycles').textContent = dailyData.today_count;
+            document.getElementById('todayLiters').textContent = dailyData.today_liters;
+            document.getElementById('totalLiters').textContent = dailyData.total_liters;
+        }
+        
     } catch (error) {
         console.error('Error loading records:', error);
     }
@@ -218,10 +230,33 @@ document.getElementById('processImportBtn').addEventListener('click', async () =
     }
 });
 
+// Update liters calculation when pump price is entered
+document.getElementById('updateLitersBtn').addEventListener('click', async () => {
+    const pumpPrice = document.getElementById('dashboardPumpPrice').value;
+    
+    if (!pumpPrice || parseFloat(pumpPrice) <= 0) {
+        alert('Please enter a valid pump price.');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`api_get_daily_fuel_count.php?pump_price=${encodeURIComponent(pumpPrice)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('todayLiters').textContent = data.today_liters;
+            document.getElementById('totalLiters').textContent = data.total_liters;
+        }
+    } catch (error) {
+        console.error('Error updating liters:', error);
+    }
+});
+
 // Export PDF button handler
 document.getElementById('exportPdfBtn').addEventListener('click', () => {
     const stationSelect = document.getElementById('exportStationSelect');
     const stationId = stationSelect.value;
+    const pumpPrice = document.getElementById('pumpPrice').value;
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     
@@ -230,8 +265,14 @@ document.getElementById('exportPdfBtn').addEventListener('click', () => {
         return;
     }
     
+    if (!pumpPrice || parseFloat(pumpPrice) <= 0) {
+        alert('Please enter a valid pump price.');
+        return;
+    }
+    
     // Build URL with parameters
     let exportUrl = 'export_claimed_vouchers.php?station_id=' + stationId;
+    exportUrl += '&pump_price=' + encodeURIComponent(pumpPrice);
     
     if (startDate) {
         exportUrl += '&start_date=' + encodeURIComponent(startDate);
