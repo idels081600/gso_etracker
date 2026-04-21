@@ -12,7 +12,12 @@ session_start();
 
 $range = isset($_GET['range']) ? $_GET['range'] : 'today';
 
-if ($range == 'today') {
+// Handle custom date range
+if ($range == 'custom' && isset($_GET['from']) && isset($_GET['to'])) {
+    $from_date = mysqli_real_escape_string($conn, $_GET['from']);
+    $to_date = mysqli_real_escape_string($conn, $_GET['to']);
+    $date_condition = "AND DATE(date) BETWEEN '$from_date' AND '$to_date'";
+} elseif ($range == 'today') {
     $date_condition = "AND DATE(date) = CURDATE()";
 } elseif ($range == 'first15') {
     $date_condition = "AND DAY(date) BETWEEN 1 AND 15 AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())";

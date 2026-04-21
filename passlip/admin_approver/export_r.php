@@ -41,6 +41,14 @@ $sql_official = $conn->query($result_official);
 $result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role = 'Employee' $date_condition $duration_condition ORDER BY name";
 $sql_personal = $conn->query($result_personal);
 
+// Query for Official Business - TCWS Employees
+$result_official_tcws = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role = 'TCWS Employee' $date_condition $duration_condition ORDER BY name";
+$sql_official_tcws = $conn->query($result_official_tcws);
+
+// Query for Personal Business - TCWS Employees
+$result_personal_tcws = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role = 'TCWS Employee' $date_condition $duration_condition ORDER BY name";
+$sql_personal_tcws = $conn->query($result_personal_tcws);
+
 class PDF extends FPDF
 {
     var $printedHeader = false;
@@ -131,6 +139,25 @@ if ($range == 'today') {
     $pdf->Cell(0, 10, 'Personal Business', 0, 1, 'L'); // Section Title
     $pdf->printTableHeader(); // Table header
     $pdf->printTableRows($sql_personal); // Print rows for Personal Business
+
+    $pdf->Ln(15);
+    $pdf->SetFont('Arial', 'B', 14);
+    $pdf->Cell(0, 10, '================ TCWS EMPLOYEES ================', 0, 1, 'C');
+    $pdf->Ln(5);
+
+    // TCWS Official Business Section
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(0, 10, 'Official Business - TCWS', 0, 1, 'L');
+    $pdf->printTableHeader();
+    $pdf->printTableRows($sql_official_tcws);
+
+    $pdf->Ln(10);
+
+    // TCWS Personal Business Section
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(0, 10, 'Personal Business - TCWS', 0, 1, 'L');
+    $pdf->printTableHeader();
+    $pdf->printTableRows($sql_personal_tcws);
 } else {
     // For first15 and second15 with duration filter - show detailed records
     if ($filter_duration == '1') {
