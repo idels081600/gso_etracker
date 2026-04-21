@@ -16,10 +16,10 @@ if (!isset($_SESSION['username'])) {
 if (isset($_POST['delete_all'])) {
   if ($_POST['confirm'] == 'yes') {
     // First backup the data
-    $backup_sql = "INSERT INTO request_backup SELECT * FROM request WHERE DATE(date) = CURDATE() AND Role = 'Employee'";
+    $backup_sql = "INSERT INTO request_backup SELECT * FROM request WHERE DATE(date) = CURDATE() AND Role IN ('Employee', 'TCWS Employee')";
     mysqli_query($conn, $backup_sql);
 
-    $sql = "DELETE FROM request WHERE role = 'Employee'";
+    $sql = "DELETE FROM request WHERE role IN ('Employee', 'TCWS Employee')";
     if (mysqli_query($conn, $sql)) {
       $_SESSION['show_undo'] = true;
       header("Location: track_emp_r.php");
@@ -33,7 +33,7 @@ if (isset($_POST['undo_delete'])) {
   $restore_sql = "INSERT INTO request 
   SELECT * FROM request_backup 
   WHERE DATE(date) = CURDATE() 
-  AND Role = 'Employee' 
+  AND Role IN ('Employee', 'TCWS Employee') 
   ORDER BY id DESC";
   mysqli_query($conn, $restore_sql);
   mysqli_query($conn, "TRUNCATE TABLE request_backup");

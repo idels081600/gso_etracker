@@ -146,11 +146,11 @@ if (isset($_POST['approve_req_r'])) {
 
     if ($query_run) {
         $_SESSION['message'] = "Request Updated Successfully";
-        header("Location: index_r.php");
+        header("Location:  admin_r/index_r.php");
         exit(0);
     } else {
         $_SESSION['message'] = "Request Not Updated. Error: " . mysqli_error($conn);
-        header("Location: index_r.php");
+        header("Location: admin_r/index_r.php");
         exit(0);
     }
 }

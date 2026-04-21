@@ -22,7 +22,7 @@ function display_data_tcws()
 function display_data_r()
 {
     global $conn, $username; // Add $username as a global variable
-    $query = "SELECT * FROM `request` WHERE `Status` = 'Pending' AND `Role` = 'Employee' AND DATE(date) = CURDATE() ORDER BY `id` DESC";
+    $query = "SELECT * FROM `request` WHERE `Status` = 'Pending' AND `Role` IN ('Employee', 'TCWS Employee') AND DATE(date) = CURDATE() ORDER BY `id` DESC";
     $result = mysqli_query($conn, $query);
     return $result;
 }
@@ -101,7 +101,7 @@ function display_emp_status_tcws()
 function display_emp_status_r()
 {
     global $conn, $username; // Add $username as a global variable
-    $query = "SELECT * FROM `request` WHERE `Role` = 'Employee' AND DATE(date) = CURDATE() ORDER BY `id` DESC";
+    $query = "SELECT * FROM `request` WHERE `Role` IN ('Employee', 'TCWS Employee') AND DATE(date) = CURDATE() ORDER BY `id` DESC";
     $result = mysqli_query($conn, $query);
     return $result;
 }
@@ -124,7 +124,7 @@ function display_users()
 function display_request()
 {
     global $conn, $username; // Add $username as a global variable
-    $query = "SELECT * FROM `request` WHERE `Status` = 'Pending' AND `Role` = 'Employee' ORDER BY `id` DESC";
+    $query = "SELECT * FROM `request` WHERE `Status` = 'Pending' AND `Role` IN ('Employee', 'TCWS Employee') ORDER BY `id` DESC";
     $result = mysqli_query($conn, $query);
     return $result;
 }

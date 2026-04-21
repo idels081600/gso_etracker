@@ -8,7 +8,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 } 
 
-$sql = "SELECT * FROM `request` WHERE `Status` = 'Declined' AND `Role` = 'Employee' ORDER BY `id` DESC";
+$sql = "SELECT * FROM `request` WHERE `Status` = 'Declined' AND `Role` IN ('Employee', 'TCWS Employee') ORDER BY `id` DESC";
 $result = $conn->query($sql);
 ?>
  <tr>
