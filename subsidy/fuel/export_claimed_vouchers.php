@@ -83,27 +83,65 @@ $sql = "SELECT tr.driver_name, tr.tricycle_no, vc.voucher_number, vc.claim_date,
 
 $result = mysqli_query($conn, $sql);
 
+// Initialize metrics
+$boatVouchers = 0;
+$boatFueledPrice = 0;
+$boatLiters = 0;
+$boatCount = 0;
+$tricycleVouchers = 0;
+$tricycleFueledPrice = 0;
+$tricycleLiters = 0;
+$tricycleCount = 0;
+$trackedVehicles = [];
+
 // Group data
 $groupedData = [];
 $totalVouchers = 0;
 while ($row = mysqli_fetch_assoc($result)) {
     $key = $row['tricycle_no'] . '_' . date('Y-m-d', strtotime($row['claim_date']));
+    $vehicleKey = $row['tricycle_no'];
+    
     if (!isset($groupedData[$key])) {
+        $isBoat = strlen($row['tricycle_no']) > 4;
         $groupedData[$key] = [
             'driver_name' => $row['driver_name'],
             'tricycle_no' => $row['tricycle_no'],
             'vouchers' => [],
             'claim_date' => $row['claim_date'],
-            'e_signature' => $row['e_signature']
+            'e_signature' => $row['e_signature'],
+            'is_boat' => $isBoat
         ];
+        
+        // Count unique vehicles per day
+        if (!isset($trackedVehicles[$key])) {
+            $trackedVehicles[$key] = true;
+            if ($isBoat) {
+                $boatCount++;
+            } else {
+                $tricycleCount++;
+            }
+        }
     }
     $groupedData[$key]['vouchers'][] = $row['voucher_number'];
     $totalVouchers++;
+
+    // Track specific metrics
+    if (strlen($row['tricycle_no']) > 4) {
+        $boatVouchers++;
+        $boatFueledPrice += 200;
+    } else {
+        $tricycleVouchers++;
+        $tricycleFueledPrice += 200;
+    }
 }
 
 // Correct calculation: Each voucher = ₱200 worth of fuel
 $totalFueledPrice = $totalVouchers * 200;
 $totalLiters = $pumpPrice > 0 ? $totalFueledPrice / $pumpPrice : 0;
+
+// Vehicle-specific calculations
+$boatLiters = $pumpPrice > 0 ? $boatFueledPrice / $pumpPrice : 0;
+$tricycleLiters = $pumpPrice > 0 ? $tricycleFueledPrice / $pumpPrice : 0;
 
 // ── Column widths ──────────────────────────────────────────
 define('COL_NAME',    50);
@@ -310,21 +348,51 @@ if (empty($groupedData)) {
 
 // ── Summary ──
 $pdf->Ln(10);
-$pdf->SetFont('Arial', 'B', 11);
-$pdf->Cell(100, 10, 'SUMMARY TOTALS:', 0, 1, 'L');
+$pdf->SetFont('Arial', 'B', 12);
+$pdf->Cell(0, 10, 'SUMMARY TOTALS', 0, 1, 'C');
+$pdf->Ln(2);
 
-$pdf->SetFont('Arial', '', 10);
-$pdf->Cell(60, 8, 'Pump Price used:',          0, 0, 'L');
-$pdf->Cell(50, 8, 'PHP ' . number_format($pumpPrice, 2) . ' / Liter', 0, 1, 'L');
+// Draw summary table
+$colWidth = 65;
+$rowHeight = 8;
 
-$pdf->Cell(60, 8, 'Total Vouchers Claimed:',   0, 0, 'L');
-$pdf->Cell(50, 8, $totalVouchers . ' vouchers', 0, 1, 'L');
+// Headers
+$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFillColor(230, 230, 230);
+$pdf->Cell($colWidth, $rowHeight, 'METRIC', 1, 0, 'C', true);
+$pdf->Cell($colWidth, $rowHeight, 'TRICYCLE', 1, 0, 'C', true);
+$pdf->Cell($colWidth, $rowHeight, 'BOAT', 1, 0, 'C', true);
+$pdf->Cell($colWidth, $rowHeight, 'TOTAL', 1, 1, 'C', true);
 
-$pdf->Cell(60, 8, 'Total Fueled Price:',        0, 0, 'L');
-$pdf->Cell(50, 8, 'PHP ' . number_format($totalFueledPrice, 2), 0, 1, 'L');
+$pdf->SetFont('Arial', '', 9);
 
-$pdf->Cell(60, 8, 'Total Liters Dispensed:',    0, 0, 'L');
-$pdf->Cell(50, 8, number_format($totalLiters, 2) . ' Liters', 0, 1, 'L');
+// Row 1: Vehicle Count
+$pdf->Cell($colWidth, $rowHeight, 'Total Fueled Today', 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, $tricycleCount, 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, $boatCount, 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, ($tricycleCount + $boatCount), 1, 1, 'C');
+
+// Row 2: Vouchers Claimed
+$pdf->Cell($colWidth, $rowHeight, 'Vouchers Claimed', 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, $tricycleVouchers, 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, $boatVouchers, 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, $totalVouchers, 1, 1, 'C');
+
+// Row 3: Total Amount
+$pdf->Cell($colWidth, $rowHeight, 'Total Amount (PHP)', 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, number_format($tricycleFueledPrice, 2), 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, number_format($boatFueledPrice, 2), 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, number_format($totalFueledPrice, 2), 1, 1, 'C');
+
+// Row 4: Liters Dispensed
+$pdf->Cell($colWidth, $rowHeight, 'Total Liters', 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, number_format($tricycleLiters, 2), 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, number_format($boatLiters, 2), 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, number_format($totalLiters, 2), 1, 1, 'C');
+
+$pdf->Ln(5);
+$pdf->SetFont('Arial', 'I', 9);
+$pdf->Cell(0, 6, 'Pump Price Used: PHP ' . number_format($pumpPrice, 2) . ' / Liter', 0, 1, 'C');
 
 // Signature line bottom-right
 $pdf->SetY(-50);
@@ -334,5 +402,5 @@ $pdf->Cell(70, 0, '', 'B', 1, 'C');
 $pdf->SetX(-80);
 $pdf->Cell(70, 8, 'Signature:', 0, 1, 'C');
 
-$pdf->Output('I', 'Claimed_Vouchers_' . date('Y-m-d') . '.pdf');
+$pdf->Output('D', 'Claimed_Vouchers_' . date('Y-m-d') . '.pdf');
 ?>
