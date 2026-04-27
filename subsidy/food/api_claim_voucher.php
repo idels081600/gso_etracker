@@ -24,6 +24,7 @@ $vouchers       = $input['vouchers'] ?? [];
 $claimant_name  = $input['claimant_name'] ?? '';
 $e_signature    = $input['e_signature'] ?? '';
 $station_id     = (int)($_SESSION['station_id'] ?? 0);
+$verifier_name  = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : $_SESSION['username'];
 $is_verified    = 1;
 $is_redeemed    = 0;
 
@@ -53,7 +54,7 @@ try {
 
     // 4. Process Vouchers
     $checkStmt = $conn->prepare("SELECT id FROM food_voucher_claims WHERE beneficiary_id = ? AND voucher_number = ?");
-    $insertStmt = $conn->prepare("INSERT INTO food_voucher_claims (beneficiary_id, voucher_number, claimant_name, e_signature, is_verified, is_redeemed, station_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+$insertStmt = $conn->prepare("INSERT INTO food_voucher_claims (beneficiary_id, voucher_number, claimant_name, e_signature, is_verified, is_redeemed, station_id, verifier_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
     foreach ($vouchers as $voucher_num) {
         $voucher_num = (int)$voucher_num;
@@ -61,7 +62,7 @@ try {
         $checkStmt->bind_param("ii", $b_id, $voucher_num);
         $checkStmt->execute();
         if ($checkStmt->get_result()->num_rows === 0) {
-            $insertStmt->bind_param("iissiii", $b_id, $voucher_num, $claimant_name, $e_signature, $is_verified, $is_redeemed, $station_id);
+$insertStmt->bind_param("iissiiis", $b_id, $voucher_num, $claimant_name, $e_signature, $is_verified, $is_redeemed, $station_id, $verifier_name);
             if ($insertStmt->execute()) {
                 $claimed_count++;
             }
