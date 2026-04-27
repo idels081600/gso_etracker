@@ -39,9 +39,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // User found, set session variables based on role
         $_SESSION['username'] = $row['username'];
         $_SESSION['role'] = $row['role'];
-        // new: store office so other modules can filter data
+        // new: store office so other modules can filter datach
         $_SESSION['office'] = isset($row['office']) ? $row['office'] : 'ASSET';
         $_SESSION['pay_name'] = $row['name'];
+        $_SESSION['station_id'] = $row['station_id'];
         $_SESSION['logged_in'] = true;
         // Redirect based on role
         switch ($row['role']) {
@@ -103,7 +104,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("location:document_tracker/super_admin.php");
                 break;
             case "Fuel_admin":
-                header("location:subsidy/fuel/dashboard_fuel.php");
+                header("location:subsidy/fuel/select_station.php");
+                break;
+            case "FOOD_VERIFIER":
+                header("location:subsidy/food/select_station.php");
+                break;
+            case "FOOD_REDEEMER":
+                header("location:subsidy/food/redeem_batch.php");
                 break;
             default:
                 header("location:login_v2.php");
