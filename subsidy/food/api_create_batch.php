@@ -2,7 +2,7 @@
 /** @var mysqli $conn */
 session_start();
 $conn = require(__DIR__ . '/config/database.php');
-// require_once 'send_vendor_claim_api.php';
+require_once 'send_vendor_claim_api.php';
 
 header('Content-Type: application/json');
 mysqli_report(MYSQLI_REPORT_OFF);
@@ -196,14 +196,22 @@ try {
     mysqli_stmt_close($item_stmt);
     mysqli_stmt_close($update_stmt);
 
-    // Commit transaction
-    mysqli_commit($conn);
-
     // Collect voucher numbers for API payload
     $voucher_numbers = array_column($valid_vouchers, 'voucher_number');
     
-    // Send batch details to Food Voucher Vendor Claim API
-    $apiResult = sendVendorClaimAPI($vendor, $batch_number, $total_amount, $voucher_numbers);
+    // Safe external API call with output buffering (prevents broken JSON)
+    ob_start();
+    try {
+        // Send batch details to Food Voucher Vendor Claim API
+        $apiResult = sendVendorClaimAPI($vendor, $batch_number, $total_amount, $voucher_numbers);
+    } catch (Exception $apiException) {
+        $apiResult = 'API call failed: ' . $apiException->getMessage();
+    }
+    // Discard any output/warnings from API call
+    ob_end_clean();
+
+    // Commit transaction ONLY AFTER everything is ready
+    mysqli_commit($conn);
 
     echo json_encode([
         'success' => true,
