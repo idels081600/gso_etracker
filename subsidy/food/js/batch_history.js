@@ -100,12 +100,12 @@ function renderBatches(batches, pagination) {
         actions += `<button class="btn btn-sm btn-outline-primary me-1" onclick="viewBatchDetails(${batch.id})" title="View Details">
             <i class="bi bi-eye"></i>
         </button>`;
-        actions += `<a href="api_export_batch_pdf.php?batch_id=${batch.id}" class="btn btn-sm btn-outline-danger me-1" target="_blank" title="Export PDF">
-            <i class="bi bi-file-pdf"></i>
-        </a>`;
-        actions += `<a href="api_export_batch_excel.php?batch_id=${batch.id}" class="btn btn-sm btn-outline-success" target="_blank" title="Export Excel">
-            <i class="bi bi-file-excel"></i>
-        </a>`;
+        // actions += `<a href="api_export_batch_pdf.php?batch_id=${batch.id}" class="btn btn-sm btn-outline-danger me-1" target="_blank" title="Export PDF">
+        //     <i class="bi bi-file-pdf"></i>
+        // </a>`;
+        // actions += `<a href="api_export_batch_excel.php?batch_id=${batch.id}" class="btn btn-sm btn-outline-success" target="_blank" title="Export Excel">
+        //     <i class="bi bi-file-excel"></i>
+        // </a>`;
         
         tr.innerHTML = `
             <td><strong>${batch.batch_number}</strong></td>
