@@ -186,7 +186,7 @@ function generateAndDownloadReceipt($data = array())
     $amount_text = number_format($data['amount'], 2);
     $amount_words = numberToWordsPesos($data['amount']);
 
-    $text = "Received from the <b>City Government of Tagbilaran the total amount of P" . $amount_text . " (" . $amount_words . " Pesos)</b> as payment/reimbursement for food vouchers accepted by the undersigned as an accredited vendor under the City's Food Voucher Program, covered by <b>Claim Form with Control Number " . $data['claim_form'] . "</b>.";
+    $text = "Received from the <b>City Government of Tagbilaran the total amount of (" . $amount_words . " Pesos)  P" . $amount_text . " </b> as payment/reimbursement for food vouchers accepted by the undersigned as an accredited vendor under the City's Food Voucher Program, covered by <b>Claim Form with Control Number " . $data['claim_form'] . "</b>.";
 
     $pdf->MultiCellTag(0, 5, $text, 'J', $indentWidth);
     $pdf->Ln(5);
@@ -239,23 +239,23 @@ function generateAndDownloadReceipt($data = array())
 // Handle GET request from batch system
 if (isset($_GET['batch_id'])) {
     require_once 'db_fuel.php';
-    
+
     $batch_id = (int)$_GET['batch_id'];
-    
+
     // Get batch information from database
     $batch_sql = "SELECT b.batch_number, b.total_amount, b.created_at, v.vendor_name
                   FROM food_redemption_batches b
                   LEFT JOIN food_vendors v ON b.vendor_id = v.id
                   WHERE b.id = ? LIMIT 1";
-                  
+
     $stmt = mysqli_prepare($conn, $batch_sql);
     mysqli_stmt_bind_param($stmt, 'i', $batch_id);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
-    
+
     if ($result && mysqli_num_rows($result) > 0) {
         $batch = mysqli_fetch_assoc($result);
-        
+
         // Generate AR automatically
         $ar_data = [
             'ar_no' => 'AR-' . date('Ymd') . '-' . str_pad($batch_id, 4, '0', STR_PAD_LEFT),
@@ -264,7 +264,7 @@ if (isset($_GET['batch_id'])) {
             'vendor_name' => $batch['vendor_name'],
             'claim_form' => $batch['batch_number']
         ];
-        
+
         generateAndDownloadReceipt($ar_data);
         exit;
     }
