@@ -24,7 +24,8 @@ if (!isset($_SESSION['station_id']) || empty($_SESSION['station_id'])) {
     } 
 }
 
-$station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : 'Unknown Market';
+// Get proper market name with default fallback
+$station_name = isset($_SESSION['station_name']) ? trim($_SESSION['station_name']) : 'Unknown Market';
 
 // Statistics queries
 $verified_sql = "SELECT COUNT(*) as total FROM food_voucher_claims WHERE is_verified = 1";

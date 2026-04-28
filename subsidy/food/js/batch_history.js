@@ -197,6 +197,7 @@ async function viewBatchDetails(batchId) {
     // Update export buttons
     document.getElementById('exportPdfBtn').href = `api_export_batch_pdf.php?batch_id=${batchId}`;
     document.getElementById('exportExcelBtn').href = `api_export_batch_excel.php?batch_id=${batchId}`;
+    document.getElementById('generateArBtn').href = `generate_ar.php?batch_id=${batchId}`;
     
     const modal = new bootstrap.Modal(document.getElementById('batchDetailsModal'));
     modal.show();

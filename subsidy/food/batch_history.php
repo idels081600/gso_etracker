@@ -198,6 +198,9 @@ $pageTitle = "Batch History";
                     <a id="exportExcelBtn" href="#" class="btn btn-success" target="_blank">
                         <i class="bi bi-file-excel me-1"></i> Excel
                     </a>
+                    <a id="generateArBtn" href="#" class="btn btn-warning" target="_blank">
+                        <i class="bi bi-receipt me-1"></i> Generate AR
+                    </a>
                 </div>
             </div>
         </div>

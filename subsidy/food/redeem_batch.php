@@ -271,9 +271,6 @@ $pageTitle = "Batch Voucher Redemption";
                     <h5 class="mt-3">Redemption Successful</h5>
                     <p id="successMessage" class="mb-0"></p>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-                </div>
             </div>
         </div>
     </div>

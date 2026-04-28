@@ -321,14 +321,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         <strong>Vendor:</strong> ${batch.vendor_name}<br>
                         <strong>Vouchers:</strong> ${batch.total_vouchers}<br>
                         <strong>Total Amount:</strong> ${formattedAmount}<br><br>
-                        <a href="batch_history.php" class="btn btn-primary btn-sm">
-                            <i class="bi bi-archive me-1"></i> View Batch History
-                        </a>
-                        <a href="api_export_batch_pdf.php?batch_id=${batch.batch_id}" class="btn btn-danger btn-sm" target="_blank">
-                            <i class="bi bi-file-pdf me-1"></i> Export PDF
-                        </a>
+                        <div class="d-flex flex-wrap gap-2 justify-content-center">
+                            <a href="batch_history.php" class="btn btn-primary btn-sm">
+                                <i class="bi bi-archive me-1"></i> View Batch History
+                            </a>
+                            <a href="api_export_batch_pdf.php?batch_id=${batch.batch_id}" class="btn btn-danger btn-sm" target="_blank">
+                                <i class="bi bi-file-pdf me-1"></i> Export PDF
+                            </a>
+                            <a href="generate_ar.php?batch_id=${batch.batch_id}" class="btn btn-warning btn-sm" target="_blank">
+                                <i class="bi bi-receipt me-1"></i> Generate AR
+                            </a>
+                        </div>
                     `;
                     successModal.show();
+                    
+                    // Pass batch ID to modal event when showing
+                    successModal._element.dispatchEvent(new CustomEvent('shown.bs.modal', {
+                        detail: {
+                            batch_id: batch.batch_id
+                        }
+                    }));
                     
                     // Refresh voucher list to show updated redeemed status
                     loadVendorVouchers(currentVendor.vendor_serial);

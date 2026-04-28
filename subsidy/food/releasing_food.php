@@ -85,7 +85,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                         <li class="nav-item">
                             <a class="nav-link active" aria-current="page" href="releasing_food.php">Releasing</a>
                         </li>
-                        <li class="nav-item dropdown">
+                        <!-- <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 More Options
                             </a>
@@ -98,7 +98,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                                 <li><a class="dropdown-item" href="select_station.php"><i class="bi bi-arrow-repeat me-2"></i>Change Gas Station</a></li>
                                 <li><a class="dropdown-item" href="#">Help</a></li>
                             </ul>
-                        </li>
+                        </li> -->
                         <li class="nav-item">
                             <a class="nav-link text-danger" href="../../logout.php"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
                         </li>
