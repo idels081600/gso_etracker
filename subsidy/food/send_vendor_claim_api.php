@@ -39,7 +39,7 @@ function sendVendorClaimAPI($vendor, $batch_number, $total_amount, $vouchers = [
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => [
                 "Content-Type: application/json",
-                "x-api-key: sk_qg1x919b03b_zqef9tumeg"
+                "x-api-key: "
             ],
             CURLOPT_POSTFIELDS => $vendorClaimJson,
             CURLOPT_TIMEOUT => 10,
