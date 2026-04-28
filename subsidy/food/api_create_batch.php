@@ -2,7 +2,7 @@
 /** @var mysqli $conn */
 session_start();
 $conn = require(__DIR__ . '/config/database.php');
-require_once 'send_vendor_claim_api.php';
+// require_once 'send_vendor_claim_api.php';
 
 header('Content-Type: application/json');
 mysqli_report(MYSQLI_REPORT_OFF);
