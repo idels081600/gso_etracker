@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'db_fuel.php';
+$conn = require(__DIR__ . '/config/database.php');
 
 // Security check - redirect to login if not logged in
 if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {

@@ -1,6 +1,7 @@
 <?php
+/** @var mysqli $conn */
 session_start();
-require_once 'db_fuel.php';
+$conn = require(__DIR__ . '/config/database.php');
 require_once 'send_vendor_claim_api.php';
 
 header('Content-Type: application/json');

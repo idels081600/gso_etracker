@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'db_fuel.php';
+$conn = require(__DIR__ . '/config/database.php');
 
 header('Content-Type: application/json');
 mysqli_report(MYSQLI_REPORT_OFF);

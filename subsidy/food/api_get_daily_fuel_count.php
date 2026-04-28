@@ -7,7 +7,7 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
     exit();
 }
 
-require_once 'db_fuel.php';
+$conn = require(__DIR__ . '/config/database.php');
 header('Content-Type: application/json');
 
 $station_id = mysqli_real_escape_string($conn, $_SESSION['station_id']);

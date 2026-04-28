@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Send batch data to Food Voucher Vendor Claim API
  * 
@@ -8,14 +9,15 @@
  * @param array $vouchers Array of voucher numbers in this batch
  * @return array Result status with details
  */
-function sendVendorClaimAPI($vendor, $batch_number, $total_amount, $vouchers = []) {
+function sendVendorClaimAPI($vendor, $batch_number, $total_amount, $vouchers = [])
+{
     $result = [
         'success' => false,
         'http_code' => null,
         'message' => '',
         'response' => null
     ];
-    
+
     try {
         $vendorClaimPayload = [
             "market" => $vendor['area'],
@@ -33,13 +35,13 @@ function sendVendorClaimAPI($vendor, $batch_number, $total_amount, $vouchers = [
         }
 
         $chClaim = curl_init("http://192.168.101.232/api/foodvoucher/vendor-claim");
-        
+
         curl_setopt_array($chClaim, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => [
                 "Content-Type: application/json",
-                "x-api-key: "
+                "x-api-key: " . env('API_SECRET')
             ],
             CURLOPT_POSTFIELDS => $vendorClaimJson,
             CURLOPT_TIMEOUT => 10,
@@ -54,18 +56,18 @@ function sendVendorClaimAPI($vendor, $batch_number, $total_amount, $vouchers = [
             $claimError = curl_error($chClaim);
             curl_close($chClaim);
             error_log("Vendor Claim API cURL Error: " . $claimError);
-            
+
             $result['message'] = 'cURL Error: ' . $claimError;
             $result['success'] = false;
         } else {
             $claimHttpCode = curl_getinfo($chClaim, CURLINFO_HTTP_CODE);
-            
+
             error_log("Vendor Claim API Response Code: " . $claimHttpCode);
             error_log("Vendor Claim API Raw Response: " . $claimResponse);
-            
+
             $result['http_code'] = $claimHttpCode;
             $result['response'] = $claimResponse;
-            
+
             if ($claimHttpCode !== 200 && $claimHttpCode !== 201) {
                 error_log("Vendor Claim API HTTP Error: " . $claimHttpCode);
                 $result['message'] = 'HTTP Error: ' . $claimHttpCode;
@@ -84,6 +86,6 @@ function sendVendorClaimAPI($vendor, $batch_number, $total_amount, $vouchers = [
         $result['message'] = $errorMsg;
         $result['success'] = false;
     }
-    
+
     return $result;
 }

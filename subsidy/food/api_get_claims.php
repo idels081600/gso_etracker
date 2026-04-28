@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'db_fuel.php';
+$conn = require(__DIR__ . '/config/database.php');
 
 // Force JSON output always
 header('Content-Type: application/json');

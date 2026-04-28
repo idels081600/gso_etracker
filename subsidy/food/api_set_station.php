@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'db_fuel.php';
+$conn = require(__DIR__ . '/config/database.php');
 
 header('Content-Type: application/json');
 
@@ -63,4 +63,3 @@ if (mysqli_num_rows($user_result) > 0) {
         echo json_encode(['success' => false, 'message' => 'Error assigning station: ' . mysqli_error($conn)]);
     }
 }
-?>

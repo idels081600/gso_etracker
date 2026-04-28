@@ -1,5 +1,5 @@
 <?php
-
+/** @var mysqli $conn */
 /**
  * FIXED: Food Voucher Receipt PDF Generator
  * Supports BOLD + FULL JUSTIFICATION + FIRST LINE INDENT
@@ -238,7 +238,7 @@ function generateAndDownloadReceipt($data = array())
 
 // Handle GET request from batch system
 if (isset($_GET['batch_id'])) {
-    require_once 'db_fuel.php';
+    $conn = require(__DIR__ . '/config/database.php');
 
     $batch_id = (int)$_GET['batch_id'];
 

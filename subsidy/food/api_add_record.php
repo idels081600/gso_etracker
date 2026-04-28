@@ -1,4 +1,5 @@
 <?php
+
 session_start();
 
 // Security check - return error if not logged in
@@ -8,7 +9,7 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
     exit();
 }
 
-require_once 'db_fuel.php';
+$conn = require(__DIR__ . '/config/database.php');
 
 header('Content-Type: application/json');
 
