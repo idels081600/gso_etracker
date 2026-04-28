@@ -1,4 +1,5 @@
 <?php
+
 session_start();
 require_once 'db_fuel.php';
 
@@ -204,7 +205,7 @@ $stations_result = mysqli_query($conn, $stations_sql);
                     const data = await response.json();
                     
                     if (data.success) {
-                        window.location.href = 'dashboard_food.php';
+                        window.location.href = 'releasing_food.php';
                     } else {
                         alert('Error: ' + data.message);
                         submitBtn.disabled = false;
