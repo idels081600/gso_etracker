@@ -31,9 +31,8 @@ if (!$vendor_result || mysqli_num_rows($vendor_result) === 0) {
 $vendor = mysqli_fetch_assoc($vendor_result);
 
 // Get claimed vouchers from food_voucher_claims
-// Show ALL vouchers regardless of area
-// Include both unredeemed (batch_id IS NULL) and already redeemed vouchers (is_redeemed = 1)
-$where_sql = "WHERE vc.is_verified = 1 AND (vc.batch_id IS NULL OR vc.is_redeemed = 1)";
+// Show ALL verified vouchers regardless of redemption status
+$where_sql = "WHERE vc.is_verified = 1";
 
 $sql = "SELECT 
             vc.id,

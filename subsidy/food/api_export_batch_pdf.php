@@ -45,7 +45,7 @@ if (!$batch_result || mysqli_num_rows($batch_result) === 0) {
 
 $batch = mysqli_fetch_assoc($batch_result);
 
-// Get batch items
+// Get batch items in user selection order
 $items_sql = "SELECT 
                 bi.id,
                 bi.voucher_id,
@@ -53,11 +53,12 @@ $items_sql = "SELECT
                 bi.beneficiary_name,
                 bi.beneficiary_code,
                 bi.voucher_number,
+                bi.selection_order,
                 vc.claimant_name
             FROM food_redemption_items bi
             LEFT JOIN food_voucher_claims vc ON bi.voucher_id = vc.id
             WHERE bi.batch_id = $batch_id
-            ORDER BY bi.id ASC";
+            ORDER BY bi.selection_order ASC, bi.id ASC";
 
 $items_result = mysqli_query($conn, $items_sql);
 
@@ -135,7 +136,7 @@ $pdf->AddPage();
 $pdf->SetAutoPageBreak(true, 20);
 
 // Barcode at top RIGHT - Code 39 barcode format
-$pdf->Code39(115, 10, $batch['batch_number'], 8, 1.2, 0.6);
+$pdf->Code39(50, 10, $batch['batch_number'], 8, 1.2, 0.6);
 $pdf->SetXY(130, 19);
 $pdf->SetFont('Arial', '', 8);
 $pdf->Cell(70, 5, $batch['batch_number'], 0, 1, 'C');
@@ -246,7 +247,8 @@ while (count($remaining) > 0) {
             $pdf->SetXY($col_x[$c], $base_y);
             if ($item) {
                 $voucher_code = ($item['beneficiary_code'] ? $item['beneficiary_code'] : 'N/A') . ' - 00' . $item['voucher_number'];
-                $pdf->Cell($no_width, $row_height, $global_row, 1, 0, 'C');
+                // Show selection order as indicator (e.g., in NO. column)
+                $pdf->Cell($no_width, $row_height, isset($item['selection_order']) ? $item['selection_order'] : $global_row, 1, 0, 'C');
                 $pdf->Cell($code_width, $row_height, $voucher_code, 1, 0, 'L');
                 $pdf->Cell($c == 2 ? $last_amt_width : $amt_width, $row_height, number_format($item['amount'], 2), 1, 0, 'R');
                 $global_row++;

@@ -16,12 +16,12 @@ if (!isset($_SESSION['station_id']) || empty($_SESSION['station_id'])) {
                   JOIN food_markets fm ON uf.station_id = fm.id 
                   WHERE uf.username = '$username'";
     $check_result = mysqli_query($conn, $check_sql);
-    
+
     if (mysqli_num_rows($check_result) > 0) {
         $station_data = mysqli_fetch_assoc($check_result);
         $_SESSION['station_id'] = $station_data['station_id'];
         $_SESSION['station_name'] = $station_data['market_name'];
-    } 
+    }
 }
 
 // Get proper market name with default fallback
@@ -39,6 +39,23 @@ $total_verified_today = $verified_today_result ? mysqli_fetch_assoc($verified_to
 $redeemed_sql = "SELECT COUNT(*) as total FROM food_voucher_claims WHERE is_redeemed = 1";
 $redeemed_result = mysqli_query($conn, $redeemed_sql);
 $total_redeemed = $redeemed_result ? mysqli_fetch_assoc($redeemed_result)['total'] : 0;
+
+// Get per market verified voucher counts
+$market_stats = [];
+$market_sql = "SELECT 
+                    fm.id, 
+                    fm.market_name, 
+                    COUNT(fvc.id) as verified_count
+               FROM food_markets fm
+               LEFT JOIN food_voucher_claims fvc ON fm.id = fvc.station_id AND fvc.is_verified = 1
+               GROUP BY fm.id, fm.market_name
+               ORDER BY fm.market_name";
+$market_result = mysqli_query($conn, $market_sql);
+if ($market_result) {
+    while ($row = mysqli_fetch_assoc($market_result)) {
+        $market_stats[] = $row;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -60,16 +77,19 @@ $total_redeemed = $redeemed_result ? mysqli_fetch_assoc($redeemed_result)['total
             </button>
             <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
                 <div class="offcanvas-header">
-                    <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Food Subsidy Menu</h5>
+                    <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Food Voucher Menu</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                 </div>
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                         <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href="dashboard_food.php">Home</a>
+                            <a class="nav-link" href="dashboard_food.php">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="redeem_batch.php">Releasing</a>
+                            <a class="nav-link active" aria-current="page" href="redeem_batch.php">Batch Redemption</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="batch_history.php">Batch History</a>
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -81,7 +101,7 @@ $total_redeemed = $redeemed_result ? mysqli_fetch_assoc($redeemed_result)['total
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
-                                <li><a class="dropdown-item" href="select_station.php"><i class="bi bi-arrow-repeat me-2"></i>Change Market</a></li>
+                                <li><a class="dropdown-item" href="select_station.php"><i class="bi bi-arrow-repeat me-2"></i>Change Station</a></li>
                                 <li><a class="dropdown-item" href="#">Help</a></li>
                             </ul>
                         </li>
@@ -89,10 +109,6 @@ $total_redeemed = $redeemed_result ? mysqli_fetch_assoc($redeemed_result)['total
                             <a class="nav-link text-danger" href="../../logout.php"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
                         </li>
                     </ul>
-                    <form class="d-flex mt-3" role="search">
-                        <input class="form-control me-2" type="search" placeholder="Search records..." aria-label="Search" />
-                        <button class="btn btn-outline-success" type="submit">Search</button>
-                    </form>
                 </div>
             </div>
         </div>
@@ -100,7 +116,7 @@ $total_redeemed = $redeemed_result ? mysqli_fetch_assoc($redeemed_result)['total
 
     <main class="pt-5">
         <section class="container-fluid mt-4">
-            
+
             <!-- FOOD VOUCHER STATISTICS -->
             <div class="row mb-4">
                 <div class="col-12">
@@ -138,6 +154,31 @@ $total_redeemed = $redeemed_result ? mysqli_fetch_assoc($redeemed_result)['total
             </div>
         </section>
 
+        <!-- MARKET STATISTICS -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h5 class="text-primary mb-3"><i class="bi bi-building me-2"></i>MARKET VERIFIED VOUCHERS</h5>
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <?php foreach ($market_stats as $idx => $market): ?>
+                <?php
+                // Cycle through border colors
+                $colors = ['border-warning', 'border-danger', 'border-dark', 'border-primary', 'border-success'];
+                $color_class = $colors[$idx % count($colors)];
+                ?>
+                <div class="col-12 col-md-4">
+                    <div class="card shadow-sm <?php echo $color_class; ?> border-2">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase text-secondary mb-3"><?php echo htmlspecialchars($market['market_name']); ?></h6>
+                            <p class="display-6 mb-0"><?php echo number_format($market['verified_count']); ?></p>
+                            <small class="text-muted">Verified vouchers</small>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
         <section class="container-fluid mt-4 mb-5">
             <div class="card shadow-sm">
                 <div class="card-header py-3">
@@ -146,7 +187,7 @@ $total_redeemed = $redeemed_result ? mysqli_fetch_assoc($redeemed_result)['total
                             <h5 class="mb-0">Food Subsidy Records</h5>
                         </div>
                         <div class="col-auto">
-                        <div class="d-flex gap-2">
+                            <div class="d-flex gap-2">
                                 <input type="text" class="form-control form-control-sm" placeholder="Search records..." id="tableSearch" style="width: 200px;">
                                 <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#exportPdfModal">
                                     <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
@@ -157,6 +198,18 @@ $total_redeemed = $redeemed_result ? mysqli_fetch_assoc($redeemed_result)['total
                                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDataModal">
                                     <i class="bi bi-plus-circle me-1"></i>Add Data
                                 </button>
+                                <a href="api_export_daily_csv.php" class="btn btn-warning btn-sm" target="_blank">
+                                    <i class="bi bi-download me-1"></i>Daily Report CSV
+                                </a>
+                                <a href="api_export_daily_csv.php?all=1" class="btn btn-dark btn-sm" target="_blank">
+                                    <i class="bi bi-file-earmark-excel me-1"></i>All Report CSV
+                                </a>
+                                <a href="api_export_raw_csv.php" class="btn btn-info btn-sm" target="_blank">
+                                    <i class="bi bi-table me-1"></i>Raw Daily CSV
+                                </a>
+                                <a href="api_export_raw_csv.php?all=1" class="btn btn-secondary btn-sm" target="_blank">
+                                    <i class="bi bi-database me-1"></i>Raw All CSV
+                                </a>
                             </div>
                         </div>
                     </div>

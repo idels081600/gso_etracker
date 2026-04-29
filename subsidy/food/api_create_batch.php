@@ -59,6 +59,7 @@ $vendor_id = (int)$vendor['id'];
 // Get personnel_id from session (default to 0 if not set)
 $personnel_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
 $created_by = isset($_SESSION['username']) ? $_SESSION['username'] : 'system';
+$redeemer_name = isset($_SESSION['pay_name']) ? trim($_SESSION['pay_name']) : '';
 
 // Validate all voucher IDs exist and are available for redemption
 $voucher_id_list = array_map(function($id) use ($conn) {
@@ -76,34 +77,51 @@ if (!$check_result) {
     exit();
 }
 
-$valid_vouchers = [];
-$invalid_vouchers = [];
+    $db_vouchers = [];
+    $invalid_vouchers = [];
+    $debug = [];
 
-while ($row = mysqli_fetch_assoc($check_result)) {
-    $voucher_id = $row['id'];
+    while ($row = mysqli_fetch_assoc($check_result)) {
+        $voucher_id = $row['id'];
+        $debug[] = [
+            'id' => $voucher_id,
+            'is_verified' => $row['is_verified'],
+            'is_redeemed' => $row['is_redeemed'],
+            'batch_id' => $row['batch_id']
+        ];
 
-    if ($row['is_verified'] != 1) {
-        $invalid_vouchers[] = ['id' => $voucher_id, 'reason' => 'Not verified'];
-        continue;
+        if ($row['is_verified'] != 1) {
+            $invalid_vouchers[] = ['id' => $voucher_id, 'reason' => 'Not verified'];
+            continue;
+        }
+
+        // ✅ ALLOW REDEEMED VOUCHERS FOR BATCH (TEMPORARY FIX)
+        // if ($row['is_redeemed'] == 1) {
+        //     $invalid_vouchers[] = ['id' => $voucher_id, 'reason' => 'Already redeemed'];
+        //     continue;
+        // }
+
+        // ✅ ALLOW VOUCHERS ALREADY IN BATCH (TEMPORARY FIX)
+        // if ($row['batch_id'] !== null) {
+        //     $invalid_vouchers[] = ['id' => $voucher_id, 'reason' => 'Already in a batch'];
+        //     continue;
+        // }
+
+        $db_vouchers[$voucher_id] = [
+            'id' => $voucher_id,
+            'beneficiary_id' => (int)$row['beneficiary_id'],
+            'voucher_number' => (int)$row['voucher_number'],
+            'claimant_name' => $row['claimant_name']
+        ];
     }
 
-    if ($row['is_redeemed'] == 1) {
-        $invalid_vouchers[] = ['id' => $voucher_id, 'reason' => 'Already redeemed'];
-        continue;
+    // PRESERVE EXACT SELECTION ORDER FROM FRONTEND!
+    $valid_vouchers = [];
+    foreach ($voucher_ids as $vid) {
+        if (isset($db_vouchers[$vid])) {
+            $valid_vouchers[] = $db_vouchers[$vid];
+        }
     }
-
-    if ($row['batch_id'] !== null) {
-        $invalid_vouchers[] = ['id' => $voucher_id, 'reason' => 'Already in a batch'];
-        continue;
-    }
-
-    $valid_vouchers[] = [
-        'id' => $voucher_id,
-        'beneficiary_id' => (int)$row['beneficiary_id'],
-        'voucher_number' => (int)$row['voucher_number'],
-        'claimant_name' => $row['claimant_name']
-    ];
-}
 
 if (count($valid_vouchers) === 0) {
     echo json_encode([
@@ -131,15 +149,15 @@ mysqli_begin_transaction($conn);
 try {
     // Insert batch record
     $insert_batch_sql = "INSERT INTO food_redemption_batches 
-        (batch_number, vendor_id, personnel_id, total_vouchers, total_amount, status, created_by, created_at, redeemed_at, remarks) 
-        VALUES (?, ?, ?, ?, ?, 'completed', ?, NOW(), NOW(), NULL)";
+        (batch_number, vendor_id, personnel_id, total_vouchers, total_amount, status, created_by, created_at, redeemed_at, remarks, redeemer) 
+        VALUES (?, ?, ?, ?, ?, 'completed', ?, NOW(), NOW(), NULL, ?)";
 
     $stmt = mysqli_prepare($conn, $insert_batch_sql);
     if (!$stmt) {
         throw new Exception('Failed to prepare batch insert: ' . mysqli_error($conn));
     }
 
-    mysqli_stmt_bind_param($stmt, 'siidds', $batch_number, $vendor_id, $personnel_id, $total_vouchers, $total_amount, $created_by);
+    mysqli_stmt_bind_param($stmt, 'siiddss', $batch_number, $vendor_id, $personnel_id, $total_vouchers, $total_amount, $created_by, $redeemer_name);
 
     if (!mysqli_stmt_execute($stmt)) {
         throw new Exception('Failed to insert batch: ' . mysqli_stmt_error($stmt));
@@ -149,51 +167,54 @@ try {
     mysqli_stmt_close($stmt);
 
     // Insert batch items and update voucher claims
-    $insert_item_sql = "INSERT INTO food_redemption_items 
-        (batch_id, voucher_id, amount, beneficiary_name, beneficiary_code, voucher_number) 
-        VALUES (?, ?, 200.00, ?, ?, ?)";
+        // Add selection_order to insert statement
+        $insert_item_sql = "INSERT INTO food_redemption_items 
+            (batch_id, voucher_id, amount, beneficiary_name, beneficiary_code, voucher_number, selection_order) 
+            VALUES (?, ?, 200.00, ?, ?, ?, ?)";
 
-    $item_stmt = mysqli_prepare($conn, $insert_item_sql);
-    if (!$item_stmt) {
-        throw new Exception('Failed to prepare item insert: ' . mysqli_error($conn));
-    }
-
-    $update_voucher_sql = "UPDATE food_voucher_claims 
-        SET is_redeemed = 1, batch_id = ? 
-        WHERE id = ?";
-
-    $update_stmt = mysqli_prepare($conn, $update_voucher_sql);
-    if (!$update_stmt) {
-        throw new Exception('Failed to prepare voucher update: ' . mysqli_error($conn));
-    }
-
-    foreach ($valid_vouchers as $voucher) {
-        // Get beneficiary info
-        $beneficiary_id = $voucher['beneficiary_id'];
-        $beneficiary_sql = "SELECT full_name, beneficiary_code FROM food_beneficiaries WHERE id = $beneficiary_id LIMIT 1";
-        $beneficiary_result = mysqli_query($conn, $beneficiary_sql);
-        $beneficiary = mysqli_fetch_assoc($beneficiary_result);
-
-        $beneficiary_name = $beneficiary ? $beneficiary['full_name'] : $voucher['claimant_name'];
-        $beneficiary_code = $beneficiary ? $beneficiary['beneficiary_code'] : '';
-        $voucher_number = $voucher['voucher_number'];
-        $voucher_id = $voucher['id'];
-
-        // Insert batch item
-        mysqli_stmt_bind_param($item_stmt, 'iissi', $batch_id, $voucher_id, $beneficiary_name, $beneficiary_code, $voucher_number);
-        if (!mysqli_stmt_execute($item_stmt)) {
-            throw new Exception('Failed to insert batch item: ' . mysqli_stmt_error($item_stmt));
+        $item_stmt = mysqli_prepare($conn, $insert_item_sql);
+        if (!$item_stmt) {
+            throw new Exception('Failed to prepare item insert: ' . mysqli_error($conn));
         }
 
-        // Update voucher claim
-        mysqli_stmt_bind_param($update_stmt, 'ii', $batch_id, $voucher_id);
-        if (!mysqli_stmt_execute($update_stmt)) {
-            throw new Exception('Failed to update voucher: ' . mysqli_stmt_error($update_stmt));
-        }
-    }
+        $update_voucher_sql = "UPDATE food_voucher_claims 
+            SET is_redeemed = 1, batch_id = ? 
+            WHERE id = ?";
 
-    mysqli_stmt_close($item_stmt);
-    mysqli_stmt_close($update_stmt);
+        $update_stmt = mysqli_prepare($conn, $update_voucher_sql);
+        if (!$update_stmt) {
+            throw new Exception('Failed to prepare voucher update: ' . mysqli_error($conn));
+        }
+
+        // Store selection order based on user selection
+        foreach ($valid_vouchers as $idx => $voucher) {
+            // Get beneficiary info
+            $beneficiary_id = $voucher['beneficiary_id'];
+            $beneficiary_sql = "SELECT full_name, beneficiary_code FROM food_beneficiaries WHERE id = $beneficiary_id LIMIT 1";
+            $beneficiary_result = mysqli_query($conn, $beneficiary_sql);
+            $beneficiary = mysqli_fetch_assoc($beneficiary_result);
+
+            $beneficiary_name = $beneficiary ? $beneficiary['full_name'] : $voucher['claimant_name'];
+            $beneficiary_code = $beneficiary ? $beneficiary['beneficiary_code'] : '';
+            $voucher_number = $voucher['voucher_number'];
+            $voucher_id = $voucher['id'];
+            $selection_order = $idx + 1; // 1-based order
+
+            // Insert batch item with selection_order
+            mysqli_stmt_bind_param($item_stmt, 'iisssi', $batch_id, $voucher_id, $beneficiary_name, $beneficiary_code, $voucher_number, $selection_order);
+            if (!mysqli_stmt_execute($item_stmt)) {
+                throw new Exception('Failed to insert batch item: ' . mysqli_stmt_error($item_stmt));
+            }
+
+            // Update voucher claim
+            mysqli_stmt_bind_param($update_stmt, 'ii', $batch_id, $voucher_id);
+            if (!mysqli_stmt_execute($update_stmt)) {
+                throw new Exception('Failed to update voucher: ' . mysqli_stmt_error($update_stmt));
+            }
+        }
+
+        mysqli_stmt_close($item_stmt);
+        mysqli_stmt_close($update_stmt);
 
     // Commit transaction
     mysqli_commit($conn);

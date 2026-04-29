@@ -138,51 +138,97 @@ $pageTitle = "Batch Voucher Redemption";
             </div>
         </div>
 
-        <!-- Voucher List Card -->
+        <!-- Dual Table Card -->
         <div id="voucherSection" class="card shadow-sm d-none">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div class="card-header bg-white">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-ticket-perforated me-2"></i>
-                    Claimed Vouchers
+                    Voucher Selection
                 </h5>
-                <div class="d-flex gap-2">
-                    <span class="badge bg-primary" id="selectedCount">0 selected</span>
-                    <span class="badge bg-success" id="totalAmount">₱0.00</span>
-                </div>
             </div>
-            <div class="card-body p-0">
-                <!-- Voucher Search -->
-                <div class="p-3 border-bottom bg-light">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                <input type="text" id="voucherSearch" class="form-control" placeholder="Search voucher code, beneficiary, or claimant...">
-                                <button class="btn btn-outline-secondary" id="clearVoucherSearch" type="button">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
+            <div class="card-body">
+                <div class="row">
+                    <!-- LEFT TABLE: Available Vouchers -->
+                    <div class="col-lg-6">
+                        <div class="card border">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-list-ul me-2"></i>
+                                    Available Vouchers
+                                </h6>
+                            </div>
+                            <div class="card-body p-2 bg-light">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="voucherSearch" class="form-control" placeholder="Search voucher...">
+                                    <button class="btn btn-outline-secondary" id="clearVoucherSearch" type="button">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                                <table class="table table-hover table-sm mb-0">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th width="60">Code</th>
+                                            <th>Beneficiary</th>
+                                            <th width="50">Verified</th>
+                                            <th width="50">Redeemed</th>
+                                            <th width="70">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="availableVoucherBody">
+                                        <!-- Available vouchers loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer bg-light text-center text-muted">
+                                <small id="availableCount">0 available</small>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="40">
-                                    <input type="checkbox" id="selectAll">
-                                </th>
-                                <th>Voucher Code</th>
-                                <th>Beneficiary</th>
-                                <th>Claimed At</th>
-                                <th>Status</th>
-                                <th>Redeemed</th>
-                            </tr>
-                        </thead>
-                        <tbody id="voucherTableBody">
-                            <!-- Vouchers will be loaded here -->
-                        </tbody>
-                    </table>
+
+                    <!-- RIGHT TABLE: Selected Vouchers -->
+                    <div class="col-lg-6">
+                        <div class="card border border-success">
+                            <div class="card-header bg-success text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        Selected Vouchers
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="selectedCount">0 selected</span>
+                                </div>
+                            </div>
+                            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                                <table class="table table-hover table-sm mb-0">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th width="40">No.</th>
+                                            <th width="60">Code</th>
+                                            <th>Beneficiary</th>
+                                            <th width="70">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="selectedVoucherBody">
+                                        <!-- Selected vouchers loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer bg-light">
+                                <div class="row text-center">
+                                    <div class="col-6 border-end">
+                                        <small class="text-muted">Total Selected</small>
+                                        <div class="fw-bold" id="totalAmount">₱0.00</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Items</small>
+                                        <div class="fw-bold" id="totalItems">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="card-footer bg-white d-flex justify-content-between align-items-center">
@@ -194,7 +240,7 @@ $pageTitle = "Batch Voucher Redemption";
                 <div>
                     <button id="redeemBtn" class="btn btn-success" disabled>
                         <i class="bi bi-check-circle me-1"></i>
-                        Redeem Selected Vouchers
+                        Create Batch & Export PDF
                     </button>
                 </div>
             </div>
