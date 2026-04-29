@@ -324,7 +324,7 @@ function confirmRedeem() {
                     <a href="api_export_batch_csv.php?batch_id=${batchId}" class="btn btn-success btn-sm" target="_blank">
                         <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
                     </a>
-                    <a href="api_generate_ar.php?batch_id=${batchId}" class="btn btn-primary btn-sm" target="_blank">
+                    <a href="generate_ar.php?batch_id=${batchId}" class="btn btn-primary btn-sm" target="_blank">
                         <i class="bi bi-file-earmark-text me-1"></i> Generate Acknowledgement Receipt
                     </a>
                 </div>
