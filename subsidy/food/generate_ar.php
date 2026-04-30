@@ -223,7 +223,7 @@ function renderReceipt($pdf, $data) {
     $pdf->SetFont('Arial', 'B', 7);
     $pdf->Cell(80, 4, strtoupper($data['vendor_name'] ?? 'VENDOR NAME'), 0, 0);
     $pdf->SetX(130);
-    $pdf->Cell(60, 4, "HUBERT M. INAS CPA, BCLTE", 0, 1);
+    $pdf->Cell(60, 4, "", 0, 1);
 
     $pdf->SetFont('Arial', '', 7);
     $pdf->Cell(80, 4, "VENDOR'S NAME", 0, 0);
