@@ -47,8 +47,7 @@ $sql = "SELECT
         FROM food_voucher_claims vc
         LEFT JOIN food_beneficiaries fb ON vc.beneficiary_id = fb.id
         $where_sql
-        ORDER BY vc.claim_date DESC
-        LIMIT 100";
+        ORDER BY vc.claim_date DESC";
 
 $result = mysqli_query($conn, $sql);
 
