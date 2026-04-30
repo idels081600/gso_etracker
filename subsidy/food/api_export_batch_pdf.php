@@ -9,6 +9,9 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
     die('Unauthorized');
 }
 
+// Get validating officer name from session
+$validating_officer_name = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : '';
+
 // Validate batch_id parameter
 if (!isset($_GET['batch_id']) || empty(trim($_GET['batch_id']))) {
     die('Batch ID is required');
@@ -330,11 +333,11 @@ $pdf->SetXY(10, $sigStartY);
 $pdf->SetFont('Arial', 'B', 10);
 $pdf->SetTextColor(0, 0, 0);
 $pdf->Cell($colWidth, 6, 'Validating Officer\'s Name and Signature', 0, 1, 'C');
-$pdf->Line(15, $sigStartY + 18, 100, $sigStartY + 18);
-$pdf->SetXY(10, $sigStartY + 20);
-$pdf->SetFont('Arial', '', 8);
-$pdf->SetTextColor(128, 128, 128);
-$pdf->Cell($colWidth, 4, 'Print Name & Sign Above', 0, 1, 'C');
+$pdf->SetXY(10, $sigStartY + 12);
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->SetTextColor(0, 0, 0);
+$pdf->Cell($colWidth, 4, $validating_officer_name, 0, 1, 'C');
+$pdf->Line(15, $sigStartY + 20, 100, $sigStartY + 20);
 
 // --- RIGHT COLUMN: Signature B ---
 $pdf->SetXY(105, $sigStartY);
