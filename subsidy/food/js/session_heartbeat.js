@@ -6,14 +6,14 @@
  * 
  * Usage: Include this file in your HTML header, then initialize with:
  * <script src="session_heartbeat.js"></script>
- * <script>
- *   // Start heartbeat with 5 minute interval
- *   SessionHeartbeat.init({
- *     interval: 5 * 60 * 1000,  // 5 minutes
- *     apiUrl: './api_heartbeat.php',
- *     warningThreshold: 5 * 60 * 1000 // Warn when 5 minutes remain
- *   });
- * </script>
+//  * <script>
+//  *   // Start heartbeat with 5 minute interval
+//  *   SessionHeartbeat.init({
+//  *     interval: 5 * 60 * 1000,  // 5 minutes
+//  *     apiUrl: './api_heartbeat.php',
+//  *     warningThreshold: 5 * 60 * 1000 // Warn when 5 minutes remain
+//  *   });
+//  * </script>
  */
 
 const SessionHeartbeat = (function() {
@@ -105,13 +105,24 @@ const SessionHeartbeat = (function() {
                 // Update session remaining time display if element exists
                 updateSessionDisplay(data.session_remaining);
                 
-                // Check if session time is running low (with debounce to avoid spam)
-                const now = Date.now();
-                if (data.session_remaining <= config.warningThreshold && 
-                    config.showWarning && 
-                    (now - lastWarningTime) > warningDebounceMs) {
-                    lastWarningTime = now;
-                    showSessionWarning(data.session_remaining);
+                // Check if session_remaining data exists and is valid
+                if (data.session_remaining !== null && 
+                    data.session_remaining !== undefined && 
+                    typeof data.session_remaining === 'number') {
+                    
+                    // Check if session time is running low (with debounce to avoid spam)
+                    const now = Date.now();
+                    if (data.session_remaining <= config.warningThreshold && 
+                        config.showWarning && 
+                        (now - lastWarningTime) > warningDebounceMs) {
+                        lastWarningTime = now;
+                        showSessionWarning(data.session_remaining);
+                    }
+                } else {
+                    log('Warning: session_remaining is missing or invalid', {
+                        session_remaining: data.session_remaining,
+                        type: typeof data.session_remaining
+                    });
                 }
 
                 if (config.onHeartbeatSuccess) {
@@ -139,7 +150,7 @@ const SessionHeartbeat = (function() {
             // Default behavior: redirect to login
             showNotification('Your session has expired. Please login again.', 'error');
             setTimeout(() => {
-                window.location.href = '../../check_login.php';
+                window.location.href = '../../login_v2.php';
             }, 2000);
         }
     }

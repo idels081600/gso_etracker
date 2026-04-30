@@ -1,80 +1,86 @@
 <?php
-/**
- * Session Heartbeat - Keep Session Alive During Active Use
- * 
- * This endpoint receives periodic heartbeat requests from the client
- * to prevent session expiry during active use.
- */
 
-// Suppress error display and log to file instead
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
-error_reporting(E_ALL);
+require_once __DIR__ . '/vendor/autoload.php';
 
-require_once __DIR__ . '/bootstrap.php';
+use Dotenv\Dotenv;
 
-// Set response headers FIRST (before any output)
-header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
-header('Pragma: no-cache');
+// Load .env
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
 
-// Check if user is logged in
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+// Session Configuration
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.gc_maxlifetime', env('SESSION_LIFETIME', 3600)); // 1 hour default
+    ini_set('session.gc_divisor', 100);
+    ini_set('session.gc_probability', 1);
+    
+    session_set_cookie_params([
+        'lifetime' => env('SESSION_LIFETIME', 3600),
+        'path' => '/',
+        'domain' => '',
+        'secure' => false,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start();
+}
+
+// Helper function
+function env($key, $default = null) {
+    return $_ENV[$key] ?? $_SERVER[$key] ?? $default;
+}
+
+// Set response headers
+header('Content-Type: application/json');
+header('X-Requested-With: XMLHttpRequest');
+
+// Check if user is authenticated
+if (!isset($_SESSION['_last_activity']) || !isset($_SESSION['_login_time'])) {
     http_response_code(401);
     echo json_encode([
         'success' => false,
-        'message' => 'Session expired or not authenticated',
-        'redirect' => '../../check_login.php'
+        'message' => 'Session not found or expired',
+        'session_remaining' => 0
     ]);
     exit;
 }
 
 try {
-    // Initialize/Reset login time on first heartbeat (fresh session)
-    if (!isset($_SESSION['_login_time']) || empty($_SESSION['_login_time'])) {
-        $_SESSION['_login_time'] = time();
-    }
+    // Get session lifetime from environment or config
+    $sessionLifetime = (int) env('SESSION_LIFETIME', 3600); // Default 1 hour
     
-    // Update session last activity time - this extends the session
+    // Calculate when session will expire
+    $lastActivity = (int) $_SESSION['_last_activity'];
+    $currentTime = time();
+    $sessionExpireTime = $lastActivity + $sessionLifetime;
+    
+    // Calculate remaining time in milliseconds
+    $timeRemaining = max(0, ($sessionExpireTime - $currentTime) * 1000);
+    
+    // Update last activity timestamp
     $_SESSION['_last_activity'] = time();
     $_SESSION['_heartbeat_count'] = isset($_SESSION['_heartbeat_count']) ? $_SESSION['_heartbeat_count'] + 1 : 1;
-    $_SESSION['_last_heartbeat'] = date('Y-m-d H:i:s');
     
-    // Get session lifetime (in seconds)
-    $sessionLifetime = intval(env('SESSION_LIFETIME', 3600));
-    
-    // Calculate session remaining time from last activity (activity-based expiry)
-    // This means the session will expire if IDLE for SESSION_LIFETIME seconds
-    $lastActivity = $_SESSION['_last_activity'] ?? time();
-    $timeRemaining = max(0, $sessionLifetime - (time() - $lastActivity));
-    
-    // Log heartbeat activity (optional - for debugging)
-    error_log(sprintf(
-        "[HEARTBEAT] User: %s | Count: %d | Remaining: %d seconds | Last Activity: %s",
-        $_SESSION['username'] ?? 'unknown',
-        $_SESSION['_heartbeat_count'],
-        $timeRemaining,
-        date('Y-m-d H:i:s', $lastActivity)
-    ));
+    // Prepare response
+    $response = [
+        'success' => true,
+        'message' => 'Heartbeat received',
+        'session_remaining' => $timeRemaining,  // Time remaining in milliseconds
+        'session_lifetime' => $sessionLifetime * 1000,  // Total session lifetime in milliseconds
+        'last_activity' => $_SESSION['_last_activity'],
+        'heartbeat_count' => $_SESSION['_heartbeat_count'],
+        'timestamp' => $currentTime
+    ];
     
     http_response_code(200);
-    echo json_encode([
-        'success' => true,
-        'message' => 'Session refreshed',
-        'session_remaining' => $timeRemaining,
-        'heartbeat_count' => $_SESSION['_heartbeat_count'],
-        'last_heartbeat' => $_SESSION['_last_heartbeat'],
-        'username' => $_SESSION['username'] ?? null,
-        'session_lifetime' => $sessionLifetime
-    ]);
+    echo json_encode($response);
     
 } catch (Exception $e) {
-    error_log('Heartbeat Exception: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Heartbeat failed',
-        'debug' => env('APP_DEBUG', false) ? $e->getMessage() : null
+        'message' => 'Server error: ' . $e->getMessage(),
+        'session_remaining' => 0
     ]);
 }
-
+?>
