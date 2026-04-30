@@ -114,7 +114,7 @@ function renderBatches(batches, pagination) {
             <td><strong>${formattedAmount}</strong></td>
             <td>${statusBadge}</td>
             <td><small>${createdDate}</small></td>
-            <td><small>${batch.created_by || 'N/A'}</small></td>
+            <td><small>${batch.redeemer || 'N/A'}</small></td>
             <td>${actions}</td>
         `;
         
@@ -322,6 +322,7 @@ function renderBatchDetails(batch, items) {
             <div class="col-md-6">
                 <h6 class="text-muted">Redeemed</h6>
                 <p class="mb-0">${batch.redeemed_at ? new Date(batch.redeemed_at).toLocaleString('en-US') : 'N/A'}</p>
+                <p class="text-muted mb-0">By: ${batch.redeemer || 'N/A'}</p>
             </div>
         </div>
         <hr>

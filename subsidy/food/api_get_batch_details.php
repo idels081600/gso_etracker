@@ -29,6 +29,7 @@ $batch_sql = "SELECT
                 b.created_by,
                 b.created_at,
                 b.redeemed_at,
+                b.redeemer,
                 b.remarks,
                 v.vendor_serial,
                 v.vendor_name,
@@ -95,6 +96,7 @@ echo json_encode([
         'created_by' => $batch['created_by'],
         'created_at' => $batch['created_at'],
         'redeemed_at' => $batch['redeemed_at'],
+        'redeemer' => $batch['redeemer'],
         'remarks' => $batch['remarks'],
         'vendor' => [
             'vendor_serial' => $batch['vendor_serial'],

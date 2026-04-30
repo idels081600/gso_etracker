@@ -72,6 +72,7 @@ $sql = "SELECT
             b.created_by,
             b.created_at,
             b.redeemed_at,
+            b.redeemer,
             b.remarks,
             v.vendor_serial,
             v.vendor_name,
@@ -101,6 +102,7 @@ while ($row = mysqli_fetch_assoc($result)) {
         'created_by' => $row['created_by'],
         'created_at' => $row['created_at'],
         'redeemed_at' => $row['redeemed_at'],
+        'redeemer' => $row['redeemer'],
         'remarks' => $row['remarks'],
         'vendor' => [
             'vendor_serial' => $row['vendor_serial'],

@@ -154,7 +154,7 @@ $pageTitle = "Batch History";
                                 <th>Total Amount</th>
                                 <th>Status</th>
                                 <th>Created</th>
-                                <th>By</th>
+                                <th>Redeemer</th>
                                 <th width="180">Actions</th>
                             </tr>
                         </thead>
