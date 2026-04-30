@@ -3,6 +3,7 @@
 /**
  * FIXED: Food Voucher Receipt PDF Generator
  * Supports BOLD + FULL JUSTIFICATION + FIRST LINE INDENT
+ * 2 COPIES PER PAGE COMPACT VERSION
  */
 
 require_once('../../fpdf/fpdf.php');
@@ -157,81 +158,98 @@ function numberToWordsPesos($number)
     return ucwords($string);
 }
 
-function generateAndDownloadReceipt($data = array())
-{
-    $pdf = new VoucherReceiptPDF('header.png');
-    $pdf->AddPage();
-    $pdf->SetMargins(10, 10, 10);
+function renderReceipt($pdf, $data) {
+    // Titles - COMPACT VERSION
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(0, 7, 'TAGBILARAN CITY', 0, 1, 'C');
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->Cell(0, 3, 'FOOD VOUCHER PROGRAM', 0, 1, 'C');
+    $pdf->Ln(2);
 
-    // Titles
-    $pdf->SetFont('Arial', 'B', 14);
-    $pdf->Cell(0, 10, 'TAGBILARAN CITY', 0, 1, 'C');
-    $pdf->Cell(0, 4, 'FOOD VOUCHER PROGRAM', 0, 1, 'C');
-    $pdf->Ln(5);
-
-    $pdf->SetFont('Arial', 'B', 11);
-    $pdf->Cell(0, 8, 'ACKNOWLEDGMENT RECEIPT', 0, 1, 'C');
-    $pdf->Ln(5);
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->Cell(0, 5, 'ACKNOWLEDGMENT RECEIPT', 0, 1, 'C');
+    $pdf->Ln(2);
 
     // Metadata
-    $pdf->SetFont('Arial', 'B', 10);
-    $pdf->Cell(0, 7, 'A R NO: ' . $data['ar_no'], 0, 0);
+    $pdf->SetFont('Arial', 'B', 8);
+    $pdf->Cell(0, 5, 'A R NO: ' . $data['ar_no'], 0, 0);
     $pdf->SetX(150);
-    $pdf->Cell(0, 7, 'Date: ' . $data['date'], 0, 1);
-    $pdf->Ln(5);
+    $pdf->Cell(0, 5, 'Date: ' . $data['date'], 0, 1);
+    $pdf->Ln(2);
 
     // --- INDENTATION SETTING ---
-    $indentWidth = 12; // 12mm indentation
-    $pdf->SetFont('Arial', '', 10);
+    $indentWidth = 8;
+    $pdf->SetFont('Arial', '', 8);
     $amount_text = number_format($data['amount'], 2);
     $amount_words = numberToWordsPesos($data['amount']);
 
     $text = "Received from the <b>City Government of Tagbilaran the total amount of (" . $amount_words . " Pesos)  P" . $amount_text . " </b> as payment/reimbursement for food vouchers accepted by the undersigned as an accredited vendor under the City's Food Voucher Program, covered by <b>Claim Form with Control Number " . $data['claim_form'] . "</b>.";
 
-    $pdf->MultiCellTag(0, 5, $text, 'J', $indentWidth);
-    $pdf->Ln(5);
+    $pdf->MultiCellTag(0, 4, $text, 'J', $indentWidth);
+    $pdf->Ln(3);
 
     $text2 = "The undersigned hereby acknowledges that the said amount corresponds to the value of food vouchers duly submitted, examined, and approved for reimbursement in accordance with existing guidelines.";
-    $pdf->MultiCellTag(0, 5, $text2, 'J', $indentWidth);
-    $pdf->Ln(5);
+    $pdf->MultiCellTag(0, 4, $text2, 'J', $indentWidth);
+    $pdf->Ln(3);
 
     // Certifications
-    $pdf->SetFont('Arial', 'B', 10);
-    $pdf->Cell(0, 7, 'The undersigned further certifies that:', 0, 1);
-    $pdf->SetFont('Arial', '', 9);
+    $pdf->SetFont('Arial', 'B', 8);
+    $pdf->Cell(0, 5, 'The undersigned further certifies that:', 0, 1);
+    $pdf->SetFont('Arial', '', 8);
     $certs = [
         '1. The vouchers reimbursed have not been previously claimed or paid;',
         '2. The amount received is correct and in full settlement of the claim; and',
         '3. This receipt is issued voluntarily for all legal intents and purposes.'
     ];
     foreach ($certs as $cert) {
-        $pdf->Cell(5, 6, '', 0, 0);
-        $pdf->MultiCell(0, 6, $cert, 0, 'L');
+        $pdf->Cell(5, 4, '', 0, 0);
+        $pdf->MultiCell(0, 4, $cert, 0, 'L');
     }
 
-    $pdf->Ln(15);
+    $pdf->Ln(5);
 
     // Signatures
-    $pdf->SetFont('Arial', '', 10);
-    $pdf->Cell(80, 7, 'Received by:', 0, 0);
+    $pdf->SetFont('Arial', '', 8);
+    $pdf->Cell(80, 5, 'Received by:', 0, 0);
     $pdf->SetX(130);
-    $pdf->Cell(60, 7, 'Issued by:', 0, 1);
-    $pdf->Ln(12);
+    $pdf->Cell(60, 5, 'Issued by:', 0, 1);
+    $pdf->Ln(7);
 
     $pdf->Cell(80, 0.1, '', 'T', 0);
     $pdf->SetX(130);
     $pdf->Cell(60, 0.1, '', 'T', 1);
-    $pdf->Ln(-5);
+    $pdf->Ln(-4);
 
-    $pdf->SetFont('Arial', 'B', 8);
-    $pdf->Cell(80, 5, strtoupper($data['vendor_name'] ?? 'VENDOR NAME'), 0, 0);
+    $pdf->SetFont('Arial', 'B', 7);
+    $pdf->Cell(80, 4, strtoupper($data['vendor_name'] ?? 'VENDOR NAME'), 0, 0);
     $pdf->SetX(130);
-    $pdf->Cell(60, 5, "HUBERT M. INAS CPA, BCLTE", 0, 1);
+    $pdf->Cell(60, 4, "HUBERT M. INAS CPA, BCLTE", 0, 1);
 
-    $pdf->SetFont('Arial', '', 8);
-    $pdf->Cell(80, 5, "VENDOR'S NAME", 0, 0);
+    $pdf->SetFont('Arial', '', 7);
+    $pdf->Cell(80, 4, "VENDOR'S NAME", 0, 0);
     $pdf->SetX(130);
-    $pdf->Cell(60, 5, "City Treasurer's Office", 0, 1);
+    $pdf->Cell(60, 4, "City Treasurer's Office", 0, 1);
+}
+
+function generateAndDownloadReceipt($data = array())
+{
+    $pdf = new VoucherReceiptPDF('header.png');
+    $pdf->AddPage();
+    $pdf->SetMargins(10, 2, 10);
+    $pdf->SetAutoPageBreak(false);
+
+    // First copy of receipt
+    renderReceipt($pdf, $data);
+
+    // Add simple divider line
+    $pdf->Ln(4);
+    $pdf->SetLineWidth(0.2);
+    $pdf->SetDrawColor(120, 120, 120);
+    $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
+    $pdf->Ln(4);
+
+    // Second copy of receipt
+    renderReceipt($pdf, $data);
 
     $pdf->Output('I', 'receipt.pdf');
 }
@@ -243,7 +261,7 @@ if (isset($_GET['batch_id'])) {
     $batch_id = (int)$_GET['batch_id'];
 
     // Get batch information from database
-    $batch_sql = "SELECT b.batch_number, b.total_amount, b.created_at, v.vendor_name
+    $batch_sql = "SELECT b.batch_number, b.ar_no, b.total_amount, b.created_at, v.vendor_name
                   FROM food_redemption_batches b
                   LEFT JOIN food_vendors v ON b.vendor_id = v.id
                   WHERE b.id = ? LIMIT 1";
@@ -256,9 +274,9 @@ if (isset($_GET['batch_id'])) {
     if ($result && mysqli_num_rows($result) > 0) {
         $batch = mysqli_fetch_assoc($result);
 
-        // Generate AR automatically
+        // Use AR Number stored in database
         $ar_data = [
-            'ar_no' => 'AR-' . date('Ymd') . '-' . str_pad($batch_id, 4, '0', STR_PAD_LEFT),
+            'ar_no' => $batch['ar_no'],
             'date' => date('Y-m-d', strtotime($batch['created_at'])),
             'amount' => $batch['total_amount'],
             'vendor_name' => $batch['vendor_name'],
@@ -344,10 +362,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="number" name="amount" step="0.01" required>
         <label>Vendor Name</label>
         <input type="text" name="vendor_name" required>
-        <label>Claim Form Control No.</label>
-        <input type="text" name="claim_form" required>
-        <button type="submit">Generate Indented PDF</button>
-    </form>
-</body>
-
-</html>
+        <label>Claim Form

@@ -83,7 +83,7 @@ $stations_result = mysqli_query($conn, $stations_sql);
                 <div class="card shadow-lg border-0">
                     <div class="card-body p-5">
                         <div class="text-center mb-4">
-                            <i class="bi bi-fuel-pump-fill display-4 text-success"></i>
+                            <i class="bi bi-store display-4 text-success"></i>
                             <h2 class="mt-3 fw-bold"><?php echo $current_station_id ? 'Change Gas Station' : 'Select Your Station'; ?></h2>
                             <?php if ($current_station_id): ?>
                             <p class="text-muted">Current station: <strong class="text-success"><?php echo htmlspecialchars($current_station_name); ?></strong></p>

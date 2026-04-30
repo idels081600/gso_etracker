@@ -140,6 +140,13 @@ $count_row = mysqli_fetch_assoc($count_result);
 $sequence = (int)$count_row['count'] + 1;
 $batch_number = sprintf('%s%03d', $date_prefix, $sequence);
 
+// Generate AR Number: YYYYMMDD**** numeric only format
+$ar_count_sql = "SELECT COUNT(*) as count FROM food_redemption_batches WHERE ar_no LIKE '$date_prefix%'";
+$ar_count_result = mysqli_query($conn, $ar_count_sql);
+$ar_count_row = mysqli_fetch_assoc($ar_count_result);
+$ar_sequence = (int)$ar_count_row['count'] + 1;
+$ar_no = sprintf('%s%04d', $date_prefix, $ar_sequence);
+
 $total_vouchers = count($valid_vouchers);
 $total_amount = $total_vouchers * 200.00;
 
@@ -149,15 +156,15 @@ mysqli_begin_transaction($conn);
 try {
     // Insert batch record
     $insert_batch_sql = "INSERT INTO food_redemption_batches 
-        (batch_number, vendor_id, personnel_id, total_vouchers, total_amount, status, created_by, created_at, redeemed_at, remarks, redeemer) 
-        VALUES (?, ?, ?, ?, ?, 'completed', ?, NOW(), NOW(), NULL, ?)";
+        (batch_number, ar_no, vendor_id, personnel_id, total_vouchers, total_amount, status, created_by, created_at, redeemed_at, remarks, redeemer) 
+        VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, NOW(), NOW(), NULL, ?)";
 
     $stmt = mysqli_prepare($conn, $insert_batch_sql);
     if (!$stmt) {
         throw new Exception('Failed to prepare batch insert: ' . mysqli_error($conn));
     }
 
-    mysqli_stmt_bind_param($stmt, 'siiddss', $batch_number, $vendor_id, $personnel_id, $total_vouchers, $total_amount, $created_by, $redeemer_name);
+    mysqli_stmt_bind_param($stmt, 'ssiiddss', $batch_number, $ar_no, $vendor_id, $personnel_id, $total_vouchers, $total_amount, $created_by, $redeemer_name);
 
     if (!mysqli_stmt_execute($stmt)) {
         throw new Exception('Failed to insert batch: ' . mysqli_stmt_error($stmt));
@@ -225,6 +232,7 @@ try {
         'batch' => [
             'batch_id' => $batch_id,
             'batch_number' => $batch_number,
+            'ar_no' => $ar_no,
             'vendor_name' => $vendor['vendor_name'],
             'vendor_serial' => $vendor['vendor_serial'],
             'total_vouchers' => $total_vouchers,

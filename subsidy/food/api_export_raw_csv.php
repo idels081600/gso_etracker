@@ -34,12 +34,11 @@ fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 // Column headers
 fputcsv($output, [
     'batch_number',
+    'ar_no',
     'market',
     'stall_no',
     'vendor_name',
-    'redeemer',
     'created_at',
-    'selection_order',
     'voucher_code',
     'beneficiary_name',
     'amount'
@@ -48,12 +47,11 @@ fputcsv($output, [
 // Get all items
 $sql = "SELECT 
             b.batch_number,
+            b.ar_no,
             v.area as market,
             v.stall_no,
             v.vendor_name,
-            b.redeemer,
             b.created_at,
-            bi.selection_order,
             bi.beneficiary_code,
             bi.voucher_number,
             bi.beneficiary_name,
@@ -75,12 +73,11 @@ while ($row = mysqli_fetch_assoc($result)) {
     $voucher_code = ($row['beneficiary_code'] ? $row['beneficiary_code'] : 'N/A') . ' - 00' . $row['voucher_number'];
     fputcsv($output, [
         $row['batch_number'],
+        $row['ar_no'],
         $row['market'],
         $row['stall_no'],
         $row['vendor_name'],
-        $row['redeemer'],
         $row['created_at'],
-        $row['selection_order'],
         $voucher_code,
         $row['beneficiary_name'],
         $row['amount']
