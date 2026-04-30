@@ -29,6 +29,14 @@ $pageTitle = "Batch History";
             transform: translateY(-2px);
         }
     </style>
+    <!-- Session Heartbeat -->
+    <script src="./js/session_heartbeat.js"></script>
+    <script>
+        SessionHeartbeat.init({
+            interval: 5 * 60 * 1000,
+            apiUrl: './api_heartbeat.php'
+        });
+    </script>
 </head>
 <body class="bg-light">
 

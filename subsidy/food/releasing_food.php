@@ -63,6 +63,14 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
     <title>Food Subsidy - Releasing</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.4/font/bootstrap-icons.css">
+    <!-- Session Heartbeat -->
+    <script src="./js/session_heartbeat.js"></script>
+    <script>
+        SessionHeartbeat.init({
+            interval: 5 * 60 * 1000,
+            apiUrl: './api_heartbeat.php'
+        });
+    </script>
 </head>
 
 <body>
@@ -196,7 +204,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                         <div class="mb-2">
                             <div class="form-check form-check-inline">
                                 <input class="form-check-input" type="radio" name="claimantOption" id="claimantDriver" value="driver" checked>
-                                <label class="form-check-label" for="claimantDriver">Use Driver Name</label>
+                                <label class="form-check-label" for="claimantDriver">Use Beneficiary Name</label>
                             </div>
                             <div class="form-check form-check-inline">
                                 <input class="form-check-input" type="radio" name="claimantOption" id="claimantManual" value="manual">
@@ -205,7 +213,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                         </div>
                         <div class="mb-2">
                             <select class="form-select" id="claimantNameDriver">
-                                <option value="">Select driver...</option>
+                                <option value="">Select Beneficiary Name...</option>
                             </select>
                         </div>
                         <input type="text" class="form-control" id="claimantNameManual" placeholder="Enter claimant name manually" disabled>

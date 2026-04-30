@@ -66,6 +66,14 @@ if ($market_result) {
     <title>Food Subsidy</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.4/font/bootstrap-icons.css">
+    <!-- Session Heartbeat -->
+    <script src="./js/session_heartbeat.js"></script>
+    <script>
+        SessionHeartbeat.init({
+            interval: 5 * 60 * 1000,
+            apiUrl: './api_heartbeat.php'
+        });
+    </script>
 </head>
 
 <body>

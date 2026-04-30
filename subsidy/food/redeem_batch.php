@@ -32,6 +32,14 @@ $pageTitle = "Batch Voucher Redemption";
             font-size: 0.75rem;
         }
     </style>
+    <!-- Session Heartbeat -->
+    <script src="./js/session_heartbeat.js"></script>
+    <script>
+        SessionHeartbeat.init({
+            interval: 5 * 60 * 1000,
+            apiUrl: './api_heartbeat.php'
+        });
+    </script>
 </head>
 <body class="bg-light">
 

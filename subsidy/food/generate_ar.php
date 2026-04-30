@@ -349,6 +349,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 16px;
         }
     </style>
+    <!-- Session Heartbeat -->
+    <script src="./js/session_heartbeat.js"></script>
+    <script>
+        SessionHeartbeat.init({
+            interval: 5 * 60 * 1000,
+            apiUrl: './api_heartbeat.php'
+        });
+    </script>
 </head>
 
 <body>
