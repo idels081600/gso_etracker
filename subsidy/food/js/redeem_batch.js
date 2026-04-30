@@ -15,6 +15,9 @@ function setupEventListeners() {
     document.getElementById('vendorSerial').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') searchVendor();
     });
+    
+    // Live vendor search suggestion
+    document.getElementById('vendorSerial').addEventListener('input', liveVendorSearch);
 
     // Voucher search
     document.getElementById('voucherSearch').addEventListener('keyup', filterAvailableVouchers);
@@ -34,6 +37,67 @@ function setupEventListeners() {
         }
     });
 }
+
+// Live search suggestion as user types with dropdown
+function liveVendorSearch() {
+    const vendorSerial = this.value.trim();
+    const inputField = document.getElementById('vendorSerial');
+    const suggestionsContainer = document.getElementById('vendorSuggestions');
+    
+    // Clear if empty
+    if (vendorSerial.length < 2) {
+        inputField.classList.remove('is-valid', 'is-invalid');
+        suggestionsContainer.classList.add('d-none');
+        return;
+    }
+    
+    fetch('api_search_vendor.php?vendor_serial=' + encodeURIComponent(vendorSerial))
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.vendors && data.vendors.length > 0) {
+                // Show green indicator
+                inputField.classList.remove('is-invalid');
+                inputField.classList.add('is-valid');
+                
+                // Build suggestions dropdown
+                suggestionsContainer.innerHTML = '';
+                data.vendors.forEach(vendor => {
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'list-group-item list-group-item-action py-2';
+                    item.innerHTML = `<div class="fw-bold">${vendor.vendor_name}</div><small class="text-muted">${vendor.vendor_serial} | ${vendor.stall_no || 'N/A'}</small>`;
+                    
+                    // Click handler
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        document.getElementById('vendorSerial').value = vendor.vendor_serial;
+                        suggestionsContainer.classList.add('d-none');
+                        searchVendor();
+                    });
+                    
+                    suggestionsContainer.appendChild(item);
+                });
+                
+                suggestionsContainer.classList.remove('d-none');
+            } else {
+                // No matches - show red indicator
+                inputField.classList.remove('is-valid');
+                inputField.classList.add('is-invalid');
+                suggestionsContainer.classList.add('d-none');
+            }
+        })
+        .catch(err => {
+            inputField.classList.remove('is-valid', 'is-invalid');
+            suggestionsContainer.classList.add('d-none');
+        });
+}
+
+// Hide dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.input-group')) {
+        document.getElementById('vendorSuggestions').classList.add('d-none');
+    }
+});
 
 // Search for vendor
 function searchVendor() {
@@ -61,6 +125,7 @@ function searchVendor() {
                 currentVendor = vendor;
                 displayVendorInfo(vendor);
                 loadVouchers(vendor.id);
+                document.getElementById('vendorSerial').classList.remove('is-valid', 'is-invalid');
             } else {
                 alert(data.message || 'Vendor not found');
                 currentVendor = null;

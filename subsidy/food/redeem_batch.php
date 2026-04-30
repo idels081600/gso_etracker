@@ -102,13 +102,15 @@ $pageTitle = "Batch Voucher Redemption";
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="input-group">
+                        <div class="input-group position-relative">
                             <span class="input-group-text">Vendor Serial</span>
-                            <input type="text" id="vendorSerial" class="form-control" placeholder="Enter Vendor Serial or Vendor Name" maxlength="50">
+                            <input type="text" id="vendorSerial" class="form-control" placeholder="Enter Vendor Serial or Vendor Name" maxlength="50" autocomplete="off">
                             <button class="btn btn-primary" id="searchVendorBtn">
                                 <i class="bi bi-search me-1"></i> Search
                             </button>
                         </div>
+                        <!-- Vendor Autocomplete Dropdown -->
+                        <div id="vendorSuggestions" class="list-group position-absolute w-100 mt-1 z-3 d-none" style="max-height: 250px; overflow-y: auto;"></div>
                     </div>
                 </div>
 
