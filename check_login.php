@@ -44,6 +44,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['pay_name'] = $row['name'];
         $_SESSION['station_id'] = $row['station_id'];
         $_SESSION['logged_in'] = true;
+        
+        // Add session heartbeat tracking
+        $_SESSION['_login_time'] = time();
+        $_SESSION['_last_activity'] = time();
+        $_SESSION['_heartbeat_count'] = 0;
+        
         // Redirect based on role
         switch ($row['role']) {
             case "Admin":
