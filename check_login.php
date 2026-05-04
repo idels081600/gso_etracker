@@ -8,129 +8,119 @@ if ($conn === false) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $input = $_POST['username']; // Assume the input can be either username or ID
+    $input = $_POST['username'];
     $password = $_POST['password'];
 
-    // Check if the input is numeric to determine if it's an ID
+    // UPDATED: We only search by ID/Username. We do NOT check password in SQL anymore.
     if (is_numeric($input)) {
-        // Input is numeric, assume it's an ID
-        // Use a prepared statement to fetch the username associated with the ID
-        $sql = "SELECT * FROM logindb WHERE id = ? AND BINARY password = ?";
+        $sql = "SELECT * FROM logindb_copy WHERE id = ?";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "is", $input, $password);
+        mysqli_stmt_bind_param($stmt, "i", $input);
     } else {
-        // Input is not numeric, assume it's a username
-        // Use a prepared statement to fetch the user by username and password
-        $sql = "SELECT * FROM logindb WHERE BINARY username = ? AND BINARY password = ?";
+        $sql = "SELECT * FROM logindb_copy WHERE BINARY username = ?";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "ss", $input, $password);
+        mysqli_stmt_bind_param($stmt, "s", $input);
     }
 
-    // Execute the statement
     mysqli_stmt_execute($stmt);
-
-    // Get the result
     $result = mysqli_stmt_get_result($stmt);
-
-    // Fetch the row
     $row = mysqli_fetch_array($result);
 
-    if ($row) {
-        // User found, set session variables based on role
+    // UPDATED: Use password_verify to check the Bcrypt hash
+    if ($row && password_verify($password, $row['password'])) {
+        // User found and password matches
         $_SESSION['username'] = $row['username'];
-        $_SESSION['role'] = $row['role'];
-        // new: store office so other modules can filter datach
+        $_SESSION['role'] = $row['role']; 
         $_SESSION['office'] = isset($row['office']) ? $row['office'] : 'ASSET';
         $_SESSION['pay_name'] = $row['name'];
         $_SESSION['station_id'] = $row['station_id'];
         $_SESSION['logged_in'] = true;
-        
-        // Add session heartbeat tracking
+
         $_SESSION['_login_time'] = time();
         $_SESSION['_last_activity'] = time();
         $_SESSION['_heartbeat_count'] = 0;
+
+        // Change #1: close session write
+        session_write_close();
         
-        // Redirect based on role
+        mysqli_stmt_close($stmt);
+        mysqli_close($conn);
+
+        // Change #2: Use exit;
         switch ($row['role']) {
             case "Admin":
                 header("location:passlip/super_admin/index.php");
-                break;
+                exit;
             case "Employee":
                 header("location:passlip/requestor/add_req_emp.php");
-                break;
-            // case "Desk Clerk":
-            //     header("location:qrcode_scanner_dept.php");
-            //     break;
-            // case "Division Head":
-            //     header("location:qrcode_scanner_dept.php");
-            //     break;
+                exit;
             case "TCWS Division Head":
                 header("location:index_tcws.php");
-                break;
+                exit;
             case "TCWS Employee":
                 header("location:passlip/requestor/add_req_emp.php");
-                break;
+                exit;
             case "Admin2":
                 header("location:passlip/admin_r/index_r.php");
-                break;
+                exit;
             case "Admin1":
                 header("location:passlip/admin_approver/index_desk.php");
-                break;
+                exit;
             case "TCWS Scanner":
                 header("location:qrcode_scanner_desk_tcws.php");
-                break;
+                exit;
             case "SAP":
                 header("location:sir_bayong.php");
-                break;
+                exit;
             case "ASSET":
                 header("location:dashboard_asset_tracker.php");
-                break;
+                exit;
             case "TENT INSTALLERS":
                 header("location:tent_installers.php");
-                break;
+                exit;
             case "SUPPLIES":
                 header("location:LogiSys/Logi_Sys_Dashboard.php");
-                break;
+                exit;
             case "Pay_admin":
                 header("location:Payables/transmittal_bac.php");
-                break;
+                exit;
             case "fuel_admin":
                 header("location:fuel_tracker/fuel_dashboard.php");
-                break;
+                exit;
             case "advance_PO":
                 header("location:advance_request/dashboard.php");
-                break;
+                exit;
             case "pr_admin":
                 header("location:prtracking/dashboard.php");
-                break;
+                exit;
             case "Docu_admin":
                 header("location:document_tracker/dashboard.php");
-                break;
+                exit;
             case "super_admin":
                 header("location:document_tracker/super_admin.php");
-                break;
+                exit;
             case "Fuel_admin":
                 header("location:subsidy/fuel/select_station.php");
-                break;
+                exit;
             case "FOOD_VERIFIER":
                 header("location:subsidy/food/select_station.php");
-                break;
+                exit;
             case "FOOD_REDEEMER":
                 header("location:subsidy/food/redeem_batch.php");
-                break;
+                exit;
             default:
                 header("location:login_v2.php");
-                break;
+                exit;
         }
     } else {
-        // Username/ID and password don't match
+        // Invalid credentials
         $_SESSION['LoginMessage'] = "Invalid username or password";
         header("location:login_v2.php");
+        
+        // Cleanup before exit
+        if(isset($stmt)) mysqli_stmt_close($stmt);
+        mysqli_close($conn);
+        exit;
     }
-
-    // Close the statement
-    mysqli_stmt_close($stmt);
-
-    // Close the database connection
-    mysqli_close($conn);
 }
+?>
