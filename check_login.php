@@ -68,7 +68,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("location:index_tcws.php");
                 break;
             case "TCWS Employee":
-                header("location:add_req_emp.php");
+                header("location:passlip/requestor/add_req_emp.php");
                 break;
             case "Admin2":
                 header("location:passlip/admin_r/index_r.php");
