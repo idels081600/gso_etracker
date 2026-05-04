@@ -100,6 +100,8 @@ if (!isset($_SESSION['username'])) {
         document.addEventListener('DOMContentLoaded', function() {
             // Get the input field and tables
             var input = document.getElementById('search-input');
+            var startDateInput = document.getElementById('start-date');
+            var endDateInput = document.getElementById('end-date');
             var tableTent = document.getElementById('table_tent1');
             var tableTransportation = document.getElementById('table_transportation');
             var tableRFQ = document.getElementById('table_rfq');
@@ -107,30 +109,101 @@ if (!isset($_SESSION['username'])) {
             var rowsTransportation = tableTransportation.getElementsByTagName('tr');
             var rowsRFQ = tableRFQ.getElementsByTagName('tr');
 
-            // Function to toggle row display based on search input
-            function toggleRowDisplay(rows, filter) {
+            var dateColumnIndexes = {
+                table_tent1: 1,
+                table_transportation: 1,
+                table_rfq: 3
+            };
+
+            function parseDateFromText(text) {
+                if (!text) {
+                    return null;
+                }
+
+                // Normalize common formats from PHP/MySQL and human-readable values
+                var normalized = text.trim().replace(/\./g, '-').replace(/\//g, '-');
+
+                // Attempt ISO parse first
+                var parsed = new Date(normalized);
+                if (!isNaN(parsed.getTime())) {
+                    return parsed;
+                }
+
+                // Handle dd-mm-yyyy or dd-mm-yy
+                var parts = normalized.split('-');
+                if (parts.length === 3) {
+                    var day = parseInt(parts[0], 10);
+                    var month = parseInt(parts[1], 10) - 1;
+                    var year = parseInt(parts[2], 10);
+                    if (year < 100) {
+                        year += year < 70 ? 2000 : 1900;
+                    }
+                    parsed = new Date(year, month, day);
+                    if (!isNaN(parsed.getTime())) {
+                        return parsed;
+                    }
+                }
+
+                return null;
+            }
+
+            function isDateInRange(rowDate, startDate, endDate) {
+                if (!rowDate) {
+                    return false;
+                }
+                if (startDate && rowDate < startDate) {
+                    return false;
+                }
+                if (endDate && rowDate > endDate) {
+                    return false;
+                }
+                return true;
+            }
+
+            function filterRows(rows, tableId, filterText, startDate, endDate) {
+                var dateIndex = dateColumnIndexes[tableId];
+
                 for (var i = 1; i < rows.length; i++) {
                     var cells = rows[i].getElementsByTagName('td');
                     var rowVisible = false;
+
+                    // Search text filter
                     for (var j = 0; j < cells.length; j++) {
                         var cellText = cells[j].textContent.toLowerCase();
-                        if (cellText.indexOf(filter) > -1) {
+                        if (cellText.indexOf(filterText) > -1) {
                             rowVisible = true;
                             break;
                         }
                     }
+
+                    // Date range filter
+                    if (rowVisible && (startDate || endDate)) {
+                        var rowDateText = cells[dateIndex] ? cells[dateIndex].textContent : '';
+                        var rowDate = parseDateFromText(rowDateText);
+                        rowVisible = isDateInRange(rowDate, startDate, endDate);
+                    }
+
                     rows[i].style.display = rowVisible ? '' : 'none';
                 }
             }
 
-            // Add event listener to the search input
-            input.addEventListener('input', function() {
-                var filter = input.value.toLowerCase(); // Convert input to lowercase for case-insensitive search
-                // Toggle row display for both tables
-                toggleRowDisplay(rowsTent, filter);
-                toggleRowDisplay(rowsTransportation, filter);
-                toggleRowDisplay(rowsRFQ, filter);
-            });
+            function applyFilters() {
+                var filter = input.value.toLowerCase();
+                var startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+                var endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+
+                if (endDate) {
+                    endDate.setHours(23, 59, 59, 999);
+                }
+
+                filterRows(rowsTent, 'table_tent1', filter, startDate, endDate);
+                filterRows(rowsTransportation, 'table_transportation', filter, startDate, endDate);
+                filterRows(rowsRFQ, 'table_rfq', filter, startDate, endDate);
+            }
+
+            input.addEventListener('input', applyFilters);
+            startDateInput.addEventListener('change', applyFilters);
+            endDateInput.addEventListener('change', applyFilters);
         });
     </script>
 
@@ -258,8 +331,10 @@ if (!isset($_SESSION['username'])) {
                         <option>RFQ</option>
                     </select>
                 </div>
-                <div class="search-container">
-                    <input type="text" id="search-input" placeholder="Search...">
+                <div class="search-container" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                    <input type="text" id="search-input" placeholder="Search..." style="flex:1;min-width:200px;">
+                    <input type="date" id="start-date" class="form-control form-control-sm" style="max-width:170px;">
+                    <input type="date" id="end-date" class="form-control form-control-sm" style="max-width:170px;">
                     <!-- <button id="search-button"><i class="fas fa-search"></i></button> -->
                 </div>
             </div>
