@@ -16,10 +16,10 @@ if (!isset($_SESSION['username'])) {
 if (isset($_POST['delete_all'])) {
   if ($_POST['confirm'] == 'yes') {
     // First backup the data
-    $backup_sql = "INSERT INTO request_backup SELECT * FROM request WHERE DATE(date) = CURDATE() AND Role IN ('Employee', 'TCWS Employee')";
+    $backup_sql = "INSERT INTO request_backup SELECT * FROM request WHERE DATE(date) = CURDATE() AND Role = 'Employee'";
     mysqli_query($conn, $backup_sql);
 
-    $sql = "DELETE FROM request WHERE role IN ('Employee', 'TCWS Employee')";
+    $sql = "DELETE FROM request WHERE role = 'Employee'";
     if (mysqli_query($conn, $sql)) {
       $_SESSION['show_undo'] = true;
       header("Location: track_emp_desk.php");
@@ -33,7 +33,7 @@ if (isset($_POST['undo_delete'])) {
   $restore_sql = "INSERT INTO request 
   SELECT * FROM request_backup 
   WHERE DATE(date) = CURDATE() 
-  AND Role IN ('Employee', 'TCWS Employee') 
+  AND Role = 'Employee' 
   ORDER BY id DESC";
   mysqli_query($conn, $restore_sql);
   mysqli_query($conn, "TRUNCATE TABLE request_backup");
@@ -72,14 +72,14 @@ if (isset($_POST['undo_delete'])) {
         width: 95%;
       }
 
-    #btns {
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
-      margin-left: 0;
-      margin-right: auto;
-      /* Align buttons to the left side */
-    }
+      #btns {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        margin-left: 0;
+        margin-right: auto;
+        /* Align buttons to the left side */
+      }
 
       #btns a,
       #btns button {
@@ -288,7 +288,7 @@ if (isset($_POST['undo_delete'])) {
             <option value="Present">Present</option>
             <option value="Waiting For Pass Slip Approval">Waiting For Pass Slip Approval</option>
             <option value="Scan Qrcode">Scan Qrcode</option>
-             <option value="Personal">Personal</option>
+            <option value="Personal">Personal</option>
             <option value="Official Business">Official Business</option>
             <!-- Add other statuses as needed -->
           </select>
@@ -406,9 +406,12 @@ if (isset($_POST['undo_delete'])) {
             </div>
           </div>
           <div class="d-flex flex-column">
-            <button type="button" class="btn btn-primary mb-2" onclick="exportToday()">Export Current Date Data</button>
-            <button type="button" class="btn btn-primary mb-2" onclick="exportFirst15()">Export 1st 15 Days of Selected Month</button>
-            <button type="button" class="btn btn-primary" onclick="exportSecond15()">Export 2nd 15 Days of Selected Month</button>
+            <button type="button" class="btn btn-primary mb-2" onclick="exportToday()">Export Current Date CGSO Data</button>
+            <button type="button" class="btn btn-primary mb-2" onclick="exportToday_TCWS()">Export Current Date TCWS Data</button>
+            <button type="button" class="btn btn-primary mb-2" onclick="exportFirst15()">Export 1st 15 Days for CGSO</button>
+            <button type="button" class="btn btn-primary mb-2" onclick="exportFirst15_TWCS()">Export 1st 15 Days for TWCS</button>
+            <button type="button" class="btn btn-primary" onclick="exportSecond15()">Export 2nd 15 Days for CGSO</button>
+            <button type="button" class="btn btn-primary" onclick="exportSecond15_TWCS()">Export 2nd 15 Days for TCWS</button>
           </div>
         </div>
         <div class="modal-footer">
@@ -443,16 +446,34 @@ if (isset($_POST['undo_delete'])) {
       window.location.href = `export_r.php?range=today&month=${month}`;
     }
 
+    function exportToday_TCWS() {
+      const month = document.getElementById('exportMonth').value;
+      window.location.href = `twcs_employee_export.php?range=today&month=${month}`;
+    }
+
+
     function exportFirst15() {
       const month = document.getElementById('exportMonth').value;
       const filterDuration = document.getElementById('durationFilter').checked ? '1' : '0';
       window.location.href = `export_r.php?range=first15&month=${month}&filter_duration=${filterDuration}`;
     }
 
+    function exportFirst15_TWCS() {
+      const month = document.getElementById('exportMonth').value;
+      const filterDuration = document.getElementById('durationFilter').checked ? '1' : '0';
+      window.location.href = `twcs_employee_export.php?range=first15&month=${month}&filter_duration=${filterDuration}`;
+    }
+
     function exportSecond15() {
       const month = document.getElementById('exportMonth').value;
       const filterDuration = document.getElementById('durationFilter').checked ? '1' : '0';
       window.location.href = `export_r.php?range=second15&month=${month}&filter_duration=${filterDuration}`;
+    }
+
+    function exportSecond15_TWCS() {
+      const month = document.getElementById('exportMonth').value;
+      const filterDuration = document.getElementById('durationFilter').checked ? '1' : '0';
+      window.location.href = `twcs_employee_export.php?range=second15&month=${month}&filter_duration=${filterDuration}`;
     }
 
     function loadFilterData() {
@@ -540,24 +561,24 @@ if (isset($_POST['undo_delete'])) {
       try {
         const response = await fetch('api_overdue_employees.php');
         const data = await response.json();
-        
+
         if (data.success) {
           const badge = document.getElementById('notificationBadge');
           const count = data.count;
-          
+
           // Update badge
           if (count > 0) {
             badge.textContent = count;
             badge.style.display = 'inline';
-            
+
             // Check for new overdue employees (not yet notified)
             const newOverdueEmployees = data.data.filter(emp => !notifiedEmployeeIds.includes(emp.id));
-            
+
             // Mark these employees as notified
             newOverdueEmployees.forEach(emp => {
               notifiedEmployeeIds.push(emp.id);
             });
-            
+
             // Show browser notification if there are new overdue employees
             if (newOverdueEmployees.length > 0 && Notification.permission === 'granted') {
               const notification = new Notification('Overdue Employees Alert', {
@@ -570,7 +591,7 @@ if (isset($_POST['undo_delete'])) {
             // Reset notified list when all employees have returned
             notifiedEmployeeIds = [];
           }
-          
+
           // Update modal content if it's open
           updateNotificationModal(data);
         }
@@ -587,21 +608,21 @@ if (isset($_POST['undo_delete'])) {
       const summarySpan = document.getElementById('notificationSummary');
       const tbody = document.getElementById('notificationTableBody');
       const lastCheckedSpan = document.getElementById('lastCheckedTime');
-      
+
       // Hide loading
       loadingDiv.style.display = 'none';
-      
+
       // Update last checked time
       lastCheckedSpan.textContent = new Date().toLocaleTimeString();
-      
+
       if (data.count > 0) {
         // Show content, hide no overdue message
         contentDiv.style.display = 'block';
         noOverdueDiv.style.display = 'none';
-        
+
         // Update summary
         summarySpan.textContent = `Found ${data.count} employee(s) overdue by more than 1 hour from their estimated return time.`;
-        
+
         // Populate table
         tbody.innerHTML = '';
         data.data.forEach(employee => {
@@ -654,7 +675,7 @@ if (isset($_POST['undo_delete'])) {
     function startNotificationPolling() {
       // Initial check
       checkOverdueEmployees();
-      
+
       // Set up interval
       notificationCheckInterval = setInterval(checkOverdueEmployees, NOTIFICATION_CHECK_INTERVAL);
     }
