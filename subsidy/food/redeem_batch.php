@@ -33,6 +33,15 @@ $pageTitle = "Batch Voucher Redemption";
         .status-badge {
             font-size: 0.75rem;
         }
+
+        #draftIndicator {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ffc107;
+        }
+
+        #draftIndicator .btn-close {
+            padding: 0.5rem;
+        }
     </style>
     <!-- Session Heartbeat -->
     <script src="./js/session_heartbeat.js"></script>
@@ -43,6 +52,12 @@ $pageTitle = "Batch Voucher Redemption";
             apiUrl: './api_heartbeat.php',
             warningThreshold: 5 * 60 * 1000
         });
+
+        // Pass user info to JavaScript
+        window.USER_INFO = {
+            username: '<?= addslashes($_SESSION['username']) ?>',
+            role: '<?= addslashes($_SESSION['role']) ?>'
+        };
     </script>
 </head>
 
@@ -250,6 +265,9 @@ $pageTitle = "Batch Voucher Redemption";
                 <div>
                     <button id="refreshBtn" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                    </button>
+                    <button id="saveDraftBtn" class="btn btn-outline-info btn-sm ms-2" disabled>
+                        <i class="bi bi-save me-1"></i> Save Draft
                     </button>
                 </div>
                 <div>

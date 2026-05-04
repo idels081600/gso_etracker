@@ -4,10 +4,104 @@ let allVouchers = [];
 let selectedVouchers = []; // Tracks order of selection
 const VOUCHER_VALUE = 200;
 
+// User-specific draft key
+const getDraftKey = () => {
+  const username = window.USER_INFO?.username || 'anonymous';
+  return `food_voucher_draft_${username}`;
+};
+
 // Initialize
 document.addEventListener("DOMContentLoaded", function () {
   setupEventListeners();
+  loadDraftFromStorage();
 });
+
+// Draft management functions
+function saveDraftToStorage() {
+  if (currentVendor && selectedVouchers.length > 0) {
+    const draft = {
+      vendor: currentVendor,
+      selectedVouchers: selectedVouchers,
+      allVouchers: allVouchers,
+      timestamp: new Date().toISOString()
+    };
+    localStorage.setItem(getDraftKey(), JSON.stringify(draft));
+    showDraftIndicator(true);
+  } else {
+    clearDraftFromStorage();
+  }
+}
+
+function loadDraftFromStorage() {
+  const draft = localStorage.getItem(getDraftKey());
+  if (draft) {
+    try {
+      const parsedDraft = JSON.parse(draft);
+      // Only load draft if it's recent (within 24 hours)
+      const draftTime = new Date(parsedDraft.timestamp);
+      const now = new Date();
+      const hoursDiff = (now - draftTime) / (1000 * 60 * 60);
+
+      if (hoursDiff < 24) {
+        currentVendor = parsedDraft.vendor;
+        selectedVouchers = parsedDraft.selectedVouchers || [];
+        allVouchers = parsedDraft.allVouchers || [];
+
+        // Restore vendor info if we have a draft
+        if (currentVendor) {
+          displayVendorInfo(currentVendor);
+          document.getElementById("vendorSerial").value = currentVendor.vendor_serial;
+          document.getElementById("voucherSection").classList.remove("d-none");
+          document.getElementById("noVendorMessage").classList.add("d-none");
+          showDraftIndicator(true);
+
+          // Render restored draft immediately from localStorage
+          renderAvailableVouchers();
+          renderSelectedVouchers();
+          updateTotals();
+
+          // Try to refresh from server if online
+          if (navigator.onLine) {
+            loadVouchers(currentVendor.id);
+          }
+        }
+      } else {
+        // Draft is too old, clear it
+        clearDraftFromStorage();
+      }
+    } catch (e) {
+      console.error('Error loading draft:', e);
+      clearDraftFromStorage();
+    }
+  }
+}
+
+function clearDraftFromStorage() {
+  localStorage.removeItem(getDraftKey());
+  showDraftIndicator(false);
+}
+
+function showDraftIndicator(show) {
+  let indicator = document.getElementById('draftIndicator');
+  if (show) {
+    if (!indicator) {
+      indicator = document.createElement('div');
+      indicator.id = 'draftIndicator';
+      indicator.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+      indicator.style.cssText = 'top: 20px; right: 20px; z-index: 1050; max-width: 300px;';
+      indicator.innerHTML = `
+        <i class="bi bi-save me-2"></i>
+        <strong>Draft Loaded:</strong> ${selectedVouchers.length} vouchers selected for ${currentVendor?.vendor_name || 'Unknown Vendor'}
+        <button type="button" class="btn-close" onclick="clearDraftFromStorage(); location.reload();"></button>
+      `;
+      document.body.appendChild(indicator);
+    }
+  } else {
+    if (indicator) {
+      indicator.remove();
+    }
+  }
+}
 
 function setupEventListeners() {
   // Vendor search
@@ -47,6 +141,22 @@ function setupEventListeners() {
     if (currentVendor) {
       loadVouchers(currentVendor.id);
     }
+  });
+
+  // Save draft button
+  document.getElementById("saveDraftBtn").addEventListener("click", () => {
+    saveDraftToStorage();
+    // Show feedback
+    const btn = document.getElementById("saveDraftBtn");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Saved!';
+    btn.classList.remove('btn-outline-info');
+    btn.classList.add('btn-success');
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.classList.remove('btn-success');
+      btn.classList.add('btn-outline-info');
+    }, 2000);
   });
 }
 
@@ -142,6 +252,8 @@ function searchVendor() {
         const vendor =
           data.match_type === "exact" ? data.vendor : data.vendors[0];
         currentVendor = vendor;
+        selectedVouchers = []; // Clear previous selections for new vendor
+        clearDraftFromStorage(); // Clear any existing draft when switching vendors
         displayVendorInfo(vendor);
         loadVouchers(vendor.id);
         document
@@ -182,7 +294,21 @@ function loadVouchers(vendorId) {
     .then((data) => {
       if (data.success) {
         allVouchers = data.vouchers;
-        selectedVouchers = [];
+
+        // Don't reset selectedVouchers here - preserve draft selections
+        // selectedVouchers is already loaded from draft if it exists
+
+        // Validate that selected vouchers still exist in the current voucher list
+        const validSelectedVouchers = selectedVouchers.filter(selectedVoucher =>
+          allVouchers.some(voucher => voucher.id === selectedVoucher.id && voucher.is_redeemed !== 1)
+        );
+
+        // If some vouchers were invalidated (redeemed by someone else), update the selection
+        if (validSelectedVouchers.length !== selectedVouchers.length) {
+          selectedVouchers = validSelectedVouchers;
+          saveDraftToStorage(); // Update draft with valid vouchers only
+        }
+
         renderAvailableVouchers();
         renderSelectedVouchers();
         updateTotals();
@@ -194,7 +320,13 @@ function loadVouchers(vendorId) {
     })
     .catch((err) => {
       console.error("Error loading vouchers:", err);
-      alert("Error loading vouchers");
+      if (selectedVouchers.length > 0 && allVouchers.length > 0) {
+        renderAvailableVouchers();
+        renderSelectedVouchers();
+        updateTotals();
+      } else {
+        alert("Error loading vouchers");
+      }
     });
 }
 
@@ -331,6 +463,7 @@ function selectVoucher(voucherId) {
     // Only refresh right table and totals
     renderSelectedVouchers();
     updateTotals();
+    saveDraftToStorage(); // Save draft after selection
   }
 }
 
@@ -340,6 +473,7 @@ function removeVoucher(voucherId) {
   renderAvailableVouchers();
   renderSelectedVouchers();
   updateTotals();
+  saveDraftToStorage(); // Save draft after removal
 }
 
 // Filter available vouchers by search
@@ -373,8 +507,10 @@ function updateTotals() {
     });
   document.getElementById("totalItems").textContent = selectedVouchers.length;
 
-  // Enable/disable redeem button
-  document.getElementById("redeemBtn").disabled = selectedVouchers.length === 0;
+  // Enable/disable redeem and save draft buttons
+  const hasSelection = selectedVouchers.length > 0;
+  document.getElementById("redeemBtn").disabled = !hasSelection;
+  document.getElementById("saveDraftBtn").disabled = !hasSelection;
 }
 
 // Show confirmation modal
@@ -465,6 +601,7 @@ function confirmRedeem() {
           renderAvailableVouchers();
           renderSelectedVouchers();
           updateTotals();
+          clearDraftFromStorage(); // Clear draft after successful redemption
         }, 2000);
       } else {
         alert("Error: " + data.message);
