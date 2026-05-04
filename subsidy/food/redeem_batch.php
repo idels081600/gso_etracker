@@ -18,16 +18,18 @@ $pageTitle = "Batch Voucher Redemption";
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?></title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.4/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.4/font/bootstrap-icons.css">
     <style>
         .voucher-row.selected {
             background-color: #d1e7dd !important;
         }
+
         .status-badge {
             font-size: 0.75rem;
         }
@@ -35,15 +37,18 @@ $pageTitle = "Batch Voucher Redemption";
     <!-- Session Heartbeat -->
     <script src="./js/session_heartbeat.js"></script>
     <script>
+       
         SessionHeartbeat.init({
-            interval: 5 * 60 * 1000,
-            apiUrl: './api_heartbeat.php'
+            interval: 5 * 60 * 1000, // 5 minutes
+            apiUrl: './api_heartbeat.php',
+            warningThreshold: 5 * 60 * 1000
         });
     </script>
 </head>
+
 <body class="bg-light">
 
-<!-- Navigation -->
+    <!-- Navigation -->
     <nav class="navbar bg-body-tertiary fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="dashboard_food.php">Food Voucher System </a>
@@ -112,7 +117,7 @@ $pageTitle = "Batch Voucher Redemption";
                     <div class="col-md-6">
                         <div class="input-group position-relative">
                             <span class="input-group-text">Vendor Serial</span>
-                            <input type="text" id="vendorSerial" class="form-control" placeholder="Enter Vendor Serial or Vendor Name" maxlength="50" autocomplete="off">
+                            <input type="text" id="vendorSerial" class="form-control" placeholder="Enter Vendor Serial or Vendor Name" maxlength="50" autocomplete="off" style="font-size: 1.5rem;">
                             <button class="btn btn-primary" id="searchVendorBtn">
                                 <i class="bi bi-search me-1"></i> Search
                             </button>
@@ -170,7 +175,7 @@ $pageTitle = "Batch Voucher Redemption";
                             <div class="card-body p-2 bg-light">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                    <input type="text" id="voucherSearch" class="form-control" placeholder="Search voucher...">
+                                    <input type="text" id="voucherSearch" class="form-control" placeholder="Search voucher..." style="font-size: 1.3rem;">
                                     <button class="btn btn-outline-secondary" id="clearVoucherSearch" type="button">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
@@ -256,7 +261,7 @@ $pageTitle = "Batch Voucher Redemption";
             </div>
         </div>
 
-<!-- No Vendor Selected Message -->
+        <!-- No Vendor Selected Message -->
         <div id="noVendorMessage" class="alert alert-info text-center py-5">
             <i class="bi bi-info-circle fs-1 d-block mb-3"></i>
             <h5>Search for a vendor to begin redemption</h5>
@@ -331,7 +336,9 @@ $pageTitle = "Batch Voucher Redemption";
         </div>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/redeem_batch.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/redeem_batch.js"></script>
+
 </body>
+
 </html>

@@ -20,12 +20,17 @@ if (!isset($_GET['vendor_serial']) || empty(trim($_GET['vendor_serial']))) {
 $vendor_serial = trim($_GET['vendor_serial']);
 $escaped_serial = mysqli_real_escape_string($conn, $vendor_serial);
 
+// Normalize input for hyphen/space-insensitive matching
+$normalized_serial = strtolower(str_replace(['-', ' '], '', $vendor_serial));
+$escaped_normalized_serial = mysqli_real_escape_string($conn, $normalized_serial);
+
 // Search query for exact match or partial match
 $sql = "SELECT vendor_serial, vendor_name, stall_no, section
         FROM food_vendors
-        WHERE vendor_serial = '$escaped_serial' 
-        OR vendor_serial LIKE '$escaped_serial%' 
-        OR vendor_name LIKE '%$escaped_serial%' 
+        WHERE LOWER(vendor_serial) = LOWER('$escaped_serial')
+        OR LOWER(vendor_serial) LIKE LOWER('%$escaped_serial%')
+        OR LOWER(vendor_name) LIKE LOWER('%$escaped_serial%')
+        OR REPLACE(REPLACE(LOWER(vendor_serial), '-', ''), ' ', '') LIKE '$escaped_normalized_serial%'
         LIMIT 10";
 
 $result = mysqli_query($conn, $sql);
