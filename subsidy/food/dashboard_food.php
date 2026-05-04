@@ -44,10 +44,13 @@ $redeemed_sql = "SELECT COUNT(*) as total FROM food_voucher_claims WHERE is_rede
 $redeemed_result = mysqli_query($conn, $redeemed_sql);
 $total_redeemed = $redeemed_result ? mysqli_fetch_assoc($redeemed_result)['total'] : 0;
 
-$redeemed_today_sql = "SELECT COUNT(*) as total FROM food_voucher_claims WHERE is_redeemed = 1 AND DATE(claim_date) = CURDATE()";
+$redeemed_today_sql = "SELECT COUNT(*) as total FROM food_redemption_items WHERE DATE(created_at) = CURDATE()";
 $redeemed_today_result = mysqli_query($conn, $redeemed_today_sql);
 $total_redeemed_today = $redeemed_today_result ? mysqli_fetch_assoc($redeemed_today_result)['total'] : 0;
 
+$redeemed_total_sql = "SELECT COUNT(*) as total FROM food_redemption_items";
+$redeemed_total_result = mysqli_query($conn, $redeemed_total_sql);
+$total_redeemed_total = $redeemed_total_result ? mysqli_fetch_assoc($redeemed_total_result)['total'] : 0;
 // Get per market verified voucher counts
 $market_stats = [];
 $market_sql = "SELECT 
@@ -140,7 +143,7 @@ if ($market_result) {
                 </div>
             </div>
             <div class="row g-3 mb-4">
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-4">
                     <div class="card shadow-sm border-primary border-2">
                         <div class="card-body">
                             <h6 class="card-title text-uppercase text-secondary mb-3">Total Verified Vouchers</h6>
@@ -149,12 +152,21 @@ if ($market_result) {
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-4">
                     <div class="card shadow-sm border-info border-2">
                         <div class="card-body">
                             <h6 class="card-title text-uppercase text-secondary mb-3">Total Redeemed Vouchers</h6>
                             <p class="display-6 mb-0 text-info" id="totalRedeemedVouchers"><?php echo number_format($total_redeemed); ?></p>
                             <small class="text-muted">All redeemed vouchers</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card shadow-sm border-danger border-2">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase text-secondary mb-3">All Redeemed Vouchers</h6>
+                            <p class="display-6 mb-0 text-danger" id="redeemedVouchersToday"><?php echo number_format($total_redeemed_total); ?></p>
+                            <small class="text-muted">Total vouchers redeemed today</small>
                         </div>
                     </div>
                 </div>
@@ -179,18 +191,9 @@ if ($market_result) {
                 <div class="col-12 col-md-3">
                     <div class="card shadow-sm border-success border-2">
                         <div class="card-body">
-                            <h6 class="card-title text-uppercase text-secondary mb-3">Verified Beneficiaries (Today)</h6>
+                            <h6 class="card-title text-uppercase text-secondary mb-3">Total Verified Beneficiaries Today</h6>
                             <p class="display-6 mb-0 text-success" id="totalVerifiedToday"><?php echo number_format($total_verified_today); ?></p>
                             <small class="text-muted">Unique beneficiaries verified today</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-3">
-                    <div class="card shadow-sm border-info border-2">
-                        <div class="card-body">
-                            <h6 class="card-title text-uppercase text-secondary mb-3">Daily Verified Vouchers (Today)</h6>
-                            <p class="display-6 mb-0 text-info" id="dailyVerifiedVouchers"><?php echo number_format($total_verified_vouchers_today); ?></p>
-                            <small class="text-muted">Verified vouchers count today</small>
                         </div>
                     </div>
                 </div>
