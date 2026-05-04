@@ -13,11 +13,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // UPDATED: We only search by ID/Username. We do NOT check password in SQL anymore.
     if (is_numeric($input)) {
-        $sql = "SELECT * FROM logindb_copy WHERE id = ?";
+        $sql = "SELECT * FROM logindb WHERE id = ?";
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, "i", $input);
     } else {
-        $sql = "SELECT * FROM logindb_copy WHERE BINARY username = ?";
+        $sql = "SELECT * FROM logindb WHERE BINARY username = ?";
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, "s", $input);
     }
