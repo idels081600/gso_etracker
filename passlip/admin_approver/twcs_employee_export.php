@@ -91,5 +91,5 @@ if ($range == 'today' || $filter_duration == '1') {
         $pdf->Ln(10);
     }
 }
-$pdf->Output('TCWS_Employees_'.date('Y-m-d').'.pdf', 'I');
+$pdf->Output('TCWS_Employees_'.date('Y-m-d').'.pdf', 'D');
 ?>
