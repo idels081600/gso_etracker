@@ -129,6 +129,11 @@ class VoucherReceiptPDF extends FPDF
     }
 }
 
+// Helper function to convert UTF-8 to ISO-8859-1 for FPDF
+function toLatin1($str) {
+    return mb_convert_encoding($str, 'ISO-8859-1', 'UTF-8');
+}
+
 // Amount to Words Converter
 function numberToWordsPesos($number)
 {
@@ -221,7 +226,7 @@ function renderReceipt($pdf, $data) {
     $pdf->Ln(-4);
 
     $pdf->SetFont('Arial', 'B', 7);
-    $pdf->Cell(80, 4, strtoupper($data['vendor_name'] ?? 'VENDOR NAME'), 0, 0);
+    $pdf->Cell(80, 4, toLatin1(strtoupper($data['vendor_name'] ?? 'VENDOR NAME')), 0, 0);
     $pdf->SetX(130);
     $pdf->Cell(60, 4, "", 0, 1);
 
