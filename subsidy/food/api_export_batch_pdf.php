@@ -2,16 +2,16 @@
 /** @var mysqli $conn */
 session_start();
 $conn = require(__DIR__ . '/config/database.php');
-require_once '../../fpdf/fpdf.php';
+require_once '../../vendor/autoload.php';
 
 // Security check
 if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     die('Unauthorized');
 }
 
-// Helper function to convert UTF-8 to ISO-8859-1 for FPDF (replacement for deprecated utf8_decode)
-function toIso88591($str) {
-    return mb_convert_encoding($str, 'ISO-8859-1', 'UTF-8');
+// Helper function to handle UTF-8 (TCPDF handles this natively)
+function sanitizeText($str) {
+    return $str ? trim($str) : '';
 }
 
 // Get validating officer name from session
@@ -77,132 +77,133 @@ if ($items_result) {
     }
 }
 
-// Create PDF with Code39 Barcode support
-class BatchPDF extends FPDF {
+// Create PDF with TCPDF (handles UTF-8 natively)
+class BatchPDF extends TCPDF {
     
-    function Header() {
-        // Title is handled in the main body
+    private $batch_number = '';
+    
+    public function setBatchNumber($number) {
+        $this->batch_number = $number;
     }
     
-    function Footer() {
+    public function Header() {
+        // Custom header - intentionally empty for this design
+        // We'll add barcode in the main body
+    }
+    
+    public function Footer() {
         $this->SetY(-15);
-        $this->SetFont('Arial', 'I', 8);
+        $this->SetFont('helvetica', 'I', 8);
         $this->SetTextColor(128, 128, 128);
-        $this->Cell(0, 10, 'Page ' . $this->PageNo() . ' of {nb}', 0, 0, 'C');
-    }
-
-    // Code 39 Barcode Generator - Standard Industrial Barcode Format
-    function Code39($x, $y, $value, $height=10, $wide=2, $narrow=1) {
-        // Code 39 Character Map
-        $code39 = array(
-            '0'=>'101001101101', '1'=>'110100101011', '2'=>'101100101011', '3'=>'110110010101',
-            '4'=>'101001101011', '5'=>'110100110101', '6'=>'101100110101', '7'=>'101001011011',
-            '8'=>'110100101101', '9'=>'101100101101', 'A'=>'110101001011', 'B'=>'101101001011',
-            'C'=>'110110100101', 'D'=>'101011001011', 'E'=>'110101100101', 'F'=>'101101100101',
-            'G'=>'101010011011', 'H'=>'110101001101', 'I'=>'101101001101', 'J'=>'101011001101',
-            'K'=>'110101010011', 'L'=>'101101010011', 'M'=>'110110101001', 'N'=>'101011010011',
-            'O'=>'110101101001', 'P'=>'101101101001', 'Q'=>'101010110011', 'R'=>'110101011001',
-            'S'=>'101101011001', 'T'=>'101011011001', 'U'=>'110010101011', 'V'=>'100110101011',
-            'W'=>'110011010101', 'X'=>'100101101011', 'Y'=>'110010110101', 'Z'=>'100110110101',
-            '-'=>'100101011011', '.'=>'110010101101', ' '=>'100110101101', '$'=>'100100100101',
-            '/'=>'100100101001', '+'=>'100101001001', '%'=>'101001001001', '*'=>'100101101101'
-        );
-        
-        // Code 39 starts and ends with * character
-        $barcode = '';
-        $value = strtoupper($value);
-        
-        // Start character
-        $barcode .= $code39['*'] . '0';
-        
-        // Encode each character
-        foreach (str_split($value) as $char) {
-            if (isset($code39[$char])) {
-                $barcode .= $code39[$char] . '0';
-            }
-        }
-        
-        // Stop character
-        $barcode .= $code39['*'];
-        
-        // Draw barcode
-        $pos = $x;
-        foreach (str_split($barcode) as $bar) {
-            if ($bar == '1') {
-                $this->Rect($pos, $y, $wide, $height, 'F');
-                $pos += $wide;
-            } else {
-                $pos += $narrow;
-            }
-        }
+        $this->Cell(0, 10, 'Page ' . $this->getAliasNumPage() . ' of ' . $this->getAliasNbPages(), 0, 0, 'C');
+        $this->SetTextColor(0, 0, 0);
     }
 }
 
-$pdf = new BatchPDF();
-$pdf->AliasNbPages();
+$pdf = new BatchPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+$pdf->SetDefaultMonospacedFont('courier');
+$pdf->SetMargins(10, 10, 10);
+$pdf->SetAutoPageBreak(true, 20);
+$pdf->SetFont('helvetica', '', 10);
 $pdf->AddPage();
 $pdf->SetAutoPageBreak(true, 20);
 
-// Barcode at top RIGHT - Code 39 barcode format
-$pdf->Code39(50, 10, $batch['batch_number'], 8, 1.2, 0.6);
-$pdf->SetXY(130, 19);
-$pdf->SetFont('Arial', '', 8);
+$pdf->setBatchNumber($batch['batch_number']);
+
+// ============================================================
+// BARCODE AT TOP - CODE39 FORMAT (Using TCPDF's write1DBarcode)
+// ============================================================
+$barcode_y = $pdf->GetY();
+$pdf->write1DBarcode($batch['batch_number'], 'C128', 10, $barcode_y, 100, 12, 0.4, array('text' => ''), 'C');
+
+$pdf->SetXY(-240, $barcode_y + 13);
+$pdf->SetFont('helvetica', '', 8);
 $pdf->Cell(70, 5, $batch['batch_number'], 0, 1, 'C');
 $pdf->Ln(5);
 
-// Title Section
-$pdf->SetFont('Arial', 'B', 14);
+// ============================================================
+// TITLE SECTION
+// ============================================================
+$pdf->SetFont('helvetica', 'B', 14);
 $pdf->Cell(0, 8, 'City Government of Tagbilaran', 0, 1, 'C');
-$pdf->SetFont('Arial', 'B', 12);
+$pdf->SetFont('helvetica', 'B', 12);
 $pdf->Cell(0, 7, 'TAGBILARAN CITY', 0, 1, 'C');
 $pdf->Cell(0, 7, 'FOOD VOUCHER PROGRAM', 0, 1, 'C');
-$pdf->SetFont('Arial', 'B', 11);
+$pdf->SetFont('helvetica', 'B', 11);
 $pdf->Cell(0, 7, 'ACCREDITED VENDOR\'S CLAIM FORM', 0, 1, 'C');
 $pdf->Ln(3);
 
-// Horizontal line
+// ============================================================
+// HORIZONTAL LINE
+// ============================================================
 $pdf->SetDrawColor(200, 200, 200);
 $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
 $pdf->Ln(5);
 
-// Info Section
-$pdf->SetFont('Arial', 'B', 10);
+// ============================================================
+// INFO SECTION
+// ============================================================
+$pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell(35, 7, 'MARKET:', 0, 0);
-$pdf->SetFont('Arial', '', 10);
-$pdf->Cell(60, 7, toIso88591($batch['area'] ? $batch['area'] : '____________________'), 'B', 0);
-$pdf->Cell(10, 7, '', 0, 0);
-$pdf->SetFont('Arial', 'B', 10);
-$pdf->Cell(35, 7, 'STALL NO.:', 0, 0);
-$pdf->SetFont('Arial', '', 10);
-$pdf->Cell(50, 7, toIso88591($batch['stall_no'] ? $batch['stall_no'] : '____________________'), 'B', 1);
+$pdf->SetFont('helvetica', '', 10);
+$market_name = sanitizeText($batch['area']) ? $batch['area'] : '____________________';
+$stall_no = sanitizeText($batch['stall_no']) ? $batch['stall_no'] : '____________________';
+
+$market_max_width = 60;
+$market_full_width = 115;
+$market_font_size = 10;
+$min_market_font_size = 7;
+while ($market_font_size > $min_market_font_size &&
+       $pdf->getStringWidth($market_name, 'helvetica', '', $market_font_size) > $market_max_width) {
+    $market_font_size -= 0.5;
+}
+$pdf->SetFont('helvetica', '', $market_font_size);
+
+if ($pdf->getStringWidth($market_name, 'helvetica', '', $market_font_size) <= $market_max_width) {
+    $pdf->Cell($market_max_width, 7, $market_name, 'B', 0);
+    $pdf->Cell(10, 7, '', 0, 0);
+    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->Cell(35, 7, 'STALL NO.:', 0, 0);
+    $pdf->SetFont('helvetica', '', 10);
+    $pdf->Cell(50, 7, $stall_no, 'B', 1);
+} else {
+    $pdf->MultiCell($market_full_width, 7, $market_name, 'B', 'L', false, 1);
+    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->Cell(35, 7, 'STALL NO.:', 0, 0);
+    $pdf->SetFont('helvetica', '', 10);
+    $pdf->Cell(50, 7, $stall_no, 'B', 1);
+}
 
 $pdf->Ln(2);
 
-$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell(50, 7, 'SECTION:', 0, 0);
-$pdf->SetFont('Arial', '', 10);
-$pdf->Cell(0, 7, toIso88591($batch['section'] ? $batch['section'] : '____________________'), 'B', 1);
+$pdf->SetFont('helvetica', '', 10);
+$section = sanitizeText($batch['section']) ? $batch['section'] : '____________________';
+$pdf->Cell(0, 7, $section, 'B', 1);
 
 $pdf->Ln(2);
 
-$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell(50, 7, 'VENDOR\'S NAME:', 0, 0);
-$pdf->SetFont('Arial', '', 10);
-$pdf->Cell(0, 7, toIso88591($batch['vendor_name']), 'B', 1);
+$pdf->SetFont('helvetica', '', 10);
+$pdf->Cell(0, 7, sanitizeText($batch['vendor_name']), 'B', 1);
 
 $pdf->Ln(2);
 
-$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell(65, 7, 'CLAIM FORM CONTROL NO:', 0, 0);
-$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFont('helvetica', 'B', 10);
 $pdf->SetTextColor(0, 0, 139);
 $pdf->Cell(0, 7, $batch['batch_number'], 'B', 1);
 $pdf->SetTextColor(0, 0, 0);
 
 $pdf->Ln(5);
 
-// Voucher Table - 3 columns, 25 rows per column
-$pdf->SetFont('Arial', 'B', 8);
+// ============================================================
+// VOUCHER TABLE - 3 COLUMNS, 25 ROWS PER COLUMN
+// ============================================================
+$pdf->SetFont('helvetica', 'B', 8);
 $pdf->SetFillColor(240, 240, 240);
 $pdf->SetDrawColor(100, 100, 100);
 
@@ -210,7 +211,6 @@ $col_x = [10, 73, 136];
 $no_width = 12;
 $code_width = 39;
 $amt_width = 12;
-// last column gets +1 width so all three columns span the full page width (190 mm)
 $last_amt_width = 13;
 $row_height = 6;
 $rows_per_col = 25;
@@ -247,14 +247,14 @@ while (count($remaining) > 0) {
     }
 
     // Print rows
-    $pdf->SetFont('Arial', '', 8);
+    $pdf->SetFont('helvetica', '', 8);
     for ($row = 0; $row < $rows_per_col; $row++) {
         $base_y = $pdf->GetY();
         for ($c = 0; $c < 3; $c++) {
             $item = $col_data[$c][$row];
             $pdf->SetXY($col_x[$c], $base_y);
             if ($item) {
-                $voucher_code = toIso88591(($item['beneficiary_code'] ? $item['beneficiary_code'] : 'N/A') . ' - 00' . $item['voucher_number']);
+                $voucher_code = ($item['beneficiary_code'] ? $item['beneficiary_code'] : 'N/A') . ' - 00' . $item['voucher_number'];
                 // Show selection order as indicator (e.g., in NO. column)
                 $pdf->Cell($no_width, $row_height, isset($item['selection_order']) ? $item['selection_order'] : $global_row, 1, 0, 'C');
                 $pdf->Cell($code_width, $row_height, $voucher_code, 1, 0, 'L');
@@ -274,57 +274,59 @@ while (count($remaining) > 0) {
     }
 }
 
-// Total row - reset X to left margin so it spans full page width
+// ============================================================
+// TOTAL ROW
+// ============================================================
 $pdf->SetXY(10, $pdf->GetY());
-$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFont('helvetica', 'B', 10);
 $pdf->SetFillColor(245, 245, 245);
 $pdf->Cell(0, 9, 'TOTAL AMOUNT TO BE CLAIMED: ' . number_format($batch['total_amount'], 2), 1, 1, 'C', true);
 
 $pdf->Ln(5);
 
-// Check if there's enough space for certifications on this page
+// ============================================================
+// PAGE BREAK CHECK
+// ============================================================
 $currentY = $pdf->GetY();
-
 // If not enough space (less than 90mm remaining), add new page
-if ($currentY > 187) { // A4 height 277mm - 90mm needed space = 187mm threshold
+// A4 height is approximately 277mm, so 187mm is a good threshold
+if ($currentY > 187) {
     $pdf->AddPage();
 }
 
-// Add section header
-$pdf->SetFont('Arial', 'B', 11);
+// ============================================================
+// CERTIFICATION & SIGNATURE SECTION HEADER
+// ============================================================
+$pdf->SetFont('helvetica', 'B', 11);
 $pdf->Cell(0, 8, 'CERTIFICATION & SIGNATURE', 0, 1, 'C');
 $pdf->Ln(3);
 
-// ============================================================
-// CERTIFICATION & SIGNATURE SECTION - TWO COLUMNS
-// ============================================================
 $colWidth = 90;
 $lineHeight = 5;
 
 $certStartY = $pdf->GetY();
 
-
 // --- LEFT COLUMN: Certification A HEADER ---
 $pdf->SetXY(10, $certStartY);
-$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell($colWidth, 6, 'A. Certification of Validating Officer', 0, 1);
 
 // --- RIGHT COLUMN: Certification B HEADER ---
 $pdf->SetXY(105, $certStartY);
-$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell($colWidth, 6, 'B. Certification of Accredited Vendor', 0, 1);
 
 // --- LEFT COLUMN: Certification A TEXT ---
 $certTextStartY = $pdf->GetY();
 $pdf->SetXY(10, $certTextStartY);
-$pdf->SetFont('Arial', '', 9);
+$pdf->SetFont('helvetica', '', 9);
 $pdf->MultiCell($colWidth - 2, $lineHeight, 'I hereby certify that the foregoing information is true and correct, and that all vouchers have been duly verified as issued by the vendor\'s authority and validity were examined as to their authenticity and validity.', 0, 'L');
 $leftCertBottom = $pdf->GetY();
 
 // --- RIGHT COLUMN: Certification B TEXT ---
 $pdf->SetXY(105, $certTextStartY);
-$pdf->SetFont('Arial', '', 9);
-$pdf->MultiCell($colWidth - 2, $lineHeight, 'I hereby certify that all food vouchers submitted herewith were accepted as payment for food items valid for payment of food items in the Tagbilaran Food Voucher Program.         I further certify that the vouchers are genuine, were received in the ordinary course of business, and have not been previously claimed for reimbursement.', 0, 'L');
+$pdf->SetFont('helvetica', '', 9);
+$pdf->MultiCell($colWidth - 2, $lineHeight, 'I hereby certify that all food vouchers submitted herewith were accepted as payment for food items valid for payment of food items in the Tagbilaran Food Voucher Program. I further certify that the vouchers are genuine, were received in the ordinary course of business, and have not been previously claimed for reimbursement.', 0, 'L');
 $rightCertBottom = $pdf->GetY();
 
 // Move to below the taller certification + spacing for signatures
@@ -335,35 +337,39 @@ $sigStartY = $pdf->GetY();
 
 // --- LEFT COLUMN: Signature A ---
 $pdf->SetXY(10, $sigStartY);
-$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFont('helvetica', 'B', 10);
 $pdf->SetTextColor(0, 0, 0);
 $pdf->Cell($colWidth, 6, 'Validating Officer\'s Name and Signature', 0, 1, 'C');
 $pdf->SetXY(10, $sigStartY + 12);
-$pdf->SetFont('Arial', 'B', 9);
+$pdf->SetFont('helvetica', 'B', 9);
 $pdf->SetTextColor(0, 0, 0);
-$pdf->Cell($colWidth, 4, toIso88591($validating_officer_name), 0, 1, 'C');
+$pdf->Cell($colWidth, 4, $validating_officer_name, 0, 1, 'C');
 $pdf->Line(15, $sigStartY + 20, 100, $sigStartY + 20);
 
 // --- RIGHT COLUMN: Signature B ---
 $pdf->SetXY(105, $sigStartY);
-$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFont('helvetica', 'B', 10);
 $pdf->SetTextColor(0, 0, 0);
 $pdf->Cell($colWidth, 6, 'Accredited Vendor\'s Name and Signature', 0, 1, 'C');
 $pdf->Line(110, $sigStartY + 18, 195, $sigStartY + 18);
 $pdf->SetXY(105, $sigStartY + 20);
-$pdf->SetFont('Arial', '', 8);
+$pdf->SetFont('helvetica', '', 8);
 $pdf->SetTextColor(128, 128, 128);
 $pdf->Cell($colWidth, 4, 'Print Name & Sign Above', 0, 1, 'C');
 
 $pdf->SetTextColor(0, 0, 0);
 $pdf->SetY($sigStartY + 28);
 
-// Footer info
-$pdf->SetFont('Arial', 'I', 8);
+// ============================================================
+// FOOTER INFO
+// ============================================================
+$pdf->SetFont('helvetica', 'I', 8);
 $pdf->Cell(0, 5, 'Generated on: ' . date('F d, Y h:i A') . ' | Batch Status: ' . ucfirst($batch['status']) . ' | Total Vouchers: ' . $batch['total_vouchers'], 0, 1, 'C');
 
-// Output PDF
+// ============================================================
+// OUTPUT PDF
+// ============================================================
 $filename = 'Batch_' . $batch['batch_number'] . '.pdf';
-$pdf->Output('I', $filename);
+$pdf->Output($filename, 'I'); // 'I' = display inline
 exit();
 ?>
