@@ -88,7 +88,7 @@ function showDraftIndicator(show) {
       indicator = document.createElement('div');
       indicator.id = 'draftIndicator';
       indicator.className = 'alert alert-warning alert-dismissible fade show position-fixed';
-      indicator.style.cssText = 'top: 20px; right: 20px; z-index: 1050; max-width: 300px;';
+      indicator.style.cssText = 'bottom: 20px; left: 20px; z-index: 1050; max-width: 300px;';
       indicator.innerHTML = `
         <i class="bi bi-save me-2"></i>
         <strong>Draft Loaded:</strong> ${selectedVouchers.length} vouchers selected for ${currentVendor?.vendor_name || 'Unknown Vendor'}
