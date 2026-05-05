@@ -152,15 +152,7 @@ if ($market_result) {
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-4">
-                    <div class="card shadow-sm border-info border-2">
-                        <div class="card-body">
-                            <h6 class="card-title text-uppercase text-secondary mb-3">Total Redeemed Vouchers</h6>
-                            <p class="display-6 mb-0 text-info" id="totalRedeemedVouchers"><?php echo number_format($total_redeemed); ?></p>
-                            <small class="text-muted">All redeemed vouchers</small>
-                        </div>
-                    </div>
-                </div>
+              
                 <div class="col-12 col-md-4">
                     <div class="card shadow-sm border-danger border-2">
                         <div class="card-body">
