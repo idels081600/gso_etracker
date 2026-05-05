@@ -9,6 +9,11 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
     die('Unauthorized');
 }
 
+// Helper function to convert UTF-8 to ISO-8859-1 for FPDF (replacement for deprecated utf8_decode)
+function toIso88591($str) {
+    return mb_convert_encoding($str, 'ISO-8859-1', 'UTF-8');
+}
+
 // Get validating officer name from session
 $validating_officer_name = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : '';
 
@@ -164,26 +169,26 @@ $pdf->Ln(5);
 $pdf->SetFont('Arial', 'B', 10);
 $pdf->Cell(35, 7, 'MARKET:', 0, 0);
 $pdf->SetFont('Arial', '', 10);
-$pdf->Cell(60, 7, $batch['area'] ? $batch['area'] : '____________________', 'B', 0);
+$pdf->Cell(60, 7, toIso88591($batch['area'] ? $batch['area'] : '____________________'), 'B', 0);
 $pdf->Cell(10, 7, '', 0, 0);
 $pdf->SetFont('Arial', 'B', 10);
 $pdf->Cell(35, 7, 'STALL NO.:', 0, 0);
 $pdf->SetFont('Arial', '', 10);
-$pdf->Cell(50, 7, $batch['stall_no'] ? $batch['stall_no'] : '____________________', 'B', 1);
+$pdf->Cell(50, 7, toIso88591($batch['stall_no'] ? $batch['stall_no'] : '____________________'), 'B', 1);
 
 $pdf->Ln(2);
 
 $pdf->SetFont('Arial', 'B', 10);
 $pdf->Cell(50, 7, 'SECTION:', 0, 0);
 $pdf->SetFont('Arial', '', 10);
-$pdf->Cell(0, 7, $batch['section'] ? $batch['section'] : '____________________', 'B', 1);
+$pdf->Cell(0, 7, toIso88591($batch['section'] ? $batch['section'] : '____________________'), 'B', 1);
 
 $pdf->Ln(2);
 
 $pdf->SetFont('Arial', 'B', 10);
 $pdf->Cell(50, 7, 'VENDOR\'S NAME:', 0, 0);
 $pdf->SetFont('Arial', '', 10);
-$pdf->Cell(0, 7, $batch['vendor_name'], 'B', 1);
+$pdf->Cell(0, 7, toIso88591($batch['vendor_name']), 'B', 1);
 
 $pdf->Ln(2);
 
@@ -249,7 +254,7 @@ while (count($remaining) > 0) {
             $item = $col_data[$c][$row];
             $pdf->SetXY($col_x[$c], $base_y);
             if ($item) {
-                $voucher_code = ($item['beneficiary_code'] ? $item['beneficiary_code'] : 'N/A') . ' - 00' . $item['voucher_number'];
+                $voucher_code = toIso88591(($item['beneficiary_code'] ? $item['beneficiary_code'] : 'N/A') . ' - 00' . $item['voucher_number']);
                 // Show selection order as indicator (e.g., in NO. column)
                 $pdf->Cell($no_width, $row_height, isset($item['selection_order']) ? $item['selection_order'] : $global_row, 1, 0, 'C');
                 $pdf->Cell($code_width, $row_height, $voucher_code, 1, 0, 'L');
@@ -336,7 +341,7 @@ $pdf->Cell($colWidth, 6, 'Validating Officer\'s Name and Signature', 0, 1, 'C');
 $pdf->SetXY(10, $sigStartY + 12);
 $pdf->SetFont('Arial', 'B', 9);
 $pdf->SetTextColor(0, 0, 0);
-$pdf->Cell($colWidth, 4, $validating_officer_name, 0, 1, 'C');
+$pdf->Cell($colWidth, 4, toIso88591($validating_officer_name), 0, 1, 'C');
 $pdf->Line(15, $sigStartY + 20, 100, $sigStartY + 20);
 
 // --- RIGHT COLUMN: Signature B ---
