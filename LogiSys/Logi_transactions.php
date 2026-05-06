@@ -644,6 +644,7 @@ function getTransactionTypeBadge($type)
                                     <th>Office Name</th>
                                     <th>Item Name</th>
                                     <th>Approved Quantity</th>
+                                    <th>Remaining Balance</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -670,6 +671,7 @@ function getTransactionTypeBadge($type)
                                                 <td><?= htmlspecialchars($row['office_name'] ?? '') ?></td>
                                                 <td><?= htmlspecialchars($row['item_name'] ?? '') ?></td>
                                                 <td class="approved-quantity-cell" data-id="<?= htmlspecialchars($row['id'] ?? '') ?>"><?= htmlspecialchars($row['approved_quantity'] ?? '') ?></td>
+                                                <td class="remaining-balance-cell" data-item-id="<?= htmlspecialchars($row['item_id'] ?? '') ?>">---</td>
                                                 <td><?= htmlspecialchars($row['status'] ?? '') ?></td>
                                                 <td>
                                                     <button type="button" class="btn btn-sm btn-primary edit-quantity-btn"
@@ -700,7 +702,7 @@ function getTransactionTypeBadge($type)
                                         // No data found
                                         ?>
                                         <tr>
-                                            <td colspan="4" class="text-center">
+                                            <td colspan="8" class="text-center">
                                                 <div class="py-4">
                                                     <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
                                                     <p class="text-muted">No requests found</p>

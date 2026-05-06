@@ -1329,7 +1329,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!Array.isArray(rows) || rows.length === 0) {
       bulkTableBody.innerHTML = `
         <tr>
-          <td colspan="7" class="text-center">
+          <td colspan="8" class="text-center">
             <div class="py-4">
               <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
               <p class="text-muted">No requests found</p>
@@ -1361,6 +1361,9 @@ document.addEventListener('DOMContentLoaded', function () {
               <td>${safeOffice}</td>
               <td>${safeItem}</td>
               <td class="approved-quantity-cell" data-id="${safeId}">${safeQty}</td>
+              <td class="remaining-balance-cell" data-item-id="${safeItemId}">
+                <span class="badge bg-info">${r.current_balance || 0}</span>
+              </td>
               <td>${safeStatus}</td>
               <td>
                 <button type="button" class="btn btn-sm btn-primary edit-quantity-btn"
@@ -1408,7 +1411,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bulkTableBody) {
       bulkTableBody.innerHTML = `
         <tr>
-          <td colspan="5" class="text-center text-muted py-3">
+          <td colspan="8" class="text-center text-muted py-3">
             <i class="fas fa-spinner fa-spin"></i> Loading...
           </td>
         </tr>`;

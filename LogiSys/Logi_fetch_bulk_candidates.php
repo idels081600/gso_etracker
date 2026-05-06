@@ -19,22 +19,32 @@ try {
         exit;
     }
 
-    // Build query dynamically based on filters (only un-uploaded approved requests)
-    $baseSql = "SELECT id, item_id, office_name, item_name, approved_quantity, DATE(date_requested) AS date, status, COALESCE(uploaded, 0) AS uploaded
-                FROM items_requested
-                WHERE status = 'Approved' AND (uploaded IS NULL OR uploaded = 0)";
+    // Build query dynamically with inventory_items JOIN to get current balance
+    $baseSql = "SELECT 
+                    ir.id, 
+                    ir.item_id, 
+                    ir.office_name, 
+                    ir.item_name, 
+                    ir.approved_quantity, 
+                    DATE(ir.date_requested) AS date, 
+                    ir.status, 
+                    COALESCE(ir.uploaded, 0) AS uploaded,
+                    COALESCE(inv.current_balance, 0) AS current_balance
+                FROM items_requested ir
+                LEFT JOIN inventory_items inv ON ir.item_id = inv.item_no
+                WHERE ir.status = 'Approved' AND (ir.uploaded IS NULL OR ir.uploaded = 0)";
 
     $conditions = [];
     $types = '';
     $params = [];
 
     if ($office !== '') {
-        $conditions[] = 'office_name = ?';
+        $conditions[] = 'ir.office_name = ?';
         $types .= 's';
         $params[] = $office;
     }
     if ($date !== '') {
-        $conditions[] = 'DATE(date_requested) = ?';
+        $conditions[] = 'DATE(ir.date_requested) = ?';
         $types .= 's';
         $params[] = $date;
     }
@@ -43,7 +53,7 @@ try {
         $baseSql .= ' AND ' . implode(' AND ', $conditions);
     }
 
-    $baseSql .= ' ORDER BY id DESC';
+    $baseSql .= ' ORDER BY ir.id DESC';
 
     if (!empty($params)) {
         $stmt = mysqli_prepare($conn, $baseSql);
@@ -74,6 +84,7 @@ try {
             'approved_quantity' => (int)$row['approved_quantity'],
             'date' => $row['date'],
             'status' => $row['status'],
+            'current_balance' => (int)$row['current_balance'],
         ];
     }
 
@@ -88,5 +99,4 @@ try {
         'message' => $e->getMessage(),
     ]);
 }
-
-
+?>
