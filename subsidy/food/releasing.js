@@ -399,20 +399,45 @@ document.getElementById('clearBtn').addEventListener('click', () => {
     }
 });
 
-// Confirm Submit button
-document.getElementById('confirmSubmit').addEventListener('click', async () => {
+// Check if canvas has signature - FIXED transparent background detection
+function hasSignature() {
+    const ctx = signatureCanvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, signatureCanvas.width, signatureCanvas.height);
+    const data = imageData.data;
+    
+    // Check for any drawn pixels (alpha channel > 0)
+    for (let i = 0; i < data.length; i += 4) {
+        if (data[i+3] > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Confirm Submit button - opens final confirmation modal instead of submitting directly
+document.getElementById('confirmSubmit').addEventListener('click', () => {
     // Get claimant name based on selected option
     let claimantName = '';
     if (claimantDriverRadio.checked) {
         claimantName = claimantNameDriver.value;
     } else {
         claimantName = claimantNameManual.value.trim();
+        // Validate manual input is required
+        if (!claimantName) {
+            alert('Please enter claimant name manually');
+            claimantNameManual.focus();
+            return;
+        }
+    }
+    
+    // Validate signature is present
+    if (!hasSignature()) {
+        alert('Please provide your e-signature on the canvas');
+        return;
     }
     
     // Set hidden field value
     document.getElementById('claimantName').value = claimantName;
-    
-    const signatureData = signatureCanvas.toDataURL();
     
     // Get newly claimed vouchers
     const newClaimedCards = document.querySelectorAll('.voucher-card.claimed:not([data-previously-claimed])');
@@ -435,6 +460,36 @@ document.getElementById('confirmSubmit').addEventListener('click', async () => {
         return;
     }
 
+    // Populate final confirmation modal
+    document.getElementById('confirmBeneficiaryCode').textContent = currentTricycleNo;
+    document.getElementById('confirmClaimantName').textContent = claimantName;
+    document.getElementById('confirmVouchers').textContent = newVouchers.join(', ');
+    document.getElementById('confirmSignaturePreview').src = signatureCanvas.toDataURL();
+
+    // Hide the first (e-signature) modal and show final confirmation modal
+    const submitModal = bootstrap.Modal.getInstance(document.getElementById('submitModal'));
+    submitModal.hide();
+    
+    const finalConfirmModal = new bootstrap.Modal(document.getElementById('finalConfirmModal'));
+    finalConfirmModal.show();
+});
+
+// Final Confirm Submit - actually submits to the API
+document.getElementById('finalConfirmSubmit').addEventListener('click', async () => {
+    const claimantName = document.getElementById('claimantName').value;
+    const signatureData = signatureCanvas.toDataURL();
+    
+    // Get newly claimed vouchers
+    const newClaimedCards = document.querySelectorAll('.voucher-card.claimed:not([data-previously-claimed])');
+    const newVouchers = [];
+    
+    newClaimedCards.forEach(card => {
+        const index = parseInt(card.dataset.index);
+        if (!claimedVouchersList.includes(index)) {
+            newVouchers.push(index);
+        }
+    });
+
     try {
         const response = await fetch('api_claim_voucher.php', {
             method: 'POST',
@@ -454,9 +509,9 @@ document.getElementById('confirmSubmit').addEventListener('click', async () => {
         if (data.success) {
             alert(data.message);
             
-            // Close modal and reset
-            const modal = bootstrap.Modal.getInstance(document.getElementById('submitModal'));
-            modal.hide();
+            // Close final confirmation modal
+            const finalModal = bootstrap.Modal.getInstance(document.getElementById('finalConfirmModal'));
+            finalModal.hide();
             
             // Clear form - reset to driver option
             document.getElementById('claimantName').value = '';

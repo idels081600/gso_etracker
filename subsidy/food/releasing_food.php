@@ -190,12 +190,12 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
 
 
 
-    <!-- Submit Modal -->
+    <!-- Submit Modal (E-Signature Modal) -->
     <div class="modal fade" id="submitModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="submitModalLabel">Confirm Voucher Release</h5>
+                    <h5 class="modal-title" id="submitModalLabel">E-Signature & Claimant Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -234,6 +234,57 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-success" id="confirmSubmit">
+                        <i class="bi bi-check-lg me-1"></i>Review & Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Confirmation Modal -->
+    <div class="modal fade" id="finalConfirmModal" tabindex="-1" aria-labelledby="finalConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="finalConfirmModalLabel">
+                        <i class="bi bi-clipboard-check me-2"></i>Final Confirmation
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>Please review the details below before final submission.
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td class="text-muted pe-3">Beneficiary Code:</td>
+                                    <td class="fw-bold" id="confirmBeneficiaryCode">---</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted pe-3">Claimant Name:</td>
+                                    <td class="fw-bold" id="confirmClaimantName">---</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted pe-3">Selected Vouchers:</td>
+                                    <td class="fw-bold" id="confirmVouchers">---</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small mb-1">E-Signature Preview:</label>
+                            <div class="border rounded p-2 bg-light text-center">
+                                <img id="confirmSignaturePreview" src="" alt="E-Signature Preview" class="img-fluid" style="max-height: 100px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-success" id="finalConfirmSubmit">
                         <i class="bi bi-check-lg me-1"></i>Confirm & Submit
                     </button>
                 </div>
