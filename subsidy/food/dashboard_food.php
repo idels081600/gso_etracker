@@ -158,7 +158,7 @@ if ($market_result) {
                         <div class="card-body">
                             <h6 class="card-title text-uppercase text-secondary mb-3">All Redeemed Vouchers</h6>
                             <p class="display-6 mb-0 text-danger" id="redeemedVouchersToday"><?php echo number_format($total_redeemed_total); ?></p>
-                            <small class="text-muted">Total vouchers redeemed today</small>
+                            <small class="text-muted">Total vouchers redeemed</small>
                         </div>
                     </div>
                 </div>
