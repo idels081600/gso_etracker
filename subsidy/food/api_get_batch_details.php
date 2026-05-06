@@ -31,6 +31,7 @@ $batch_sql = "SELECT
                 b.redeemed_at,
                 b.redeemer,
                 b.remarks,
+                b.vendor_id,
                 v.vendor_serial,
                 v.vendor_name,
                 v.area
@@ -98,11 +99,12 @@ echo json_encode([
         'redeemed_at' => $batch['redeemed_at'],
         'redeemer' => $batch['redeemer'],
         'remarks' => $batch['remarks'],
-        'vendor' => [
-            'vendor_serial' => $batch['vendor_serial'],
-            'vendor_name' => $batch['vendor_name'],
-            'area' => $batch['area']
-        ]
+            'vendor' => [
+                'vendor_id' => (int)$batch['vendor_id'],
+                'vendor_serial' => $batch['vendor_serial'],
+                'vendor_name' => $batch['vendor_name'],
+                'area' => $batch['area']
+            ]
     ],
     'items' => $items,
     'item_count' => count($items)

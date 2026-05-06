@@ -93,6 +93,9 @@ function renderBatches(batches, pagination) {
         // Actions
         let actions = '';
         if (batch.status !== 'cancelled') {
+            actions += `<button class="btn btn-sm btn-outline-warning me-1" onclick="openEditBatchModal(${batch.id})" title="Edit Batch">
+                <i class="bi bi-pencil-square"></i>
+            </button>`;
             actions += `<button class="btn btn-sm btn-outline-danger me-1" onclick="showCancelModal(${batch.id})" title="Cancel Batch">
                 <i class="bi bi-x-circle"></i>
             </button>`;
@@ -117,7 +120,6 @@ function renderBatches(batches, pagination) {
             <td><small>${batch.redeemer || 'N/A'}</small></td>
             <td>${actions}</td>
         `;
-        
         tbody.appendChild(tr);
     });
     
@@ -448,4 +450,306 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmCancelBtn) {
         confirmCancelBtn.addEventListener('click', cancelBatch);
     }
+
+    // Save batch edit button
+    const saveBatchEditBtn = document.getElementById('saveBatchEditBtn');
+    if (saveBatchEditBtn) {
+        saveBatchEditBtn.addEventListener('click', saveBatchEdit);
+    }
+
+    // Edit voucher search filter
+    const editVoucherSearch = document.getElementById('editVoucherSearch');
+    if (editVoucherSearch) {
+        editVoucherSearch.addEventListener('keyup', filterEditAvailableVouchers);
+    }
 });
+
+// ============================================================
+// EDIT BATCH FUNCTIONALITY
+// ============================================================
+
+let editBatchData = null;       // Current batch details
+let editBatchItems = [];        // Current items in the batch (tracking removals locally)
+let editAvailableVouchers = []; // Available vouchers to add
+let editAddedVouchers = [];     // Vouchers added during this edit session (local tracking)
+let editRemovedVoucherIds = []; // Voucher IDs removed during this edit session
+
+// Open the edit batch modal
+async function openEditBatchModal(batchId) {
+    // Reset edit state
+    editBatchData = null;
+    editBatchItems = [];
+    editAvailableVouchers = [];
+    editAddedVouchers = [];
+    editRemovedVoucherIds = [];
+
+    // Show loading in modal
+    document.getElementById('editCurrentItemsBody').innerHTML = 
+        '<tr><td colspan="4" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
+    document.getElementById('editAvailableVoucherBody').innerHTML = 
+        '<tr><td colspan="3" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
+    document.getElementById('saveBatchEditBtn').disabled = true;
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editBatchModal'));
+    modal.show();
+
+    // Load batch details
+    try {
+        const response = await fetch(`api_get_batch_details.php?batch_id=${batchId}`);
+        const data = await response.json();
+
+        if (data.success) {
+            editBatchData = data.batch;
+            editBatchItems = data.items || [];
+            
+            // Update header info
+            document.getElementById('editBatchNumber').textContent = data.batch.batch_number;
+            document.getElementById('editVendorName').textContent = data.batch.vendor ? data.batch.vendor.vendor_name : 'N/A';
+            updateEditTotals();
+            
+            renderEditBatchItems();
+            
+            // Load available vouchers
+            await loadEditAvailableVouchers(data.batch.vendor ? data.batch.vendor.vendor_serial : '');
+        } else {
+            document.getElementById('editCurrentItemsBody').innerHTML = 
+                '<tr><td colspan="4" class="text-center text-danger py-3">' + (data.message || 'Failed to load batch details.') + '</td></tr>';
+            document.getElementById('editAvailableVoucherBody').innerHTML = 
+                '<tr><td colspan="3" class="text-center text-danger py-3">Failed to load.</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading edit batch data:', error);
+        document.getElementById('editCurrentItemsBody').innerHTML = 
+            '<tr><td colspan="4" class="text-center text-danger py-3">Error loading batch details.</td></tr>';
+        document.getElementById('editAvailableVoucherBody').innerHTML = 
+            '<tr><td colspan="3" class="text-center text-danger py-3">Error loading.</td></tr>';
+    }
+}
+
+// Load available vouchers for the vendor
+async function loadEditAvailableVouchers(vendorSerial) {
+    if (!vendorSerial) {
+        document.getElementById('editAvailableVoucherBody').innerHTML = 
+            '<tr><td colspan="3" class="text-center text-muted py-3">No vendor serial available.</td></tr>';
+        document.getElementById('availableCountEdit').textContent = '0';
+        return;
+    }
+
+    try {
+        const response = await fetch(`api_get_vendor_vouchers.php?vendor_serial=${encodeURIComponent(vendorSerial)}`);
+        const data = await response.json();
+
+        if (data.success) {
+            editAvailableVouchers = data.vouchers || [];
+            renderEditAvailableVouchers();
+        } else {
+            document.getElementById('editAvailableVoucherBody').innerHTML = 
+                '<tr><td colspan="3" class="text-center text-muted py-3">No vouchers available.</td></tr>';
+            document.getElementById('availableCountEdit').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error loading available vouchers:', error);
+        document.getElementById('editAvailableVoucherBody').innerHTML = 
+            '<tr><td colspan="3" class="text-center text-danger py-3">Error loading vouchers.</td></tr>';
+        document.getElementById('availableCountEdit').textContent = '0';
+    }
+}
+
+// Render current batch items (left panel)
+function renderEditBatchItems() {
+    const tbody = document.getElementById('editCurrentItemsBody');
+    tbody.innerHTML = '';
+
+    if (editBatchItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No vouchers in this batch.</td></tr>';
+        document.getElementById('currentBatchCount').textContent = '0';
+        updateEditTotals();
+        return;
+    }
+
+    editBatchItems.forEach((item, index) => {
+        const row = document.createElement('tr');
+        const beneficiaryCode = item.beneficiary_code || 'N/A';
+        const sequenceNumber = String(item.voucher_number).padStart(3, '0');
+        
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td><strong>${beneficiaryCode}-<span style="color: #dc3545; font-weight: bold;">${sequenceNumber}</span></strong></td>
+            <td><small>${item.beneficiary_name || item.claimant_name || 'N/A'}</small></td>
+            <td>
+                <button class="btn btn-sm btn-outline-danger" onclick="removeEditItem(${item.voucher_id}, this)" title="Remove from batch">
+                    <i class="bi bi-dash-circle"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    document.getElementById('currentBatchCount').textContent = editBatchItems.length;
+    updateEditTotals();
+}
+
+// Render available vouchers (right panel) - excluding already-batched and already-removed vouchers
+function renderEditAvailableVouchers() {
+    const tbody = document.getElementById('editAvailableVoucherBody');
+    tbody.innerHTML = '';
+
+    // IDs already in the batch (current items) or added in this session
+    const batchVoucherIds = editBatchItems.map(item => item.voucher_id);
+    const addedIds = editAddedVouchers.map(v => v.id);
+    const excludeIds = [...batchVoucherIds, ...addedIds];
+
+    // Already redeemed vouchers (in another batch) - filter out
+    const available = editAvailableVouchers.filter(v => {
+        return v.is_verified === 1 && !excludeIds.includes(v.id);
+    });
+
+    if (available.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">No available vouchers.</td></tr>';
+        document.getElementById('availableCountEdit').textContent = '0';
+        return;
+    }
+
+    available.forEach(voucher => {
+        const row = document.createElement('tr');
+        const beneficiaryCode = voucher.beneficiary_code || 'N/A';
+        const sequenceNumber = String(voucher.voucher_number).padStart(3, '0');
+
+        row.innerHTML = `
+            <td><strong>${beneficiaryCode}-<span style="color: #dc3545; font-weight: bold;">${sequenceNumber}</span></strong></td>
+            <td><small>${voucher.beneficiary_name || voucher.claimant_name}</small></td>
+            <td>
+                <button class="btn btn-sm btn-outline-success" onclick="addEditAvailable(${voucher.id})" title="Add to batch">
+                    <i class="bi bi-plus-circle"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    document.getElementById('availableCountEdit').textContent = available.length;
+}
+
+// Remove an item from the edit batch (local)
+function removeEditItem(voucherId, btnElement) {
+    const itemIndex = editBatchItems.findIndex(item => item.voucher_id === voucherId);
+    if (itemIndex === -1) return;
+
+    // Track removed voucher for the API call
+    editRemovedVoucherIds.push(voucherId);
+    
+    // Remove from local display list
+    editBatchItems.splice(itemIndex, 1);
+    
+    renderEditBatchItems();
+    renderEditAvailableVouchers();
+    updateEditTotals();
+}
+
+// Add an available voucher to the batch (local)
+function addEditAvailable(voucherId) {
+    const voucher = editAvailableVouchers.find(v => v.id === voucherId);
+    if (!voucher) return;
+
+    // Track locally
+    editAddedVouchers.push(voucher);
+
+    // Add to current items display
+    const newItem = {
+        voucher_id: voucher.id,
+        voucher_number: voucher.voucher_number,
+        beneficiary_code: voucher.beneficiary_code,
+        beneficiary_name: voucher.beneficiary_name || voucher.claimant_name,
+        claimant_name: voucher.claimant_name,
+        amount: 200.00
+    };
+    editBatchItems.push(newItem);
+
+    renderEditBatchItems();
+    renderEditAvailableVouchers();
+    updateEditTotals();
+}
+
+// Update the totals display and enable/disable save button
+function updateEditTotals() {
+    const totalVouchers = editBatchItems.length;
+    const totalAmount = totalVouchers * 200.00;
+    
+    const formattedAmount = '₱' + totalAmount.toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    
+    document.getElementById('editBatchTotals').textContent = `${totalVouchers} vouchers | ${formattedAmount}`;
+
+    // Enable save button only if there are changes
+    const hasChanges = editRemovedVoucherIds.length > 0 || editAddedVouchers.length > 0;
+    document.getElementById('saveBatchEditBtn').disabled = !hasChanges || totalVouchers === 0;
+}
+
+// Filter available vouchers in edit modal
+function filterEditAvailableVouchers() {
+    const searchTerm = document.getElementById('editVoucherSearch').value.toLowerCase();
+    const tbody = document.getElementById('editAvailableVoucherBody');
+    const rows = tbody.querySelectorAll('tr');
+
+    rows.forEach(row => {
+        if (row.textContent.toLowerCase().includes(searchTerm) || searchTerm === '') {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Save batch edit - call API
+async function saveBatchEdit() {
+    if (editRemovedVoucherIds.length === 0 && editAddedVouchers.length === 0) {
+        showAlert('No changes to save.', 'warning');
+        return;
+    }
+
+    const saveBtn = document.getElementById('saveBatchEditBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+    try {
+        const response = await fetch('api_update_batch.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                batch_id: editBatchData.id,
+                remove_voucher_ids: editRemovedVoucherIds,
+                add_voucher_ids: editAddedVouchers.map(v => v.id)
+            })
+        });
+
+        const data = await response.json();
+
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editBatchModal'));
+        modal.hide();
+
+        if (data.success) {
+            // Reload batches table
+            loadBatches(currentPage, currentFilters);
+            
+            let msg = 'Batch updated successfully.';
+            if (data.removed) msg += ` ${data.removed} voucher(s) removed.`;
+            if (data.added) msg += ` ${data.added} voucher(s) added.`;
+            showAlert(msg, 'success');
+        } else {
+            showAlert(data.message || 'Failed to update batch.', 'danger');
+        }
+    } catch (error) {
+        console.error('Error saving batch edit:', error);
+        showAlert('Error saving batch edit. Please try again.', 'danger');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+    }
+}

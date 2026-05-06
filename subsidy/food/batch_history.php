@@ -236,6 +236,96 @@ $pageTitle = "Batch History";
         </div>
     </div>
 
+    <!-- Edit Batch Modal -->
+    <div class="modal fade" id="editBatchModal" tabindex="-1" aria-labelledby="editBatchModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editBatchModalLabel">
+                        <i class="bi bi-pencil-square me-2"></i>Edit Batch
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong id="editBatchNumber">---</strong> — 
+                        Vendor: <strong id="editVendorName">---</strong>
+                        <span class="ms-3 text-muted" id="editBatchTotals">0 vouchers | ₱0.00</span>
+                    </div>
+                    <div class="row">
+                        <!-- LEFT: Current Batch Vouchers -->
+                        <div class="col-lg-6">
+                            <div class="card border border-primary h-100">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-list-check me-2"></i>Current Batch Vouchers
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="currentBatchCount">0</span>
+                                </div>
+                                <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+                                    <table class="table table-hover table-sm mb-0">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th width="40">#</th>
+                                                <th>Voucher</th>
+                                                <th>Beneficiary</th>
+                                                <th width="80">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="editCurrentItemsBody">
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted py-3">Loading...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- RIGHT: Available Vouchers -->
+                        <div class="col-lg-6">
+                            <div class="card border border-success h-100">
+                                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-plus-circle me-2"></i>Available Vouchers
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="availableCountEdit">0</span>
+                                </div>
+                                <div class="card-body p-2 bg-light">
+                                    <input type="text" id="editVoucherSearch" class="form-control form-control-sm" placeholder="Search voucher...">
+                                </div>
+                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                    <table class="table table-hover table-sm mb-0">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>Voucher</th>
+                                                <th>Beneficiary</th>
+                                                <th width="70">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="editAvailableVoucherBody">
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted py-3">Loading...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" id="saveBatchEditBtn" disabled>
+                        <i class="bi bi-save me-1"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/batch_history.js"></script>
 </body>

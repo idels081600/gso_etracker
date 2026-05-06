@@ -74,6 +74,7 @@ $sql = "SELECT
             b.redeemed_at,
             b.redeemer,
             b.remarks,
+            b.vendor_id,
             v.vendor_serial,
             v.vendor_name,
             v.area
@@ -105,6 +106,7 @@ while ($row = mysqli_fetch_assoc($result)) {
         'redeemer' => $row['redeemer'],
         'remarks' => $row['remarks'],
         'vendor' => [
+            'vendor_id' => (int)$row['vendor_id'],
             'vendor_serial' => $row['vendor_serial'],
             'vendor_name' => $row['vendor_name'],
             'area' => $row['area']
