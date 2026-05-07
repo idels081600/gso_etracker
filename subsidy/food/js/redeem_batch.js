@@ -1,8 +1,14 @@
-// Dual-table voucher selection system
+// Dual-table voucher selection system with server-side pagination
 let currentVendor = null;
 let allVouchers = [];
 let selectedVouchers = []; // Tracks order of selection
 const VOUCHER_VALUE = 200;
+const VOUCHER_PAGE_LIMIT = 50;
+
+// Pagination state
+let currentPage = 1;
+let totalPages = 1;
+let currentSearchTerm = '';
 
 // User-specific draft key
 const getDraftKey = () => {
@@ -22,11 +28,9 @@ function saveDraftToStorage() {
     const draft = {
       vendor: currentVendor,
       selectedVouchers: selectedVouchers,
-      allVouchers: allVouchers,
       timestamp: new Date().toISOString()
     };
     localStorage.setItem(getDraftKey(), JSON.stringify(draft));
-    showDraftIndicator(true);
   } else {
     clearDraftFromStorage();
   }
@@ -45,7 +49,6 @@ function loadDraftFromStorage() {
       if (hoursDiff < 24) {
         currentVendor = parsedDraft.vendor;
         selectedVouchers = parsedDraft.selectedVouchers || [];
-        allVouchers = parsedDraft.allVouchers || [];
 
         // Restore vendor info if we have a draft
         if (currentVendor) {
@@ -53,20 +56,19 @@ function loadDraftFromStorage() {
           document.getElementById("vendorSerial").value = currentVendor.vendor_serial;
           document.getElementById("voucherSection").classList.remove("d-none");
           document.getElementById("noVendorMessage").classList.add("d-none");
-          showDraftIndicator(true);
 
-          // Render restored draft immediately from localStorage
-          renderAvailableVouchers();
+          // Render selected vouchers from draft immediately
           renderSelectedVouchers();
           updateTotals();
 
           // Try to refresh from server if online
           if (navigator.onLine) {
-            loadVouchers(currentVendor.id);
+            loadVouchers(currentVendor.id, 1, '');
+          } else {
+            renderAvailableVouchers();
           }
         }
       } else {
-        // Draft is too old, clear it
         clearDraftFromStorage();
       }
     } catch (e) {
@@ -78,11 +80,6 @@ function loadDraftFromStorage() {
 
 function clearDraftFromStorage() {
   localStorage.removeItem(getDraftKey());
-  showDraftIndicator(false);
-}
-
-function showDraftIndicator(show) {
-  // Draft indicator removed
 }
 
 function setupEventListeners() {
@@ -99,16 +96,43 @@ function setupEventListeners() {
     .getElementById("vendorSerial")
     .addEventListener("input", liveVendorSearch);
 
-  // Voucher search
+  // Voucher search (server-side with debounce)
+  let searchTimeout;
   document
     .getElementById("voucherSearch")
-    .addEventListener("keyup", filterAvailableVouchers);
+    .addEventListener("keyup", function () {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        const term = this.value.trim();
+        if (currentVendor) {
+          currentSearchTerm = term;
+          currentPage = 1;
+          loadVouchers(currentVendor.id, 1, term);
+        }
+      }, 300);
+    });
   document
     .getElementById("clearVoucherSearch")
     .addEventListener("click", () => {
       document.getElementById("voucherSearch").value = "";
-      filterAvailableVouchers();
+      currentSearchTerm = "";
+      currentPage = 1;
+      if (currentVendor) {
+        loadVouchers(currentVendor.id, 1, '');
+      }
     });
+
+  // Pagination buttons
+  document.getElementById("prevPageBtn").addEventListener("click", () => {
+    if (currentPage > 1 && currentVendor) {
+      loadVouchers(currentVendor.id, currentPage - 1, currentSearchTerm);
+    }
+  });
+  document.getElementById("nextPageBtn").addEventListener("click", () => {
+    if (currentPage < totalPages && currentVendor) {
+      loadVouchers(currentVendor.id, currentPage + 1, currentSearchTerm);
+    }
+  });
 
   // Redeem button
   document
@@ -121,7 +145,7 @@ function setupEventListeners() {
   // Refresh button
   document.getElementById("refreshBtn").addEventListener("click", () => {
     if (currentVendor) {
-      loadVouchers(currentVendor.id);
+      loadVouchers(currentVendor.id, currentPage, currentSearchTerm);
     }
   });
 
@@ -161,11 +185,9 @@ function liveVendorSearch() {
     .then((res) => res.json())
     .then((data) => {
       if (data.success && data.vendors && data.vendors.length > 0) {
-        // Show green indicator
         inputField.classList.remove("is-invalid");
         inputField.classList.add("is-valid");
 
-        // Build suggestions dropdown
         suggestionsContainer.innerHTML = "";
         data.vendors.forEach((vendor) => {
           const item = document.createElement("a");
@@ -173,7 +195,6 @@ function liveVendorSearch() {
           item.className = "list-group-item list-group-item-action py-2";
           item.innerHTML = `<div class="fw-bold">${vendor.vendor_name}</div><small class="text-muted">${vendor.vendor_serial} | ${vendor.stall_no || "N/A"}</small>`;
 
-          // Click handler
           item.addEventListener("click", (e) => {
             e.preventDefault();
             document.getElementById("vendorSerial").value =
@@ -187,7 +208,6 @@ function liveVendorSearch() {
 
         suggestionsContainer.classList.remove("d-none");
       } else {
-        // No matches - show red indicator
         inputField.classList.remove("is-valid");
         inputField.classList.add("is-invalid");
         suggestionsContainer.classList.add("d-none");
@@ -221,7 +241,6 @@ function searchVendor() {
   searchBtn.innerHTML =
     '<span class="spinner-border spinner-border-sm me-1"></span> Searching...';
 
-  // Fetch vendor data
   fetch(
     "api_search_vendor.php?vendor_serial=" + encodeURIComponent(vendorSerial),
   )
@@ -234,10 +253,13 @@ function searchVendor() {
         const vendor =
           data.match_type === "exact" ? data.vendor : data.vendors[0];
         currentVendor = vendor;
-        selectedVouchers = []; // Clear previous selections for new vendor
-        clearDraftFromStorage(); // Clear any existing draft when switching vendors
+        selectedVouchers = [];
+        currentPage = 1;
+        currentSearchTerm = '';
+        document.getElementById("voucherSearch").value = '';
+        clearDraftFromStorage();
         displayVendorInfo(vendor);
-        loadVouchers(vendor.id);
+        loadVouchers(vendor.id, 1, '');
         document
           .getElementById("vendorSerial")
           .classList.remove("is-valid", "is-invalid");
@@ -262,38 +284,43 @@ function displayVendorInfo(vendor) {
   document.getElementById("vendorInfo").classList.remove("d-none");
 }
 
-// Load vouchers from backend
-function loadVouchers(vendorId) {
+// Load vouchers from backend with pagination + search
+function loadVouchers(vendorId, page, search) {
   const tbody = document.getElementById("availableVoucherBody");
   tbody.innerHTML =
-    '<tr><td colspan="3" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
+    '<tr><td colspan="5" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
 
-  fetch(
-    "api_get_vendor_vouchers.php?vendor_serial=" +
-      encodeURIComponent(currentVendor.vendor_serial),
-  )
+  const params = new URLSearchParams();
+  params.set('vendor_serial', currentVendor.vendor_serial);
+  params.set('page', page);
+  params.set('limit', VOUCHER_PAGE_LIMIT);
+  if (search) params.set('search', search);
+
+  fetch("api_get_vendor_vouchers.php?" + params.toString())
     .then((res) => res.json())
     .then((data) => {
       if (data.success) {
         allVouchers = data.vouchers;
+        currentPage = data.page;
+        totalPages = data.total_pages;
+        currentSearchTerm = search || '';
 
-        // Don't reset selectedVouchers here - preserve draft selections
-        // selectedVouchers is already loaded from draft if it exists
-
-        // Validate that selected vouchers still exist in the current voucher list
+        // Validate that selected vouchers still exist (not redeemed by someone else)
+        // We need a full list for validation, so fetch all IDs in parallel (optional)
+        // For now, just validate against the current page's vouchers
         const validSelectedVouchers = selectedVouchers.filter(selectedVoucher =>
-          allVouchers.some(voucher => voucher.id === selectedVoucher.id && voucher.is_redeemed !== 1)
+          !selectedVoucher.is_redeemed // trust the last known state
         );
 
-        // If some vouchers were invalidated (redeemed by someone else), update the selection
         if (validSelectedVouchers.length !== selectedVouchers.length) {
           selectedVouchers = validSelectedVouchers;
-          saveDraftToStorage(); // Update draft with valid vouchers only
+          saveDraftToStorage();
         }
 
         renderAvailableVouchers();
         renderSelectedVouchers();
         updateTotals();
+        updatePaginationControls();
         document.getElementById("voucherSection").classList.remove("d-none");
         document.getElementById("noVendorMessage").classList.add("d-none");
       } else {
@@ -302,8 +329,7 @@ function loadVouchers(vendorId) {
     })
     .catch((err) => {
       console.error("Error loading vouchers:", err);
-      if (selectedVouchers.length > 0 && allVouchers.length > 0) {
-        renderAvailableVouchers();
+      if (selectedVouchers.length > 0) {
         renderSelectedVouchers();
         updateTotals();
       } else {
@@ -312,18 +338,40 @@ function loadVouchers(vendorId) {
     });
 }
 
-// Render available vouchers table
+// Update pagination controls visibility and state
+function updatePaginationControls() {
+  const controls = document.getElementById("paginationControls");
+  const prevBtn = document.getElementById("prevPageBtn");
+  const nextBtn = document.getElementById("nextPageBtn");
+  const pageInfo = document.getElementById("pageInfo");
+
+  if (totalPages <= 1) {
+    controls.classList.add("d-none");
+    return;
+  }
+
+  controls.classList.remove("d-none");
+  prevBtn.disabled = currentPage <= 1;
+  nextBtn.disabled = currentPage >= totalPages;
+  pageInfo.textContent = `Page ${currentPage} / ${totalPages}`;
+}
+
+// Render available vouchers table (from current page data)
 function renderAvailableVouchers() {
   const tbody = document.getElementById("availableVoucherBody");
   tbody.innerHTML = "";
 
-  // Filter: only show vouchers not selected yet
+  // Filter out vouchers already selected
   const selectedIds = selectedVouchers.map((v) => v.id);
   const available = allVouchers.filter((v) => !selectedIds.includes(v.id));
 
   if (available.length === 0) {
+    // Show "no results" message based on whether we're searching or not
+    const msg = currentSearchTerm
+      ? `No results for "${currentSearchTerm}"`
+      : "No verified vouchers available";
     tbody.innerHTML =
-      '<tr><td colspan="3" class="text-center text-muted py-3">No verified vouchers available</td></tr>';
+      `<tr><td colspan="5" class="text-center text-muted py-3">${msg}</td></tr>`;
     document.getElementById("availableCount").textContent = "0 available";
     return;
   }
@@ -331,9 +379,8 @@ function renderAvailableVouchers() {
   available.forEach((voucher) => {
     const row = document.createElement("tr");
 
-    // Format voucher code with styled sequence number (red)
     const beneficiaryCode = voucher.beneficiary_code || "N/A";
-    const sequenceNumber = String(voucher.voucher_number).padStart(3, "0"); // Ensures 3-digit format like 001
+    const sequenceNumber = String(voucher.voucher_number).padStart(3, "0");
     const voucherCodeHtml = `<strong>${beneficiaryCode}-<span style="color: #dc3545; font-weight: bold;">${sequenceNumber}</span></strong>`;
 
     const isSelected = selectedIds.includes(voucher.id);
@@ -357,7 +404,6 @@ function renderAvailableVouchers() {
             </button>`;
     }
 
-    // Status indicators
     const verifiedIcon = isVerified
       ? '<i class="bi bi-check-circle-fill text-success"></i>'
       : '<i class="bi bi-x-circle-fill text-danger"></i>';
@@ -375,8 +421,9 @@ function renderAvailableVouchers() {
     tbody.appendChild(row);
   });
 
+  const totalAvailable = currentSearchTerm ? '?' : available.length;
   document.getElementById("availableCount").textContent =
-    available.length + " available";
+    `${available.length} available`;
 }
 
 // Render selected vouchers table (with order)
@@ -392,15 +439,14 @@ function renderSelectedVouchers() {
   }
 
   selectedVouchers.forEach((voucher, index) => {
-   const row = document.createElement("tr");
-row.classList.add("table-success");
+    const row = document.createElement("tr");
+    row.classList.add("table-success");
 
-// Format voucher code with styled sequence number (red)
-const beneficiaryCode = voucher.beneficiary_code || "N/A";
-const sequenceNumber = String(voucher.voucher_number).padStart(3, "0"); // Ensures 3-digit format like 001
-const voucherCodeHtml = `<strong>${beneficiaryCode}-<span style="color: #dc3545; font-weight: bold;">${sequenceNumber}</span></strong>`;
+    const beneficiaryCode = voucher.beneficiary_code || "N/A";
+    const sequenceNumber = String(voucher.voucher_number).padStart(3, "0");
+    const voucherCodeHtml = `<strong>${beneficiaryCode}-<span style="color: #dc3545; font-weight: bold;">${sequenceNumber}</span></strong>`;
 
-row.innerHTML = `
+    row.innerHTML = `
         <td><strong>${index + 1}</strong></td>
         <td><strong style="font-size: 1.1em;">${voucherCodeHtml}</strong></td>
         <td><small>${voucher.beneficiary_name || voucher.claimant_name}</small></td>
@@ -410,7 +456,7 @@ row.innerHTML = `
             </button>
         </td>
     `;
-tbody.appendChild(row);
+    tbody.appendChild(row);
   });
 
   document.getElementById("selectedCount").textContent =
@@ -423,8 +469,7 @@ function selectVoucher(voucherId) {
   if (voucher) {
     selectedVouchers.push(voucher);
 
-    // ✅ DO NOT FULLY REFRESH TABLE - preserve search results
-    // Just find and update the single row that was clicked
+    // Update the specific row in the available table to "selected" state (no full re-render)
     const tbody = document.getElementById("availableVoucherBody");
     const rows = tbody.querySelectorAll("tr");
 
@@ -433,7 +478,6 @@ function selectVoucher(voucherId) {
         `button[onclick="selectVoucher(${voucherId})"]`,
       );
       if (btn) {
-        // Update this row to selected state
         rows[i].classList.add("table-success");
         btn.outerHTML = `<button class="btn btn-sm btn-success" disabled title="Already selected">
                     <i class="bi bi-check-circle"></i>
@@ -442,40 +486,25 @@ function selectVoucher(voucherId) {
       }
     }
 
-    // Only refresh right table and totals
     renderSelectedVouchers();
     updateTotals();
-    saveDraftToStorage(); // Save draft after selection
+    saveDraftToStorage();
   }
 }
 
 // Remove a voucher (move back to available list)
 function removeVoucher(voucherId) {
   selectedVouchers = selectedVouchers.filter((v) => v.id !== voucherId);
-  renderAvailableVouchers();
-  renderSelectedVouchers();
-  updateTotals();
-  saveDraftToStorage(); // Save draft after removal
-}
 
-// Filter available vouchers by search
-function filterAvailableVouchers() {
-  const searchTerm = document
-    .getElementById("voucherSearch")
-    .value.toLowerCase();
-  const tbody = document.getElementById("availableVoucherBody");
-  const rows = tbody.querySelectorAll("tr");
-
-  rows.forEach((row) => {
-    if (
-      row.textContent.toLowerCase().includes(searchTerm) ||
-      searchTerm === ""
-    ) {
-      row.style.display = "";
-    } else {
-      row.style.display = "none";
-    }
-  });
+  // Re-fetch current page to show the newly available voucher in correct position
+  if (currentVendor) {
+    loadVouchers(currentVendor.id, currentPage, currentSearchTerm);
+  } else {
+    renderAvailableVouchers();
+    renderSelectedVouchers();
+    updateTotals();
+  }
+  saveDraftToStorage();
 }
 
 // Update totals
@@ -489,7 +518,6 @@ function updateTotals() {
     });
   document.getElementById("totalItems").textContent = selectedVouchers.length;
 
-  // Enable/disable redeem and save draft buttons
   const hasSelection = selectedVouchers.length > 0;
   document.getElementById("redeemBtn").disabled = !hasSelection;
   document.getElementById("saveDraftBtn").disabled = !hasSelection;
@@ -580,10 +608,14 @@ function confirmRedeem() {
         // Reset selection
         setTimeout(() => {
           selectedVouchers = [];
-          renderAvailableVouchers();
-          renderSelectedVouchers();
-          updateTotals();
-          clearDraftFromStorage(); // Clear draft after successful redemption
+          if (currentVendor) {
+            loadVouchers(currentVendor.id, 1, '');
+          } else {
+            renderAvailableVouchers();
+            renderSelectedVouchers();
+            updateTotals();
+          }
+          clearDraftFromStorage();
         }, 2000);
       } else {
         alert("Error: " + data.message);

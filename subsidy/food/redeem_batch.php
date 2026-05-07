@@ -212,8 +212,19 @@ $pageTitle = "Batch Voucher Redemption";
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="card-footer bg-light text-center text-muted">
-                                <small id="availableCount">0 available</small>
+                            <div class="card-footer bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small id="availableCount" class="text-muted">0 available</small>
+                                    <div id="paginationControls" class="d-none">
+                                        <button id="prevPageBtn" class="btn btn-outline-secondary btn-sm" disabled>
+                                            <i class="bi bi-chevron-left"></i>
+                                        </button>
+                                        <span id="pageInfo" class="mx-2 small">Page 1 / 1</span>
+                                        <button id="nextPageBtn" class="btn btn-outline-secondary btn-sm" disabled>
+                                            <i class="bi bi-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

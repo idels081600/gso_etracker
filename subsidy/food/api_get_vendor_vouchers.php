@@ -19,6 +19,15 @@ if (!isset($_GET['vendor_serial']) || empty(trim($_GET['vendor_serial']))) {
 $vendor_serial = trim($_GET['vendor_serial']);
 $escaped_serial = mysqli_real_escape_string($conn, $vendor_serial);
 
+// Pagination params
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$limit = isset($_GET['limit']) ? max(10, min(200, (int)$_GET['limit'])) : 50;
+$offset = ($page - 1) * $limit;
+
+// Search param (optional) - filters by beneficiary code, name, claimant name, or voucher number
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$escaped_search = $search !== '' ? mysqli_real_escape_string($conn, $search) : '';
+
 // First, get vendor info
 $vendor_sql = "SELECT vendor_serial, vendor_name FROM food_vendors WHERE vendor_serial = '$escaped_serial' LIMIT 1";
 $vendor_result = mysqli_query($conn, $vendor_sql);
@@ -30,10 +39,30 @@ if (!$vendor_result || mysqli_num_rows($vendor_result) === 0) {
 
 $vendor = mysqli_fetch_assoc($vendor_result);
 
-// Get claimed vouchers from food_voucher_claims
-// Show ALL verified vouchers regardless of redemption status
-$where_sql = "WHERE vc.is_verified = 1";
+// Base WHERE conditions
+$where_conditions = ["vc.is_verified = 1"];
 
+// Add search filter if provided
+if ($escaped_search !== '') {
+    $where_conditions[] = "(fb.beneficiary_code LIKE '%$escaped_search%' OR fb.full_name LIKE '%$escaped_search%' OR vc.claimant_name LIKE '%$escaped_search%' OR vc.voucher_number LIKE '%$escaped_search%')";
+}
+
+$where_sql = implode(' AND ', $where_conditions);
+
+// Count total matching records
+$count_sql = "SELECT COUNT(*) as total 
+              FROM food_voucher_claims vc
+              LEFT JOIN food_beneficiaries fb ON vc.beneficiary_id = fb.id
+              WHERE $where_sql";
+$count_result = mysqli_query($conn, $count_sql);
+$total = 0;
+if ($count_result) {
+    $total = (int)mysqli_fetch_assoc($count_result)['total'];
+}
+
+$total_pages = $total > 0 ? (int)ceil($total / $limit) : 1;
+
+// Fetch paginated vouchers
 $sql = "SELECT 
             vc.id,
             vc.beneficiary_id,
@@ -46,8 +75,9 @@ $sql = "SELECT
             fb.full_name as beneficiary_name
         FROM food_voucher_claims vc
         LEFT JOIN food_beneficiaries fb ON vc.beneficiary_id = fb.id
-        $where_sql
-        ORDER BY vc.claim_date DESC";
+        WHERE $where_sql
+        ORDER BY vc.claim_date DESC
+        LIMIT $limit OFFSET $offset";
 
 $result = mysqli_query($conn, $sql);
 
@@ -79,7 +109,12 @@ echo json_encode([
         'vendor_name' => $vendor['vendor_name']
     ],
     'vouchers' => $vouchers,
-    'count' => count($vouchers)
+    'count' => count($vouchers),
+    'total' => $total,
+    'page' => $page,
+    'limit' => $limit,
+    'total_pages' => $total_pages,
+    'search' => $search
 ]);
 
 exit();
