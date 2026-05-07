@@ -102,9 +102,17 @@ function setupEventListeners() {
     .getElementById("voucherSearch")
     .addEventListener("keyup", function () {
       clearTimeout(searchTimeout);
+      const term = this.value.trim();
+      
+      // Visual feedback: highlight search input if text is present
+      if (term.length > 0) {
+        this.classList.add('is-active');
+      } else {
+        this.classList.remove('is-active');
+      }
+      
       searchTimeout = setTimeout(() => {
-        const term = this.value.trim();
-        if (currentVendor) {
+        if (currentVendor && term.length > 0) {
           currentSearchTerm = term;
           currentPage = 1;
           loadVouchers(currentVendor.id, 1, term);
@@ -114,7 +122,9 @@ function setupEventListeners() {
   document
     .getElementById("clearVoucherSearch")
     .addEventListener("click", () => {
-      document.getElementById("voucherSearch").value = "";
+      const searchInput = document.getElementById("voucherSearch");
+      searchInput.value = "";
+      searchInput.classList.remove('is-active');
       currentSearchTerm = "";
       currentPage = 1;
       if (currentVendor) {
@@ -367,12 +377,13 @@ function renderAvailableVouchers() {
 
   if (available.length === 0) {
     // Show "no results" message based on whether we're searching or not
-    const msg = currentSearchTerm
-      ? `No results for "${currentSearchTerm}"`
-      : "No verified vouchers available";
+    let msg = "No verified vouchers available";
+    if (currentSearchTerm) {
+      msg = `<i class="bi bi-search"></i> No results found for "<strong>${currentSearchTerm}</strong>"<br><small class="text-muted mt-2 d-block">Try: full voucher code (si-1271-001), beneficiary code, name, or sequence #</small>`;
+    }
     tbody.innerHTML =
       `<tr><td colspan="5" class="text-center text-muted py-3">${msg}</td></tr>`;
-    document.getElementById("availableCount").textContent = "0 available";
+    document.getElementById("availableCount").textContent = currentSearchTerm ? "0 matches" : "0 available";
     return;
   }
 

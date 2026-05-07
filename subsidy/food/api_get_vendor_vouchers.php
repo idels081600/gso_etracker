@@ -21,12 +21,24 @@ $escaped_serial = mysqli_real_escape_string($conn, $vendor_serial);
 
 // Pagination params
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-$limit = isset($_GET['limit']) ? max(10, min(200, (int)$_GET['limit'])) : 50;
+$limit = isset($_GET['limit']) ? max(10, (int)$_GET['limit']) : 50;
 $offset = ($page - 1) * $limit;
 
 // Search param (optional) - filters by beneficiary code, name, claimant name, or voucher number
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $escaped_search = $search !== '' ? mysqli_real_escape_string($conn, $search) : '';
+
+// Helper function to parse full voucher code (e.g., "si-1271-001")
+function parseFullVoucherCode($code) {
+    $lastDashPos = strrpos($code, '-');
+    if ($lastDashPos === false) {
+        return null;
+    }
+    $codePart = substr($code, 0, $lastDashPos);
+    $numPart = substr($code, $lastDashPos + 1);
+    $voucherNum = (int)$numPart;
+    return $voucherNum > 0 ? ['code' => $codePart, 'number' => $voucherNum] : null;
+}
 
 // First, get vendor info
 $vendor_sql = "SELECT vendor_serial, vendor_name FROM food_vendors WHERE vendor_serial = '$escaped_serial' LIMIT 1";
@@ -39,12 +51,31 @@ if (!$vendor_result || mysqli_num_rows($vendor_result) === 0) {
 
 $vendor = mysqli_fetch_assoc($vendor_result);
 
-// Base WHERE conditions
-$where_conditions = ["vc.is_verified = 1"];
+// Base WHERE conditions - show only verified and unredeemed vouchers
+$where_conditions = ["vc.is_verified = 1", "vc.is_redeemed = 0"];
 
 // Add search filter if provided
 if ($escaped_search !== '') {
-    $where_conditions[] = "(fb.beneficiary_code LIKE '%$escaped_search%' OR fb.full_name LIKE '%$escaped_search%' OR vc.claimant_name LIKE '%$escaped_search%' OR vc.voucher_number LIKE '%$escaped_search%')";
+    $searchConditions = [];
+    
+    // Standard search fields
+    $searchConditions[] = "(fb.beneficiary_code LIKE '%$escaped_search%' OR fb.full_name LIKE '%$escaped_search%' OR vc.claimant_name LIKE '%$escaped_search%')";
+    
+    // Try to parse as full voucher code (e.g., "si-1271-001")
+    $parsed = parseFullVoucherCode($escaped_search);
+    if ($parsed !== null) {
+        $codePart = mysqli_real_escape_string($conn, $parsed['code']);
+        $numPart = (int)$parsed['number'];
+        $searchConditions[] = "(fb.beneficiary_code = '$codePart' AND vc.voucher_number = $numPart)";
+    } else {
+        // If only a number is provided (e.g., "001"), also try matching voucher_number
+        if (is_numeric($escaped_search)) {
+            $voucherNum = (int)$escaped_search;
+            $searchConditions[] = "vc.voucher_number = $voucherNum";
+        }
+    }
+    
+    $where_conditions[] = "(" . implode(" OR ", $searchConditions) . ")";
 }
 
 $where_sql = implode(' AND ', $where_conditions);
