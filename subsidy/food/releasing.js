@@ -23,6 +23,7 @@ function createVoucherCard(voucherId, index, isClaimed = false) {
     card.dataset.index = index;
     
     if (isClaimed) {
+        card.setAttribute('data-previously-claimed', 'true');
         card.innerHTML = `
             <div class="card-body py-3 px-2">
                 <p class="voucher-label text-white-50 mb-1">Verified</p>
@@ -267,16 +268,30 @@ mainSearch.addEventListener('keypress', (e) => {
 
 // E-Signature Canvas
 const signatureCanvas = document.getElementById('signatureCanvas');
-const ctx = signatureCanvas.getContext('2d');
+let ctx = signatureCanvas.getContext('2d');
 let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 
-// Set canvas size properly
+// Set canvas size properly and preserve existing drawing when resizing
 function resizeCanvas() {
     const rect = signatureCanvas.getBoundingClientRect();
-    signatureCanvas.width = rect.width;
-    signatureCanvas.height = 150;
+    const width = Math.max(1, Math.floor(rect.width));
+    const height = 150;
+    const hasExistingDrawing = signatureCanvas.width > 0 && signatureCanvas.height > 0;
+    const previousDataUrl = hasExistingDrawing ? signatureCanvas.toDataURL() : null;
+
+    signatureCanvas.width = width;
+    signatureCanvas.height = height;
+    ctx = signatureCanvas.getContext('2d');
+
+    if (previousDataUrl) {
+        const img = new Image();
+        img.onload = () => {
+            ctx.drawImage(img, 0, 0, signatureCanvas.width, signatureCanvas.height);
+        };
+        img.src = previousDataUrl;
+    }
 }
 
 // Initial resize and window resize handler
@@ -284,6 +299,10 @@ window.addEventListener('resize', resizeCanvas);
 
 // Resize canvas when modal is shown
 document.getElementById('submitModal').addEventListener('shown.bs.modal', () => {
+    resizeCanvas();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
     resizeCanvas();
 });
 
@@ -358,13 +377,23 @@ claimantManualRadio.addEventListener('change', () => {
 
 // Show proof of claim modal
 function showProofModal(voucherIndex, voucherId) {
-    const claim = claimsData.find(c => c.voucher_number === voucherIndex);
+    const claim = claimsData.find(c => parseInt(c.voucher_number, 10) === parseInt(voucherIndex, 10));
     
     if (claim) {
         document.getElementById('proofVoucherNo').textContent = voucherId;
         document.getElementById('proofClaimant').textContent = claim.claimant_name || 'N/A';
         document.getElementById('proofDate').textContent = claim.claim_date ? new Date(claim.claim_date).toLocaleString() : 'N/A';
-        document.getElementById('proofSignature').src = claim.e_signature || '';
+
+        const proofSignature = document.getElementById('proofSignature');
+        if (claim.e_signature) {
+            proofSignature.src = claim.e_signature;
+            proofSignature.style.display = 'block';
+            proofSignature.alt = 'E-Signature';
+        } else {
+            proofSignature.src = '';
+            proofSignature.style.display = 'none';
+            proofSignature.alt = 'No signature available';
+        }
         
         const proofModal = new bootstrap.Modal(document.getElementById('proofModal'));
         proofModal.show();

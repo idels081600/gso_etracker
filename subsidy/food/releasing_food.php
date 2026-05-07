@@ -222,7 +222,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                     <div class="mb-3">
                         <label class="form-label">E-Signature</label>
                         <div class="border rounded p-2 bg-light">
-                            <canvas id="signatureCanvas" width="100%" height="150" style="width: 100%; height: 150px; border: 1px dashed #ccc; background: #fff; cursor: crosshair;"></canvas>
+                            <canvas id="signatureCanvas" height="150" style="width: 100%; height: 150px; border: 1px dashed #ccc; background: #fff; cursor: crosshair;"></canvas>
                         </div>
                         <div class="mt-2">
                             <button type="button" class="btn btn-sm btn-outline-secondary" id="clearSignature">

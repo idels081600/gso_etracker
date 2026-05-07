@@ -36,6 +36,11 @@ if (empty($benificiary_no) || $station_id <= 0 || empty($vouchers) || !is_array(
     exit;
 }
 
+if (empty($e_signature) || strpos($e_signature, 'data:image') !== 0) {
+    echo json_encode(['success' => false, 'message' => 'Invalid or missing e-signature. Please draw your signature before submitting.']);
+    exit;
+}
+
 try {
     mysqli_begin_transaction($conn);
 
