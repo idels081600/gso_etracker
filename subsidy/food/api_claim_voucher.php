@@ -29,6 +29,44 @@ $verifier_name  = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : $_SESSI
 $is_verified    = 1;
 $is_redeemed    = 0;
 
+function eSignatureHasInk($signature) {
+    if (!is_string($signature) || !preg_match('/^data:image\/(?:png|jpeg|jpg);base64,/', $signature)) {
+        return false;
+    }
+
+    $base64 = preg_replace('/^data:image\/(?:png|jpeg|jpg);base64,/', '', $signature);
+    $imageData = base64_decode($base64, true);
+
+    if ($imageData === false || strlen($imageData) < 500) {
+        return false;
+    }
+
+    if (!function_exists('imagecreatefromstring')) {
+        return true;
+    }
+
+    $image = @imagecreatefromstring($imageData);
+    if (!$image) {
+        return false;
+    }
+
+    $width = imagesx($image);
+    $height = imagesy($image);
+
+    for ($y = 0; $y < $height; $y++) {
+        for ($x = 0; $x < $width; $x++) {
+            $rgba = imagecolorsforindex($image, imagecolorat($image, $x, $y));
+            if ($rgba['alpha'] < 127 && ($rgba['red'] < 245 || $rgba['green'] < 245 || $rgba['blue'] < 245)) {
+                imagedestroy($image);
+                return true;
+            }
+        }
+    }
+
+    imagedestroy($image);
+    return false;
+}
+
 
 // 2. Validation
 if (empty($benificiary_no) || $station_id <= 0 || empty($vouchers) || !is_array($vouchers)) {
@@ -36,7 +74,7 @@ if (empty($benificiary_no) || $station_id <= 0 || empty($vouchers) || !is_array(
     exit;
 }
 
-if (empty($e_signature) || strpos($e_signature, 'data:image') !== 0) {
+if (!eSignatureHasInk($e_signature)) {
     echo json_encode(['success' => false, 'message' => 'Invalid or missing e-signature. Please draw your signature before submitting.']);
     exit;
 }

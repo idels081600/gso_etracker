@@ -272,10 +272,15 @@ let ctx = signatureCanvas.getContext('2d');
 let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
+let pendingSignatureData = '';
 
 // Set canvas size properly and preserve existing drawing when resizing
 function resizeCanvas() {
     const rect = signatureCanvas.getBoundingClientRect();
+    if (rect.width <= 0) {
+        return;
+    }
+
     const width = Math.max(1, Math.floor(rect.width));
     const height = 150;
     const hasExistingDrawing = signatureCanvas.width > 0 && signatureCanvas.height > 0;
@@ -307,20 +312,31 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Drawing functions
-function startDrawing(e) {
-    isDrawing = true;
+function getCanvasPoint(e) {
     const rect = signatureCanvas.getBoundingClientRect();
-    lastX = (e.clientX || e.touches[0].clientX) - rect.left;
-    lastY = (e.clientY || e.touches[0].clientY) - rect.top;
+    const point = e.touches && e.touches.length ? e.touches[0] : e;
+
+    return {
+        x: point.clientX - rect.left,
+        y: point.clientY - rect.top
+    };
+}
+
+function startDrawing(e) {
+    e.preventDefault();
+    isDrawing = true;
+    const point = getCanvasPoint(e);
+    lastX = point.x;
+    lastY = point.y;
 }
 
 function draw(e) {
     if (!isDrawing) return;
     e.preventDefault();
     
-    const rect = signatureCanvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const point = getCanvasPoint(e);
+    const x = point.x;
+    const y = point.y;
 
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
@@ -352,6 +368,7 @@ signatureCanvas.addEventListener('touchend', stopDrawing);
 // Clear signature button
 document.getElementById('clearSignature').addEventListener('click', () => {
     ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+    pendingSignatureData = '';
 });
 
 // Claimant option radio buttons
@@ -464,6 +481,7 @@ document.getElementById('confirmSubmit').addEventListener('click', () => {
         alert('Please provide your e-signature on the canvas');
         return;
     }
+    pendingSignatureData = signatureCanvas.toDataURL('image/png');
     
     // Set hidden field value
     document.getElementById('claimantName').value = claimantName;
@@ -493,7 +511,7 @@ document.getElementById('confirmSubmit').addEventListener('click', () => {
     document.getElementById('confirmBeneficiaryCode').textContent = currentTricycleNo;
     document.getElementById('confirmClaimantName').textContent = claimantName;
     document.getElementById('confirmVouchers').textContent = newVouchers.join(', ');
-    document.getElementById('confirmSignaturePreview').src = signatureCanvas.toDataURL();
+    document.getElementById('confirmSignaturePreview').src = pendingSignatureData;
 
     // Hide the first (e-signature) modal and show final confirmation modal
     const submitModal = bootstrap.Modal.getInstance(document.getElementById('submitModal'));
@@ -506,7 +524,11 @@ document.getElementById('confirmSubmit').addEventListener('click', () => {
 // Final Confirm Submit - actually submits to the API
 document.getElementById('finalConfirmSubmit').addEventListener('click', async () => {
     const claimantName = document.getElementById('claimantName').value;
-    const signatureData = signatureCanvas.toDataURL();
+    const signatureData = pendingSignatureData;
+    if (!signatureData) {
+        alert('Missing e-signature. Please review the signature again before submitting.');
+        return;
+    }
     
     // Get newly claimed vouchers
     const newClaimedCards = document.querySelectorAll('.voucher-card.claimed:not([data-previously-claimed])');
@@ -549,6 +571,7 @@ document.getElementById('finalConfirmSubmit').addEventListener('click', async ()
             claimantNameDriver.disabled = false;
             claimantNameManual.disabled = true;
             ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+            pendingSignatureData = '';
             
             // Refresh tricycle data
             searchTricycle(currentTricycleNo);
