@@ -44,15 +44,15 @@ $redeemed_sql = "SELECT COUNT(*) as total FROM food_voucher_claims WHERE is_rede
 $redeemed_result = mysqli_query($conn, $redeemed_sql);
 $total_redeemed = $redeemed_result ? mysqli_fetch_assoc($redeemed_result)['total'] : 0;
 
-$redeemed_today_sql = "SELECT COUNT(*) as total FROM food_redemption_items ri
-                       JOIN food_redemption_batches rb ON ri.batch_id = rb.id
+$redeemed_today_sql = "SELECT COALESCE(SUM(total_vouchers), 0) as total
+                       FROM food_redemption_batches rb
                        WHERE rb.status NOT IN ('cancelled', 'void')
-                       AND DATE(ri.created_at) = CURDATE()";
+                       AND DATE(rb.created_at) = CURDATE()";
 $redeemed_today_result = mysqli_query($conn, $redeemed_today_sql);
 $total_redeemed_today = $redeemed_today_result ? mysqli_fetch_assoc($redeemed_today_result)['total'] : 0;
 
-$redeemed_total_sql = "SELECT COUNT(*) as total FROM food_redemption_items ri
-                       JOIN food_redemption_batches rb ON ri.batch_id = rb.id
+$redeemed_total_sql = "SELECT COALESCE(SUM(total_vouchers), 0) as total 
+                       FROM food_redemption_batches rb
                        WHERE rb.status NOT IN ('cancelled', 'void')";
 $redeemed_total_result = mysqli_query($conn, $redeemed_total_sql);
 $total_redeemed_total = $redeemed_total_result ? mysqli_fetch_assoc($redeemed_total_result)['total'] : 0;
@@ -157,7 +157,7 @@ if ($market_result) {
                         </div>
                     </div>
                 </div>
-              
+
                 <div class="col-12 col-md-4">
                     <div class="card shadow-sm border-danger border-2">
                         <div class="card-body">
