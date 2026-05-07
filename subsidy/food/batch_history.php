@@ -28,6 +28,19 @@ $pageTitle = "Batch History";
         .batch-card:hover {
             transform: translateY(-2px);
         }
+        /* Drag and drop styles */
+        .drop-target {
+            border-top: 2px solid #0d6efd !important;
+            background-color: #e7f1ff !important;
+        }
+        .drag-handle {
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+        }
     </style>
     <!-- Session Heartbeat -->
     <script src="./js/session_heartbeat.js"></script>
@@ -224,7 +237,7 @@ $pageTitle = "Batch History";
                 </div>
                 <div class="modal-body">
                     <p>Are you sure you want to cancel this batch?</p>
-                    <p class="text-danger mb-0">This will reverse all voucher redemptions in this batch.</p>
+                    <p class="text-danger mb-0">This will reverse all voucher redemptions and remove the voucher rows from this batch.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep It</button>
