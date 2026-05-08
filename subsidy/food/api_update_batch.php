@@ -28,13 +28,14 @@ if (!$input) {
 $batch_id = isset($input['batch_id']) ? intval($input['batch_id']) : 0;
 $remove_voucher_ids = isset($input['remove_voucher_ids']) && is_array($input['remove_voucher_ids']) ? $input['remove_voucher_ids'] : [];
 $add_voucher_ids = isset($input['add_voucher_ids']) && is_array($input['add_voucher_ids']) ? $input['add_voucher_ids'] : [];
+$reorder_voucher_ids = isset($input['reorder_voucher_ids']) && is_array($input['reorder_voucher_ids']) ? $input['reorder_voucher_ids'] : [];
 
 if ($batch_id <= 0) {
     echo json_encode(['success' => false, 'message' => 'Batch ID is required']);
     exit();
 }
 
-if (empty($remove_voucher_ids) && empty($add_voucher_ids)) {
+if (empty($remove_voucher_ids) && empty($add_voucher_ids) && empty($reorder_voucher_ids)) {
     echo json_encode(['success' => false, 'message' => 'No changes detected. Please add or remove vouchers.']);
     exit();
 }
@@ -94,11 +95,11 @@ try {
         
         $valid_id_str = implode(',', $valid_remove_ids);
         
-        // Step 1: Delete from food_redemption_items
-        $delete_items_sql = "DELETE FROM food_redemption_items 
-                             WHERE batch_id = $batch_id AND voucher_id IN ($valid_id_str)";
-        if (!mysqli_query($conn, $delete_items_sql)) {
-            throw new Exception('Failed to remove batch items: ' . mysqli_error($conn));
+        // Step 1: Void the redemption items instead of deleting them
+        $void_items_sql = "UPDATE food_redemption_items SET status = 'void' 
+                           WHERE batch_id = $batch_id AND voucher_id IN ($valid_id_str)";
+        if (!mysqli_query($conn, $void_items_sql)) {
+            throw new Exception('Failed to void batch items: ' . mysqli_error($conn));
         }
         
         // Step 2: Update food_voucher_claims - set is_redeemed = 0, batch_id = NULL
@@ -216,6 +217,32 @@ try {
         $added_count = count($valid_add_vouchers);
         $current_vouchers += $added_count;
         $current_amount += ($added_count * 200.00);
+    }
+    
+    // === PROCESS REORDER ===
+    // Update selection_order based on the reordered voucher_id list (current items in display order)
+    if (!empty($reorder_voucher_ids)) {
+        $order_ids = [];
+        foreach ($reorder_voucher_ids as $id) {
+            $order_ids[] = intval($id);
+        }
+        $order_ids = array_unique($order_ids);
+        
+        // Only update selection_order for items that are still in the batch
+        $update_order_sql = "UPDATE food_redemption_items SET selection_order = ? WHERE batch_id = $batch_id AND voucher_id = ?";
+        $order_stmt = mysqli_prepare($conn, $update_order_sql);
+        if (!$order_stmt) {
+            throw new Exception('Failed to prepare order update: ' . mysqli_error($conn));
+        }
+        
+        foreach ($order_ids as $order => $voucher_id) {
+            $seq = $order + 1; // 1-based order
+            mysqli_stmt_bind_param($order_stmt, 'ii', $seq, $voucher_id);
+            if (!mysqli_stmt_execute($order_stmt)) {
+                throw new Exception('Failed to update selection order: ' . mysqli_stmt_error($order_stmt));
+            }
+        }
+        mysqli_stmt_close($order_stmt);
     }
     
     // Update batch totals

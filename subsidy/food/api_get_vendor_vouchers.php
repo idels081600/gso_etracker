@@ -52,7 +52,12 @@ if (!$vendor_result || mysqli_num_rows($vendor_result) === 0) {
 $vendor = mysqli_fetch_assoc($vendor_result);
 
 // Base WHERE conditions - show only verified and unredeemed vouchers
-$where_conditions = ["vc.is_verified = 1", "vc.is_redeemed = 0"];
+// Also exclude vouchers that exist in voided redemption items
+$where_conditions = [
+    "vc.is_verified = 1", 
+    "vc.is_redeemed = 0",
+    "NOT EXISTS (SELECT 1 FROM food_redemption_items ri WHERE ri.voucher_id = vc.id AND ri.status = 'void')"
+];
 
 // Add search filter if provided
 if ($escaped_search !== '') {

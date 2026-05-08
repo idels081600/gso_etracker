@@ -372,7 +372,7 @@ async function cancelBatch() {
             loadBatches(currentPage, currentFilters);
             
             // Show success alert
-            showAlert('Batch cancelled successfully. Voucher redemptions have been reversed.', 'success');
+            showAlert('Batch cancelled successfully. Voucher redemptions have been reversed and redemption items have been voided.', 'success');
         } else {
             showAlert(data.message || 'Failed to cancel batch.', 'danger');
         }
@@ -473,6 +473,7 @@ let editBatchItems = [];        // Current items in the batch (tracking removals
 let editAvailableVouchers = []; // Available vouchers to add
 let editAddedVouchers = [];     // Vouchers added during this edit session (local tracking)
 let editRemovedVoucherIds = []; // Voucher IDs removed during this edit session
+let editInitialOrder = '';      // Snapshot of initial voucher order for reorder detection
 
 // Open the edit batch modal
 async function openEditBatchModal(batchId) {
@@ -503,6 +504,9 @@ async function openEditBatchModal(batchId) {
             editBatchData = data.batch;
             editBatchItems = data.items || [];
             
+            // Store initial order for reorder detection
+            editInitialOrder = editBatchItems.map(item => item.voucher_id).join(',');
+            
             // Update header info
             document.getElementById('editBatchNumber').textContent = data.batch.batch_number;
             document.getElementById('editVendorName').textContent = data.batch.vendor ? data.batch.vendor.vendor_name : 'N/A';
@@ -527,7 +531,7 @@ async function openEditBatchModal(batchId) {
     }
 }
 
-// Load available vouchers for the vendor
+// Load available vouchers for the vendor (without pagination limit - get all)
 async function loadEditAvailableVouchers(vendorSerial) {
     if (!vendorSerial) {
         document.getElementById('editAvailableVoucherBody').innerHTML = 
@@ -536,8 +540,12 @@ async function loadEditAvailableVouchers(vendorSerial) {
         return;
     }
 
+    document.getElementById('editAvailableVoucherBody').innerHTML = 
+        '<tr><td colspan="3" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading all vouchers...</td></tr>';
+
     try {
-        const response = await fetch(`api_get_vendor_vouchers.php?vendor_serial=${encodeURIComponent(vendorSerial)}`);
+        // Fetch all available vouchers without pagination limit
+        const response = await fetch(`api_get_vendor_vouchers.php?vendor_serial=${encodeURIComponent(vendorSerial)}&page=1&limit=9999`);
         const data = await response.json();
 
         if (data.success) {
@@ -556,7 +564,10 @@ async function loadEditAvailableVouchers(vendorSerial) {
     }
 }
 
-// Render current batch items (left panel)
+// Track drag state
+let draggedRowIndex = null;
+
+// Render current batch items (left panel) with drag-and-drop support
 function renderEditBatchItems() {
     const tbody = document.getElementById('editCurrentItemsBody');
     tbody.innerHTML = '';
@@ -570,11 +581,16 @@ function renderEditBatchItems() {
 
     editBatchItems.forEach((item, index) => {
         const row = document.createElement('tr');
+        row.draggable = true;
+        row.dataset.index = index;
+        
         const beneficiaryCode = item.beneficiary_code || 'N/A';
         const sequenceNumber = String(item.voucher_number).padStart(3, '0');
         
         row.innerHTML = `
-            <td>${index + 1}</td>
+            <td class="drag-handle" style="cursor: grab;">
+                <i class="bi bi-grip-vertical text-muted"></i> ${index + 1}
+            </td>
             <td><strong>${beneficiaryCode}-<span style="color: #dc3545; font-weight: bold;">${sequenceNumber}</span></strong></td>
             <td><small>${item.beneficiary_name || item.claimant_name || 'N/A'}</small></td>
             <td>
@@ -583,6 +599,55 @@ function renderEditBatchItems() {
                 </button>
             </td>
         `;
+
+        // Drag event handlers
+        row.addEventListener('dragstart', function(e) {
+            draggedRowIndex = parseInt(this.dataset.index);
+            this.classList.add('table-warning');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.index);
+        });
+
+        row.addEventListener('dragend', function() {
+            this.classList.remove('table-warning');
+            document.querySelectorAll('#editCurrentItemsBody tr').forEach(r => {
+                r.classList.remove('drop-target');
+            });
+            draggedRowIndex = null;
+        });
+
+        row.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            // Highlight the drop target row
+            document.querySelectorAll('#editCurrentItemsBody tr').forEach(r => {
+                r.classList.remove('drop-target');
+            });
+            this.classList.add('drop-target');
+        });
+
+        row.addEventListener('dragleave', function() {
+            this.classList.remove('drop-target');
+        });
+
+        row.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drop-target');
+            
+            const fromIndex = draggedRowIndex;
+            const toIndex = parseInt(this.dataset.index);
+            
+            if (fromIndex === null || fromIndex === toIndex) return;
+            
+            // Reorder the editBatchItems array
+            const [movedItem] = editBatchItems.splice(fromIndex, 1);
+            editBatchItems.splice(toIndex, 0, movedItem);
+            
+            // Re-render and update totals (which re-enables save button)
+            renderEditBatchItems();
+            updateEditTotals();
+        });
+
         tbody.appendChild(row);
     });
 
@@ -683,37 +748,64 @@ function updateEditTotals() {
     
     document.getElementById('editBatchTotals').textContent = `${totalVouchers} vouchers | ${formattedAmount}`;
 
-    // Enable save button only if there are changes
+    // Enable save button if there are changes OR items were reordered
     const hasChanges = editRemovedVoucherIds.length > 0 || editAddedVouchers.length > 0;
-    document.getElementById('saveBatchEditBtn').disabled = !hasChanges || totalVouchers === 0;
+    // Compare current order with the snapshot stored when modal was opened
+    const currentOrder = editBatchItems.map(item => item.voucher_id).join(',');
+    const isReordered = editInitialOrder !== '' && currentOrder !== editInitialOrder;
+    document.getElementById('saveBatchEditBtn').disabled = (!hasChanges && !isReordered) || totalVouchers === 0;
 }
 
-// Filter available vouchers in edit modal
+// Filter available vouchers in edit modal - now supports full voucher code search
 function filterEditAvailableVouchers() {
-    const searchTerm = document.getElementById('editVoucherSearch').value.toLowerCase();
+    const searchTerm = document.getElementById('editVoucherSearch').value.toLowerCase().trim();
     const tbody = document.getElementById('editAvailableVoucherBody');
     const rows = tbody.querySelectorAll('tr');
+    
+    let visibleCount = 0;
 
     rows.forEach(row => {
-        if (row.textContent.toLowerCase().includes(searchTerm) || searchTerm === '') {
+        // Search across voucher code, beneficiary code, and beneficiary name
+        const rowText = row.textContent.toLowerCase();
+        
+        if (searchTerm === '' || rowText.includes(searchTerm)) {
             row.style.display = '';
+            visibleCount++;
         } else {
             row.style.display = 'none';
         }
     });
+
+    // Update available count
+    document.getElementById('availableCountEdit').textContent = visibleCount;
+
+    // Show "no results" message if needed
+    if (visibleCount === 0 && searchTerm !== '') {
+        const noResultsRow = document.createElement('tr');
+        noResultsRow.className = 'no-results-row';
+        noResultsRow.innerHTML = `
+            <td colspan="3" class="text-center text-muted py-3">
+                <i class="bi bi-search"></i> No results for "<strong>${searchTerm}</strong>"<br>
+                <small class="text-muted mt-2 d-block">Try: full voucher code (si-1271-001), beneficiary code, name, or sequence #</small>
+            </td>
+        `;
+        tbody.appendChild(noResultsRow);
+    } else if (visibleCount === 0 && searchTerm === '') {
+        const noVouchersRow = document.createElement('tr');
+        noVouchersRow.innerHTML = '<td colspan="3" class="text-center text-muted py-3">No available vouchers.</td>';
+        tbody.appendChild(noVouchersRow);
+    }
 }
 
 // Save batch edit - call API
 async function saveBatchEdit() {
-    if (editRemovedVoucherIds.length === 0 && editAddedVouchers.length === 0) {
-        showAlert('No changes to save.', 'warning');
-        return;
-    }
-
     const saveBtn = document.getElementById('saveBatchEditBtn');
     const originalText = saveBtn.innerHTML;
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+    // Build the reordered voucher ID list (all items in current display order)
+    const reorderedVoucherIds = editBatchItems.map(item => item.voucher_id);
 
     try {
         const response = await fetch('api_update_batch.php', {
@@ -724,7 +816,8 @@ async function saveBatchEdit() {
             body: JSON.stringify({
                 batch_id: editBatchData.id,
                 remove_voucher_ids: editRemovedVoucherIds,
-                add_voucher_ids: editAddedVouchers.map(v => v.id)
+                add_voucher_ids: editAddedVouchers.map(v => v.id),
+                reorder_voucher_ids: reorderedVoucherIds
             })
         });
 
@@ -739,7 +832,7 @@ async function saveBatchEdit() {
             loadBatches(currentPage, currentFilters);
             
             let msg = 'Batch updated successfully.';
-            if (data.removed) msg += ` ${data.removed} voucher(s) removed.`;
+            if (data.removed) msg += ` ${data.removed} voucher(s) voided.`;
             if (data.added) msg += ` ${data.added} voucher(s) added.`;
             showAlert(msg, 'success');
         } else {

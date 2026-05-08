@@ -63,8 +63,8 @@ $items_sql = "SELECT
                 vc.e_signature
             FROM food_redemption_items bi
             LEFT JOIN food_voucher_claims vc ON bi.voucher_id = vc.id
-            WHERE bi.batch_id = $batch_id
-            ORDER BY bi.id ASC";
+            WHERE bi.batch_id = $batch_id AND (bi.status IS NULL OR bi.status = 'active')
+            ORDER BY bi.selection_order ASC";
 
 $items_result = mysqli_query($conn, $items_sql);
 

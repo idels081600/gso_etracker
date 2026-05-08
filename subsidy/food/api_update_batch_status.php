@@ -48,22 +48,34 @@ try {
     $batch = mysqli_fetch_assoc($batch_result);
     $current_status = $batch['status'];
     
-    // If cancelling, reverse voucher redemptions
+    // If cancelling, reverse voucher redemptions and void the batch item rows
     if ($status === 'cancelled' && $current_status !== 'cancelled') {
         // Get all voucher IDs in this batch
         $items_sql = "SELECT voucher_id FROM food_redemption_items WHERE batch_id = $batch_id";
         $items_result = mysqli_query($conn, $items_sql);
+        $voucher_ids = [];
         
         if ($items_result) {
             while ($row = mysqli_fetch_assoc($items_result)) {
-                $voucher_id = (int)$row['voucher_id'];
-                $update_sql = "UPDATE food_voucher_claims 
-                    SET is_redeemed = 0, batch_id = NULL 
-                    WHERE id = $voucher_id";
-                if (!mysqli_query($conn, $update_sql)) {
-                    throw new Exception('Failed to reverse voucher redemption: ' . mysqli_error($conn));
-                }
+                $voucher_ids[] = (int)$row['voucher_id'];
             }
+        } else {
+            throw new Exception('Failed to get batch items: ' . mysqli_error($conn));
+        }
+
+        if (!empty($voucher_ids)) {
+            $voucher_id_str = implode(',', $voucher_ids);
+            $update_sql = "UPDATE food_voucher_claims 
+                SET is_redeemed = 0, batch_id = NULL 
+                WHERE id IN ($voucher_id_str) AND batch_id = $batch_id";
+            if (!mysqli_query($conn, $update_sql)) {
+                throw new Exception('Failed to reverse voucher redemptions: ' . mysqli_error($conn));
+            }
+        }
+
+        $void_items_sql = "UPDATE food_redemption_items SET status = 'void' WHERE batch_id = $batch_id";
+        if (!mysqli_query($conn, $void_items_sql)) {
+            throw new Exception('Failed to void redemption item rows: ' . mysqli_error($conn));
         }
     }
     
@@ -108,7 +120,7 @@ try {
     
     echo json_encode([
         'success' => true,
-        'message' => 'Batch status updated successfully',
+        'message' => 'Batch status updated successfully. Vouchers have been voided.',
         'batch_id' => $batch_id,
         'status' => $status
     ]);
