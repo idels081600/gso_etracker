@@ -200,10 +200,11 @@ $pageTitle = "Batch Voucher Redemption";
                                 <table class="table table-hover table-sm mb-0">
                                     <thead class="table-light sticky-top">
                                         <tr>
-                                            <th width="60">Code</th>
+                                            <th>Code</th>
                                             <th>Beneficiary</th>
-                                            <th width="50">Verified</th>
-                                            <th width="50">Redeemed</th>
+                                            <th width="45">V</th>
+                                            <th width="45">R</th>
+                                            <th width="90">Batch #</th>
                                             <th width="70">Action</th>
                                         </tr>
                                     </thead>

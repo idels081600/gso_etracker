@@ -29,6 +29,7 @@ $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $escaped_search = $search !== '' ? mysqli_real_escape_string($conn, $search) : '';
 
 // Helper function to parse full voucher code (e.g., "si-1271-001")
+// Also handles partial codes like "TIP-113-" (trailing dash) or "TIP-113" (no trailing part)
 function parseFullVoucherCode($code) {
     $lastDashPos = strrpos($code, '-');
     if ($lastDashPos === false) {
@@ -37,7 +38,20 @@ function parseFullVoucherCode($code) {
     $codePart = substr($code, 0, $lastDashPos);
     $numPart = substr($code, $lastDashPos + 1);
     $voucherNum = (int)$numPart;
-    return $voucherNum > 0 ? ['code' => $codePart, 'number' => $voucherNum] : null;
+    
+    // If there's a valid numeric part, return exact match
+    if ($voucherNum > 0) {
+        return ['code' => $codePart, 'number' => $voucherNum, 'exact' => true];
+    }
+    
+    // If trailing dash (numPart is empty string) or numPart is 0
+    // Return as prefix search for the code part
+    if ($numPart === '' || $voucherNum === 0) {
+        // If the codePart itself also contains a dash like "TIP-113", search by prefix
+        return ['code_prefix' => $code, 'exact' => false];
+    }
+    
+    return null;
 }
 
 // First, get vendor info
@@ -53,25 +67,50 @@ $vendor = mysqli_fetch_assoc($vendor_result);
 
 // Base WHERE conditions - show only verified and unredeemed vouchers
 // Also exclude vouchers that exist in voided redemption items
-$where_conditions = [
-    "vc.is_verified = 1", 
-    "vc.is_redeemed = 0",
-    "NOT EXISTS (SELECT 1 FROM food_redemption_items ri WHERE ri.voucher_id = vc.id AND ri.status = 'void')"
-];
+// Determine if we should show all vouchers or only available ones
+// When searching, show ALL (including redeemed) so users can see status
+// When not searching, only show available (verified + unredeemed) for selection
+$show_all = $escaped_search !== '';
+
+$where_conditions = [];
+
+if ($show_all) {
+    // Show all vouchers - no filtering on is_verified or is_redeemed
+    // But still exclude voided items
+    $where_conditions = [
+        "NOT EXISTS (SELECT 1 FROM food_redemption_items ri WHERE ri.voucher_id = vc.id AND ri.status = 'void')"
+    ];
+} else {
+    // Default: only show available vouchers for selection
+    $where_conditions = [
+        "vc.is_verified = 1", 
+        "vc.is_redeemed = 0",
+        "NOT EXISTS (SELECT 1 FROM food_redemption_items ri WHERE ri.voucher_id = vc.id AND ri.status = 'void')"
+    ];
+}
 
 // Add search filter if provided
 if ($escaped_search !== '') {
     $searchConditions = [];
     
     // Standard search fields
-    $searchConditions[] = "(fb.beneficiary_code LIKE '%$escaped_search%' OR fb.full_name LIKE '%$escaped_search%' OR vc.claimant_name LIKE '%$escaped_search%')";
+    $searchConditions[] = "(fb.beneficiary_code LIKE '%$escaped_search%' OR fb.full_name LIKE '%$escaped_search%' OR vc.claimant_name LIKE '%$escaped_search%' OR vc.voucher_number LIKE '%$escaped_search%')";
     
     // Try to parse as full voucher code (e.g., "si-1271-001")
     $parsed = parseFullVoucherCode($escaped_search);
     if ($parsed !== null) {
-        $codePart = mysqli_real_escape_string($conn, $parsed['code']);
-        $numPart = (int)$parsed['number'];
-        $searchConditions[] = "(fb.beneficiary_code = '$codePart' AND vc.voucher_number = $numPart)";
+        if ($parsed['exact'] === true) {
+            // Exact match - e.g. "TIP-113-001" -> code='TIP-113', number=1
+            $codePart = mysqli_real_escape_string($conn, $parsed['code']);
+            $numPart = (int)$parsed['number'];
+            $searchConditions[] = "(fb.beneficiary_code = '$codePart' AND vc.voucher_number = $numPart)";
+        } else {
+            // Prefix match - e.g. "TIP-113-" -> find all vouchers starting with "TIP-113-"
+            $codePrefix = mysqli_real_escape_string($conn, $parsed['code_prefix']);
+            $escapedPrefixLike = mysqli_real_escape_string($conn, $parsed['code_prefix']);
+            // Use CONCAT to match beneficiary_code + '-' + padded voucher_number
+            $searchConditions[] = "CONCAT(fb.beneficiary_code, '-', LPAD(vc.voucher_number, 3, '0')) LIKE '$escapedPrefixLike%'";
+        }
     } else {
         // If only a number is provided (e.g., "001"), also try matching voucher_number
         if (is_numeric($escaped_search)) {
@@ -107,12 +146,15 @@ $sql = "SELECT
             vc.claim_date,
             vc.is_verified,
             vc.is_redeemed,
+            vc.batch_id,
             fb.beneficiary_code,
-            fb.full_name as beneficiary_name
+            fb.full_name as beneficiary_name,
+            rb.batch_number
         FROM food_voucher_claims vc
         LEFT JOIN food_beneficiaries fb ON vc.beneficiary_id = fb.id
+        LEFT JOIN food_redemption_batches rb ON vc.batch_id = rb.id
         WHERE $where_sql
-        ORDER BY vc.claim_date DESC
+        ORDER BY vc.is_redeemed ASC, vc.claim_date DESC
         LIMIT $limit OFFSET $offset";
 
 $result = mysqli_query($conn, $sql);
@@ -134,7 +176,9 @@ while ($row = mysqli_fetch_assoc($result)) {
         'claimant_name' => $row['claimant_name'],
         'claim_date' => $row['claim_date'],
         'is_verified' => (int)$row['is_verified'],
-        'is_redeemed' => (int)$row['is_redeemed']
+        'is_redeemed' => (int)$row['is_redeemed'],
+        'batch_id' => $row['batch_id'] ? (int)$row['batch_id'] : null,
+        'batch_number' => $row['batch_number']
     ];
 }
 

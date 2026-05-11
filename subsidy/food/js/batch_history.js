@@ -457,10 +457,20 @@ document.addEventListener('DOMContentLoaded', () => {
         saveBatchEditBtn.addEventListener('click', saveBatchEdit);
     }
 
-    // Edit voucher search filter
+    // Edit voucher search filter - uses server-side search with debounce
     const editVoucherSearch = document.getElementById('editVoucherSearch');
     if (editVoucherSearch) {
-        editVoucherSearch.addEventListener('keyup', filterEditAvailableVouchers);
+        let editSearchTimeout;
+        editVoucherSearch.addEventListener('keyup', function() {
+            clearTimeout(editSearchTimeout);
+            const term = this.value.trim();
+            // Use debounce to avoid too many API calls
+            editSearchTimeout = setTimeout(() => {
+                if (!editBatchData || !editBatchData.vendor) return;
+                const vendorSerial = editBatchData.vendor.vendor_serial;
+                loadEditAvailableVouchers(vendorSerial, term);
+            }, 400);
+        });
     }
 });
 
@@ -532,7 +542,8 @@ async function openEditBatchModal(batchId) {
 }
 
 // Load available vouchers for the vendor (without pagination limit - get all)
-async function loadEditAvailableVouchers(vendorSerial) {
+// Accepts optional search parameter for server-side search
+async function loadEditAvailableVouchers(vendorSerial, searchTerm = '') {
     if (!vendorSerial) {
         document.getElementById('editAvailableVoucherBody').innerHTML = 
             '<tr><td colspan="3" class="text-center text-muted py-3">No vendor serial available.</td></tr>';
@@ -541,11 +552,16 @@ async function loadEditAvailableVouchers(vendorSerial) {
     }
 
     document.getElementById('editAvailableVoucherBody').innerHTML = 
-        '<tr><td colspan="3" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading all vouchers...</td></tr>';
+        '<tr><td colspan="3" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading vouchers...</td></tr>';
 
     try {
-        // Fetch all available vouchers without pagination limit
-        const response = await fetch(`api_get_vendor_vouchers.php?vendor_serial=${encodeURIComponent(vendorSerial)}&page=1&limit=9999`);
+        // Build URL with optional search parameter for server-side filtering
+        let url = `api_get_vendor_vouchers.php?vendor_serial=${encodeURIComponent(vendorSerial)}&page=1&limit=9999`;
+        if (searchTerm) {
+            url += `&search=${encodeURIComponent(searchTerm)}`;
+        }
+        
+        const response = await fetch(url);
         const data = await response.json();
 
         if (data.success) {
@@ -665,9 +681,10 @@ function renderEditAvailableVouchers() {
     const addedIds = editAddedVouchers.map(v => v.id);
     const excludeIds = [...batchVoucherIds, ...addedIds];
 
-    // Already redeemed vouchers (in another batch) - filter out
+    // Only show verified, not-yet-redeemed vouchers that aren't already in this batch
+    // Use food_voucher_claims is_verified and is_redeemed columns directly
     const available = editAvailableVouchers.filter(v => {
-        return v.is_verified === 1 && !excludeIds.includes(v.id);
+        return v.is_verified === 1 && v.is_redeemed !== 1 && !excludeIds.includes(v.id);
     });
 
     if (available.length === 0) {
@@ -754,47 +771,6 @@ function updateEditTotals() {
     const currentOrder = editBatchItems.map(item => item.voucher_id).join(',');
     const isReordered = editInitialOrder !== '' && currentOrder !== editInitialOrder;
     document.getElementById('saveBatchEditBtn').disabled = (!hasChanges && !isReordered) || totalVouchers === 0;
-}
-
-// Filter available vouchers in edit modal - now supports full voucher code search
-function filterEditAvailableVouchers() {
-    const searchTerm = document.getElementById('editVoucherSearch').value.toLowerCase().trim();
-    const tbody = document.getElementById('editAvailableVoucherBody');
-    const rows = tbody.querySelectorAll('tr');
-    
-    let visibleCount = 0;
-
-    rows.forEach(row => {
-        // Search across voucher code, beneficiary code, and beneficiary name
-        const rowText = row.textContent.toLowerCase();
-        
-        if (searchTerm === '' || rowText.includes(searchTerm)) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-
-    // Update available count
-    document.getElementById('availableCountEdit').textContent = visibleCount;
-
-    // Show "no results" message if needed
-    if (visibleCount === 0 && searchTerm !== '') {
-        const noResultsRow = document.createElement('tr');
-        noResultsRow.className = 'no-results-row';
-        noResultsRow.innerHTML = `
-            <td colspan="3" class="text-center text-muted py-3">
-                <i class="bi bi-search"></i> No results for "<strong>${searchTerm}</strong>"<br>
-                <small class="text-muted mt-2 d-block">Try: full voucher code (si-1271-001), beneficiary code, name, or sequence #</small>
-            </td>
-        `;
-        tbody.appendChild(noResultsRow);
-    } else if (visibleCount === 0 && searchTerm === '') {
-        const noVouchersRow = document.createElement('tr');
-        noVouchersRow.innerHTML = '<td colspan="3" class="text-center text-muted py-3">No available vouchers.</td>';
-        tbody.appendChild(noVouchersRow);
-    }
 }
 
 // Save batch edit - call API

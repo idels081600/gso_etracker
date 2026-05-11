@@ -298,7 +298,7 @@ function displayVendorInfo(vendor) {
 function loadVouchers(vendorId, page, search) {
   const tbody = document.getElementById("availableVoucherBody");
   tbody.innerHTML =
-    '<tr><td colspan="5" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
+    '<tr><td colspan="6" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
 
   const params = new URLSearchParams();
   params.set('vendor_serial', currentVendor.vendor_serial);
@@ -382,7 +382,7 @@ function renderAvailableVouchers() {
       msg = `<i class="bi bi-search"></i> No results found for "<strong>${currentSearchTerm}</strong>"<br><small class="text-muted mt-2 d-block">Try: full voucher code (si-1271-001), beneficiary code, name, or sequence #</small>`;
     }
     tbody.innerHTML =
-      `<tr><td colspan="5" class="text-center text-muted py-3">${msg}</td></tr>`;
+      `<tr><td colspan="6" class="text-center text-muted py-3">${msg}</td></tr>`;
     document.getElementById("availableCount").textContent = currentSearchTerm ? "0 matches" : "0 available";
     return;
   }
@@ -422,11 +422,20 @@ function renderAvailableVouchers() {
       ? '<i class="bi bi-check-circle-fill text-success"></i>'
       : '<i class="bi bi-circle text-muted"></i>';
 
+    // Show batch number for redeemed vouchers
+    let batchHtml = '';
+    if (isRedeemed && voucher.batch_number) {
+      batchHtml = `<span class="badge bg-secondary" title="Batch #${voucher.batch_number}">${voucher.batch_number}</span>`;
+    } else if (isRedeemed) {
+      batchHtml = `<span class="badge bg-secondary">Redeemed</span>`;
+    }
+
     row.innerHTML = `
         <td><strong style="font-size: 1.1em;">${voucherCodeHtml}</strong></td>
         <td><small>${voucher.beneficiary_name || voucher.claimant_name}</small></td>
         <td class="text-center">${verifiedIcon}</td>
         <td class="text-center">${redeemedIcon}</td>
+        <td class="text-center"><small>${batchHtml}</small></td>
         <td>${buttonHtml}</td>
     `;
     tbody.appendChild(row);
