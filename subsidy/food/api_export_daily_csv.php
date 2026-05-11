@@ -87,7 +87,7 @@ while ($batch = mysqli_fetch_assoc($batch_result)) {
                     bi.beneficiary_name,
                     bi.amount
                   FROM food_redemption_items bi
-                  WHERE bi.batch_id = ?
+                  WHERE bi.batch_id = ? AND (bi.status IS NULL OR bi.status = 'active')
                   ORDER BY bi.selection_order ASC";
     
     $item_stmt = mysqli_prepare($conn, $items_sql);

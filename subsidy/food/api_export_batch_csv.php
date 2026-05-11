@@ -48,7 +48,7 @@ $items_sql = "SELECT
                 bi.amount,
                 bi.selection_order
             FROM food_redemption_items bi
-            WHERE bi.batch_id = $batch_id
+            WHERE bi.batch_id = $batch_id AND (bi.status IS NULL OR bi.status = 'active')
             ORDER BY bi.selection_order ASC";
 
 $items_result = mysqli_query($conn, $items_sql);

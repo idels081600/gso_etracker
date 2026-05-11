@@ -49,12 +49,13 @@ $items_sql = "SELECT
                 bi.beneficiary_name,
                 bi.beneficiary_code,
                 bi.voucher_number,
+                bi.selection_order,
                 vc.claimant_name,
                 vc.claim_date
             FROM food_redemption_items bi
             LEFT JOIN food_voucher_claims vc ON bi.voucher_id = vc.id
-            WHERE bi.batch_id = $batch_id
-            ORDER BY bi.id ASC";
+            WHERE bi.batch_id = $batch_id AND (bi.status IS NULL OR bi.status = 'active')
+            ORDER BY bi.selection_order ASC";
 
 $items_result = mysqli_query($conn, $items_sql);
 
