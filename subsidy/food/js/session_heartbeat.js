@@ -7,9 +7,9 @@
  * Usage: Include this file in your HTML header, then initialize with:
  * <script src="session_heartbeat.js"></script>
 //  * <script>
-//  *   // Start heartbeat with 5 minute interval
+//  *   // Start heartbeat with 15 minute interval
 //  *   SessionHeartbeat.init({
-//  *     interval: 5 * 60 * 1000,  // 5 minutes
+//  *     interval: 15 * 60 * 1000,  // 15 minutes
 //  *     apiUrl: './api_heartbeat.php',
 //  *     warningThreshold: 5 * 60 * 1000 // Warn when 5 minutes remain
 //  *   });
@@ -18,7 +18,7 @@
 
 const SessionHeartbeat = (function() {
     let config = {
-        interval: 5 * 60 * 1000,        // Default: 5 minutes
+        interval: 15 * 60 * 1000,       // Default: 15 minutes
         apiUrl: './api_heartbeat.php',
         warningThreshold: 5 * 60 * 1000, // Warn when 5 minutes remain
         enableLogging: true,
