@@ -4,6 +4,7 @@ let allVouchers = [];
 let selectedVouchers = []; // Tracks order of selection
 const VOUCHER_VALUE = 200;
 const VOUCHER_PAGE_LIMIT = 50;
+const MIN_VOUCHER_SEARCH_LENGTH = 2;
 
 // Pagination state
 let currentPage = 1;
@@ -61,12 +62,8 @@ function loadDraftFromStorage() {
           renderSelectedVouchers();
           updateTotals();
 
-          // Try to refresh from server if online
-          if (navigator.onLine) {
-            loadVouchers(currentVendor.id, 1, '');
-          } else {
-            renderAvailableVouchers();
-          }
+          // Show search prompt instead of auto-loading (search-first pattern)
+          showVoucherSearchPrompt();
         }
       } else {
         clearDraftFromStorage();
@@ -96,11 +93,36 @@ function setupEventListeners() {
     .getElementById("vendorSerial")
     .addEventListener("input", liveVendorSearch);
 
+  const voucherSearchInput = document.getElementById("voucherSearch");
+
+  function runVoucherSearch() {
+    const term = voucherSearchInput.value.trim();
+
+    if (!currentVendor) {
+      alert("Please search and select a vendor first.");
+      return;
+    }
+
+    if (!term) {
+      currentSearchTerm = "";
+      currentPage = 1;
+      showVoucherSearchPrompt();
+      return;
+    }
+
+    if (term.length < MIN_VOUCHER_SEARCH_LENGTH && !/^\d+$/.test(term)) {
+      showVoucherSearchPrompt("Enter at least 2 characters, or a voucher sequence number.");
+      return;
+    }
+
+    currentSearchTerm = term;
+    currentPage = 1;
+    loadVouchers(currentVendor.id, 1, term);
+  }
+
   // Voucher search (server-side with debounce)
   let searchTimeout;
-  document
-    .getElementById("voucherSearch")
-    .addEventListener("keyup", function () {
+  voucherSearchInput.addEventListener("keyup", function (e) {
       clearTimeout(searchTimeout);
       const term = this.value.trim();
       
@@ -110,36 +132,48 @@ function setupEventListeners() {
       } else {
         this.classList.remove('is-active');
       }
+
+      if (!term) {
+        currentSearchTerm = "";
+        currentPage = 1;
+        showVoucherSearchPrompt();
+        return;
+      }
+
+      if (e.key === "Enter") {
+        runVoucherSearch();
+        return;
+      }
       
       searchTimeout = setTimeout(() => {
-        if (currentVendor && term.length > 0) {
-          currentSearchTerm = term;
-          currentPage = 1;
-          loadVouchers(currentVendor.id, 1, term);
+        if (currentVendor && (term.length >= MIN_VOUCHER_SEARCH_LENGTH || /^\d+$/.test(term))) {
+          runVoucherSearch();
         }
       }, 300);
     });
+
+  document
+    .getElementById("searchVoucherBtn")
+    .addEventListener("click", runVoucherSearch);
+
   document
     .getElementById("clearVoucherSearch")
     .addEventListener("click", () => {
-      const searchInput = document.getElementById("voucherSearch");
-      searchInput.value = "";
-      searchInput.classList.remove('is-active');
+      voucherSearchInput.value = "";
+      voucherSearchInput.classList.remove('is-active');
       currentSearchTerm = "";
       currentPage = 1;
-      if (currentVendor) {
-        loadVouchers(currentVendor.id, 1, '');
-      }
+      showVoucherSearchPrompt();
     });
 
   // Pagination buttons
   document.getElementById("prevPageBtn").addEventListener("click", () => {
-    if (currentPage > 1 && currentVendor) {
+    if (currentPage > 1 && currentVendor && currentSearchTerm) {
       loadVouchers(currentVendor.id, currentPage - 1, currentSearchTerm);
     }
   });
   document.getElementById("nextPageBtn").addEventListener("click", () => {
-    if (currentPage < totalPages && currentVendor) {
+    if (currentPage < totalPages && currentVendor && currentSearchTerm) {
       loadVouchers(currentVendor.id, currentPage + 1, currentSearchTerm);
     }
   });
@@ -153,9 +187,16 @@ function setupEventListeners() {
     .addEventListener("click", confirmRedeem);
 
   // Refresh button
+  // Refresh button - only refresh if actively searching
   document.getElementById("refreshBtn").addEventListener("click", () => {
     if (currentVendor) {
-      loadVouchers(currentVendor.id, currentPage, currentSearchTerm);
+      if (currentSearchTerm) {
+        // Refresh current search
+        loadVouchers(currentVendor.id, 1, currentSearchTerm);
+      } else {
+        // Show prompt if not searching
+        showVoucherSearchPrompt();
+      }
     }
   });
 
@@ -267,9 +308,13 @@ function searchVendor() {
         currentPage = 1;
         currentSearchTerm = '';
         document.getElementById("voucherSearch").value = '';
+        document.getElementById("voucherSearch").classList.remove('is-active');
         clearDraftFromStorage();
         displayVendorInfo(vendor);
-        loadVouchers(vendor.id, 1, '');
+        // Search-first pattern: show prompt instead of auto-loading all vouchers
+        showVoucherSearchPrompt();
+        document.getElementById("voucherSection").classList.remove("d-none");
+        document.getElementById("noVendorMessage").classList.add("d-none");
         document
           .getElementById("vendorSerial")
           .classList.remove("is-valid", "is-invalid");
@@ -294,8 +339,32 @@ function displayVendorInfo(vendor) {
   document.getElementById("vendorInfo").classList.remove("d-none");
 }
 
+// Show search prompt message when vendor is selected but no search performed
+function showVoucherSearchPrompt(message) {
+  allVouchers = [];
+  currentPage = 1;
+  totalPages = 1;
+
+  const tbody = document.getElementById("availableVoucherBody");
+  tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">
+    <div>
+      <i class="bi bi-search" style="font-size: 2rem; color: #ccc;"></i>
+      <div class="mt-2"><strong>Search for Vouchers</strong></div>
+      <small>${message || "Enter voucher code, beneficiary code, name, or sequence number"}</small>
+    </div>
+  </td></tr>`;
+  document.getElementById("availableCount").textContent = "0 available";
+  document.getElementById("paginationControls").classList.add("d-none");
+}
+
 // Load vouchers from backend with pagination + search
 function loadVouchers(vendorId, page, search) {
+  const term = (search || "").trim();
+  if (!term) {
+    showVoucherSearchPrompt();
+    return;
+  }
+
   const tbody = document.getElementById("availableVoucherBody");
   tbody.innerHTML =
     '<tr><td colspan="6" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
@@ -304,7 +373,8 @@ function loadVouchers(vendorId, page, search) {
   params.set('vendor_serial', currentVendor.vendor_serial);
   params.set('page', page);
   params.set('limit', VOUCHER_PAGE_LIMIT);
-  if (search) params.set('search', search);
+  params.set('require_search', '1');
+  params.set('search', term);
 
   fetch("api_get_vendor_vouchers.php?" + params.toString())
     .then((res) => res.json())
@@ -313,7 +383,7 @@ function loadVouchers(vendorId, page, search) {
         allVouchers = data.vouchers;
         currentPage = data.page;
         totalPages = data.total_pages;
-        currentSearchTerm = search || '';
+        currentSearchTerm = term;
 
         // Validate that selected vouchers still exist (not redeemed by someone else)
         // We need a full list for validation, so fetch all IDs in parallel (optional)
@@ -517,10 +587,10 @@ function removeVoucher(voucherId) {
   selectedVouchers = selectedVouchers.filter((v) => v.id !== voucherId);
 
   // Re-fetch current page to show the newly available voucher in correct position
-  if (currentVendor) {
+  if (currentVendor && currentSearchTerm) {
     loadVouchers(currentVendor.id, currentPage, currentSearchTerm);
   } else {
-    renderAvailableVouchers();
+    showVoucherSearchPrompt();
     renderSelectedVouchers();
     updateTotals();
   }
@@ -628,8 +698,13 @@ function confirmRedeem() {
         // Reset selection
         setTimeout(() => {
           selectedVouchers = [];
+          document.getElementById("voucherSearch").value = '';
+          document.getElementById("voucherSearch").classList.remove('is-active');
+          currentSearchTerm = '';
+          currentPage = 1;
           if (currentVendor) {
-            loadVouchers(currentVendor.id, 1, '');
+            // Show search prompt after successful redemption (search-first pattern)
+            showVoucherSearchPrompt();
           } else {
             renderAvailableVouchers();
             renderSelectedVouchers();

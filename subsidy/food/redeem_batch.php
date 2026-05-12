@@ -189,7 +189,10 @@ $pageTitle = "Batch Voucher Redemption";
                             <div class="card-body p-2 bg-light">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                    <input type="text" id="voucherSearch" class="form-control" placeholder="Search voucher..." style="font-size: 1.3rem;">
+                                    <input type="text" id="voucherSearch" class="form-control" placeholder="Voucher code, beneficiary code, name, or sequence #" style="font-size: 1.3rem;">
+                                    <button class="btn btn-primary" id="searchVoucherBtn" type="button">
+                                        <i class="bi bi-search"></i>
+                                    </button>
                                     <button class="btn btn-outline-secondary" id="clearVoucherSearch" type="button">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
@@ -292,9 +295,9 @@ $pageTitle = "Batch Voucher Redemption";
 
         <!-- No Vendor Selected Message -->
         <div id="noVendorMessage" class="alert alert-info text-center py-5">
-            <i class="bi bi-info-circle fs-1 d-block mb-3"></i>
-            <h5>Search for a vendor to begin redemption</h5>
-            <p class="mb-0">Enter the vendor serial number above to view eligible vouchers</p>
+            <i class="bi bi-shop fs-1 d-block mb-3"></i>
+            <h5>Select a Vendor to Begin</h5>
+            <p class="mb-0">Search for a vendor serial or name above to start the redemption process</p>
         </div>
 
         <!-- Proof of Claim Modal -->

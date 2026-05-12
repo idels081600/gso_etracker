@@ -27,6 +27,7 @@ $offset = ($page - 1) * $limit;
 // Search param (optional) - filters by beneficiary code, name, claimant name, or voucher number
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $escaped_search = $search !== '' ? mysqli_real_escape_string($conn, $search) : '';
+$require_search = isset($_GET['require_search']) && $_GET['require_search'] === '1';
 
 // Helper function to parse full voucher code (e.g., "si-1271-001")
 // Also handles partial codes like "TIP-113-" (trailing dash) or "TIP-113" (no trailing part)
@@ -64,6 +65,25 @@ if (!$vendor_result || mysqli_num_rows($vendor_result) === 0) {
 }
 
 $vendor = mysqli_fetch_assoc($vendor_result);
+
+if ($require_search && $escaped_search === '') {
+    echo json_encode([
+        'success' => true,
+        'vendor' => [
+            'vendor_serial' => $vendor['vendor_serial'],
+            'vendor_name' => $vendor['vendor_name']
+        ],
+        'vouchers' => [],
+        'count' => 0,
+        'total' => 0,
+        'page' => $page,
+        'limit' => $limit,
+        'total_pages' => 1,
+        'search' => $search,
+        'message' => 'Enter search criteria to find vouchers.'
+    ]);
+    exit();
+}
 
 // Base WHERE conditions - show only verified and unredeemed vouchers
 // Also exclude vouchers that exist in voided redemption items
