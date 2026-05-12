@@ -53,8 +53,9 @@ function eSignatureHasInk($signature) {
     $width = imagesx($image);
     $height = imagesy($image);
 
-    for ($y = 0; $y < $height; $y++) {
-        for ($x = 0; $x < $width; $x++) {
+    $step = 10; // Check every 10th pixel — 99% reduction in CPU usage
+    for ($y = 0; $y < $height; $y += $step) {
+        for ($x = 0; $x < $width; $x += $step) {
             $rgba = imagecolorsforindex($image, imagecolorat($image, $x, $y));
             if ($rgba['alpha'] < 127 && ($rgba['red'] < 245 || $rgba['green'] < 245 || $rgba['blue'] < 245)) {
                 imagedestroy($image);
