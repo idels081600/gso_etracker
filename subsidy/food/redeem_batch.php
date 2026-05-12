@@ -48,7 +48,6 @@ $pageTitle = "Batch Voucher Redemption";
     <script>
        
         SessionHeartbeat.init({
-            interval: 5 * 60 * 1000, // 5 minutes
             apiUrl: './api_heartbeat.php',
             warningThreshold: 5 * 60 * 1000
         });

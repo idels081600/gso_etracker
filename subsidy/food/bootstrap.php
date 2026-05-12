@@ -9,8 +9,9 @@ $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
 // Session Configuration with Heartbeat Support
-// Only set ini settings if session is not already started
-if (session_status() === PHP_SESSION_NONE) {
+// Only set ini settings if session is not already started.
+// CLI maintenance scripts do not need browser sessions.
+if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
     ini_set('session.gc_maxlifetime', env('SESSION_LIFETIME', 3600)); // 1 hour default
     ini_set('session.gc_divisor', 100);
     ini_set('session.gc_probability', 1);

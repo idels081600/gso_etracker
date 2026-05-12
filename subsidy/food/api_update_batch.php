@@ -95,16 +95,16 @@ try {
         
         $valid_id_str = implode(',', $valid_remove_ids);
         
-        // Step 1: Void the redemption items instead of deleting them
-        $void_items_sql = "UPDATE food_redemption_items SET status = 'void' 
-                           WHERE batch_id = $batch_id AND voucher_id IN ($valid_id_str)";
-        if (!mysqli_query($conn, $void_items_sql)) {
-            throw new Exception('Failed to void batch items: ' . mysqli_error($conn));
+        // Step 1: Delete from food_redemption_items
+        $delete_items_sql = "DELETE FROM food_redemption_items 
+                             WHERE batch_id = $batch_id AND voucher_id IN ($valid_id_str)";
+        if (!mysqli_query($conn, $delete_items_sql)) {
+            throw new Exception('Failed to remove batch items: ' . mysqli_error($conn));
         }
         
-        // Step 2: Update food_voucher_claims - set is_redeemed = 0, batch_id = NULL
+        // Step 2: Update food_voucher_claims - only mark the voucher claim as unredeemed.
         $update_claims_sql = "UPDATE food_voucher_claims 
-                              SET is_redeemed = 0, batch_id = NULL 
+                              SET is_redeemed = 0 
                               WHERE id IN ($valid_id_str) AND batch_id = $batch_id";
         if (!mysqli_query($conn, $update_claims_sql)) {
             throw new Exception('Failed to unredeem vouchers: ' . mysqli_error($conn));

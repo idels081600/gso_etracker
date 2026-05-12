@@ -207,7 +207,9 @@ if (isset($_POST['undo_delete'])) {
     </style>
     <script type="text/javascript">
       function loadDoc() {
-        setInterval(function() {
+        function poll() {
+          if (document.hidden) return;
+
           var xhttp = new XMLHttpRequest();
           xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
@@ -217,9 +219,13 @@ if (isset($_POST['undo_delete'])) {
           xhttp.open("GET", "live_track.php", true);
           xhttp.send();
 
-        }, 1000);
+        }
 
-
+        poll();
+        setInterval(poll, 30000);
+        document.addEventListener('visibilitychange', function() {
+          if (!document.hidden) poll();
+        });
       }
       loadDoc();
     </script>

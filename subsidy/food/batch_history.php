@@ -46,7 +46,6 @@ $pageTitle = "Batch History";
     <script src="./js/session_heartbeat.js"></script>
     <script>
         SessionHeartbeat.init({
-            interval: 5 * 60 * 1000,
             apiUrl: './api_heartbeat.php'
         });
     </script>
@@ -132,7 +131,7 @@ $pageTitle = "Batch History";
                             <option value="">All Status</option>
                             <option value="pending">Pending</option>
                             <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
+                            <option value="void">Void</option>
                         </select>
                     </div>
                     <div class="col-md-2">

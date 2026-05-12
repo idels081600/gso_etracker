@@ -48,6 +48,8 @@ if (!$batch_result || mysqli_num_rows($batch_result) === 0) {
 }
 
 $batch = mysqli_fetch_assoc($batch_result);
+$is_voided_batch = in_array($batch['status'], ['cancelled', 'void'], true);
+$item_status_filter = $is_voided_batch ? '' : " AND (bi.status IS NULL OR bi.status = 'active')";
 
 // Get batch items
 $items_sql = "SELECT 
@@ -57,13 +59,14 @@ $items_sql = "SELECT
                 bi.beneficiary_name,
                 bi.beneficiary_code,
                 bi.voucher_number,
+                bi.status,
                 bi.created_at,
                 vc.claimant_name,
                 vc.claim_date,
                 vc.e_signature
             FROM food_redemption_items bi
             LEFT JOIN food_voucher_claims vc ON bi.voucher_id = vc.id
-            WHERE bi.batch_id = $batch_id AND (bi.status IS NULL OR bi.status = 'active')
+            WHERE bi.batch_id = $batch_id $item_status_filter
             ORDER BY bi.selection_order ASC";
 
 $items_result = mysqli_query($conn, $items_sql);
@@ -78,6 +81,7 @@ if ($items_result) {
             'beneficiary_name' => $row['beneficiary_name'],
             'beneficiary_code' => $row['beneficiary_code'],
             'voucher_number' => (int)$row['voucher_number'],
+            'status' => $row['status'] ?: 'active',
             'claimant_name' => $row['claimant_name'],
             'claim_date' => $row['claim_date'],
             'e_signature' => $row['e_signature'],

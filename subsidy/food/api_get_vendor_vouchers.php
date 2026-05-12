@@ -76,16 +76,12 @@ $where_conditions = [];
 
 if ($show_all) {
     // Show all vouchers - no filtering on is_verified or is_redeemed
-    // But still exclude voided items
-    $where_conditions = [
-        "NOT EXISTS (SELECT 1 FROM food_redemption_items ri WHERE ri.voucher_id = vc.id AND ri.status = 'void')"
-    ];
+    $where_conditions = [];
 } else {
     // Default: only show available vouchers for selection
     $where_conditions = [
         "vc.is_verified = 1", 
-        "vc.is_redeemed = 0",
-        "NOT EXISTS (SELECT 1 FROM food_redemption_items ri WHERE ri.voucher_id = vc.id AND ri.status = 'void')"
+        "vc.is_redeemed = 0"
     ];
 }
 
@@ -93,8 +89,9 @@ if ($show_all) {
 if ($escaped_search !== '') {
     $searchConditions = [];
     
-    // Standard search fields
-    $searchConditions[] = "(fb.beneficiary_code LIKE '%$escaped_search%' OR fb.full_name LIKE '%$escaped_search%' OR vc.claimant_name LIKE '%$escaped_search%' OR vc.voucher_number LIKE '%$escaped_search%')";
+    // Prefix matching on beneficiary fields can use idx_code_name.
+    // Claimant and voucher number stay flexible for existing redemption search behavior.
+    $searchConditions[] = "(fb.beneficiary_code LIKE '$escaped_search%' OR fb.full_name LIKE '$escaped_search%' OR vc.claimant_name LIKE '%$escaped_search%' OR vc.voucher_number LIKE '%$escaped_search%')";
     
     // Try to parse as full voucher code (e.g., "si-1271-001")
     $parsed = parseFullVoucherCode($escaped_search);
@@ -106,7 +103,6 @@ if ($escaped_search !== '') {
             $searchConditions[] = "(fb.beneficiary_code = '$codePart' AND vc.voucher_number = $numPart)";
         } else {
             // Prefix match - e.g. "TIP-113-" -> find all vouchers starting with "TIP-113-"
-            $codePrefix = mysqli_real_escape_string($conn, $parsed['code_prefix']);
             $escapedPrefixLike = mysqli_real_escape_string($conn, $parsed['code_prefix']);
             // Use CONCAT to match beneficiary_code + '-' + padded voucher_number
             $searchConditions[] = "CONCAT(fb.beneficiary_code, '-', LPAD(vc.voucher_number, 3, '0')) LIKE '$escapedPrefixLike%'";

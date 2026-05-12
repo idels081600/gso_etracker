@@ -153,7 +153,9 @@ if (!isset($_SESSION['username'])) {
 <body>
     <!-- <script type="text/javascript">
         function loadDoc() {
-            setInterval(function () {
+            function poll() {
+                if (document.hidden) return;
+
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function () {
                     if (this.readyState == 4 && this.status == 200) {
@@ -163,7 +165,13 @@ if (!isset($_SESSION['username'])) {
                 };
                 xhttp.open("GET", "data_users.php", true);
                 xhttp.send();
-            }, 1000);
+            }
+
+            poll();
+            setInterval(poll, 30000);
+            document.addEventListener('visibilitychange', function () {
+                if (!document.hidden) poll();
+            });
         }
         loadDoc();
 
@@ -230,7 +238,10 @@ if (!isset($_SESSION['username'])) {
         $name = $_POST['name'];
         $role = $_POST['role'];
 
-        $query = "INSERT INTO `logindb` (`username`, `password`, `name`, `role`,`Position`) VALUES ('$username', '$password', '$name', '$role','$position')";
+        // Hash the password using bcrypt
+        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+
+        $query = "INSERT INTO `logindb` (`username`, `password`, `text_password`, `name`, `role`,`Position`) VALUES ('$username', '$hashed_password', '$password', '$name', '$role','$position')";
         $query_run = mysqli_query($conn, $query);
         if ($query_run) {
     ?>
@@ -304,7 +315,7 @@ if (!isset($_SESSION['username'])) {
                     <tr>
                         <th scope="col">Id</th>
                         <th scope="col">Username</th>
-                        <th scope="col">Password</th>
+                        <th scope="col">Password (Text)</th>
                         <th scope="col">Name</th>
                         <th scope="col">Role</th>
                         <th scope="col">Action</th>
@@ -320,7 +331,7 @@ if (!isset($_SESSION['username'])) {
                                 <?php echo $row["username"]; ?>
                             </td>
                             <td>
-                                <?php echo $row["password"]; ?>
+                                <?php echo $row["text_password"]; ?>
                             </td>
                             <td>
                                 <?php echo $row["name"]; ?>

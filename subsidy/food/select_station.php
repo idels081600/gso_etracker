@@ -78,7 +78,6 @@ $stations_result = mysqli_query($conn, $stations_sql);
     <script src="./js/session_heartbeat.js"></script>
     <script>
         SessionHeartbeat.init({
-            interval: 5 * 60 * 1000,
             apiUrl: './api_heartbeat.php'
         });
     </script>

@@ -66,7 +66,7 @@ try {
         if (!empty($voucher_ids)) {
             $voucher_id_str = implode(',', $voucher_ids);
             $update_sql = "UPDATE food_voucher_claims 
-                SET is_redeemed = 0, batch_id = NULL 
+                SET is_redeemed = 0 
                 WHERE id IN ($voucher_id_str) AND batch_id = $batch_id";
             if (!mysqli_query($conn, $update_sql)) {
                 throw new Exception('Failed to reverse voucher redemptions: ' . mysqli_error($conn));
@@ -83,6 +83,11 @@ try {
     if ($current_status === 'cancelled' && ($status === 'pending' || $status === 'completed')) {
         $items_sql = "SELECT voucher_id FROM food_redemption_items WHERE batch_id = $batch_id";
         $items_result = mysqli_query($conn, $items_sql);
+
+        $active_items_sql = "UPDATE food_redemption_items SET status = 'active' WHERE batch_id = $batch_id";
+        if (!mysqli_query($conn, $active_items_sql)) {
+            throw new Exception('Failed to re-activate redemption item rows: ' . mysqli_error($conn));
+        }
         
         if ($items_result) {
             while ($row = mysqli_fetch_assoc($items_result)) {

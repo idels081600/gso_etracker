@@ -67,7 +67,6 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
     <script src="./js/session_heartbeat.js"></script>
     <script>
         SessionHeartbeat.init({
-            interval: 5 * 60 * 1000,
             apiUrl: './api_heartbeat.php'
         });
     </script>

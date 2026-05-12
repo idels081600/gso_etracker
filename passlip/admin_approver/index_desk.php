@@ -176,7 +176,9 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
         }, true);
 
         function loadDoc() {
-            setInterval(function() {
+            function poll() {
+                if (document.hidden) return;
+
                 // Save current checkbox states before AJAX call
                 saveCheckboxStates();
 
@@ -190,7 +192,13 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                 };
                 xhttp.open("GET", "data_desk.php", true);
                 xhttp.send();
-            }, 1000);
+            }
+
+            poll();
+            setInterval(poll, 30000);
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) poll();
+            });
         }
 
         loadDoc();

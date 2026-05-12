@@ -67,7 +67,8 @@ function renderBatches(batches, pagination) {
                 statusBadge = '<span class="badge bg-warning text-dark status-badge">Pending</span>';
                 break;
             case 'cancelled':
-                statusBadge = '<span class="badge bg-danger status-badge">Cancelled</span>';
+            case 'void':
+                statusBadge = '<span class="badge bg-danger status-badge">Void</span>';
                 break;
             default:
                 statusBadge = '<span class="badge bg-secondary status-badge">' + batch.status + '</span>';
@@ -92,7 +93,7 @@ function renderBatches(batches, pagination) {
         
         // Actions
         let actions = '';
-        if (batch.status !== 'cancelled') {
+        if (batch.status !== 'cancelled' && batch.status !== 'void') {
             actions += `<button class="btn btn-sm btn-outline-warning me-1" onclick="openEditBatchModal(${batch.id})" title="Edit Batch">
                 <i class="bi bi-pencil-square"></i>
             </button>`;
@@ -233,7 +234,8 @@ function renderBatchDetails(batch, items) {
             statusBadge = '<span class="badge bg-warning text-dark">Pending</span>';
             break;
         case 'cancelled':
-            statusBadge = '<span class="badge bg-danger">Cancelled</span>';
+        case 'void':
+            statusBadge = '<span class="badge bg-danger">Void</span>';
             break;
         default:
             statusBadge = '<span class="badge bg-secondary">' + batch.status + '</span>';
@@ -258,6 +260,7 @@ function renderBatchDetails(batch, items) {
                             <th>Beneficiary Code</th>
                             <th>Beneficiary Name</th>
                             <th>Amount</th>
+                            ${['cancelled', 'void'].includes(batch.status) ? '<th>Status</th>' : ''}
                         </tr>
                     </thead>
                     <tbody>
@@ -269,13 +272,19 @@ function renderBatchDetails(batch, items) {
                 maximumFractionDigits: 2
             });
             
+            const statusCell = ['cancelled', 'void'].includes(batch.status)
+                ? `<td><span class="badge ${item.status === 'void' ? 'bg-danger' : 'bg-success'}">${item.status || 'active'}</span></td>`
+                : '';
+            const rowClass = item.status === 'void' ? ' class="table-danger"' : '';
+            
             itemsTable += `
-                <tr>
+                <tr${rowClass}>
                     <td>${index + 1}</td>
                     <td>${item.voucher_number}</td>
                     <td>${item.beneficiary_code || 'N/A'}</td>
                     <td>${item.beneficiary_name || 'N/A'}</td>
                     <td class="text-end">${itemAmount}</td>
+                    ${statusCell}
                 </tr>
             `;
         });
@@ -284,7 +293,7 @@ function renderBatchDetails(batch, items) {
                     </tbody>
                     <tfoot>
                         <tr class="table-active">
-                            <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                            <td colspan="${['cancelled', 'void'].includes(batch.status) ? '5' : '4'}" class="text-end"><strong>Total:</strong></td>
                             <td class="text-end"><strong>${formattedAmount}</strong></td>
                         </tr>
                     </tfoot>
@@ -808,7 +817,7 @@ async function saveBatchEdit() {
             loadBatches(currentPage, currentFilters);
             
             let msg = 'Batch updated successfully.';
-            if (data.removed) msg += ` ${data.removed} voucher(s) voided.`;
+            if (data.removed) msg += ` ${data.removed} voucher(s) removed.`;
             if (data.added) msg += ` ${data.added} voucher(s) added.`;
             showAlert(msg, 'success');
         } else {
