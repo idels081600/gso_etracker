@@ -92,13 +92,20 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
 
     <main class="pt-5">
         <section class="container-fluid mt-4">
-            <div class="row g-3">
+            
+            <!-- TRICYCLE STATISTICS -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5 class="text-primary mb-3"><i class="bi bi-bicycle me-2"></i>TRICYCLE STATISTICS</h5>
+                </div>
+            </div>
+            <div class="row g-3 mb-4">
                 <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card shadow-sm">
+                    <div class="card shadow-sm border-primary border-2">
                         <div class="card-body">
                             <h6 class="card-title text-uppercase text-secondary mb-3">Total Tricycles</h6>
-                            <p class="display-6 mb-0" id="totalTricycles">0</p>
-                            <small class="text-muted">Updated just now</small>
+                            <p class="display-6 mb-0 text-primary" id="totalTricycles">0</p>
+                            <small class="text-muted">Registered vehicles</small>
                         </div>
                     </div>
                 </div>
@@ -106,7 +113,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                     <div class="card shadow-sm">
                         <div class="card-body">
                             <h6 class="card-title text-uppercase text-secondary mb-3">Active</h6>
-                            <p class="display-6 mb-0" id="activeCount">0</p>
+                            <p class="display-6 mb-0 text-success" id="activeCount">0</p>
                             <small class="text-muted">Active tricycles</small>
                         </div>
                     </div>
@@ -115,7 +122,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                     <div class="card shadow-sm">
                         <div class="card-body">
                             <h6 class="card-title text-uppercase text-secondary mb-3">Not Active</h6>
-                            <p class="display-6 mb-0" id="inactiveCount">0</p>
+                            <p class="display-6 mb-0 text-warning" id="inactiveCount">0</p>
                             <small class="text-muted">Needs action</small>
                         </div>
                     </div>
@@ -125,7 +132,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                         <div class="card-body">
                             <h6 class="card-title text-uppercase text-secondary mb-3">Total Vouchers Claimed</h6>
                             <p class="display-6 mb-0" id="totalClaimed">0</p>
-                            <small class="text-muted">Monthly total</small>
+                            <small class="text-muted">All tricycle vouchers</small>
                         </div>
                     </div>
                 </div>
@@ -133,32 +140,86 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                     <div class="card shadow-sm">
                         <div class="card-body">
                             <h6 class="card-title text-uppercase text-secondary mb-3">Today's Fuel Ups</h6>
-                            <p class="display-6 mb-0" id="todayTricycles">0</p>
+                            <p class="display-6 mb-0 text-info" id="todayTricycles">0</p>
                             <small class="text-muted">Tricycles fueled today</small>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- BOAT STATISTICS -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5 class="text-info mb-3"><i class="bi bi-boat me-2"></i>BOAT STATISTICS</h5>
+                </div>
+            </div>
+            <div class="row g-3 mb-4">
                 <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card shadow-sm">
+                    <div class="card shadow-sm border-info border-2">
                         <div class="card-body">
-                            <h6 class="card-title text-uppercase text-secondary mb-3">Today's Liters</h6>
-                            <p class="display-6 mb-0" id="todayLiters">0</p>
-                            <small class="text-muted">Liters dispensed today</small>
+                            <h6 class="card-title text-uppercase text-secondary mb-3">Total Boats</h6>
+                            <p class="display-6 mb-0 text-info" id="totalBoats">0</p>
+                            <small class="text-muted">Registered boats</small>
                         </div>
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-xl-3">
                     <div class="card shadow-sm">
                         <div class="card-body">
+                            <h6 class="card-title text-uppercase text-secondary mb-3">Total Boat Vouchers</h6>
+                            <p class="display-6 mb-0" id="totalBoatVouchers">0</p>
+                            <small class="text-muted">Boat vouchers claimed</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase text-secondary mb-3">Today's Boat Fuel Ups</h6>
+                            <p class="display-6 mb-0 text-info" id="todayBoats">0</p>
+                            <small class="text-muted">Boats fueled today</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase text-secondary mb-3">Total Boat Liters</h6>
+                            <p class="display-6 mb-0" id="totalBoatLiters">0</p>
+                            <small class="text-muted">All time boat liters</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMBINED TOTALS -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5 class="text-success mb-3"><i class="bi bi-graph-up me-2"></i>COMBINED TOTALS</h5>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-12 col-md-6 col-xl-4">
+                    <div class="card shadow-sm border-success border-2">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase text-secondary mb-3">Today's Liters</h6>
+                            <p class="display-6 mb-0 text-success" id="todayLiters">0</p>
+                            <small class="text-muted">Liters dispensed today</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-4">
+                    <div class="card shadow-sm border-success border-2">
+                        <div class="card-body">
                             <h6 class="card-title text-uppercase text-secondary mb-3">Total Liters</h6>
-                            <p class="display-6 mb-0" id="totalLiters">0</p>
+                            <p class="display-6 mb-0 text-success" id="totalLiters">0</p>
                             <small class="text-muted">All time total liters</small>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row g-3 mt-2">
+<div class="row g-3 mt-2">
                 <div class="col-12 col-md-6 col-xl-4">
                     <div class="card shadow-sm">
                         <div class="card-body">
@@ -169,6 +230,77 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                                 <button class="btn btn-primary" type="button" id="updateLitersBtn">Update Liters</button>
                             </div>
                             <small class="text-muted">Enter today's pump price to calculate actual liters dispensed</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Section -->
+            <div class="row g-3 mt-4">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Summary Statistics</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <!-- Tricycle Summary -->
+                                <div class="col-md-6 col-lg-3">
+                                    <div class="card bg-light border">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-uppercase text-secondary mb-3">Tricycle Summary</h6>
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <p class="h5 mb-1" id="tricycleTotalVouchers">0</p>
+                                                    <small class="text-muted">Total Vouchers</small>
+                                                </div>
+                                                <div class="col-6">
+                                                    <p class="h5 mb-1" id="tricycleTotalLiters">0</p>
+                                                    <small class="text-muted">Total Liters</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Boat Summary -->
+                                <div class="col-md-6 col-lg-3">
+                                    <div class="card bg-light border">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-uppercase text-secondary mb-3">Boat Summary</h6>
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <p class="h5 mb-1" id="boatTotalVouchers">0</p>
+                                                    <small class="text-muted">Total Vouchers</small>
+                                                </div>
+                                                <div class="col-6">
+                                                    <p class="h5 mb-1" id="boatTotalLiters">0</p>
+                                                    <small class="text-muted">Total Liters</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Grand Total -->
+                                <div class="col-md-6 col-lg-3">
+                                    <div class="card bg-success text-white">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-uppercase mb-3">Grand Total</h6>
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <p class="h5 mb-1" id="grandTotalVouchers">0</p>
+                                                    <small class="text-muted">Total Vouchers</small>
+                                                </div>
+                                                <div class="col-6">
+                                                    <p class="h5 mb-1" id="grandTotalLiters">0</p>
+                                                    <small class="text-muted">Total Liters</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -188,6 +320,9 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                                 <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#exportPdfModal">
                                     <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
                                 </button>
+                                <a href="manual_claimed_voucher_summary.php" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-list-ol me-1"></i>Manual Claimed Vouchers
+                                </a>
                                 <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#bulkImportModal">
                                     <i class="bi bi-file-earmark-spreadsheet me-1"></i>Bulk Import
                                 </button>
