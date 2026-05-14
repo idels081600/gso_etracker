@@ -184,6 +184,23 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             --bs-btn-hover-border-color: #146c43;
         }
 
+        .draft-bar {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            padding: 0.65rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            color: #92400e;
+        }
+
+        .draft-bar .btn-sm {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.6rem;
+        }
+
         @media (max-width: 767.98px) {
             .app-shell {
                 padding-top: 64px;
@@ -251,6 +268,13 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                             <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
                         </button>
                     </div>
+                </div>
+                <!-- Draft restore bar (hidden initially) -->
+                <div id="draftRestoreBar" class="draft-bar mt-3 d-none">
+                    <i class="bi bi-save2"></i>
+                    <span class="flex-grow-1">A draft was found from your previous session.</span>
+                    <button type="button" class="btn btn-sm btn-outline-warning" id="restoreDraftBtn">Restore</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="discardDraftBtn">Discard</button>
                 </div>
             </div>
         </section>
@@ -408,6 +432,10 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
+        // ========== DRAFT – localStorage key ==========
+        const DRAFT_KEY = 'manual_claimed_voucher_draft';
+
+        // ========== DOM refs ==========
         const manualSearch = document.getElementById('manualSearch');
         const searchDropdown = document.getElementById('searchDropdown');
         const voucherList = document.getElementById('voucherList');
@@ -425,12 +453,151 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
         let chosenSuggestion = null;
         let searchTimer = null;
 
+        // ========== Draft helpers ==========
+        function saveDraft() {
+            const draft = {
+                selected: selected.map(function(item) {
+                    return {
+                        tricycle_no: item.tricycle_no,
+                        voucher_number: item.voucher_number,
+                        driver_name: item.driver_name,
+                        fuel_type: item.fuel_type,
+                        liters: item.liters,
+                        pump_price: item.pump_price
+                    };
+                }),
+                fuel_prices: {},
+                fuel_type: getSelectedFuelType(),
+                group_liters: groupLiters.value,
+                search_value: manualSearch.value,
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value
+            };
+            fuelPriceInputs.forEach(function(input) {
+                draft.fuel_prices[input.dataset.fuel] = input.value;
+            });
+            try {
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+            } catch (e) {
+                // storage full – ignore
+            }
+        }
+
+        function loadDraft() {
+            var raw;
+            try {
+                raw = localStorage.getItem(DRAFT_KEY);
+            } catch (e) {
+                return null;
+            }
+            if (!raw) return null;
+            try {
+                return JSON.parse(raw);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function clearDraft() {
+            try {
+                localStorage.removeItem(DRAFT_KEY);
+            } catch (e) { /* ignore */ }
+        }
+
+        function hasDraft() {
+            return loadDraft() !== null;
+        }
+
+        // ========== Draft restore bar ==========
+        var draftRestoreBar = document.getElementById('draftRestoreBar');
+
+        function showDraftRestoreBar() {
+            if (hasDraft()) {
+                draftRestoreBar.classList.remove('d-none');
+            }
+        }
+
+        function hideDraftRestoreBar() {
+            draftRestoreBar.classList.add('d-none');
+        }
+
+        document.getElementById('restoreDraftBtn').addEventListener('click', function() {
+            var draft = loadDraft();
+            if (!draft) return;
+            hideDraftRestoreBar();
+            // Restore fuel prices
+            fuelPriceInputs.forEach(function(input) {
+                if (draft.fuel_prices && draft.fuel_prices[input.dataset.fuel] !== undefined) {
+                    input.value = draft.fuel_prices[input.dataset.fuel];
+                }
+            });
+            // Restore fuel type radio
+            if (draft.fuel_type) {
+                var radio = fuelTypeRadios.find(function(r) { return r.value === draft.fuel_type; });
+                if (radio) radio.checked = true;
+            }
+            // Restore group liters
+            if (draft.group_liters !== undefined && draft.group_liters !== null) {
+                groupLiters.value = draft.group_liters;
+            }
+            // Restore dates
+            if (draft.start_date) document.getElementById('startDate').value = draft.start_date;
+            if (draft.end_date) document.getElementById('endDate').value = draft.end_date;
+            // Restore search
+            if (draft.search_value) manualSearch.value = draft.search_value;
+            // Restore selected entries
+            if (draft.selected && Array.isArray(draft.selected)) {
+                selected.splice(0, selected.length);
+                draft.selected.forEach(function(item) {
+                    selected.push({
+                        tricycle_no: item.tricycle_no,
+                        voucher_number: item.voucher_number,
+                        driver_name: item.driver_name || 'Manual entry',
+                        fuel_type: item.fuel_type || getSelectedFuelType(),
+                        liters: item.liters || '',
+                        pump_price: item.pump_price || getFuelPrice(item.fuel_type || getSelectedFuelType())
+                    });
+                });
+                renderSelected();
+                syncVoucherButtons();
+            }
+            // Save current state as draft
+            saveDraft();
+        });
+
+        document.getElementById('discardDraftBtn').addEventListener('click', function() {
+            clearDraft();
+            hideDraftRestoreBar();
+        });
+
+        // ========== Auto-save draft on change (debounced) ==========
+        var draftSaveTimer = null;
+
+        function autoSaveDraft() {
+            clearTimeout(draftSaveTimer);
+            draftSaveTimer = setTimeout(saveDraft, 400);
+        }
+
+        // Watch all relevant inputs for changes
+        manualSearch.addEventListener('input', autoSaveDraft);
+        fuelTypeRadios.forEach(function(radio) {
+            radio.addEventListener('change', autoSaveDraft);
+        });
+        fuelPriceInputs.forEach(function(input) {
+            input.addEventListener('input', autoSaveDraft);
+        });
+        groupLiters.addEventListener('input', autoSaveDraft);
+        document.getElementById('startDate').addEventListener('change', autoSaveDraft);
+        document.getElementById('endDate').addEventListener('change', autoSaveDraft);
+
+        // ========== Original code (unchanged below) ==========
+
         function escapeHtml(value) {
             return String(value || '').replace(/[&<>"']/g, (char) => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
+                '&': '&',
+                '<': '<',
+                '>': '>',
+                '"': '"',
                 "'": '&#039;'
             }[char]));
         }
@@ -564,6 +731,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                             selected.splice(existingIndex, 1);
                             renderSelected();
                             syncVoucherButtons();
+                            autoSaveDraft();
                             return;
                         }
 
@@ -629,6 +797,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             setDropdown('');
             renderSelected();
             syncVoucherButtons();
+            autoSaveDraft();
         }
 
         function syncVoucherButtons() {
@@ -713,6 +882,10 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             document.getElementById('startDateInput').value = document.getElementById('startDate').value;
             document.getElementById('endDateInput').value = document.getElementById('endDate').value;
             document.getElementById('exportForm').submit();
+
+            // Clear draft after successful export
+            clearDraft();
+            hideDraftRestoreBar();
         }
 
         function applyGroupSettingsToCurrentTricycle() {
@@ -775,12 +948,14 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
 
             renderSelected();
             syncVoucherButtons();
+            autoSaveDraft();
         });
 
         document.getElementById('clearListBtn').addEventListener('click', () => {
             selected.splice(0, selected.length);
             renderSelected();
             syncVoucherButtons();
+            autoSaveDraft();
         });
 
         document.getElementById('exportManualBtn').addEventListener('click', submitExport);
@@ -791,6 +966,9 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                 setDropdown('');
             }
         });
+
+        // ========== On page load: show draft restore bar ==========
+        showDraftRestoreBar();
     </script>
 </body>
 
