@@ -100,6 +100,10 @@ if (isset($_POST['end_date']) && !empty($_POST['end_date'])) {
 
 require_once '../../fpdf/fpdf.php';
 
+function formatRoundedAmount($amount) {
+    return number_format(round((float)$amount), 0);
+}
+
 $currentDate = date('F j, Y');
 $reportDateText = $currentDate;
 
@@ -306,7 +310,7 @@ if (empty($groupedData)) {
         $voucherStr = implode(', ', $formattedVouchers);
         $litersStr = number_format((float)$data['liters'], 2);
         $priceStr = number_format((float)$data['pump_price'], 2);
-        $amountStr = number_format((float)$data['amount'], 2);
+        $amountStr = formatRoundedAmount($data['amount']);
 
         $h1 = $pdf->calcRowHeight($data['driver_name'], COL_NAME);
         $h2 = $pdf->calcRowHeight($data['tricycle_no'], COL_TRIC);
@@ -393,9 +397,9 @@ $pdf->Cell($colWidth, $rowHeight, 'TOTAL', 1, 1, 'C', true);
 
 $pdf->SetFont('Arial', '', 9);
 $pdf->Cell($colWidth, $rowHeight, 'Total Amount (PHP)', 1, 0, 'C');
-$pdf->Cell($colWidth, $rowHeight, number_format($tricycleFueledPrice, 2), 1, 0, 'C');
-$pdf->Cell($colWidth, $rowHeight, number_format($boatFueledPrice, 2), 1, 0, 'C');
-$pdf->Cell($colWidth, $rowHeight, number_format($totalFueledPrice, 2), 1, 1, 'C');
+$pdf->Cell($colWidth, $rowHeight, formatRoundedAmount($tricycleFueledPrice), 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, formatRoundedAmount($boatFueledPrice), 1, 0, 'C');
+$pdf->Cell($colWidth, $rowHeight, formatRoundedAmount($totalFueledPrice), 1, 1, 'C');
 
 $pdf->Cell($colWidth, $rowHeight, 'Total Liters', 1, 0, 'C');
 $pdf->Cell($colWidth, $rowHeight, number_format($tricycleLiters, 2), 1, 0, 'C');
