@@ -420,7 +420,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                                     <tbody id="selectedTable"></tbody>
                                 </table>
                                 <div id="selectedTotals" class="total-strip d-flex flex-column flex-md-row gap-2 justify-content-md-end align-items-md-center px-3 py-3 text-end">
-                                    <span class="text-muted small" id="selectedTotalGroups">0 export groups</span>
+                                    <span class="text-muted small" id="selectedTotalGroups">0 selected groups</span>
                                     <span class="fw-semibold">Total Amount: PHP <span id="selectedTotalAmount">0</span></span>
                                 </div>
                             </div>
@@ -443,7 +443,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
         // ========== DRAFT – localStorage key ==========
-        const DRAFT_KEY = 'manual_claimed_voucher_draft_v2';
+        const DRAFT_KEY = 'manual_claimed_voucher_draft';
 
         // ========== DOM refs ==========
         const manualSearch = document.getElementById('manualSearch');
@@ -572,6 +572,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                         claim_date: item.claim_date || ''
                     });
                 });
+                currentTricycleNo = selected.length > 0 ? selected[0].tricycle_no : '';
                 renderSelected();
                 syncVoucherButtons();
             }
@@ -677,14 +678,35 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             return groups;
         }
 
+        function getSelectedGroups() {
+            const groups = new Map();
+
+            selected.forEach((item) => {
+                const key = [
+                    item.tricycle_no,
+                    item.fuel_type,
+                    Number(item.pump_price || 0).toFixed(2),
+                    Number(item.liters || 0).toFixed(2)
+                ].join('|');
+
+                if (!groups.has(key)) {
+                    groups.set(key, selectedAmount(item));
+                }
+            });
+
+            return groups;
+        }
+
         function updateSelectedTotals() {
-            const groups = getExportGroups();
+            if (!selectedTotalGroups || !selectedTotalAmount) return;
+
+            const groups = getSelectedGroups();
             let total = 0;
             groups.forEach((amount) => {
                 total += amount;
             });
 
-            selectedTotalGroups.textContent = `${groups.size} export group${groups.size === 1 ? '' : 's'}`;
+            selectedTotalGroups.textContent = `${groups.size} selected group${groups.size === 1 ? '' : 's'}`;
             selectedTotalAmount.textContent = formatRoundedAmount(total);
         }
 
@@ -890,7 +912,6 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             emptyState.classList.toggle('d-none', selected.length !== 0);
             selectedTableWrap.classList.toggle('d-none', selected.length === 0);
             selectedTable.innerHTML = '';
-            updateSelectedTotals();
 
             selected.forEach((item, index) => {
                 const amount = selectedAmount(item);
@@ -922,6 +943,8 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                 `;
                 selectedTable.appendChild(row);
             });
+
+            updateSelectedTotals();
         }
 
         function addTypedOrChosen() {
@@ -969,13 +992,25 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
         }
 
         function applyGroupSettingsToCurrentTricycle() {
-            if (!currentTricycleNo) return;
-
             const fuelType = getSelectedFuelType();
             const pumpPrice = getFuelPrice(fuelType);
             const liters = groupLiters.value;
+            let targetTricycleNo = currentTricycleNo;
+
+            if (!targetTricycleNo) {
+                const selectedTricycles = [...new Set(selected.map((item) => item.tricycle_no.toLowerCase()))];
+                if (selectedTricycles.length === 1) {
+                    targetTricycleNo = selectedTricycles[0];
+                }
+            }
+
+            if (!targetTricycleNo) {
+                updateSelectedTotals();
+                return;
+            }
+
             selected.forEach((item) => {
-                if (item.tricycle_no.toLowerCase() === currentTricycleNo.toLowerCase()) {
+                if (item.tricycle_no.toLowerCase() === targetTricycleNo.toLowerCase()) {
                     item.fuel_type = fuelType;
                     item.pump_price = pumpPrice;
                     item.liters = liters;
