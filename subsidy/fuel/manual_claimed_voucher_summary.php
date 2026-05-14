@@ -96,7 +96,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             position: absolute;
             inset: calc(100% + 4px) 0 auto 0;
             z-index: 1050;
-            max-height: 340px;
+            max-height: 480px;
             overflow-y: auto;
             border: 1px solid var(--line);
             border-radius: 8px;
