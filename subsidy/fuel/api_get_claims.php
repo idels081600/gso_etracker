@@ -37,9 +37,17 @@ $tricycle = mysqli_fetch_assoc($result);
 
 // Get claimed vouchers with e-signature data
 $tricycle_id = $tricycle['id'];
+$station_filter = '';
+if (isset($_SESSION['station_id']) && !empty($_SESSION['station_id'])) {
+    $station_id = (int)$_SESSION['station_id'];
+    $station_filter = " AND station_id = $station_id";
+}
+
 $claims_sql = "SELECT voucher_number, claimant_name, claim_date, e_signature 
                FROM voucher_claims 
-               WHERE tricycle_id = $tricycle_id 
+               WHERE tricycle_id = $tricycle_id
+               AND e_signature IS NOT NULL AND e_signature != ''
+               $station_filter
                ORDER BY voucher_number";
 
 $claims_result = mysqli_query($conn, $claims_sql);

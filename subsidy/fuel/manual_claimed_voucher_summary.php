@@ -201,6 +201,11 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             padding: 0.25rem 0.6rem;
         }
 
+        .total-strip {
+            border-top: 1px solid var(--line);
+            background: #fbfcfe;
+        }
+
         @media (max-width: 767.98px) {
             .app-shell {
                 padding-top: 64px;
@@ -407,12 +412,17 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                                             <th>Type</th>
                                             <th>Group Liters</th>
                                             <th>Pump Price</th>
+                                            <th>Amount</th>
                                             <th class="text-center">Move</th>
                                             <th class="text-end">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="selectedTable"></tbody>
                                 </table>
+                                <div id="selectedTotals" class="total-strip d-flex flex-column flex-md-row gap-2 justify-content-md-end align-items-md-center px-3 py-3 text-end">
+                                    <span class="text-muted small" id="selectedTotalGroups">0 export groups</span>
+                                    <span class="fw-semibold">Total Amount: PHP <span id="selectedTotalAmount">0</span></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -433,7 +443,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
         // ========== DRAFT – localStorage key ==========
-        const DRAFT_KEY = 'manual_claimed_voucher_draft';
+        const DRAFT_KEY = 'manual_claimed_voucher_draft_v2';
 
         // ========== DOM refs ==========
         const manualSearch = document.getElementById('manualSearch');
@@ -447,6 +457,8 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
         const selectedTableWrap = document.getElementById('selectedTableWrap');
         const emptyState = document.getElementById('emptyState');
         const selectedCount = document.getElementById('selectedCount');
+        const selectedTotalGroups = document.getElementById('selectedTotalGroups');
+        const selectedTotalAmount = document.getElementById('selectedTotalAmount');
         const selected = [];
         const voucherButtons = new Map();
         let currentTricycleNo = '';
@@ -463,7 +475,8 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                         driver_name: item.driver_name,
                         fuel_type: item.fuel_type,
                         liters: item.liters,
-                        pump_price: item.pump_price
+                        pump_price: item.pump_price,
+                        claim_date: item.claim_date || ''
                     };
                 }),
                 fuel_prices: {},
@@ -555,7 +568,8 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                         driver_name: item.driver_name || 'Manual entry',
                         fuel_type: item.fuel_type || getSelectedFuelType(),
                         liters: item.liters || '',
-                        pump_price: item.pump_price || getFuelPrice(item.fuel_type || getSelectedFuelType())
+                        pump_price: item.pump_price || getFuelPrice(item.fuel_type || getSelectedFuelType()),
+                        claim_date: item.claim_date || ''
                     });
                 });
                 renderSelected();
@@ -589,6 +603,8 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
         groupLiters.addEventListener('input', autoSaveDraft);
         document.getElementById('startDate').addEventListener('change', autoSaveDraft);
         document.getElementById('endDate').addEventListener('change', autoSaveDraft);
+        document.getElementById('startDate').addEventListener('change', renderSelected);
+        document.getElementById('endDate').addEventListener('change', renderSelected);
 
         // ========== Original code (unchanged below) ==========
 
@@ -612,6 +628,64 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             if (trimmed === '') return '';
             const numberValue = parseInt(trimmed, 10);
             return Number.isNaN(numberValue) ? trimmed : String(numberValue).padStart(3, '0');
+        }
+
+        function normalizeClaimDate(value) {
+            return String(value || '').slice(0, 10);
+        }
+
+        function formatRoundedAmount(value) {
+            return Math.round(Number(value || 0)).toLocaleString('en-US', {
+                maximumFractionDigits: 0
+            });
+        }
+
+        function selectedAmount(item) {
+            return Number(item.liters || 0) * Number(item.pump_price || 0);
+        }
+
+        function isWithinSelectedDateRange(item) {
+            const claimDate = normalizeClaimDate(item.claim_date);
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (!claimDate) return true;
+            if (startDate && claimDate < startDate) return false;
+            if (endDate && claimDate > endDate) return false;
+            return true;
+        }
+
+        function getExportGroups() {
+            const groups = new Map();
+
+            selected.forEach((item) => {
+                if (!isWithinSelectedDateRange(item)) return;
+
+                const key = [
+                    item.tricycle_no,
+                    item.fuel_type,
+                    Number(item.pump_price || 0).toFixed(2),
+                    Number(item.liters || 0).toFixed(2),
+                    normalizeClaimDate(item.claim_date)
+                ].join('|');
+
+                if (!groups.has(key)) {
+                    groups.set(key, selectedAmount(item));
+                }
+            });
+
+            return groups;
+        }
+
+        function updateSelectedTotals() {
+            const groups = getExportGroups();
+            let total = 0;
+            groups.forEach((amount) => {
+                total += amount;
+            });
+
+            selectedTotalGroups.textContent = `${groups.size} export group${groups.size === 1 ? '' : 's'}`;
+            selectedTotalAmount.textContent = formatRoundedAmount(total);
         }
 
         function getSelectedFuelType() {
@@ -757,7 +831,8 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                             remaining: Math.max(0, Number(tricycle.total_vouchers || 0) - Number(tricycle.claimed_vouchers || 0)),
                             fuel_type: fuelType,
                             liters: liters,
-                            pump_price: pumpPrice
+                            pump_price: pumpPrice,
+                            claim_date: claim.claim_date || ''
                         });
                     });
                     voucherButtons.set(button.dataset.key, button);
@@ -790,7 +865,8 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                 remaining: item.remaining ?? '-',
                 fuel_type: item.fuel_type || getSelectedFuelType(),
                 liters: item.liters || '',
-                pump_price: item.pump_price || getFuelPrice(item.fuel_type || getSelectedFuelType())
+                pump_price: item.pump_price || getFuelPrice(item.fuel_type || getSelectedFuelType()),
+                claim_date: item.claim_date || ''
             });
 
             chosenSuggestion = null;
@@ -814,8 +890,10 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             emptyState.classList.toggle('d-none', selected.length !== 0);
             selectedTableWrap.classList.toggle('d-none', selected.length === 0);
             selectedTable.innerHTML = '';
+            updateSelectedTotals();
 
             selected.forEach((item, index) => {
+                const amount = selectedAmount(item);
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td class="order-cell">${index + 1}</td>
@@ -825,6 +903,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                     <td>${escapeHtml(item.fuel_type)}</td>
                     <td>${escapeHtml(Number(item.liters || 0).toFixed(2))} L</td>
                     <td>PHP ${escapeHtml(Number(item.pump_price || 0).toFixed(2))}</td>
+                    <td>PHP ${escapeHtml(formatRoundedAmount(amount))}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm" role="group" aria-label="Move selected row">
                             <button type="button" class="btn btn-outline-secondary" title="Move up" data-action="up" data-index="${index}" ${index === 0 ? 'disabled' : ''}>
@@ -876,7 +955,8 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                 voucher_number: item.voucher_number,
                 fuel_type: item.fuel_type,
                 liters: item.liters,
-                pump_price: item.pump_price
+                pump_price: item.pump_price,
+                claim_date: item.claim_date || ''
             })));
             document.getElementById('pumpPriceInput').value = selected[0].pump_price;
             document.getElementById('startDateInput').value = document.getElementById('startDate').value;
