@@ -190,6 +190,11 @@ $tricycleLiters = 0;
 $tricycleCount = 0;
 $trackedVehicles = [];
 $countedAmountGroups = [];
+$fuelBreakdown = [
+    'Silver' => ['liters' => 0, 'amount' => 0],
+    'Platinum' => ['liters' => 0, 'amount' => 0],
+    'Diesel' => ['liters' => 0, 'amount' => 0]
+];
 
 foreach ($orderedSelections as $orderIndex => $selection) {
     $tricycleNo = $selection['tricycle_no'];
@@ -260,6 +265,11 @@ foreach ($orderedSelections as $orderIndex => $selection) {
                 $tricycleLiters += $liters;
             }
             $countedAmountGroups[$totalGroupKey] = true;
+            if (!isset($fuelBreakdown[$fuelType])) {
+                $fuelBreakdown[$fuelType] = ['liters' => 0, 'amount' => 0];
+            }
+            $fuelBreakdown[$fuelType]['liters'] += $liters;
+            $fuelBreakdown[$fuelType]['amount'] += $entryAmount;
             $groupedData[$key]['counted_totals'] = true;
         }
 
@@ -325,6 +335,11 @@ foreach ($orderedSelections as $orderIndex => $selection) {
                 $tricycleVouchers++;
             }
             $countedAmountGroups[$totalGroupKey] = true;
+            if (!isset($fuelBreakdown[$fuelType])) {
+                $fuelBreakdown[$fuelType] = ['liters' => 0, 'amount' => 0];
+            }
+            $fuelBreakdown[$fuelType]['liters'] += $liters;
+            $fuelBreakdown[$fuelType]['amount'] += $entryAmount;
             $groupedData[$key]['counted_totals'] = true;
         }
     }
@@ -514,12 +529,12 @@ $pdf->SetFont('Arial', 'B', 12);
 $pdf->Cell(0, 10, 'SUMMARY TOTALS', 0, 1, 'C');
 $pdf->Ln(2);
 
-$colWidth = 65;
+$colWidth = 60;
 $rowHeight = 8;
 
 $pdf->SetFont('Arial', 'B', 10);
 $pdf->SetFillColor(230, 230, 230);
-$pdf->Cell($colWidth, $rowHeight, 'METRIC', 1, 0, 'C', true);
+$pdf->Cell($colWidth, $rowHeight, 'SUMMARY', 1, 0, 'C', true);
 $pdf->Cell($colWidth, $rowHeight, 'TRICYCLE', 1, 0, 'C', true);
 $pdf->Cell($colWidth, $rowHeight, 'BOAT', 1, 0, 'C', true);
 $pdf->Cell($colWidth, $rowHeight, 'TOTAL', 1, 1, 'C', true);
@@ -534,6 +549,20 @@ $pdf->Cell($colWidth, $rowHeight, 'Total Liters', 1, 0, 'C');
 $pdf->Cell($colWidth, $rowHeight, number_format($tricycleLiters, 2), 1, 0, 'C');
 $pdf->Cell($colWidth, $rowHeight, number_format($boatLiters, 2), 1, 0, 'C');
 $pdf->Cell($colWidth, $rowHeight, number_format($totalLiters, 2), 1, 1, 'C');
+
+$pdf->Ln(4);
+$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFillColor(230, 230, 230);
+$pdf->Cell($colWidth, $rowHeight, 'FUEL TYPE', 1, 0, 'C', true);
+$pdf->Cell($colWidth, $rowHeight, 'LITERS', 1, 0, 'C', true);
+$pdf->Cell($colWidth, $rowHeight, 'AMOUNT (PHP)', 1, 1, 'C', true);
+
+$pdf->SetFont('Arial', '', 9);
+foreach (['Silver', 'Platinum', 'Diesel'] as $fuelType) {
+    $pdf->Cell($colWidth, $rowHeight, strtoupper($fuelType), 1, 0, 'C');
+    $pdf->Cell($colWidth, $rowHeight, number_format($fuelBreakdown[$fuelType]['liters'], 2), 1, 0, 'C');
+    $pdf->Cell($colWidth, $rowHeight, formatRoundedAmount($fuelBreakdown[$fuelType]['amount']), 1, 1, 'C');
+}
 
 $pdf->SetY(-50);
 $pdf->SetX(-80);
