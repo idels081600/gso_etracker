@@ -106,7 +106,7 @@ require_once '../../fpdf/fpdf.php';
 
 function formatRoundedAmount($amount)
 {
-    return number_format(round((float)$amount), 0);
+    return number_format(round((float)$amount), 2);
 }
 
 function formatVoucherRange($vouchers)
