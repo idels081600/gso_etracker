@@ -59,6 +59,8 @@ foreach ($selectedEntries as $entry) {
         $fuelType = is_array($entry) && isset($entry['fuel_type']) ? trim((string)$entry['fuel_type']) : 'Silver';
         $liters = is_array($entry) && isset($entry['liters']) ? (float)$entry['liters'] : 0;
         $entryPumpPrice = is_array($entry) && isset($entry['pump_price']) ? (float)$entry['pump_price'] : 0;
+        $driverName = is_array($entry) && isset($entry['driver_name']) ? trim((string)$entry['driver_name']) : 'Manual entry';
+        $claimDate = is_array($entry) && !empty($entry['claim_date']) ? $entry['claim_date'] : date('Y-m-d');
         $validFuelTypes = ['Silver', 'Platinum', 'Diesel'];
         if (!in_array($fuelType, $validFuelTypes, true)) {
             $fuelType = 'Silver';
@@ -68,6 +70,8 @@ foreach ($selectedEntries as $entry) {
         $orderedSelections[] = [
             'tricycle_no' => $tricycleNo,
             'voucher_number' => $voucherNumber,
+            'driver_name' => $driverName,
+            'claim_date' => $claimDate,
             'fuel_type' => $fuelType,
             'liters' => $liters,
             'pump_price' => $entryPumpPrice
@@ -104,6 +108,67 @@ function formatRoundedAmount($amount) {
     return number_format(round((float)$amount), 0);
 }
 
+function formatVoucherRange($vouchers) {
+    $numbers = [];
+    foreach ($vouchers as $voucher) {
+        $number = (int)$voucher;
+        if ($number > 0) {
+            $numbers[$number] = $number;
+        }
+    }
+
+    if (empty($numbers)) {
+        return '';
+    }
+
+    sort($numbers, SORT_NUMERIC);
+    $ranges = [];
+    $start = $numbers[0];
+    $previous = $numbers[0];
+
+    for ($i = 1; $i < count($numbers); $i++) {
+        $current = $numbers[$i];
+        if ($current === $previous + 1) {
+            $previous = $current;
+            continue;
+        }
+
+        $ranges[] = $start === $previous
+            ? str_pad((string)$start, 3, '0', STR_PAD_LEFT)
+            : str_pad((string)$start, 3, '0', STR_PAD_LEFT) . '-' . str_pad((string)$previous, 3, '0', STR_PAD_LEFT);
+        $start = $current;
+        $previous = $current;
+    }
+
+    $ranges[] = $start === $previous
+        ? str_pad((string)$start, 3, '0', STR_PAD_LEFT)
+        : str_pad((string)$start, 3, '0', STR_PAD_LEFT) . '-' . str_pad((string)$previous, 3, '0', STR_PAD_LEFT);
+
+    return implode(', ', $ranges);
+}
+
+function findClaimForSelection($conn, $stationId, $tricycleNo, $voucherNumber) {
+    $safeTricycleNo = mysqli_real_escape_string($conn, $tricycleNo);
+    $voucherFilter = $voucherNumber !== '' ? ' AND vc.voucher_number = ' . (int)$voucherNumber . ' ' : '';
+    $stationOrder = (int)$stationId;
+
+    $sql = "SELECT tr.driver_name, vc.claim_date, vc.e_signature
+            FROM voucher_claims vc
+            INNER JOIN tricycle_records tr ON vc.tricycle_id = tr.id
+            WHERE tr.tricycle_no = '$safeTricycleNo'
+            $voucherFilter
+            AND vc.e_signature IS NOT NULL AND vc.e_signature != ''
+            ORDER BY CASE WHEN vc.station_id = $stationOrder THEN 0 ELSE 1 END, vc.claim_date DESC
+            LIMIT 1";
+
+    $result = mysqli_query($conn, $sql);
+    if ($result && mysqli_num_rows($result) > 0) {
+        return mysqli_fetch_assoc($result);
+    }
+
+    return null;
+}
+
 $currentDate = date('F j, Y');
 $reportDateText = $currentDate;
 
@@ -124,6 +189,7 @@ $tricycleFueledPrice = 0;
 $tricycleLiters = 0;
 $tricycleCount = 0;
 $trackedVehicles = [];
+$countedAmountGroups = [];
 
 foreach ($orderedSelections as $orderIndex => $selection) {
     $tricycleNo = $selection['tricycle_no'];
@@ -134,6 +200,7 @@ foreach ($orderedSelections as $orderIndex => $selection) {
     $entryAmount = $liters * $entryPumpPrice;
     $safeTricycleNo = mysqli_real_escape_string($conn, $tricycleNo);
     $voucherFilter = $voucherNumber !== '' ? ' AND vc.voucher_number = ' . (int)$voucherNumber . ' ' : '';
+    $matchedRows = 0;
     $sql = "SELECT tr.driver_name, tr.tricycle_no, vc.voucher_number, vc.claim_date, vc.e_signature, gs.station_name
             FROM voucher_claims vc
             INNER JOIN tricycle_records tr ON vc.tricycle_id = tr.id
@@ -148,7 +215,8 @@ foreach ($orderedSelections as $orderIndex => $selection) {
     $result = mysqli_query($conn, $sql);
 
     while ($row = mysqli_fetch_assoc($result)) {
-        $key = $row['tricycle_no'] . '_' . $fuelType . '_' . $entryPumpPrice . '_' . $liters . '_' . date('Y-m-d', strtotime($row['claim_date']));
+        $matchedRows++;
+        $key = $row['tricycle_no'] . '_' . $fuelType . '_' . $entryPumpPrice . '_' . $liters;
 
         if (!isset($groupedData[$key])) {
             $isBoat = strlen($row['tricycle_no']) > 4;
@@ -176,10 +244,14 @@ foreach ($orderedSelections as $orderIndex => $selection) {
             }
         }
 
+        if (empty($groupedData[$key]['e_signature']) && !empty($row['e_signature'])) {
+            $groupedData[$key]['e_signature'] = $row['e_signature'];
+        }
         $groupedData[$key]['vouchers'][] = $row['voucher_number'];
         $totalVouchers++;
 
-        if (!$groupedData[$key]['counted_totals']) {
+        $totalGroupKey = strtolower($row['tricycle_no']);
+        if (!isset($countedAmountGroups[$totalGroupKey])) {
             if (strlen($row['tricycle_no']) > 4) {
                 $boatFueledPrice += $entryAmount;
                 $boatLiters += $liters;
@@ -187,6 +259,7 @@ foreach ($orderedSelections as $orderIndex => $selection) {
                 $tricycleFueledPrice += $entryAmount;
                 $tricycleLiters += $liters;
             }
+            $countedAmountGroups[$totalGroupKey] = true;
             $groupedData[$key]['counted_totals'] = true;
         }
 
@@ -194,6 +267,65 @@ foreach ($orderedSelections as $orderIndex => $selection) {
             $boatVouchers++;
         } else {
             $tricycleVouchers++;
+        }
+    }
+
+    if ($matchedRows === 0) {
+        $matchedClaim = findClaimForSelection($conn, $station_id, $tricycleNo, $voucherNumber);
+        $fallbackDate = !empty($matchedClaim['claim_date'])
+            ? date('Y-m-d', strtotime($matchedClaim['claim_date']))
+            : date('Y-m-d', strtotime($selection['claim_date']));
+        $fallbackDriver = !empty($matchedClaim['driver_name']) ? $matchedClaim['driver_name'] : $selection['driver_name'];
+        $fallbackSignature = !empty($matchedClaim['e_signature']) ? $matchedClaim['e_signature'] : '';
+        $key = $tricycleNo . '_' . $fuelType . '_' . $entryPumpPrice . '_' . $liters;
+
+        if (!isset($groupedData[$key])) {
+            $isBoat = strlen($tricycleNo) > 4;
+            $groupedData[$key] = [
+                'driver_name' => $fallbackDriver,
+                'tricycle_no' => $tricycleNo,
+                'vouchers' => [],
+                'claim_date' => $fallbackDate,
+                'e_signature' => $fallbackSignature,
+                'is_boat' => $isBoat,
+                'fuel_type' => $fuelType,
+                'liters' => $liters,
+                'pump_price' => $entryPumpPrice,
+                'amount' => $entryAmount,
+                'counted_totals' => false
+            ];
+
+            if (!isset($trackedVehicles[$key])) {
+                $trackedVehicles[$key] = true;
+                if ($isBoat) {
+                    $boatCount++;
+                } else {
+                    $tricycleCount++;
+                }
+            }
+        }
+
+        if (empty($groupedData[$key]['e_signature']) && $fallbackSignature !== '') {
+            $groupedData[$key]['e_signature'] = $fallbackSignature;
+        }
+        if ($voucherNumber !== '') {
+            $groupedData[$key]['vouchers'][] = $voucherNumber;
+            $totalVouchers++;
+        }
+
+        $totalGroupKey = strtolower($tricycleNo);
+        if (!isset($countedAmountGroups[$totalGroupKey])) {
+            if (strlen($tricycleNo) > 4) {
+                $boatFueledPrice += $entryAmount;
+                $boatLiters += $liters;
+                $boatVouchers++;
+            } else {
+                $tricycleFueledPrice += $entryAmount;
+                $tricycleLiters += $liters;
+                $tricycleVouchers++;
+            }
+            $countedAmountGroups[$totalGroupKey] = true;
+            $groupedData[$key]['counted_totals'] = true;
         }
     }
 }
@@ -303,11 +435,8 @@ if (empty($groupedData)) {
     $pdf->Cell(COL_NAME + COL_TRIC + COL_VOUCH + COL_DATE + COL_TYPE + COL_LITERS + COL_PRICE + COL_AMOUNT + COL_SIG, 10, 'No claimed vouchers found for the selected tricycles.', 1, 1, 'C');
 } else {
     foreach ($groupedData as $data) {
-        $formattedVouchers = [];
-        foreach ($data['vouchers'] as $vnum) {
-            $formattedVouchers[] = $data['tricycle_no'] . '-' . str_pad((string)$vnum, 3, '0', STR_PAD_LEFT);
-        }
-        $voucherStr = implode(', ', $formattedVouchers);
+        $voucherRange = formatVoucherRange($data['vouchers']);
+        $voucherStr = $voucherRange !== '' ? $data['tricycle_no'] . ' ' . $voucherRange : $data['tricycle_no'];
         $litersStr = number_format((float)$data['liters'], 2);
         $priceStr = number_format((float)$data['pump_price'], 2);
         $amountStr = formatRoundedAmount($data['amount']);
