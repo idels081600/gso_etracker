@@ -104,11 +104,13 @@ if (isset($_POST['end_date']) && !empty($_POST['end_date'])) {
 
 require_once '../../fpdf/fpdf.php';
 
-function formatRoundedAmount($amount) {
+function formatRoundedAmount($amount)
+{
     return number_format(round((float)$amount), 0);
 }
 
-function formatVoucherRange($vouchers) {
+function formatVoucherRange($vouchers)
+{
     $numbers = [];
     foreach ($vouchers as $voucher) {
         $number = (int)$voucher;
@@ -147,7 +149,8 @@ function formatVoucherRange($vouchers) {
     return implode(', ', $ranges);
 }
 
-function findClaimForSelection($conn, $stationId, $tricycleNo, $voucherNumber) {
+function findClaimForSelection($conn, $stationId, $tricycleNo, $voucherNumber)
+{
     $safeTricycleNo = mysqli_real_escape_string($conn, $tricycleNo);
     $voucherFilter = $voucherNumber !== '' ? ' AND vc.voucher_number = ' . (int)$voucherNumber . ' ' : '';
     $stationOrder = (int)$stationId;
@@ -167,6 +170,20 @@ function findClaimForSelection($conn, $stationId, $tricycleNo, $voucherNumber) {
     }
 
     return null;
+}
+
+function formatPumpPrices($prices)
+{
+    if (empty($prices)) {
+        return '0.00';
+    }
+
+    $formatted = [];
+    foreach ($prices as $price) {
+        $formatted[] = number_format((float)$price, 2);
+    }
+
+    return implode(', ', array_unique($formatted));
 }
 
 $currentDate = date('F j, Y');
@@ -191,9 +208,9 @@ $tricycleCount = 0;
 $trackedVehicles = [];
 $countedAmountGroups = [];
 $fuelBreakdown = [
-    'Silver' => ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0],
-    'Platinum' => ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0],
-    'Diesel' => ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0]
+    'Silver' => ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0, 'pump_prices' => []],
+    'Platinum' => ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0, 'pump_prices' => []],
+    'Diesel' => ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0, 'pump_prices' => []]
 ];
 
 foreach ($orderedSelections as $orderIndex => $selection) {
@@ -266,10 +283,11 @@ foreach ($orderedSelections as $orderIndex => $selection) {
             }
             $countedAmountGroups[$totalGroupKey] = true;
             if (!isset($fuelBreakdown[$fuelType])) {
-                $fuelBreakdown[$fuelType] = ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0];
+                $fuelBreakdown[$fuelType] = ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0, 'pump_prices' => []];
             }
             $fuelBreakdown[$fuelType]['liters'] += $liters;
             $fuelBreakdown[$fuelType]['amount'] += $entryAmount;
+            $fuelBreakdown[$fuelType]['pump_prices'][number_format($entryPumpPrice, 2, '.', '')] = $entryPumpPrice;
             if (strlen($row['tricycle_no']) > 4) {
                 $fuelBreakdown[$fuelType]['boat_count']++;
             } else {
@@ -341,10 +359,11 @@ foreach ($orderedSelections as $orderIndex => $selection) {
             }
             $countedAmountGroups[$totalGroupKey] = true;
             if (!isset($fuelBreakdown[$fuelType])) {
-                $fuelBreakdown[$fuelType] = ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0];
+                $fuelBreakdown[$fuelType] = ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0, 'pump_prices' => []];
             }
             $fuelBreakdown[$fuelType]['liters'] += $liters;
             $fuelBreakdown[$fuelType]['amount'] += $entryAmount;
+            $fuelBreakdown[$fuelType]['pump_prices'][number_format($entryPumpPrice, 2, '.', '')] = $entryPumpPrice;
             if (strlen($tricycleNo) > 4) {
                 $fuelBreakdown[$fuelType]['boat_count']++;
             } else {
@@ -373,7 +392,8 @@ define('LEFT_MARGIN', 10);
 
 class PDF extends FPDF
 {
-    function Header() {
+    function Header()
+    {
         $this->SetFont('Arial', 'B', 16);
         $this->Cell(0, 10, 'CLAIMED VOUCHERS AS OF ' . $GLOBALS['reportDateText'], 0, 1, 'C');
         $this->SetFont('Arial', 'I', 10);
@@ -381,13 +401,15 @@ class PDF extends FPDF
         $this->Ln(5);
     }
 
-    function Footer() {
+    function Footer()
+    {
         $this->SetY(-15);
         $this->SetFont('Arial', 'I', 8);
         $this->Cell(0, 10, 'Page ' . $this->PageNo() . '/{nb}', 0, 0, 'C');
     }
 
-    function FixedCell($x, $y, $w, $h, $txt, $lineH = LINE_HEIGHT) {
+    function FixedCell($x, $y, $w, $h, $txt, $lineH = LINE_HEIGHT)
+    {
         $this->Rect($x, $y, $w, $h);
 
         if ($txt === '') return;
@@ -404,7 +426,8 @@ class PDF extends FPDF
         }
     }
 
-    function wordWrapText($txt, $maxW) {
+    function wordWrapText($txt, $maxW)
+    {
         $words = explode(' ', $txt);
         $lines = [];
         $current = '';
@@ -423,7 +446,8 @@ class PDF extends FPDF
         return $lines;
     }
 
-    function calcRowHeight($txt, $colW, $lineH = LINE_HEIGHT, $minH = MIN_ROW_H) {
+    function calcRowHeight($txt, $colW, $lineH = LINE_HEIGHT, $minH = MIN_ROW_H)
+    {
         $innerW = $colW - 6;
         $lines = $this->wordWrapText($txt, $innerW);
         $needed = count($lines) * $lineH + 10;
@@ -542,32 +566,16 @@ $pdf->Ln(2);
 $colWidth = 60;
 $rowHeight = 8;
 
-$pdf->SetFont('Arial', 'B', 10);
-$pdf->SetFillColor(230, 230, 230);
-$pdf->Cell($colWidth, $rowHeight, 'SUMMARY', 1, 0, 'C', true);
-$pdf->Cell($colWidth, $rowHeight, 'TRICYCLE', 1, 0, 'C', true);
-$pdf->Cell($colWidth, $rowHeight, 'BOAT', 1, 0, 'C', true);
-$pdf->Cell($colWidth, $rowHeight, 'TOTAL', 1, 1, 'C', true);
-
-$pdf->SetFont('Arial', '', 9);
-$pdf->Cell($colWidth, $rowHeight, 'Total Amount (PHP)', 1, 0, 'C');
-$pdf->Cell($colWidth, $rowHeight, formatRoundedAmount($tricycleFueledPrice), 1, 0, 'C');
-$pdf->Cell($colWidth, $rowHeight, formatRoundedAmount($boatFueledPrice), 1, 0, 'C');
-$pdf->Cell($colWidth, $rowHeight, formatRoundedAmount($totalFueledPrice), 1, 1, 'C');
-
-$pdf->Cell($colWidth, $rowHeight, 'Total Liters', 1, 0, 'C');
-$pdf->Cell($colWidth, $rowHeight, number_format($tricycleLiters, 2), 1, 0, 'C');
-$pdf->Cell($colWidth, $rowHeight, number_format($boatLiters, 2), 1, 0, 'C');
-$pdf->Cell($colWidth, $rowHeight, number_format($totalLiters, 2), 1, 1, 'C');
 
 $pdf->Ln(4);
 $pdf->SetFont('Arial', 'B', 10);
 $pdf->SetFillColor(230, 230, 230);
-$fuelColWidth = 48;
+$fuelColWidth = 40;
 $pdf->Cell($fuelColWidth, $rowHeight, 'FUEL TYPE', 1, 0, 'C', true);
-$pdf->Cell($fuelColWidth, $rowHeight, 'TRICYCLE', 1, 0, 'C', true);
-$pdf->Cell($fuelColWidth, $rowHeight, 'BOAT', 1, 0, 'C', true);
-$pdf->Cell($fuelColWidth, $rowHeight, 'LITERS', 1, 0, 'C', true);
+$pdf->Cell($fuelColWidth, $rowHeight, 'NO. OF TRICYCLE', 1, 0, 'C', true);
+$pdf->Cell($fuelColWidth, $rowHeight, 'NO. OF BOAT', 1, 0, 'C', true);
+$pdf->Cell($fuelColWidth, $rowHeight, 'PUMP PRICE', 1, 0, 'C', true);
+$pdf->Cell($fuelColWidth, $rowHeight, 'NO. OF LITERS', 1, 0, 'C', true);
 $pdf->Cell($fuelColWidth, $rowHeight, 'AMOUNT (PHP)', 1, 1, 'C', true);
 
 $pdf->SetFont('Arial', '', 9);
@@ -575,15 +583,23 @@ foreach (['Silver', 'Platinum', 'Diesel'] as $fuelType) {
     $pdf->Cell($fuelColWidth, $rowHeight, strtoupper($fuelType), 1, 0, 'C');
     $pdf->Cell($fuelColWidth, $rowHeight, (string)$fuelBreakdown[$fuelType]['tricycle_count'], 1, 0, 'C');
     $pdf->Cell($fuelColWidth, $rowHeight, (string)$fuelBreakdown[$fuelType]['boat_count'], 1, 0, 'C');
+    $pdf->Cell($fuelColWidth, $rowHeight, formatPumpPrices($fuelBreakdown[$fuelType]['pump_prices']), 1, 0, 'C');
     $pdf->Cell($fuelColWidth, $rowHeight, number_format($fuelBreakdown[$fuelType]['liters'], 2), 1, 0, 'C');
     $pdf->Cell($fuelColWidth, $rowHeight, formatRoundedAmount($fuelBreakdown[$fuelType]['amount']), 1, 1, 'C');
 }
 
-$pdf->SetY(-50);
+$pdf->SetY(-53);
 $pdf->SetX(-80);
 $pdf->SetFont('Arial', '', 10);
+$pdf->Cell(70, 6, 'Approved by:', 0, 1, 'L');
+$pdf->SetX(-80);
+$pdf->SetFont('Arial', 'B', 10);
+$pdf->Cell(70, 6, 'CHRIS JOHN RENER TORRALBA', 0, 1, 'C');
+$pdf->SetX(-80);
 $pdf->Cell(70, 0, '', 'B', 1, 'C');
+$pdf->SetX(-80);
+$pdf->SetFont('Arial', '', 10);
+$pdf->Cell(70, 5, 'CGDH-I', 0, 1, 'C');
 
 
 $pdf->Output('I', 'Manual_Claimed_Vouchers_' . date('Y-m-d') . '.pdf');
-?>
