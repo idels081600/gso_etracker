@@ -191,9 +191,9 @@ $tricycleCount = 0;
 $trackedVehicles = [];
 $countedAmountGroups = [];
 $fuelBreakdown = [
-    'Silver' => ['liters' => 0, 'amount' => 0],
-    'Platinum' => ['liters' => 0, 'amount' => 0],
-    'Diesel' => ['liters' => 0, 'amount' => 0]
+    'Silver' => ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0],
+    'Platinum' => ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0],
+    'Diesel' => ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0]
 ];
 
 foreach ($orderedSelections as $orderIndex => $selection) {
@@ -266,10 +266,15 @@ foreach ($orderedSelections as $orderIndex => $selection) {
             }
             $countedAmountGroups[$totalGroupKey] = true;
             if (!isset($fuelBreakdown[$fuelType])) {
-                $fuelBreakdown[$fuelType] = ['liters' => 0, 'amount' => 0];
+                $fuelBreakdown[$fuelType] = ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0];
             }
             $fuelBreakdown[$fuelType]['liters'] += $liters;
             $fuelBreakdown[$fuelType]['amount'] += $entryAmount;
+            if (strlen($row['tricycle_no']) > 4) {
+                $fuelBreakdown[$fuelType]['boat_count']++;
+            } else {
+                $fuelBreakdown[$fuelType]['tricycle_count']++;
+            }
             $groupedData[$key]['counted_totals'] = true;
         }
 
@@ -336,10 +341,15 @@ foreach ($orderedSelections as $orderIndex => $selection) {
             }
             $countedAmountGroups[$totalGroupKey] = true;
             if (!isset($fuelBreakdown[$fuelType])) {
-                $fuelBreakdown[$fuelType] = ['liters' => 0, 'amount' => 0];
+                $fuelBreakdown[$fuelType] = ['liters' => 0, 'amount' => 0, 'tricycle_count' => 0, 'boat_count' => 0];
             }
             $fuelBreakdown[$fuelType]['liters'] += $liters;
             $fuelBreakdown[$fuelType]['amount'] += $entryAmount;
+            if (strlen($tricycleNo) > 4) {
+                $fuelBreakdown[$fuelType]['boat_count']++;
+            } else {
+                $fuelBreakdown[$fuelType]['tricycle_count']++;
+            }
             $groupedData[$key]['counted_totals'] = true;
         }
     }
@@ -553,15 +563,20 @@ $pdf->Cell($colWidth, $rowHeight, number_format($totalLiters, 2), 1, 1, 'C');
 $pdf->Ln(4);
 $pdf->SetFont('Arial', 'B', 10);
 $pdf->SetFillColor(230, 230, 230);
-$pdf->Cell($colWidth, $rowHeight, 'FUEL TYPE', 1, 0, 'C', true);
-$pdf->Cell($colWidth, $rowHeight, 'LITERS', 1, 0, 'C', true);
-$pdf->Cell($colWidth, $rowHeight, 'AMOUNT (PHP)', 1, 1, 'C', true);
+$fuelColWidth = 48;
+$pdf->Cell($fuelColWidth, $rowHeight, 'FUEL TYPE', 1, 0, 'C', true);
+$pdf->Cell($fuelColWidth, $rowHeight, 'TRICYCLE', 1, 0, 'C', true);
+$pdf->Cell($fuelColWidth, $rowHeight, 'BOAT', 1, 0, 'C', true);
+$pdf->Cell($fuelColWidth, $rowHeight, 'LITERS', 1, 0, 'C', true);
+$pdf->Cell($fuelColWidth, $rowHeight, 'AMOUNT (PHP)', 1, 1, 'C', true);
 
 $pdf->SetFont('Arial', '', 9);
 foreach (['Silver', 'Platinum', 'Diesel'] as $fuelType) {
-    $pdf->Cell($colWidth, $rowHeight, strtoupper($fuelType), 1, 0, 'C');
-    $pdf->Cell($colWidth, $rowHeight, number_format($fuelBreakdown[$fuelType]['liters'], 2), 1, 0, 'C');
-    $pdf->Cell($colWidth, $rowHeight, formatRoundedAmount($fuelBreakdown[$fuelType]['amount']), 1, 1, 'C');
+    $pdf->Cell($fuelColWidth, $rowHeight, strtoupper($fuelType), 1, 0, 'C');
+    $pdf->Cell($fuelColWidth, $rowHeight, (string)$fuelBreakdown[$fuelType]['tricycle_count'], 1, 0, 'C');
+    $pdf->Cell($fuelColWidth, $rowHeight, (string)$fuelBreakdown[$fuelType]['boat_count'], 1, 0, 'C');
+    $pdf->Cell($fuelColWidth, $rowHeight, number_format($fuelBreakdown[$fuelType]['liters'], 2), 1, 0, 'C');
+    $pdf->Cell($fuelColWidth, $rowHeight, formatRoundedAmount($fuelBreakdown[$fuelType]['amount']), 1, 1, 'C');
 }
 
 $pdf->SetY(-50);
