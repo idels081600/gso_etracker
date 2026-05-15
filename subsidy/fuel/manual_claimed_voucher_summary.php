@@ -793,8 +793,9 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
         }
 
         function formatRoundedAmount(value) {
-            return Math.round(Number(value || 0)).toLocaleString('en-US', {
-                maximumFractionDigits: 0
+            return Number(value || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
             });
         }
 
