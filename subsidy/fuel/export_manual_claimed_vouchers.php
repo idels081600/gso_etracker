@@ -588,18 +588,38 @@ foreach (['Silver', 'Platinum', 'Diesel'] as $fuelType) {
     $pdf->Cell($fuelColWidth, $rowHeight, formatRoundedAmount($fuelBreakdown[$fuelType]['amount']), 1, 1, 'C');
 }
 
-$pdf->SetY(-53);
-$pdf->SetX(-80);
+// Signatory layout controls:
+// - X values move text left/right. More negative = farther right from page edge; smaller positive/less negative = left.
+// - Y values move text up/down. More negative = higher on page; closer to 0 = lower on page.
+// - Width controls how wide the text/line area is.
+$signatoryWidth = 70;
+$approvedByX = -100;
+$approvedByY = -60;
+$nameX = -80;
+$nameY = -47;
+$lineX = -80;
+$lineY = -41;
+$titleX = -80;
+$titleY = -40;
+
+$pdf->SetY($approvedByY);
+$pdf->SetX($approvedByX);
 $pdf->SetFont('Arial', '', 10);
-$pdf->Cell(70, 6, 'Approved by:', 0, 1, 'L');
-$pdf->SetX(-80);
+$pdf->Cell($signatoryWidth, 6, 'Approved by:', 0, 1, 'L');
+
+$pdf->SetY($nameY);
+$pdf->SetX($nameX);
 $pdf->SetFont('Arial', 'B', 10);
-$pdf->Cell(70, 6, 'CHRIS JOHN RENER TORRALBA', 0, 1, 'C');
-$pdf->SetX(-80);
-$pdf->Cell(70, 0, '', 'B', 1, 'C');
-$pdf->SetX(-80);
+$pdf->Cell($signatoryWidth, 6, 'CHRIS JOHN RENER TORRALBA', 0, 1, 'C');
+
+$pdf->SetY($lineY);
+$pdf->SetX($lineX);
+$pdf->Cell($signatoryWidth, 0, '', 'B', 1, 'C');
+
+$pdf->SetY($titleY);
+$pdf->SetX($titleX);
 $pdf->SetFont('Arial', '', 10);
-$pdf->Cell(70, 5, 'CGDH-I', 0, 1, 'C');
+$pdf->Cell($signatoryWidth, 5, 'CGDH-I', 0, 1, 'C');
 
 
 $pdf->Output('I', 'Manual_Claimed_Vouchers_' . date('Y-m-d') . '.pdf');
