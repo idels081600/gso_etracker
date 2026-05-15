@@ -385,6 +385,9 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                                     </div>
                                 </div>
                                 <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-secondary" id="openBatchModalBtn">
+                                        <i class="bi bi-folder2-open me-1"></i>Select Batch
+                                    </button>
                                     <button type="button" class="btn btn-outline-secondary" id="clearListBtn">
                                         <i class="bi bi-x-lg me-1"></i>Clear
                                     </button>
@@ -440,6 +443,25 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
         <input type="hidden" name="station_id" value="<?php echo (int)$_SESSION['station_id']; ?>">
     </form>
 
+    <div class="modal fade" id="batchModal" tabindex="-1" aria-labelledby="batchModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <p class="panel-title mb-1">Saved Export Batches</p>
+                        <h5 class="modal-title" id="batchModalLabel">Select created selection batch</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="batchList" class="vstack gap-2">
+                        <div class="text-muted text-center py-4">Loading batches...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
         // ========== DRAFT – localStorage key ==========
@@ -459,6 +481,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
         const selectedCount = document.getElementById('selectedCount');
         const selectedTotalGroups = document.getElementById('selectedTotalGroups');
         const selectedTotalAmount = document.getElementById('selectedTotalAmount');
+        const batchList = document.getElementById('batchList');
         const selected = [];
         const voucherButtons = new Map();
         let currentTricycleNo = '';
@@ -677,6 +700,85 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
         function setDropdown(html) {
             searchDropdown.innerHTML = html;
             searchDropdown.classList.toggle('d-none', html === '');
+        }
+
+        function restoreSelectedEntries(entries, dates = {}) {
+            selected.splice(0, selected.length);
+            entries.forEach((item) => {
+                selected.push({
+                    tricycle_no: item.tricycle_no || '',
+                    voucher_number: normalizeVoucher(item.voucher_number),
+                    driver_name: item.driver_name || 'Manual entry',
+                    fuel_type: item.fuel_type || getSelectedFuelType(),
+                    liters: item.liters || '',
+                    pump_price: item.pump_price || getFuelPrice(item.fuel_type || getSelectedFuelType()),
+                    claim_date: item.claim_date || ''
+                });
+            });
+
+            if (dates.start_date) document.getElementById('startDate').value = dates.start_date;
+            if (dates.end_date) document.getElementById('endDate').value = dates.end_date;
+
+            currentTricycleNo = selected.length > 0 ? selected[0].tricycle_no : '';
+            renderSelected();
+            syncVoucherButtons();
+            saveDraftNow();
+        }
+
+        function renderBatchList(batches) {
+            if (!batches || batches.length === 0) {
+                batchList.innerHTML = '<div class="empty-state text-center text-muted py-4 px-3">No saved batches found.</div>';
+                return;
+            }
+
+            batchList.innerHTML = '';
+            batches.forEach((batch) => {
+                const item = document.createElement('div');
+                item.className = 'border rounded-2 p-3 d-flex flex-column flex-md-row gap-3 align-items-md-center justify-content-between';
+                item.innerHTML = `
+                    <div>
+                        <div class="fw-semibold">${escapeHtml(batch.export_code)}</div>
+                        <div class="small text-muted">${escapeHtml(batch.date_range_text)} · ${escapeHtml(batch.created_at)}</div>
+                        <div class="small">PHP ${escapeHtml(formatRoundedAmount(batch.total_amount))} · ${escapeHtml(Number(batch.total_liters || 0).toFixed(2))} L · ${escapeHtml(batch.total_vouchers)} voucher(s)</div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-brand" data-batch-id="${batch.id}">Load</button>
+                `;
+                batchList.appendChild(item);
+            });
+        }
+
+        async function loadBatchList() {
+            batchList.innerHTML = '<div class="text-muted text-center py-4">Loading batches...</div>';
+            try {
+                const response = await fetch('api_manual_claimed_voucher_batches.php?action=list');
+                const data = await response.json();
+                if (!data.success) {
+                    batchList.innerHTML = `<div class="text-danger text-center py-4">${escapeHtml(data.message || 'Unable to load batches.')}</div>`;
+                    return;
+                }
+                renderBatchList(data.batches);
+            } catch (error) {
+                batchList.innerHTML = '<div class="text-danger text-center py-4">Unable to load batches.</div>';
+            }
+        }
+
+        async function loadBatch(batchId) {
+            try {
+                const response = await fetch(`api_manual_claimed_voucher_batches.php?action=load&id=${encodeURIComponent(batchId)}`);
+                const data = await response.json();
+                if (!data.success || !data.batch) {
+                    alert(data.message || 'Unable to load this batch.');
+                    return;
+                }
+
+                restoreSelectedEntries(data.batch.selected_entries || [], {
+                    start_date: data.batch.start_date || '',
+                    end_date: data.batch.end_date || ''
+                });
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('batchModal')).hide();
+            } catch (error) {
+                alert('Unable to load this batch.');
+            }
         }
 
         function normalizeVoucher(value) {
@@ -1160,6 +1262,17 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             renderSelected();
             syncVoucherButtons();
             saveDraftNow();
+        });
+
+        document.getElementById('openBatchModalBtn').addEventListener('click', () => {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('batchModal')).show();
+            loadBatchList();
+        });
+
+        batchList.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-batch-id]');
+            if (!button) return;
+            loadBatch(button.dataset.batchId);
         });
 
         window.addEventListener('beforeunload', function() {
