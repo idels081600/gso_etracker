@@ -524,8 +524,9 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             });
             try {
                 localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-                saveDraftToDatabase(draft, keepalive);
+                return saveDraftToDatabase(draft, keepalive);
             } catch (e) {
+                return saveDraftToDatabase(draft, keepalive);
                 // storage full – ignore
             }
         }
@@ -682,7 +683,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
 
         function saveDraftNow() {
             clearTimeout(draftSaveTimer);
-            saveDraft();
+            return saveDraft();
         }
 
         // Watch all relevant inputs for changes
@@ -727,6 +728,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                     fuel_type: item.fuel_type || getSelectedFuelType(),
                     liters: item.liters || '',
                     pump_price: item.pump_price || getFuelPrice(item.fuel_type || getSelectedFuelType()),
+                    amount: item.amount || '',
                     claim_date: item.claim_date || ''
                 });
             });
@@ -1151,9 +1153,12 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                 return;
             }
 
+            applyGroupSettingsToCurrentTricycle();
+            await saveDraftNow();
+
             const incomplete = selected.find((item) => Number(item.liters) <= 0 || Number(item.pump_price) <= 0 || Number(item.amount) <= 0 || !item.fuel_type);
             if (incomplete) {
-                alert('Please enter actual liters, fuel type, pump price, and manual amount for every selected group.');
+                alert(`Please complete liters, fuel type, pump price, and manual amount for ${incomplete.tricycle_no}-${incomplete.voucher_number}.`);
                 return;
             }
 
@@ -1233,9 +1238,9 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             selected.forEach((item) => {
                 if (item.tricycle_no.toLowerCase() === targetTricycleNo.toLowerCase()) {
                     item.fuel_type = fuelType;
-                    item.pump_price = pumpPrice;
-                    item.liters = liters;
-                    item.amount = amount;
+                    if (pumpPrice !== '') item.pump_price = pumpPrice;
+                    if (liters !== '') item.liters = liters;
+                    if (amount !== '') item.amount = amount;
                 }
             });
             renderSelected();
