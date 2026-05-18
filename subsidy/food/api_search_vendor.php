@@ -5,44 +5,60 @@ $conn = require(__DIR__ . '/config/database.php');
 header('Content-Type: application/json');
 mysqli_report(MYSQLI_REPORT_OFF);
 
-// Security check
 if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
 
-// Validate vendor_serial parameter
 if (!isset($_GET['vendor_serial']) || empty(trim($_GET['vendor_serial']))) {
     echo json_encode(['success' => false, 'message' => 'Vendor serial is required']);
     exit();
 }
 
 $vendor_serial = trim($_GET['vendor_serial']);
-$escaped_serial = mysqli_real_escape_string($conn, $vendor_serial);
-
-// Normalize input for hyphen/space-insensitive matching
 $normalized_serial = strtolower(str_replace(['-', ' '], '', $vendor_serial));
-$escaped_normalized_serial = mysqli_real_escape_string($conn, $normalized_serial);
+$prefix = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $vendor_serial) . '%';
 
-// Search query for exact match or partial match
 $sql = "SELECT vendor_serial, vendor_name, stall_no, section
         FROM food_vendors
-        WHERE LOWER(vendor_serial) = LOWER('$escaped_serial')
-        OR LOWER(vendor_serial) LIKE LOWER('%$escaped_serial%')
-        OR LOWER(vendor_name) LIKE LOWER('%$escaped_serial%')
-        OR REPLACE(REPLACE(LOWER(vendor_serial), '-', ''), ' ', '') LIKE '$escaped_normalized_serial%'
+        WHERE vendor_serial = ?
+           OR vendor_serial LIKE ? ESCAPE '\\\\'
+           OR vendor_name LIKE ? ESCAPE '\\\\'
+           OR REPLACE(REPLACE(LOWER(vendor_serial), '-', ''), ' ', '') = ?
+        ORDER BY
+            CASE
+                WHEN vendor_serial = ? THEN 0
+                WHEN vendor_serial LIKE ? ESCAPE '\\\\' THEN 1
+                ELSE 2
+            END,
+            vendor_serial ASC
         LIMIT 10";
 
-$result = mysqli_query($conn, $sql);
+$stmt = $conn->prepare($sql);
+if (!$stmt) {
+    echo json_encode(['success' => false, 'message' => 'Database query prepare failed']);
+    exit();
+}
 
-if (!$result) {
+$stmt->bind_param(
+    'ssssss',
+    $vendor_serial,
+    $prefix,
+    $prefix,
+    $normalized_serial,
+    $vendor_serial,
+    $prefix
+);
+
+if (!$stmt->execute()) {
     echo json_encode(['success' => false, 'message' => 'Database query failed']);
     exit();
 }
 
+$result = $stmt->get_result();
 $vendors = [];
 
-while ($row = mysqli_fetch_assoc($result)) {
+while ($row = $result->fetch_assoc()) {
     $vendors[] = [
         'vendor_serial' => $row['vendor_serial'],
         'vendor_name' => $row['vendor_name'],
@@ -56,10 +72,9 @@ if (count($vendors) === 0) {
     exit();
 }
 
-// If exact match found, return single vendor; otherwise return list
 $exact_match = null;
 foreach ($vendors as $vendor) {
-    if (strtoupper($vendor['vendor_serial']) === strtoupper($vendor_serial)) {
+    if (strcasecmp($vendor['vendor_serial'], $vendor_serial) === 0) {
         $exact_match = $vendor;
         break;
     }

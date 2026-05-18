@@ -5,11 +5,16 @@ let selectedVouchers = []; // Tracks order of selection
 const VOUCHER_VALUE = 200;
 const VOUCHER_PAGE_LIMIT = 50;
 const MIN_VOUCHER_SEARCH_LENGTH = 2;
+const VENDOR_SEARCH_DEBOUNCE_MS = 350;
+const VOUCHER_SEARCH_DEBOUNCE_MS = 500;
 
 // Pagination state
 let currentPage = 1;
 let totalPages = 1;
 let currentSearchTerm = '';
+let vendorSearchTimeout;
+let vendorSearchController;
+let voucherSearchController;
 
 // User-specific draft key
 const getDraftKey = () => {
@@ -91,7 +96,7 @@ function setupEventListeners() {
   // Live vendor search suggestion
   document
     .getElementById("vendorSerial")
-    .addEventListener("input", liveVendorSearch);
+    .addEventListener("input", queueLiveVendorSearch);
 
   const voucherSearchInput = document.getElementById("voucherSearch");
 
@@ -149,7 +154,7 @@ function setupEventListeners() {
         if (currentVendor && (term.length >= MIN_VOUCHER_SEARCH_LENGTH || /^\d+$/.test(term))) {
           runVoucherSearch();
         }
-      }, 300);
+      }, VOUCHER_SEARCH_DEBOUNCE_MS);
     });
 
   document
@@ -217,21 +222,41 @@ function setupEventListeners() {
   });
 }
 
-// Live search suggestion as user types with dropdown
-function liveVendorSearch() {
+function queueLiveVendorSearch() {
+  clearTimeout(vendorSearchTimeout);
+
   const vendorSerial = this.value.trim();
   const inputField = document.getElementById("vendorSerial");
   const suggestionsContainer = document.getElementById("vendorSuggestions");
 
-  // Clear if empty
   if (vendorSerial.length < 2) {
+    if (vendorSearchController) {
+      vendorSearchController.abort();
+    }
     inputField.classList.remove("is-valid", "is-invalid");
     suggestionsContainer.classList.add("d-none");
     return;
   }
 
+  vendorSearchTimeout = setTimeout(() => {
+    liveVendorSearch(vendorSerial);
+  }, VENDOR_SEARCH_DEBOUNCE_MS);
+}
+
+// Live search suggestion as user types with dropdown
+function liveVendorSearch(vendorSerial) {
+  const inputField = document.getElementById("vendorSerial");
+  const suggestionsContainer = document.getElementById("vendorSuggestions");
+
+  if (vendorSearchController) {
+    vendorSearchController.abort();
+  }
+
+  vendorSearchController = new AbortController();
+
   fetch(
     "api_search_vendor.php?vendor_serial=" + encodeURIComponent(vendorSerial),
+    { signal: vendorSearchController.signal }
   )
     .then((res) => res.json())
     .then((data) => {
@@ -265,6 +290,9 @@ function liveVendorSearch() {
       }
     })
     .catch((err) => {
+      if (err.name === "AbortError") {
+        return;
+      }
       inputField.classList.remove("is-valid", "is-invalid");
       suggestionsContainer.classList.add("d-none");
     });
@@ -376,7 +404,14 @@ function loadVouchers(vendorId, page, search) {
   params.set('require_search', '1');
   params.set('search', term);
 
-  fetch("api_get_vendor_vouchers.php?" + params.toString())
+  if (voucherSearchController) {
+    voucherSearchController.abort();
+  }
+  voucherSearchController = new AbortController();
+
+  fetch("api_get_vendor_vouchers.php?" + params.toString(), {
+    signal: voucherSearchController.signal
+  })
     .then((res) => res.json())
     .then((data) => {
       if (data.success) {
@@ -408,6 +443,9 @@ function loadVouchers(vendorId, page, search) {
       }
     })
     .catch((err) => {
+      if (err.name === "AbortError") {
+        return;
+      }
       console.error("Error loading vouchers:", err);
       if (selectedVouchers.length > 0) {
         renderSelectedVouchers();
