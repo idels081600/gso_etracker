@@ -59,6 +59,7 @@ foreach ($selectedEntries as $entry) {
         $fuelType = is_array($entry) && isset($entry['fuel_type']) ? trim((string)$entry['fuel_type']) : 'Silver';
         $liters = is_array($entry) && isset($entry['liters']) ? (float)$entry['liters'] : 0;
         $entryPumpPrice = is_array($entry) && isset($entry['pump_price']) ? (float)$entry['pump_price'] : 0;
+        $entryAmount = is_array($entry) && isset($entry['amount']) ? (float)$entry['amount'] : ($liters * $entryPumpPrice);
         $driverName = is_array($entry) && isset($entry['driver_name']) ? trim((string)$entry['driver_name']) : 'Manual entry';
         $claimDate = is_array($entry) && !empty($entry['claim_date']) ? $entry['claim_date'] : date('Y-m-d');
         $validFuelTypes = ['Silver', 'Platinum', 'Diesel'];
@@ -74,7 +75,8 @@ foreach ($selectedEntries as $entry) {
             'claim_date' => $claimDate,
             'fuel_type' => $fuelType,
             'liters' => $liters,
-            'pump_price' => $entryPumpPrice
+            'pump_price' => $entryPumpPrice,
+            'amount' => $entryAmount
         ];
     }
 }
@@ -219,7 +221,7 @@ foreach ($orderedSelections as $orderIndex => $selection) {
     $fuelType = $selection['fuel_type'];
     $liters = (float)$selection['liters'];
     $entryPumpPrice = (float)$selection['pump_price'];
-    $entryAmount = $liters * $entryPumpPrice;
+    $entryAmount = isset($selection['amount']) ? (float)$selection['amount'] : ($liters * $entryPumpPrice);
     $safeTricycleNo = mysqli_real_escape_string($conn, $tricycleNo);
     $voucherFilter = $voucherNumber !== '' ? ' AND vc.voucher_number = ' . (int)$voucherNumber . ' ' : '';
     $matchedRows = 0;
@@ -238,7 +240,7 @@ foreach ($orderedSelections as $orderIndex => $selection) {
 
     while ($row = mysqli_fetch_assoc($result)) {
         $matchedRows++;
-        $key = $row['tricycle_no'] . '_' . $fuelType . '_' . $entryPumpPrice . '_' . $liters;
+        $key = $row['tricycle_no'] . '_' . $fuelType . '_' . $entryPumpPrice . '_' . $liters . '_' . $entryAmount;
 
         if (!isset($groupedData[$key])) {
             $isBoat = strlen($row['tricycle_no']) > 4;
@@ -310,7 +312,7 @@ foreach ($orderedSelections as $orderIndex => $selection) {
             : date('Y-m-d', strtotime($selection['claim_date']));
         $fallbackDriver = !empty($matchedClaim['driver_name']) ? $matchedClaim['driver_name'] : $selection['driver_name'];
         $fallbackSignature = !empty($matchedClaim['e_signature']) ? $matchedClaim['e_signature'] : '';
-        $key = $tricycleNo . '_' . $fuelType . '_' . $entryPumpPrice . '_' . $liters;
+        $key = $tricycleNo . '_' . $fuelType . '_' . $entryPumpPrice . '_' . $liters . '_' . $entryAmount;
 
         if (!isset($groupedData[$key])) {
             $isBoat = strlen($tricycleNo) > 4;

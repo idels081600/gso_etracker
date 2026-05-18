@@ -346,6 +346,13 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                                     <span class="input-group-text">L</span>
                                 </div>
                             </div>
+                            <div class="mb-3">
+                                <label for="groupAmount" class="form-label fw-semibold">Manual Amount For This Voucher Group</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">PHP</span>
+                                    <input type="number" min="0" step="0.01" class="form-control" id="groupAmount" placeholder="Example: 400.00">
+                                </div>
+                            </div>
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <label class="form-label fw-semibold mb-0">Claimed Vouchers</label>
                                 <span class="small text-muted" id="loadedTricycleLabel"></span>
@@ -357,7 +364,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
 
                         <div class="alert alert-light border small mb-4">
                             <i class="bi bi-info-circle me-1"></i>
-                            Set pump price, choose the fuel, enter the total actual liters for the selected voucher group, then click vouchers.
+                            Set pump price, choose the fuel, enter actual liters and the manual amount for the selected voucher group, then click vouchers.
                         </div>
 
                         <div class="row g-3">
@@ -475,6 +482,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
         const fuelTypeRadios = Array.from(document.querySelectorAll('input[name="groupFuelType"]'));
         const fuelPriceInputs = Array.from(document.querySelectorAll('.fuel-price-input'));
         const groupLiters = document.getElementById('groupLiters');
+        const groupAmount = document.getElementById('groupAmount');
         const selectedTable = document.getElementById('selectedTable');
         const selectedTableWrap = document.getElementById('selectedTableWrap');
         const emptyState = document.getElementById('emptyState');
@@ -499,12 +507,14 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                         fuel_type: item.fuel_type,
                         liters: item.liters,
                         pump_price: item.pump_price,
+                        amount: item.amount,
                         claim_date: item.claim_date || ''
                     };
                 }),
                 fuel_prices: {},
                 fuel_type: getSelectedFuelType(),
                 group_liters: groupLiters.value,
+                group_amount: groupAmount.value,
                 search_value: manualSearch.value,
                 start_date: document.getElementById('startDate').value,
                 end_date: document.getElementById('endDate').value
@@ -626,6 +636,9 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             if (draft.group_liters !== undefined && draft.group_liters !== null) {
                 groupLiters.value = draft.group_liters;
             }
+            if (draft.group_amount !== undefined && draft.group_amount !== null) {
+                groupAmount.value = draft.group_amount;
+            }
             // Restore dates
             if (draft.start_date) document.getElementById('startDate').value = draft.start_date;
             if (draft.end_date) document.getElementById('endDate').value = draft.end_date;
@@ -642,6 +655,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                         fuel_type: item.fuel_type || getSelectedFuelType(),
                         liters: item.liters || '',
                         pump_price: item.pump_price || getFuelPrice(item.fuel_type || getSelectedFuelType()),
+                        amount: item.amount || '',
                         claim_date: item.claim_date || ''
                     });
                 });
@@ -680,6 +694,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             input.addEventListener('input', autoSaveDraft);
         });
         groupLiters.addEventListener('input', autoSaveDraft);
+        groupAmount.addEventListener('input', autoSaveDraft);
         document.getElementById('startDate').addEventListener('change', autoSaveDraft);
         document.getElementById('endDate').addEventListener('change', autoSaveDraft);
         document.getElementById('startDate').addEventListener('change', renderSelected);
@@ -800,7 +815,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
         }
 
         function selectedAmount(item) {
-            return Number(item.liters || 0) * Number(item.pump_price || 0);
+            return Number(item.amount || 0);
         }
 
         function isWithinSelectedDateRange(item) {
@@ -825,6 +840,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                     item.fuel_type,
                     Number(item.pump_price || 0).toFixed(2),
                     Number(item.liters || 0).toFixed(2),
+                    Number(item.amount || 0).toFixed(2),
                     normalizeClaimDate(item.claim_date)
                 ].join('|');
 
@@ -844,7 +860,8 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                     item.tricycle_no,
                     item.fuel_type,
                     Number(item.pump_price || 0).toFixed(2),
-                    Number(item.liters || 0).toFixed(2)
+                    Number(item.liters || 0).toFixed(2),
+                    Number(item.amount || 0).toFixed(2)
                 ].join('|');
 
                 if (!groups.has(key)) {
@@ -957,12 +974,14 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                 if (existingGroup) {
                     setSelectedFuelType(existingGroup.fuel_type);
                     groupLiters.value = existingGroup.liters;
+                    groupAmount.value = existingGroup.amount || '';
                     const priceInput = fuelPriceInputs.find((input) => input.dataset.fuel === existingGroup.fuel_type);
                     if (priceInput && priceInput.value === '') {
                         priceInput.value = existingGroup.pump_price;
                     }
                 } else {
                     groupLiters.value = '';
+                    groupAmount.value = '';
                 }
 
                 const claims = tricycle.claims_data;
@@ -992,6 +1011,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                         const fuelType = getSelectedFuelType();
                         const pumpPrice = getFuelPrice(fuelType);
                         const liters = groupLiters.value;
+                        const amount = groupAmount.value;
                         if (Number(pumpPrice) <= 0) {
                             alert(`Please enter the ${fuelType} pump price before selecting vouchers.`);
                             const priceInput = fuelPriceInputs.find((input) => input.dataset.fuel === fuelType);
@@ -1003,6 +1023,11 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                             groupLiters.focus();
                             return;
                         }
+                        if (Number(amount) <= 0) {
+                            alert('Please enter the manual amount for this voucher group before selecting vouchers.');
+                            groupAmount.focus();
+                            return;
+                        }
 
                         addSelection({
                             tricycle_no: tricycle.tricycle_no,
@@ -1012,6 +1037,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                             fuel_type: fuelType,
                             liters: liters,
                             pump_price: pumpPrice,
+                            amount: amount,
                             claim_date: claim.claim_date || ''
                         });
                     });
@@ -1046,6 +1072,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                 fuel_type: item.fuel_type || getSelectedFuelType(),
                 liters: item.liters || '',
                 pump_price: item.pump_price || getFuelPrice(item.fuel_type || getSelectedFuelType()),
+                amount: item.amount || groupAmount.value,
                 claim_date: item.claim_date || ''
             });
 
@@ -1124,9 +1151,9 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                 return;
             }
 
-            const incomplete = selected.find((item) => Number(item.liters) <= 0 || Number(item.pump_price) <= 0 || !item.fuel_type);
+            const incomplete = selected.find((item) => Number(item.liters) <= 0 || Number(item.pump_price) <= 0 || Number(item.amount) <= 0 || !item.fuel_type);
             if (incomplete) {
-                alert('Please enter actual liters, fuel type, and pump price for every selected voucher.');
+                alert('Please enter actual liters, fuel type, pump price, and manual amount for every selected group.');
                 return;
             }
 
@@ -1137,6 +1164,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                 fuel_type: item.fuel_type,
                 liters: item.liters,
                 pump_price: item.pump_price,
+                amount: item.amount,
                 claim_date: item.claim_date || ''
             }));
             const startDate = document.getElementById('startDate').value;
@@ -1187,6 +1215,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             const fuelType = getSelectedFuelType();
             const pumpPrice = getFuelPrice(fuelType);
             const liters = groupLiters.value;
+            const amount = groupAmount.value;
             let targetTricycleNo = currentTricycleNo;
 
             if (!targetTricycleNo) {
@@ -1206,6 +1235,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
                     item.fuel_type = fuelType;
                     item.pump_price = pumpPrice;
                     item.liters = liters;
+                    item.amount = amount;
                 }
             });
             renderSelected();
@@ -1237,6 +1267,7 @@ $station_name = isset($_SESSION['station_name']) ? $_SESSION['station_name'] : '
             });
         });
         groupLiters.addEventListener('input', applyGroupSettingsToCurrentTricycle);
+        groupAmount.addEventListener('input', applyGroupSettingsToCurrentTricycle);
 
         selectedTable.addEventListener('click', (event) => {
             const button = event.target.closest('button[data-action]');
