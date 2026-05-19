@@ -590,36 +590,32 @@ foreach (['Silver', 'Platinum', 'Diesel'] as $fuelType) {
     $pdf->Cell($fuelColWidth, $rowHeight, formatRoundedAmount($fuelBreakdown[$fuelType]['amount']), 1, 1, 'C');
 }
 
-// Signatory layout controls:
-// - X values move text left/right. More negative = farther right from page edge; smaller positive/less negative = left.
-// - Y values move text up/down. More negative = higher on page; closer to 0 = lower on page.
-// - Width controls how wide the text/line area is.
-$signatoryWidth = 70;
-$approvedByX = -100;
-$approvedByY = -60;
-$nameX = -80;
-$nameY = -47;
-$lineX = -80;
-$lineY = -41;
-$titleX = -80;
-$titleY = -40;
+// Keep the signatory below the summary table instead of anchoring it over page content.
+$signatoryWidth = 78;
+$signatoryX = $pdf->GetPageWidth() - $signatoryWidth - 18;
+$signatoryY = $pdf->GetY() + 16;
 
-$pdf->SetY($approvedByY);
-$pdf->SetX($approvedByX);
+if ($signatoryY + 32 > $pdf->GetPageHeight() - 18) {
+    $pdf->AddPage();
+    $signatoryY = $pdf->GetY() + 12;
+}
+
+$pdf->SetY($signatoryY);
+$pdf->SetX($signatoryX);
 $pdf->SetFont('Arial', '', 10);
 $pdf->Cell($signatoryWidth, 6, 'Approved by:', 0, 1, 'L');
 
-$pdf->SetY($nameY);
-$pdf->SetX($nameX);
+$pdf->SetY($signatoryY + 13);
+$pdf->SetX($signatoryX);
 $pdf->SetFont('Arial', 'B', 10);
 $pdf->Cell($signatoryWidth, 6, 'CHRIS JOHN RENER TORRALBA', 0, 1, 'C');
 
-$pdf->SetY($lineY);
-$pdf->SetX($lineX);
+$pdf->SetY($signatoryY + 19);
+$pdf->SetX($signatoryX);
 $pdf->Cell($signatoryWidth, 0, '', 'B', 1, 'C');
 
-$pdf->SetY($titleY);
-$pdf->SetX($titleX);
+$pdf->SetY($signatoryY + 20);
+$pdf->SetX($signatoryX);
 $pdf->SetFont('Arial', '', 10);
 $pdf->Cell($signatoryWidth, 5, 'CGDH-I', 0, 1, 'C');
 
