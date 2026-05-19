@@ -24,7 +24,9 @@ if (empty($tricycle_no)) {
 $sql = "SELECT tr.id, tr.tricycle_no, tr.driver_name, tr.address, tr.contact_number,
         tr.total_vouchers, tr.claimed_vouchers, tr.status, tr.last_claim_date
         FROM tricycle_records tr 
-        WHERE tr.tricycle_no = '$tricycle_no' OR tr.driver_name LIKE '%$tricycle_no%'";
+        WHERE TRIM(tr.tricycle_no) = TRIM('$tricycle_no')
+        OR tr.tricycle_no LIKE '%$tricycle_no%'
+        OR tr.driver_name LIKE '%$tricycle_no%'";
 
 $result = mysqli_query($conn, $sql);
 
@@ -37,18 +39,17 @@ $tricycle = mysqli_fetch_assoc($result);
 
 // Get claimed vouchers with e-signature data
 $tricycle_id = $tricycle['id'];
-$station_filter = '';
+$station_order = '0';
 if (isset($_SESSION['station_id']) && !empty($_SESSION['station_id'])) {
     $station_id = (int)$_SESSION['station_id'];
-    $station_filter = " AND station_id = $station_id";
+    $station_order = "CASE WHEN station_id = $station_id THEN 0 ELSE 1 END,";
 }
 
 $claims_sql = "SELECT voucher_number, claimant_name, claim_date, e_signature 
                FROM voucher_claims 
                WHERE tricycle_id = $tricycle_id
                AND e_signature IS NOT NULL AND e_signature != ''
-               $station_filter
-               ORDER BY voucher_number";
+               ORDER BY $station_order voucher_number";
 
 $claims_result = mysqli_query($conn, $claims_sql);
 $claimed_vouchers = [];
