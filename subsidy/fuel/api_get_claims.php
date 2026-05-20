@@ -20,15 +20,33 @@ if (empty($tricycle_no)) {
     exit;
 }
 
-// Get tricycle record with claimed vouchers
-$sql = "SELECT tr.id, tr.tricycle_no, tr.driver_name, tr.address, tr.contact_number,
+// For 4-digit tricycle numbers, use exact matching so "0025" does not load
+// longer boat/tag records such as "B TAG-000025-2021".
+$exactSql = "SELECT tr.id, tr.tricycle_no, tr.driver_name, tr.address, tr.contact_number,
         tr.total_vouchers, tr.claimed_vouchers, tr.status, tr.last_claim_date
-        FROM tricycle_records tr 
+        FROM tricycle_records tr
         WHERE TRIM(tr.tricycle_no) = TRIM('$tricycle_no')
-        OR tr.tricycle_no LIKE '%$tricycle_no%'
-        OR tr.driver_name LIKE '%$tricycle_no%'";
+        LIMIT 1";
 
-$result = mysqli_query($conn, $sql);
+$result = mysqli_query($conn, $exactSql);
+
+if (mysqli_num_rows($result) === 0 && !preg_match('/^\d{4}$/', $tricycle_no)) {
+    $sql = "SELECT tr.id, tr.tricycle_no, tr.driver_name, tr.address, tr.contact_number,
+            tr.total_vouchers, tr.claimed_vouchers, tr.status, tr.last_claim_date
+            FROM tricycle_records tr
+            WHERE tr.tricycle_no LIKE '%$tricycle_no%'
+            OR tr.driver_name LIKE '%$tricycle_no%'
+            ORDER BY
+                CASE
+                    WHEN TRIM(tr.tricycle_no) = TRIM('$tricycle_no') THEN 0
+                    WHEN tr.tricycle_no LIKE '$tricycle_no%' THEN 1
+                    ELSE 2
+                END,
+                tr.tricycle_no
+            LIMIT 1";
+
+    $result = mysqli_query($conn, $sql);
+}
 
 if (mysqli_num_rows($result) === 0) {
     echo json_encode(['success' => false, 'message' => 'Tricycle not found']);

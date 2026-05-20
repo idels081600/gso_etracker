@@ -43,7 +43,14 @@ $sql = "SELECT
             (tr.tricycle_no LIKE '$search_string' 
             OR tr.driver_name LIKE '$search_string')
             $voucher_filter
-        ORDER BY tr.tricycle_no, voucher_number";
+        ORDER BY
+            CASE
+                WHEN TRIM(tr.tricycle_no) = TRIM('" . mysqli_real_escape_string($conn, $query) . "') THEN 0
+                WHEN tr.tricycle_no LIKE '" . mysqli_real_escape_string($conn, $query) . "%' THEN 1
+                ELSE 2
+            END,
+            tr.tricycle_no,
+            voucher_number";
 
 $result = mysqli_query($conn, $sql);
 
