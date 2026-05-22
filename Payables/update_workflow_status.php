@@ -62,13 +62,6 @@ if ($mainStatus === 'ACCOUNTING' && empty($currentWorkflow['id'])) {
     $currentLocation = 'ACCOUNTING';
 }
 
-if ($mainStatus !== 'GSO' && (!$inspection || !$obr)) {
-    payables_json_response([
-        'success' => false,
-        'error' => 'Complete Inspection and OBR before selecting the next status.',
-    ], 422);
-}
-
 payables_ensure_workflow_table();
 
 $stmt = $conn->prepare("INSERT INTO payables_workflow_status (

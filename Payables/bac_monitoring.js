@@ -7,6 +7,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const checklistButtons = document.querySelectorAll(".gso-check-chip");
   const locationSelects = document.querySelectorAll(".accounting-location-select");
   const locationHistoryButtons = document.querySelectorAll(".location-history-btn");
+  const remarksHistoryButtons = document.querySelectorAll(".remarks-history-btn");
+  const ctoRemarksButtons = document.querySelectorAll(".cto-remarks-edit");
   const releaseCheckboxes = document.querySelectorAll(".cto-release-checkbox");
   const taskTable = document.querySelector(".task-table");
   const detailHeader = document.getElementById("workflowDetailHeader");
@@ -19,9 +21,18 @@ document.addEventListener("DOMContentLoaded", function () {
   const confirmSubtitle = document.getElementById("transmitConfirmSubtitle");
   const successAlert = document.getElementById("transmitSuccessAlert");
   const locationHistoryModalEl = document.getElementById("locationHistoryModal");
+  const locationHistoryTitle = document.getElementById("locationHistoryModalLabel");
   const locationHistorySubtitle = document.getElementById("locationHistorySubtitle");
   const locationHistoryList = document.getElementById("locationHistoryList");
+  const remarksEditModalEl = document.getElementById("remarksEditModal");
+  const remarksEditForm = document.getElementById("remarksEditForm");
+  const remarksEditRecordId = document.getElementById("remarksEditRecordId");
+  const remarksEditText = document.getElementById("remarksEditText");
+  const remarksEditSubtitle = document.getElementById("remarksEditSubtitle");
+  const remarksEditError = document.getElementById("remarksEditError");
+  const remarksSaveBtn = document.getElementById("remarksSaveBtn");
   let pendingTransmitButton = null;
+  let activeRemarksButton = null;
 
   const stageLabels = {
     GSO: {
@@ -93,32 +104,20 @@ document.addEventListener("DOMContentLoaded", function () {
     return checkedKeys;
   }
 
-  function requiredChecksComplete(row) {
-    return ["inspection", "obr"].every(function (key) {
-      const chip = row.querySelector('[data-check-key="' + key + '"]');
-      return chip && chip.classList.contains("is-complete");
-    });
-  }
-
   function updateTransmitButtonState(row) {
     const button = row.querySelector(".transmit-budget-btn");
     if (!button) return;
 
     const status = row.dataset.mainStatus || "GSO";
     const canTransmit =
-      (status === "GSO" && requiredChecksComplete(row)) ||
+      status === "GSO" ||
       status === "BUDGET" ||
       status === "ACCOUNTING";
 
     button.disabled = !canTransmit;
     if (status === "GSO") {
-      button.title = canTransmit
-        ? "Transmit to Budget"
-        : "Complete Inspection and OBR first";
-      button.setAttribute(
-        "aria-label",
-        canTransmit ? "Transmit to Budget" : "Complete Inspection and OBR first"
-      );
+      button.title = "Transmit to Budget";
+      button.setAttribute("aria-label", "Transmit to Budget");
     } else if (status === "BUDGET") {
       button.title = "Transmit to Accounting";
       button.setAttribute("aria-label", "Transmit to Accounting");
@@ -181,7 +180,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  function parseRemarksHistory(button) {
+    try {
+      const history = JSON.parse(button.dataset.remarksHistory || "[]");
+      return Array.isArray(history) ? history : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
   function renderLocationHistory(reference, history) {
+    if (locationHistoryTitle) {
+      locationHistoryTitle.textContent = "Location History";
+    }
     if (locationHistorySubtitle) {
       locationHistorySubtitle.textContent =
         "Location history for " + (reference || "this record") + ".";
@@ -217,6 +228,52 @@ document.addEventListener("DOMContentLoaded", function () {
       meta.textContent = formatHistoryDate(item.changed_at) + changedBy;
 
       copy.appendChild(location);
+      copy.appendChild(meta);
+      entry.appendChild(marker);
+      entry.appendChild(copy);
+      locationHistoryList.appendChild(entry);
+    });
+  }
+
+  function renderRemarksHistory(reference, history) {
+    if (locationHistoryTitle) {
+      locationHistoryTitle.textContent = "Remarks History";
+    }
+    if (locationHistorySubtitle) {
+      locationHistorySubtitle.textContent =
+        "CTO remarks history for " + (reference || "this record") + ".";
+    }
+    if (!locationHistoryList) return;
+
+    locationHistoryList.innerHTML = "";
+    if (!history.length) {
+      const empty = document.createElement("div");
+      empty.className = "location-history-empty";
+      empty.textContent = "No remarks recorded yet.";
+      locationHistoryList.appendChild(empty);
+      return;
+    }
+
+    history.forEach(function (item) {
+      const entry = document.createElement("div");
+      entry.className = "location-history-entry remarks-history-entry";
+      entry.setAttribute("role", "listitem");
+
+      const marker = document.createElement("span");
+      marker.className = "location-history-marker remarks-history-marker";
+      marker.textContent = "R";
+
+      const copy = document.createElement("div");
+      copy.className = "location-history-copy";
+
+      const remarks = document.createElement("strong");
+      remarks.textContent = item.remarks || "No remarks entered.";
+
+      const meta = document.createElement("span");
+      const changedBy = item.changed_by ? " by " + item.changed_by : "";
+      meta.textContent = formatHistoryDate(item.changed_at) + changedBy;
+
+      copy.appendChild(remarks);
       copy.appendChild(meta);
       entry.appendChild(marker);
       entry.appendChild(copy);
@@ -295,6 +352,83 @@ document.addEventListener("DOMContentLoaded", function () {
       .finally(function () {
         checkbox.disabled = false;
         checkbox.closest(".cto-release-check")?.classList.remove("is-saving");
+      });
+  }
+
+  function setRemarksError(message) {
+    if (!remarksEditError) return;
+    remarksEditError.textContent = message || "";
+    remarksEditError.classList.toggle("d-none", !message);
+  }
+
+  function setRemarksSaving(isSaving) {
+    if (!remarksSaveBtn) return;
+    const label = remarksSaveBtn.querySelector(".remarks-save-label");
+    remarksSaveBtn.disabled = isSaving;
+    remarksSaveBtn.classList.toggle("is-loading", isSaving);
+    if (label) {
+      label.textContent = isSaving ? "Saving..." : "Save Remarks";
+    }
+  }
+
+  function openRemarksEditor(button) {
+    activeRemarksButton = button;
+    setRemarksError("");
+    if (remarksEditRecordId) {
+      remarksEditRecordId.value = button.dataset.recordId || "";
+    }
+    if (remarksEditText) {
+      remarksEditText.value = button.dataset.currentRemarks || "";
+    }
+    if (remarksEditSubtitle) {
+      remarksEditSubtitle.textContent =
+        "Update CTO remarks for " + (button.dataset.reference || "this record") + ".";
+    }
+    bootstrap.Modal.getOrCreateInstance(remarksEditModalEl).show();
+    window.setTimeout(function () {
+      remarksEditText?.focus();
+      remarksEditText?.select();
+    }, 160);
+  }
+
+  function saveRemarks() {
+    if (!activeRemarksButton || !remarksEditForm) return;
+    const formData = new FormData(remarksEditForm);
+    if (csrfToken) {
+      formData.append("csrf_token", csrfToken);
+    }
+
+    setRemarksSaving(true);
+    setRemarksError("");
+
+    fetch("update_cto_remarks.php", {
+      method: "POST",
+      body: formData,
+    })
+      .then(parseJsonResponse)
+      .then(function (data) {
+        if (!data.success) {
+          setRemarksError(data.error || "Unable to update remarks.");
+          return;
+        }
+
+        const remarks = data.remarks || "";
+        activeRemarksButton.dataset.currentRemarks = remarks;
+        activeRemarksButton.textContent = remarks || "No remarks yet.";
+
+        const row = activeRemarksButton.closest(".payables-row");
+        const historyButton = row?.querySelector(".remarks-history-btn");
+        if (historyButton && Array.isArray(data.history)) {
+          historyButton.dataset.remarksHistory = JSON.stringify(data.history);
+        }
+
+        bootstrap.Modal.getInstance(remarksEditModalEl)?.hide();
+      })
+      .catch(function (error) {
+        setRemarksError(error.message || "Unable to update remarks. Please try again.");
+      })
+      .finally(function () {
+        setRemarksSaving(false);
       });
   }
 
@@ -502,6 +636,26 @@ document.addEventListener("DOMContentLoaded", function () {
       bootstrap.Modal.getOrCreateInstance(locationHistoryModalEl).show();
     });
   });
+
+  remarksHistoryButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      renderRemarksHistory(button.dataset.reference, parseRemarksHistory(button));
+      bootstrap.Modal.getOrCreateInstance(locationHistoryModalEl).show();
+    });
+  });
+
+  ctoRemarksButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      openRemarksEditor(button);
+    });
+  });
+
+  if (remarksEditForm) {
+    remarksEditForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      saveRemarks();
+    });
+  }
 
   releaseCheckboxes.forEach(function (checkbox) {
     checkbox.addEventListener("change", function () {

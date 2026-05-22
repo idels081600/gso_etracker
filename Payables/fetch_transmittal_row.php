@@ -15,7 +15,7 @@ if (!$id || $id < 1) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT id, ib_no, project_name, date_received, office, received_by, winning_bidders, amount, NOA_no, COA_date, notice_proceed, deadline, transmittal_type, calendar_days FROM transmittal_bac WHERE id = ? AND delete_status = 0 LIMIT 1");
+$stmt = $conn->prepare("SELECT id, ib_no, project_name, date_received, office, received_by, winning_bidders, amount, NOA_no, COA_date, notice_proceed, deadline, transmittal_type, calendar_days, remarks FROM transmittal_bac WHERE id = ? AND delete_status = 0 LIMIT 1");
 if (!$stmt) {
     payables_log_error('Transmittal fetch prepare failed: ' . $conn->error);
     echo json_encode(['success' => false, 'error' => 'Unable to fetch this record right now.']);

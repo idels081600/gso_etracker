@@ -116,6 +116,7 @@ $payablesSql = "
         tb.winning_bidders,
         tb.project_name,
         tb.amount,
+        tb.remarks,
         COALESCE(pws.main_status, 'GSO') AS main_status,
         COALESCE(pws.inspection, 0) AS inspection,
         COALESCE(pws.obr, 0) AS obr,
@@ -144,7 +145,9 @@ if ($payablesStmt) {
     $payablesStmt->close();
 }
 
-$locationHistoryMap = payables_get_location_history_map('bac', array_column($payablesRows, 'id'));
+$recordIds = array_column($payablesRows, 'id');
+$locationHistoryMap = payables_get_location_history_map('bac', $recordIds);
+$remarksHistoryMap = payables_get_remarks_history_map('bac', $recordIds);
 
 $latestTransactions = [];
 $latestSql = "
@@ -279,7 +282,7 @@ if ($latestResult) {
                                         $completeCount++;
                                     }
                                 }
-                                $canTransmitToBudget = $mainStatus === 'GSO' && $completeCount === count($checkKeys);
+                                $canTransmitToBudget = $mainStatus === 'GSO';
                                 $canTransmitToAccounting = $mainStatus === 'BUDGET';
                                 $canTransmitToCto = $mainStatus === 'ACCOUNTING';
                                 $actionEnabled = $canTransmitToBudget || $canTransmitToAccounting || $canTransmitToCto;
@@ -293,6 +296,15 @@ if ($latestResult) {
                                     ];
                                 }
                                 $locationHistoryJson = htmlspecialchars(json_encode($locationHistory), ENT_QUOTES, 'UTF-8');
+                                $remarksHistory = $remarksHistoryMap[(int)$row['id']] ?? [];
+                                if (!$remarksHistory) {
+                                    $remarksHistory[] = [
+                                        'remarks' => trim($row['remarks'] ?? '') !== '' ? trim($row['remarks']) : 'No remarks yet.',
+                                        'changed_by' => '',
+                                        'changed_at' => '',
+                                    ];
+                                }
+                                $remarksHistoryJson = htmlspecialchars(json_encode($remarksHistory), ENT_QUOTES, 'UTF-8');
                                 $actionTitle = $canTransmitToBudget
                                     ? 'Transmit to Budget'
                                     : ($canTransmitToAccounting
@@ -333,8 +345,17 @@ if ($latestResult) {
                                             <span data-remark-for="BUDGET">Validate obligation and funding details.</span>
                                             <strong data-remark-for="ACCOUNTING">For Audit</strong>
                                             <span data-remark-for="ACCOUNTING">Accounting review and audit validation.</span>
-                                            <strong data-remark-for="CTO">Ready for CTO</strong>
-                                            <span data-remark-for="CTO">Final routing stage.</span>
+                                            <strong data-remark-for="CTO"></strong>
+                                            <button
+                                                type="button"
+                                                class="cto-remarks-edit"
+                                                data-remark-for="CTO"
+                                                data-record-id="<?php echo (int)$row['id']; ?>"
+                                                data-reference="<?php echo htmlspecialchars($row['ib_no'] ?? 'record', ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-current-remarks="<?php echo htmlspecialchars(trim($row['remarks'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                            >
+                                                <?php echo htmlspecialchars(trim($row['remarks'] ?? '') !== '' ? $row['remarks'] : 'No remarks yet.', ENT_QUOTES, 'UTF-8'); ?>
+                                            </button>
                                         </div>
                                     </div>
                                     <div class="accounting-location-cell">
@@ -386,16 +407,28 @@ if ($latestResult) {
                                         <?php endif; ?>
                                     </div>
                                     <div class="cto-release-cell">
-                                        <label class="cto-release-check" title="Mark as released">
-                                            <input
-                                                type="checkbox"
-                                                class="cto-release-checkbox"
-                                                aria-label="Check released for <?php echo htmlspecialchars($row['ib_no'] ?? 'record', ENT_QUOTES, 'UTF-8'); ?>"
-                                                data-record-id="<?php echo (int)$row['id']; ?>"
-                                                <?php echo !empty($row['released']) ? 'checked' : ''; ?>
+                                        <div class="cto-release-actions">
+                                            <label class="cto-release-check" title="Mark as released">
+                                                <input
+                                                    type="checkbox"
+                                                    class="cto-release-checkbox"
+                                                    aria-label="Check released for <?php echo htmlspecialchars($row['ib_no'] ?? 'record', ENT_QUOTES, 'UTF-8'); ?>"
+                                                    data-record-id="<?php echo (int)$row['id']; ?>"
+                                                    <?php echo !empty($row['released']) ? 'checked' : ''; ?>
+                                                >
+                                                <span></span>
+                                            </label>
+                                            <button
+                                                type="button"
+                                                class="remarks-history-btn"
+                                                title="View remarks history"
+                                                aria-label="<?php echo htmlspecialchars('View remarks history for ' . ($row['ib_no'] ?? 'record'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-reference="<?php echo htmlspecialchars($row['ib_no'] ?? 'record', ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-remarks-history="<?php echo $remarksHistoryJson; ?>"
                                             >
-                                            <span></span>
-                                        </label>
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -494,6 +527,31 @@ if ($latestResult) {
                     <div class="location-history-list" id="locationHistoryList" role="list"></div>
                 </div>
             </div>
+        </div>
+    </div>
+    <div class="modal fade" id="remarksEditModal" tabindex="-1" aria-labelledby="remarksEditModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered remarks-edit-dialog">
+            <form class="modal-content remarks-edit-modal" id="remarksEditForm">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="remarksEditModalLabel">Edit CTO Remarks</h5>
+                        <div class="remarks-edit-subtitle" id="remarksEditSubtitle">Update remarks for this record.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="remarksEditRecordId" name="record_id">
+                    <label class="remarks-edit-label" for="remarksEditText">Remarks</label>
+                    <textarea id="remarksEditText" name="remarks" rows="4" maxlength="1000" placeholder="Enter CTO remarks"></textarea>
+                    <div class="remarks-edit-error d-none" id="remarksEditError" role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light transmit-cancel-btn" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success remarks-save-btn" id="remarksSaveBtn">
+                        <span class="remarks-save-label">Save Remarks</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

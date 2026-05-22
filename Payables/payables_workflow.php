@@ -80,6 +80,21 @@ function payables_ensure_workflow_table(): void
     if (!$conn->query($historySql)) {
         payables_log_error('Location history table creation failed: ' . $conn->error);
     }
+
+    $remarksHistorySql = "CREATE TABLE IF NOT EXISTS payables_remarks_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        record_type VARCHAR(20) NOT NULL,
+        record_id INT NOT NULL,
+        remarks TEXT NOT NULL,
+        changed_by VARCHAR(150) NULL,
+        changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_record_remarks (record_type, record_id),
+        INDEX idx_changed_at (changed_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    if (!$conn->query($remarksHistorySql)) {
+        payables_log_error('Remarks history table creation failed: ' . $conn->error);
+    }
 }
 
 function payables_normalize_record_type(string $recordType): string
@@ -199,6 +214,74 @@ function payables_get_location_history_map(string $recordType, array $recordIds)
     $stmt->close();
 
     return $map;
+}
+
+function payables_get_remarks_history_map(string $recordType, array $recordIds): array
+{
+    global $conn;
+
+    payables_ensure_workflow_table();
+    $recordType = payables_normalize_record_type($recordType);
+    $recordIds = array_values(array_unique(array_filter(array_map('intval', $recordIds))));
+    if (!$recordIds) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($recordIds), '?'));
+    $types = 's' . str_repeat('i', count($recordIds));
+    $params = array_merge([$recordType], $recordIds);
+    $stmt = $conn->prepare("
+        SELECT record_id, remarks, changed_by, changed_at
+        FROM payables_remarks_history
+        WHERE record_type = ?
+          AND record_id IN ({$placeholders})
+        ORDER BY changed_at DESC, id DESC
+    ");
+    if (!$stmt) {
+        payables_log_error('Remarks history map prepare failed: ' . $conn->error);
+        return [];
+    }
+
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $map = [];
+    while ($result && $row = $result->fetch_assoc()) {
+        $id = (int)$row['record_id'];
+        if (!isset($map[$id])) {
+            $map[$id] = [];
+        }
+        $map[$id][] = [
+            'remarks' => $row['remarks'] ?? '',
+            'changed_by' => $row['changed_by'] ?? '',
+            'changed_at' => $row['changed_at'] ?? '',
+        ];
+    }
+    $stmt->close();
+
+    return $map;
+}
+
+function payables_record_remarks_history(string $recordType, int $recordId, string $remarks, string $changedBy = ''): void
+{
+    global $conn;
+
+    payables_ensure_workflow_table();
+    $recordType = payables_normalize_record_type($recordType);
+    $stmt = $conn->prepare("
+        INSERT INTO payables_remarks_history (record_type, record_id, remarks, changed_by)
+        VALUES (?, ?, ?, ?)
+    ");
+    if (!$stmt) {
+        payables_log_error('Remarks history insert prepare failed: ' . $conn->error);
+        return;
+    }
+
+    $stmt->bind_param('siss', $recordType, $recordId, $remarks, $changedBy);
+    if (!$stmt->execute()) {
+        payables_log_error('Remarks history insert failed: ' . $stmt->error);
+    }
+    $stmt->close();
 }
 
 function payables_gso_completed_count(array $workflow): int

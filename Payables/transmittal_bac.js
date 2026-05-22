@@ -105,6 +105,7 @@ document.addEventListener("DOMContentLoaded", function () {
           setValue("edit_notice_proceed", data.row.notice_proceed);
           setValue("edit_deadline", data.row.calendar_days);
           setValue("edit_amount", formatAmountValue(data.row.amount));
+          setValue("edit_remarks", data.row.remarks || "");
           bootstrap.Modal.getOrCreateInstance(editModalEl).show();
         })
         .catch(function (error) {

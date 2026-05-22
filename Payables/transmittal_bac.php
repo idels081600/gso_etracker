@@ -223,6 +223,10 @@ $perPage = 25;
                                 <label for="edit_deadline" class="form-label">Calendar Days of Delivery</label>
                                 <input type="text" class="form-control" id="edit_deadline" name="deadline">
                             </div>
+                            <div class="col-12">
+                                <label for="edit_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="edit_remarks" name="remarks" rows="3" placeholder="Enter CTO remarks or notes"></textarea>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">

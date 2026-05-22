@@ -3,6 +3,7 @@ define('PAYABLES_API', true);
 require_once 'auth_payables.php';
 require_once 'transmit_db.php';
 require_once 'payables_helpers.php';
+require_once 'payables_workflow.php';
 header('Content-Type: application/json');
 
 function log_error($message) {
@@ -45,7 +46,7 @@ if ($id < 1) {
     exit;
 }
 
-$existsStmt = $conn->prepare("SELECT id FROM transmittal_bac WHERE id = ? AND delete_status = 0 LIMIT 1");
+$existsStmt = $conn->prepare("SELECT id, remarks FROM transmittal_bac WHERE id = ? AND delete_status = 0 LIMIT 1");
 if (!$existsStmt) {
     log_error('Lookup prepare failed: ' . $conn->error);
     echo json_encode(['success' => false, 'error' => 'Unable to update this record right now.']);
@@ -54,20 +55,23 @@ if (!$existsStmt) {
 $existsStmt->bind_param('i', $id);
 $existsStmt->execute();
 $existsResult = $existsStmt->get_result();
-if (!$existsResult || !$existsResult->fetch_assoc()) {
+$existingRow = $existsResult ? $existsResult->fetch_assoc() : null;
+if (!$existingRow) {
     $existsStmt->close();
     echo json_encode(['success' => false, 'error' => 'Record not found.']);
     exit;
 }
 $existsStmt->close();
+$oldRemarks = trim($existingRow['remarks'] ?? '');
 
 $dateReceived = payables_post_date_or_now('date_received');
 $notice_proceed_date = payables_normalize_date_or_empty($_POST['notice_proceed']);
 $coaDate = payables_normalize_date_or_empty($_POST['COA_date']);
 [$days, $deadline_date] = payables_calculate_deadline($notice_proceed_date, $_POST['deadline']);
 $sanitized_amount = payables_sanitize_amount($_POST['amount']);
+$remarks = trim($_POST['remarks'] ?? '');
 
-$stmt = $conn->prepare("UPDATE transmittal_bac SET ib_no=?, project_name=?, date_received=?, office=?, received_by=?, winning_bidders=?, amount=?, NOA_no=?, COA_date=?, notice_proceed=?, deadline=?, transmittal_type=?, calendar_days=? WHERE id=? AND delete_status=0");
+$stmt = $conn->prepare("UPDATE transmittal_bac SET ib_no=?, project_name=?, date_received=?, office=?, received_by=?, winning_bidders=?, amount=?, NOA_no=?, COA_date=?, notice_proceed=?, deadline=?, transmittal_type=?, calendar_days=?, remarks=? WHERE id=? AND delete_status=0");
 
 if (!$stmt) {
     log_error('Prepare failed: ' . $conn->error);
@@ -76,7 +80,7 @@ if (!$stmt) {
 }
 
 $stmt->bind_param(
-    "sssssssssssssi",
+    "ssssssssssssssi",
     $_POST['ib_no'],
     $_POST['project_name'],
     $dateReceived,
@@ -90,6 +94,7 @@ $stmt->bind_param(
     $deadline_date,
     $_POST['transmittal_type'],
     $days,
+    $remarks,
     $id
 );
 
@@ -101,5 +106,8 @@ if (!$stmt->execute()) {
 }
 
 $stmt->close();
+if ($remarks !== $oldRemarks) {
+    payables_record_remarks_history('bac', $id, $remarks, $_SESSION['pay_name'] ?? '');
+}
 echo json_encode(['success' => true]);
 ?>
