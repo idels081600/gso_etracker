@@ -1,91 +1,20 @@
 <?php
+define('PAYABLES_API', true);
+require_once 'auth_payables.php';
 require_once 'transmit_db.php';
+require_once 'payables_helpers.php';
 header('Content-Type: application/json');
 
 function log_error($message) {
-    error_log(date('[Y-m-d H:i:s] ') . $message . "\n", 3, __DIR__ . '/transmittal_error.log');
-}
-
-function sanitize_amount($amount) {
-    // Remove all characters except digits, commas, and periods
-    $amount = preg_replace('/[^\d,.]/', '', $amount);
-    
-    // Handle different number formats
-    if (empty($amount)) {
-        return '0.00';
-    }
-    
-    // Count commas and periods to determine format
-    $comma_count = substr_count($amount, ',');
-    $period_count = substr_count($amount, '.');
-    
-    // If no separators, it's a simple number
-    if ($comma_count === 0 && $period_count === 0) {
-        return number_format(floatval($amount), 2, '.', '');
-    }
-    
-    // If only periods, could be thousands separator or decimal
-    if ($comma_count === 0 && $period_count === 1) {
-        $parts = explode('.', $amount);
-        // If last part has 1-2 digits, it's likely decimal
-        if (strlen($parts[1]) <= 2) {
-            return number_format(floatval($amount), 2, '.', '');
-        } else {
-            // Treat period as thousands separator
-            $amount = str_replace('.', '', $amount);
-            return number_format(floatval($amount), 2, '.', '');
-        }
-    }
-    
-    // If only commas, could be thousands separator or decimal (European style)
-    if ($comma_count === 1 && $period_count === 0) {
-        $parts = explode(',', $amount);
-        // If last part has 1-2 digits, it's likely decimal (European style)
-        if (strlen($parts[1]) <= 2) {
-            $amount = str_replace(',', '.', $amount);
-            return number_format(floatval($amount), 2, '.', '');
-        } else {
-            // Treat comma as thousands separator
-            $amount = str_replace(',', '', $amount);
-            return number_format(floatval($amount), 2, '.', '');
-        }
-    }
-    
-    // Mixed format: assume last separator is decimal
-    $last_comma_pos = strrpos($amount, ',');
-    $last_period_pos = strrpos($amount, '.');
-    
-    if ($last_period_pos > $last_comma_pos) {
-        // Period is decimal separator
-        $decimal_part = substr($amount, $last_period_pos + 1);
-        $integer_part = substr($amount, 0, $last_period_pos);
-        $integer_part = str_replace([',', '.'], '', $integer_part);
-        
-        if (strlen($decimal_part) <= 2) {
-            $clean_amount = $integer_part . '.' . $decimal_part;
-            return number_format(floatval($clean_amount), 2, '.', '');
-        }
-    } else if ($last_comma_pos > $last_period_pos) {
-        // Comma is decimal separator (European style)
-        $decimal_part = substr($amount, $last_comma_pos + 1);
-        $integer_part = substr($amount, 0, $last_comma_pos);
-        $integer_part = str_replace([',', '.'], '', $integer_part);
-        
-        if (strlen($decimal_part) <= 2) {
-            $clean_amount = $integer_part . '.' . $decimal_part;
-            return number_format(floatval($clean_amount), 2, '.', '');
-        }
-    }
-    
-    // Fallback: remove all separators and treat as whole number
-    $amount = str_replace([',', '.'], '', $amount);
-    return number_format(floatval($amount), 2, '.', '');
+    payables_log_error($message);
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'error' => 'Invalid request method']);
     exit;
 }
+
+payables_verify_csrf_token();
 
 // Validate required fields
 $required = [
@@ -111,39 +40,53 @@ foreach ($required as $field) {
 }
 
 $id = intval($_POST['id']);
-$notice_proceed_date = $_POST['notice_proceed'];
-$deadline_raw = $_POST['deadline'];
-
-if (is_numeric($deadline_raw)) {
-    $days = intval($deadline_raw);
-    $deadline_date = date('Y-m-d', strtotime($notice_proceed_date . ' + ' . ($days - 1) . ' days'));
-} else {
-    $days = $deadline_raw;
-    $deadline_date = $deadline_raw;
+if ($id < 1) {
+    echo json_encode(['success' => false, 'error' => 'Invalid record.']);
+    exit;
 }
 
-// Sanitize and format the amount
-$sanitized_amount = sanitize_amount($_POST['amount']);
+$existsStmt = $conn->prepare("SELECT id FROM transmittal_bac WHERE id = ? AND delete_status = 0 LIMIT 1");
+if (!$existsStmt) {
+    log_error('Lookup prepare failed: ' . $conn->error);
+    echo json_encode(['success' => false, 'error' => 'Unable to update this record right now.']);
+    exit;
+}
+$existsStmt->bind_param('i', $id);
+$existsStmt->execute();
+$existsResult = $existsStmt->get_result();
+if (!$existsResult || !$existsResult->fetch_assoc()) {
+    $existsStmt->close();
+    echo json_encode(['success' => false, 'error' => 'Record not found.']);
+    exit;
+}
+$existsStmt->close();
 
-$stmt = $conn->prepare("UPDATE transmittal_bac SET ib_no=?, project_name=?, office=?, received_by=?, winning_bidders=?, amount=?, NOA_no=?, COA_date=?, notice_proceed=?, deadline=?, transmittal_type=?, calendar_days=? WHERE id=?");
+$dateReceived = payables_post_date_or_now('date_received');
+$notice_proceed_date = payables_normalize_date_or_empty($_POST['notice_proceed']);
+$coaDate = payables_normalize_date_or_empty($_POST['COA_date']);
+[$days, $deadline_date] = payables_calculate_deadline($notice_proceed_date, $_POST['deadline']);
+$sanitized_amount = payables_sanitize_amount($_POST['amount']);
+
+$stmt = $conn->prepare("UPDATE transmittal_bac SET ib_no=?, project_name=?, date_received=?, office=?, received_by=?, winning_bidders=?, amount=?, NOA_no=?, COA_date=?, notice_proceed=?, deadline=?, transmittal_type=?, calendar_days=? WHERE id=? AND delete_status=0");
 
 if (!$stmt) {
     log_error('Prepare failed: ' . $conn->error);
-    echo json_encode(['success' => false, 'error' => 'Prepare failed: ' . $conn->error]);
+    echo json_encode(['success' => false, 'error' => 'Unable to update this record right now.']);
     exit;
 }
 
 $stmt->bind_param(
-    "ssssssssssssi",
+    "sssssssssssssi",
     $_POST['ib_no'],
     $_POST['project_name'],
+    $dateReceived,
     $_POST['office'],
     $_POST['received_by'],
     $_POST['winning_bidders'],
     $sanitized_amount,
     $_POST['NOA_no'],
-    $_POST['COA_date'],
-    $_POST['notice_proceed'],
+    $coaDate,
+    $notice_proceed_date,
     $deadline_date,
     $_POST['transmittal_type'],
     $days,
@@ -152,7 +95,7 @@ $stmt->bind_param(
 
 if (!$stmt->execute()) {
     log_error('Execute failed: ' . $stmt->error);
-    echo json_encode(['success' => false, 'error' => 'Execute failed: ' . $stmt->error]);
+    echo json_encode(['success' => false, 'error' => 'Unable to update this record right now.']);
     $stmt->close();
     exit;
 }

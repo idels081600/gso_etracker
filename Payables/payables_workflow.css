@@ -1,0 +1,541 @@
+:root {
+  --payables-bg: #f6f8fb;
+  --payables-surface: #ffffff;
+  --payables-border: #e6eaf0;
+  --payables-border-strong: #d5dce6;
+  --payables-text: #172033;
+  --payables-muted: #667085;
+  --payables-green: #198754;
+  --payables-gso: #2563eb;
+  --payables-budget: #b7791f;
+  --payables-accounting: #0f766e;
+  --payables-cto: #15803d;
+  --payables-shadow: 0 12px 34px rgba(15, 23, 42, 0.08);
+}
+
+body {
+  background: var(--payables-bg) !important;
+  color: var(--payables-text);
+}
+
+.content {
+  background: var(--payables-bg) !important;
+}
+
+.content .container {
+  max-width: 1540px;
+}
+
+.card {
+  border: 1px solid var(--payables-border) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--payables-shadow) !important;
+}
+
+.card-body {
+  padding: 1.25rem !important;
+}
+
+.card-body > h3 {
+  color: var(--payables-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin-bottom: 1rem !important;
+}
+
+.table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: var(--payables-surface);
+  border: 1px solid var(--payables-border);
+  border-radius: 8px;
+}
+
+.table-toolbar .input-group {
+  flex: 1 1 300px;
+  min-width: 230px;
+}
+
+.table-toolbar .form-control,
+.table-toolbar .btn {
+  border-radius: 6px;
+}
+
+.workflow-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.workflow-filter-group.btn-group {
+  display: flex;
+}
+
+.workflow-filter-group .btn {
+  border: 1px solid var(--payables-border);
+  background: #fff;
+  color: #475467;
+  font-size: 0.78rem;
+  font-weight: 650;
+  padding: 0.48rem 0.7rem;
+}
+
+.workflow-filter-group .btn.active,
+.workflow-filter-group .btn:hover {
+  background: #172033;
+  border-color: #172033;
+  color: #fff;
+}
+
+.scrollable-table {
+  border: 1px solid var(--payables-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.scrollable-table .table {
+  margin-bottom: 0;
+  --bs-table-bg: #fff;
+}
+
+.scrollable-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f9fafb !important;
+  border-bottom: 1px solid var(--payables-border-strong);
+  color: #475467;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.scrollable-table tbody td {
+  border-color: #eef1f5;
+  color: var(--payables-text);
+  vertical-align: middle;
+}
+
+.scrollable-table tbody tr:hover td {
+  background: #fbfcfe;
+}
+
+.workflow-cell {
+  min-width: 300px;
+}
+
+.workflow-summary {
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--payables-border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.58rem 0.62rem;
+  color: var(--payables-text);
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.workflow-summary:hover,
+.workflow-summary:focus-visible {
+  border-color: #b7c4d7;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.workflow-summary-main {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.workflow-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.workflow-support-text {
+  overflow: hidden;
+  color: var(--payables-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.workflow-check-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  min-width: 2.2rem;
+  border: 1px solid var(--payables-border);
+  border-radius: 6px;
+  background: #f9fafb;
+  color: #344054;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 0.28rem 0.4rem;
+  white-space: nowrap;
+}
+
+.status-gso {
+  color: var(--payables-gso);
+}
+
+.status-budget {
+  color: var(--payables-budget);
+}
+
+.status-accounting {
+  color: var(--payables-accounting);
+}
+
+.status-cto {
+  color: var(--payables-cto);
+}
+
+.workflow-rail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.42rem;
+}
+
+.workflow-step {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: #98a2b3;
+}
+
+.workflow-step-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #667085;
+  font-size: 0.62rem;
+  font-weight: 800;
+  flex: 0 0 auto;
+}
+
+.workflow-step-label {
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-step.is-done .workflow-step-marker {
+  background: #e7f7ed;
+  color: var(--payables-green);
+}
+
+.workflow-step.is-done .workflow-step-label {
+  color: #198754;
+}
+
+.workflow-step.is-current .workflow-step-marker {
+  background: currentColor;
+  color: #fff;
+}
+
+.workflow-step.is-current .workflow-step-label {
+  color: var(--payables-text);
+}
+
+.workflow-mini-checks {
+  display: flex;
+  gap: 0.24rem;
+  margin-top: 0.45rem;
+}
+
+.workflow-mini-check {
+  width: 100%;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: #e9edf3;
+}
+
+.workflow-mini-check.is-complete {
+  background: var(--payables-green);
+}
+
+.text-center .edit-btn,
+.text-center .delete-btn {
+  border-radius: 6px;
+  border-width: 1px;
+  background: #fff;
+  font-weight: 700;
+}
+
+.text-center .edit-btn {
+  border-color: #d7e0ea;
+  color: #344054;
+}
+
+.text-center .edit-btn:hover {
+  background: #f8fafc;
+  color: #172033;
+}
+
+.text-center .delete-btn {
+  border-color: #f4c7c7;
+  color: #b42318;
+}
+
+.text-center .delete-btn:hover {
+  background: #fef3f2;
+  color: #912018;
+}
+
+.workflow-modal-dialog {
+  max-width: 620px;
+}
+
+.workflow-modal {
+  border: 1px solid var(--payables-border);
+  border-radius: 8px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+
+.workflow-modal .modal-header,
+.workflow-modal .modal-footer {
+  border-color: var(--payables-border);
+  background: #fff;
+}
+
+.workflow-modal .modal-title {
+  color: var(--payables-text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.workflow-modal-subtitle {
+  margin-top: 0.15rem;
+  color: var(--payables-muted);
+  font-size: 0.82rem;
+}
+
+.workflow-section-label {
+  color: #344054;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.workflow-status-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.workflow-status-card {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid var(--payables-border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.75rem;
+  color: var(--payables-text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.workflow-status-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 1px solid #cfd6e2;
+  border-radius: 6px;
+  background: #fff;
+  color: transparent;
+  flex: 0 0 auto;
+}
+
+.workflow-status-check i {
+  font-size: 0.7rem;
+}
+
+.workflow-status-name {
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.btn-check:checked + .workflow-status-card {
+  border-color: currentColor;
+  background: #f8fbff;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.btn-check:checked + .workflow-status-card .workflow-status-check {
+  border-color: currentColor;
+  background: currentColor;
+  color: #fff;
+}
+
+.btn-check:disabled + .workflow-status-card {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.workflow-status-card.is-locked {
+  background: #f9fafb;
+}
+
+.workflow-count-badge {
+  border: 1px solid var(--payables-border);
+  border-radius: 999px;
+  background: #f9fafb;
+  color: #475467;
+  font-size: 0.74rem;
+  font-weight: 750;
+  padding: 0.28rem 0.6rem;
+}
+
+.workflow-checklist-grid {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.workflow-check-item {
+  position: relative;
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  min-height: 60px;
+  border: 1px solid var(--payables-border);
+  border-radius: 8px;
+  padding: 0.72rem;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.workflow-check-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.workflow-check-actions .btn {
+  border: 1px solid var(--payables-border);
+  border-radius: 6px;
+  color: #344054;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.workflow-check-item:hover {
+  border-color: #b7c4d7;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.workflow-check-item input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.workflow-check-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 1px solid #cfd6e2;
+  border-radius: 6px;
+  background: #fff;
+  color: transparent;
+  flex: 0 0 auto;
+}
+
+.workflow-check-box i {
+  font-size: 0.76rem;
+}
+
+.workflow-check-copy {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.workflow-check-title {
+  color: var(--payables-text);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.workflow-check-meta {
+  color: var(--payables-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.workflow-check-item:has(input:checked) {
+  border-color: #95d5aa;
+  background: #f4fbf6;
+}
+
+.workflow-check-item:has(input:checked) .workflow-check-box {
+  border-color: var(--payables-green);
+  background: var(--payables-green);
+  color: #fff;
+}
+
+.workflow-save-btn,
+.workflow-close-btn,
+.workflow-proceed-btn {
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.workflow-proceed-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 768px) {
+  .workflow-status-options,
+  .workflow-checklist-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-cell {
+    min-width: 260px;
+  }
+}

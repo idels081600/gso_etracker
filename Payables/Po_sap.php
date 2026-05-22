@@ -1,7 +1,13 @@
 <?php
 session_start();
+require_once 'auth_payables.php';
 $full_name = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : '';
 require_once 'transmit_db.php';
+require_once 'payables_helpers.php';
+
+$searchTerm = trim($_GET['search'] ?? '');
+$currentPage = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT) ?: 1;
+$perPage = 25;
 
 ?>
 <!DOCTYPE html>
@@ -10,56 +16,40 @@ require_once 'transmit_db.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="payables-csrf-token" content="<?php echo htmlspecialchars(payables_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="Po_sap.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <title>Document</title>
+    <title>Payables - RFQ Receiving</title>
 </head>
 
 <body>
-    <div class="sidebar">
-        <div class="logo">
-            <img src="logo.png" alt="Logo">
-            <span class="role">Admin</span>
-            <span class="user-name"><?php echo htmlspecialchars($full_name); ?></span>
-        </div>
-        <hr class="divider">
-        <ul>
-            <li><a href="transmittal_bac.php"><i class="fas fa-gavel icon-size"></i>Bidding</a></li>
-            <li><a href="Po_sap.php"><i class="fas fa-shopping-cart icon-size"></i>Purchase Order</a></li>
-        </ul>
-        <a href="../logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
-    </div>
-    <div class="content" style="margin-left:250px; padding: 40px 20px; min-height: 100vh; background: #f8f9fa;">
+    <?php $payablesActivePage = 'po'; require 'payables_sidebar.php'; ?>
+    <div class="content receiving-content">
         <div class="container py-4">
             <!-- Add Transmittal Button -->
             <div class="mb-3 d-flex justify-content-end gap-2">
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addTransmittalModal">
                     <i class="fas fa-plus"></i> Receive
                 </button>
-                <!-- <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#printReportModal">
-                    <i class="fas fa-print"></i> Print Report
-                </button> -->
             </div>
-            <!-- Horizontal Card List for Projects Near Delivery -->
-
-            <!-- End Horizontal Card List -->
             <div class="card shadow-sm border-0">
                 <div class="card-body">
                     <h3 class="mb-4">RFQ Receiving</h3>
-                    <div class="mb-3">
+                    <form class="table-toolbar mb-3" method="get" role="search">
                         <div class="input-group">
-                            <input type="text" id="searchInput" class="form-control" placeholder="Search..." aria-label="Search">
-                            <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                            <input type="search" id="searchInput" name="search" class="form-control" placeholder="Search RFQ records" aria-label="Search RFQ records" value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>">
+                            <button class="btn btn-outline-secondary" type="submit" id="searchButton">
                                 <i class="fas fa-search"></i>
                             </button>
+                            <?php if ($searchTerm !== ''): ?>
+                                <a class="btn btn-outline-secondary" href="Po_sap.php" aria-label="Clear search">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            <?php endif; ?>
                         </div>
-                    </div>
+                    </form>
                     <div class="table-responsive scrollable-table">
                         <table class="table table-bordered table-hover align-middle bg-white rounded-3 overflow-hidden">
                             <thead class="table-light">
@@ -77,10 +67,11 @@ require_once 'transmit_db.php';
                             </thead>
                             <tbody>
                                 <?php require_once 'display_transmit_data.php';
-                                display_transmittal_rfq_data(); ?>
+                                $pagination = display_transmittal_rfq_data($searchTerm, $currentPage, $perPage); ?>
                             </tbody>
                         </table>
                     </div>
+                    <?php payables_render_pagination('Po_sap.php', $pagination['page'], $pagination['total_rows'], $pagination['per_page'], $searchTerm); ?>
                 </div>
             </div>
         </div>
@@ -94,6 +85,7 @@ require_once 'transmit_db.php';
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="transmittalForm" method="post" action="submit_rfq.php">
+                    <?php echo payables_csrf_input(); ?>
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -122,11 +114,11 @@ require_once 'transmit_db.php';
                             </div>
                             <div class="col-md-6">
                                 <label for="amount" class="form-label">Amount</label>
-                                <input type="text" class="form-control" id="amount" name="amount">
+                                <input type="text" class="form-control" id="amount" name="amount" inputmode="decimal">
                             </div>
                             <div class="col-md-6">
                                 <label for="status" class="form-label">Status</label>
-                                <input type="text" class="form-control" id="status" name="status">
+                                <input type="text" class="form-control" id="status" name="status" list="rfqStatusOptions">
                             </div>
                         </div>
                     </div>
@@ -148,6 +140,7 @@ require_once 'transmit_db.php';
                 </div>
                 <form id="editTransmittalForm">
                     <div class="modal-body">
+                        <?php echo payables_csrf_input(); ?>
                         <input type="hidden" id="edit_id" name="id">
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -160,7 +153,7 @@ require_once 'transmit_db.php';
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_date_received" class="form-label">Date Received</label>
-                                <input type="text" class="form-control" id="edit_date_received" name="date_received">
+                                <input type="date" class="form-control" id="edit_date_received" name="date_received">
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_office" class="form-label">Office</label>
@@ -176,11 +169,11 @@ require_once 'transmit_db.php';
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_amount" class="form-label">Amount</label>
-                                <input type="text" class="form-control" id="edit_amount" name="amount">
+                                <input type="text" class="form-control" id="edit_amount" name="amount" inputmode="decimal">
                             </div>
-                              <div class="col-md-6">
+                            <div class="col-md-6">
                                 <label for="edit_status" class="form-label">Status</label>
-                                <input type="text" class="form-control" id="edit_status" name="status">
+                                <input type="text" class="form-control" id="edit_status" name="status" list="rfqStatusOptions">
                             </div>
                         </div>
                     </div>
@@ -192,56 +185,34 @@ require_once 'transmit_db.php';
             </div>
         </div>
     </div>
-    <!-- Print Report Modal -->
-    <div class="modal fade" id="printReportModal" tabindex="-1" aria-labelledby="printReportModalLabel" aria-hidden="true">
+    <datalist id="rfqStatusOptions">
+        <option value="Received"></option>
+        <option value="Pending"></option>
+        <option value="For SAP"></option>
+        <option value="Completed"></option>
+    </datalist>
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
+            <div class="modal-content delete-confirm-modal">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="printReportModalLabel">Print Transmittal Report</h5>
+                    <h5 class="modal-title" id="deleteConfirmModalLabel">Delete RFQ</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3 d-flex justify-content-center gap-2">
-                        <button class="btn btn-outline-primary" id="printInfraBtn">Infrastructure</button>
-                        <button class="btn btn-outline-success" id="printGoodsBtn">Goods</button>
-                        <button class="btn btn-outline-warning" id="printServicesBtn">Services</button>
-                    </div>
-                    <div class="row g-2 align-items-center">
-                        <div class="col">
-                            <label for="reportStartDate" class="form-label">Start Date</label>
-                            <input type="date" class="form-control" id="reportStartDate">
-                        </div>
-                        <div class="col">
-                            <label for="reportEndDate" class="form-label">End Date</label>
-                            <input type="date" class="form-control" id="reportEndDate">
-                        </div>
-                    </div>
+                    <p class="mb-0">This will remove the selected RFQ from the active list.</p>
+                    <div class="alert alert-danger d-none mt-3 mb-0" id="actionError"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <span class="action-label">Delete</span>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
     <!-- Bootstrap 5 JS Bundle (for modal functionality) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function openPrintReport(type) {
-            const start = document.getElementById('reportStartDate').value;
-            const end = document.getElementById('reportEndDate').value;
-            let url = 'print_transmittal_report.php?type=' + encodeURIComponent(type);
-            if (start && end) {
-                url += '&start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end);
-            }
-            window.open(url, '_blank');
-        }
-        document.getElementById('printInfraBtn').addEventListener('click', function() {
-            openPrintReport('Infrastructure');
-        });
-        document.getElementById('printGoodsBtn').addEventListener('click', function() {
-            openPrintReport('Goods');
-        });
-        document.getElementById('printServicesBtn').addEventListener('click', function() {
-            openPrintReport('Services');
-        });
-    </script>
     <script src="Po_sap.js"></script>
 </body>
 

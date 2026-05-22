@@ -1,4 +1,6 @@
 <?php
+define('PAYABLES_API', true);
+require_once 'auth_payables.php';
 require_once 'transmit_db.php';
 require_once '../fpdf/fpdf.php'; // Adjust path as needed
 

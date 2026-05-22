@@ -1,58 +1,225 @@
 <?php
-require_once "transmit_db.php";
+require_once 'auth_payables.php';
+require_once 'transmit_db.php';
+require_once 'payables_helpers.php';
 
-function display_transmittal_bac_data()
+function payables_clamp_page($page): int
+{
+    $page = filter_var($page, FILTER_VALIDATE_INT);
+    return $page && $page > 0 ? $page : 1;
+}
+
+function payables_ensure_index(string $table, string $indexName, string $columns): void
 {
     global $conn;
-    $sql = "SELECT * FROM transmittal_bac WHERE delete_status=0 ORDER BY id DESC";
-    $result = mysqli_query($conn, $sql);
-    if ($result && mysqli_num_rows($result) > 0) {
-        while ($row = mysqli_fetch_assoc($result)) {
+
+    $safeTable = preg_replace('/[^A-Za-z0-9_]/', '', $table);
+    $safeIndex = preg_replace('/[^A-Za-z0-9_]/', '', $indexName);
+    $result = $conn->query("SHOW INDEX FROM {$safeTable} WHERE Key_name = '{$safeIndex}'");
+    if ($result && $result->num_rows > 0) {
+        return;
+    }
+
+    if (!$conn->query("ALTER TABLE {$safeTable} ADD INDEX {$safeIndex} ({$columns})")) {
+        payables_log_error("Index creation failed for {$safeTable}.{$safeIndex}: " . $conn->error);
+    }
+}
+
+function payables_ensure_listing_indexes(): void
+{
+    payables_ensure_index('transmittal_bac', 'idx_bac_delete_id', 'delete_status, id');
+    payables_ensure_index('transmittal_bac', 'idx_bac_ib_no', 'ib_no');
+    payables_ensure_index('transmittal_bac', 'idx_bac_winning_bidders', 'winning_bidders');
+    payables_ensure_index('PO_sap', 'idx_rfq_delete_id', 'delete_status, id');
+    payables_ensure_index('PO_sap', 'idx_rfq_no', 'RFQ_no');
+    payables_ensure_index('PO_sap', 'idx_rfq_supplier', 'supplier');
+}
+
+function payables_count_rows(string $table, string $whereSql, string $types = '', array $params = []): int
+{
+    global $conn;
+
+    $stmt = $conn->prepare("SELECT COUNT(*) AS total FROM {$table} WHERE {$whereSql}");
+    if (!$stmt) {
+        payables_log_error("Count prepare failed for {$table}: " . $conn->error);
+        return 0;
+    }
+
+    if ($types !== '') {
+        $stmt->bind_param($types, ...$params);
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+
+    return (int)($row['total'] ?? 0);
+}
+
+function payables_render_pagination(string $basePage, int $currentPage, int $totalRows, int $perPage, string $searchTerm): void
+{
+    $totalPages = max(1, (int)ceil($totalRows / $perPage));
+    $buildUrl = function (int $page) use ($basePage, $searchTerm): string {
+        $query = ['page' => $page];
+        if ($searchTerm !== '') {
+            $query['search'] = $searchTerm;
+        }
+
+        return $basePage . '?' . http_build_query($query);
+    };
+    ?>
+    <div class="table-pagination" aria-label="Table pagination">
+        <span>
+            Showing <?php echo $totalRows === 0 ? 0 : (($currentPage - 1) * $perPage) + 1; ?>-<?php echo min($currentPage * $perPage, $totalRows); ?>
+            of <?php echo $totalRows; ?>
+        </span>
+        <div class="table-page-buttons">
+            <a class="<?php echo $currentPage <= 1 ? 'is-disabled' : ''; ?>" href="<?php echo htmlspecialchars($buildUrl(max(1, $currentPage - 1)), ENT_QUOTES, 'UTF-8'); ?>" aria-label="Previous page">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            <strong>Page <?php echo $currentPage; ?> of <?php echo $totalPages; ?></strong>
+            <a class="<?php echo $currentPage >= $totalPages ? 'is-disabled' : ''; ?>" href="<?php echo htmlspecialchars($buildUrl(min($totalPages, $currentPage + 1)), ENT_QUOTES, 'UTF-8'); ?>" aria-label="Next page">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+    <?php
+}
+
+function display_transmittal_bac_data(string $searchTerm = '', int $page = 1, int $perPage = 25): array
+{
+    global $conn;
+
+    payables_ensure_listing_indexes();
+    $page = payables_clamp_page($page);
+    $where = ['delete_status = 0'];
+    $types = '';
+    $params = [];
+    $searchTerm = trim($searchTerm);
+
+    if ($searchTerm !== '') {
+        $searchLike = '%' . $searchTerm . '%';
+        $where[] = "(ib_no LIKE ? OR winning_bidders LIKE ? OR project_name LIKE ? OR office LIKE ? OR received_by LIKE ? OR NOA_no LIKE ? OR transmittal_type LIKE ? OR CAST(amount AS CHAR) LIKE ?)";
+        $types .= 'ssssssss';
+        array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
+    }
+
+    $whereSql = implode(' AND ', $where);
+    $totalRows = payables_count_rows('transmittal_bac', $whereSql, $types, $params);
+    $totalPages = max(1, (int)ceil($totalRows / $perPage));
+    $page = min($page, $totalPages);
+    $offset = ($page - 1) * $perPage;
+
+    $sql = "SELECT id, ib_no, winning_bidders, project_name, amount, date_received, office, NOA_no, notice_proceed, calendar_days, deadline, received_by
+            FROM transmittal_bac
+            WHERE {$whereSql}
+            ORDER BY id DESC
+            LIMIT ? OFFSET ?";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        payables_log_error('BAC list prepare failed: ' . $conn->error);
+        echo '<tr><td colspan="12" class="text-center text-danger">Unable to load records.</td></tr>';
+        return ['page' => $page, 'per_page' => $perPage, 'total_rows' => $totalRows];
+    }
+
+    $queryTypes = $types . 'ii';
+    $queryParams = array_merge($params, [$perPage, $offset]);
+    $stmt->bind_param($queryTypes, ...$queryParams);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
             echo '<tr>';
             echo '<td>' . htmlspecialchars($row['ib_no'] ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($row['winning_bidders'] ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($row['project_name'] ?? '') . '</td>';
-            echo '<td>₱' . number_format($row['amount'], 2) . '</td>';
-            echo '<td>' . htmlspecialchars($row['date_received'] ?? '') . '</td>';
+            echo '<td>&#8369;' . number_format((float)$row['amount'], 2) . '</td>';
+            echo '<td>' . htmlspecialchars(substr((string)($row['date_received'] ?? ''), 0, 10)) . '</td>';
             echo '<td>' . htmlspecialchars($row['office'] ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($row['NOA_no'] ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($row['notice_proceed'] ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($row['calendar_days'] ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($row['deadline'] ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($row['received_by'] ?? '') . '</td>';
-            echo '<td class="text-center">';
-            echo '<button class="btn btn-sm btn-primary edit-btn" data-id="' . $row['id'] . '" title="Edit"><i class="fas fa-edit"></i></button> ';
-            echo '<button class="btn btn-sm btn-danger delete-btn" data-id="' . $row['id'] . '" title="Delete"><i class="fas fa-trash-alt"></i></button>';
+            echo '<td class="text-center action-cell">';
+            echo '<button type="button" class="btn btn-sm btn-primary edit-btn" data-id="' . (int)$row['id'] . '" title="Edit" aria-label="Edit record"><i class="fas fa-edit"></i></button> ';
+            echo '<button type="button" class="btn btn-sm btn-danger delete-btn" data-id="' . (int)$row['id'] . '" title="Delete" aria-label="Delete record"><i class="fas fa-trash-alt"></i></button>';
             echo '</td>';
             echo '</tr>';
         }
     } else {
-        echo '<tr><td colspan="12" class="text-center">No data found.</td></tr>';
+        echo '<tr><td colspan="12" class="text-center text-muted">' . ($searchTerm !== '' ? 'No matching BAC records found.' : 'No BAC records found.') . '</td></tr>';
     }
+
+    $stmt->close();
+    return ['page' => $page, 'per_page' => $perPage, 'total_rows' => $totalRows];
 }
-function display_transmittal_rfq_data()
+
+function display_transmittal_rfq_data(string $searchTerm = '', int $page = 1, int $perPage = 25): array
 {
     global $conn;
-    $sql = "SELECT * FROM PO_sap WHERE delete_status=0 ORDER BY id DESC";
-    $result = mysqli_query($conn, $sql);
-    if ($result && mysqli_num_rows($result) > 0) {
-        while ($row = mysqli_fetch_assoc($result)) {
+
+    payables_ensure_listing_indexes();
+    $page = payables_clamp_page($page);
+    $where = ['delete_status = 0'];
+    $types = '';
+    $params = [];
+    $searchTerm = trim($searchTerm);
+
+    if ($searchTerm !== '') {
+        $searchLike = '%' . $searchTerm . '%';
+        $where[] = "(RFQ_no LIKE ? OR supplier LIKE ? OR description LIKE ? OR office LIKE ? OR received_by LIKE ? OR status LIKE ? OR CAST(amount AS CHAR) LIKE ?)";
+        $types .= 'sssssss';
+        array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
+    }
+
+    $whereSql = implode(' AND ', $where);
+    $totalRows = payables_count_rows('PO_sap', $whereSql, $types, $params);
+    $totalPages = max(1, (int)ceil($totalRows / $perPage));
+    $page = min($page, $totalPages);
+    $offset = ($page - 1) * $perPage;
+
+    $sql = "SELECT id, RFQ_no, supplier, description, amount, date_received, office, received_by, status
+            FROM PO_sap
+            WHERE {$whereSql}
+            ORDER BY id DESC
+            LIMIT ? OFFSET ?";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        payables_log_error('RFQ list prepare failed: ' . $conn->error);
+        echo '<tr><td colspan="9" class="text-center text-danger">Unable to load records.</td></tr>';
+        return ['page' => $page, 'per_page' => $perPage, 'total_rows' => $totalRows];
+    }
+
+    $queryTypes = $types . 'ii';
+    $queryParams = array_merge($params, [$perPage, $offset]);
+    $stmt->bind_param($queryTypes, ...$queryParams);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
             echo '<tr>';
             echo '<td>' . htmlspecialchars($row['RFQ_no'] ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($row['supplier'] ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($row['description'] ?? '') . '</td>';
-            echo '<td>₱' . number_format($row['amount'], 2) . '</td>';
-            echo '<td>' . htmlspecialchars($row['date_received'] ?? '') . '</td>';
+            echo '<td>&#8369;' . number_format((float)$row['amount'], 2) . '</td>';
+            echo '<td>' . htmlspecialchars(substr((string)($row['date_received'] ?? ''), 0, 10)) . '</td>';
             echo '<td>' . htmlspecialchars($row['office'] ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($row['received_by'] ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($row['status'] ?? '') . '</td>';
-            echo '<td class="text-center">';
-            echo '<button class="btn btn-sm btn-primary edit-btn" data-id="' . $row['id'] . '" title="Edit"><i class="fas fa-edit"></i></button> ';
-            echo '<button class="btn btn-sm btn-danger delete-btn" data-id="' . $row['id'] . '" title="Delete"><i class="fas fa-trash-alt"></i></button>';
+            echo '<td class="text-center action-cell">';
+            echo '<button type="button" class="btn btn-sm btn-primary edit-btn" data-id="' . (int)$row['id'] . '" title="Edit" aria-label="Edit RFQ"><i class="fas fa-edit"></i></button> ';
+            echo '<button type="button" class="btn btn-sm btn-danger delete-btn" data-id="' . (int)$row['id'] . '" title="Delete" aria-label="Delete RFQ"><i class="fas fa-trash-alt"></i></button>';
             echo '</td>';
             echo '</tr>';
         }
     } else {
-        echo '<tr><td colspan="12" class="text-center">No data found.</td></tr>';
+        echo '<tr><td colspan="9" class="text-center text-muted">' . ($searchTerm !== '' ? 'No matching RFQ records found.' : 'No RFQ records found.') . '</td></tr>';
     }
+
+    $stmt->close();
+    return ['page' => $page, 'per_page' => $perPage, 'total_rows' => $totalRows];
 }

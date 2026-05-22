@@ -1,3 +1,19 @@
+.receiving-content {
+  min-height: 100vh;
+  margin-left: 250px;
+  padding: 40px 20px;
+  background: #f8f9fa;
+}
+
+.receiving-content > .container {
+  width: 100%;
+  max-width: none;
+}
+
+.receiving-content .card-body {
+  min-width: 0;
+}
+
 .table,
 .table thead,
 .table tbody,
@@ -7,6 +23,28 @@
 
 .table td {
   font-size: 0.8rem;
+}
+
+.table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid #e6eaf0;
+  border-radius: 8px;
+}
+
+.table-toolbar .input-group {
+  flex: 1 1 300px;
+  min-width: 230px;
+}
+
+.table-toolbar .form-control,
+.table-toolbar .btn {
+  border-radius: 6px;
 }
 
 /* Truncate long project names in card list */
@@ -31,14 +69,20 @@
 }
 
 .scrollable-table {
-  max-height: 500px;
+  max-height: 56vh;
+  overflow-x: hidden;
   overflow-y: auto;
   position: relative;
   width: 100%;
+  border: 1px solid #edf0f4;
+  border-radius: 8px;
 }
 
 .scrollable-table table {
+  width: 100%;
+  table-layout: fixed;
   margin-bottom: 0;
+  min-width: 0;
 }
 
 .scrollable-table thead th {
@@ -46,4 +90,154 @@
   top: 0;
   background: #f8f9fa;
   z-index: 2;
+  white-space: nowrap;
+}
+
+.scrollable-table tbody td:not(.action-cell) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scrollable-table th:nth-child(1),
+.scrollable-table td:nth-child(1) {
+  width: 10%;
+}
+
+.scrollable-table th:nth-child(2),
+.scrollable-table td:nth-child(2) {
+  width: 13%;
+}
+
+.scrollable-table th:nth-child(3),
+.scrollable-table td:nth-child(3) {
+  width: 17%;
+}
+
+.scrollable-table th:nth-child(4),
+.scrollable-table td:nth-child(4) {
+  width: 9%;
+}
+
+.scrollable-table th:nth-child(5),
+.scrollable-table td:nth-child(5) {
+  width: 10%;
+}
+
+.scrollable-table th:nth-child(6),
+.scrollable-table td:nth-child(6) {
+  width: 8%;
+}
+
+.scrollable-table th:nth-child(7),
+.scrollable-table td:nth-child(7) {
+  width: 8%;
+}
+
+.scrollable-table th:nth-child(8),
+.scrollable-table td:nth-child(8) {
+  width: 10%;
+}
+
+.scrollable-table th:nth-child(9),
+.scrollable-table td:nth-child(9),
+.scrollable-table th:nth-child(10),
+.scrollable-table td:nth-child(10),
+.scrollable-table th:nth-child(11),
+.scrollable-table td:nth-child(11) {
+  width: 8%;
+}
+
+.scrollable-table th:nth-child(12),
+.scrollable-table td:nth-child(12) {
+  width: 86px;
+}
+
+.action-cell {
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.action-cell .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 31px;
+  height: 31px;
+}
+
+.btn.is-loading {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  cursor: wait;
+}
+
+.table-pagination {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #edf0f4;
+  color: #687184;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.table-page-buttons {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.table-page-buttons a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 31px;
+  height: 31px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #344054;
+  text-decoration: none;
+}
+
+.table-page-buttons a:hover,
+.table-page-buttons a:focus-visible {
+  border-color: #198754;
+  color: #198754;
+  outline: none;
+}
+
+.table-page-buttons a.is-disabled {
+  pointer-events: none;
+  opacity: 0.42;
+}
+
+.table-page-buttons strong {
+  color: #344054;
+  white-space: nowrap;
+}
+
+.delete-confirm-modal {
+  border: 1px solid #e6eaf0;
+  border-radius: 8px;
+}
+
+@media (max-width: 992px) {
+  .receiving-content {
+    margin-left: 0;
+    padding: 20px 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .table-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }

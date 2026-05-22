@@ -1,8 +1,13 @@
 <?php
-$servername = "157.245.193.124";
-$username = "bryanmysql";
-$password = "gsotagbilaran";
-$dbname = "SAP";
+require __DIR__ . '/vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
+$servername = $_ENV['DB_HOST'];
+$username = $_ENV['DB_USERNAME'];
+$password = $_ENV['DB_PASSWORD'];
+$dbname = $_ENV['DB_DATABASE'];
 
 // Attempt to establish a connection to the database
 $conn = mysqli_connect($servername, $username, $password, $dbname);

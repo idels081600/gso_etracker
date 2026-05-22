@@ -1,147 +1,189 @@
-document.querySelectorAll(".days-left-num").forEach(function (el) {
-  var days = parseInt(el.textContent, 10);
-  el.classList.remove("days-left-red", "days-left-orange");
-  if (!isNaN(days)) {
-    if (days <= 14) {
-      el.classList.add("days-left-red");
-    } else if (days <= 28) {
-      el.classList.add("days-left-orange");
+document.addEventListener("DOMContentLoaded", function () {
+  const csrfToken =
+    document.querySelector('meta[name="payables-csrf-token"]')?.content || "";
+  const editForm = document.getElementById("editTransmittalForm");
+  const createForm = document.getElementById("transmittalForm");
+  const editModalEl = document.getElementById("editTransmittalModal");
+  const deleteModalEl = document.getElementById("deleteConfirmModal");
+  const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+  const actionError = document.getElementById("actionError");
+  let pendingDeleteId = "";
+
+  function parseJsonResponse(response) {
+    return response.text().then(function (text) {
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        throw new Error(
+          text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() ||
+            "Invalid server response."
+        );
+      }
+    });
+  }
+
+  function setButtonLoading(button, isLoading, loadingText) {
+    if (!button) return;
+    if (isLoading) {
+      button.dataset.originalText = button.textContent.trim();
+      button.disabled = true;
+      button.classList.add("is-loading");
+      button.innerHTML =
+        '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>' +
+        loadingText +
+        "</span>";
+      return;
+    }
+
+    button.disabled = false;
+    button.classList.remove("is-loading");
+    button.textContent = button.dataset.originalText || "Submit";
+  }
+
+  function showActionError(message) {
+    if (!actionError) {
+      alert(message);
+      return;
+    }
+    actionError.textContent = message;
+    actionError.classList.remove("d-none");
+  }
+
+  function hideActionError() {
+    if (actionError) {
+      actionError.classList.add("d-none");
+      actionError.textContent = "";
     }
   }
-});
 
-document.addEventListener("DOMContentLoaded", function () {
-  // Edit button click handler
-  document.querySelectorAll(".edit-btn").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var id = this.getAttribute("data-id");
-      // Fetch data for this ID
-      fetch("fetch_rfq.php?id=" + encodeURIComponent(id))
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            document.getElementById("edit_id").value = data.row.id;
-            document.getElementById("edit_rfq_no").value = data.row.RFQ_no;
-            document.getElementById("edit_supplier").value = data.row.supplier;
-            document.getElementById("edit_description").value =
-              data.row.description;
-            document.getElementById("edit_amount").value =
-              data.row.amount &&
-              data.row.amount !== "0" &&
-              data.row.amount !== "0.00"
-                ? parseFloat(data.row.amount).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })
-                : "";
-            document.getElementById("edit_date_received").value = data.row
-              .date_received
-              ? data.row.date_received.split(" ")[0]
-              : "";
-            document.getElementById("edit_office").value = data.row.office;
-            document.getElementById("edit_received_by").value =
-              data.row.received_by;
-            document.getElementById("edit_status").value = data.row.status;
-            var editModal = new bootstrap.Modal(
-              document.getElementById("editTransmittalModal")
-            );
-            editModal.show();
-          } else {
-            alert("Failed to fetch data.");
-          }
-        })
-        .catch(() => alert("Error fetching data."));
+  function setValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.value = value ?? "";
+  }
+
+  function formatAmountValue(value) {
+    const numeric = Number(String(value || "").replace(/[^\d.-]/g, ""));
+    if (!Number.isFinite(numeric) || numeric === 0) return "";
+    return numeric.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  document.querySelectorAll('input[name="amount"]').forEach(function (input) {
+    input.addEventListener("blur", function () {
+      input.value = formatAmountValue(input.value);
     });
   });
 
-  // Edit form submit handler (skeleton)
-  document
-    .getElementById("editTransmittalForm")
-    .addEventListener("submit", function (e) {
-      e.preventDefault();
-      var form = e.target;
-      var formData = new FormData(form);
+  document.addEventListener("click", function (event) {
+    const editButton = event.target.closest(".edit-btn");
+    if (editButton) {
+      const id = editButton.dataset.id || "";
+      setButtonLoading(editButton, true, "");
+      fetch("fetch_rfq.php?id=" + encodeURIComponent(id))
+        .then(parseJsonResponse)
+        .then(function (data) {
+          if (!data.success) {
+            alert(data.error || "Failed to fetch data.");
+            return;
+          }
 
-      // Debug: Log all form data
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ": " + pair[1]);
-      }
+          setValue("edit_id", data.row.id);
+          setValue("edit_rfq_no", data.row.RFQ_no);
+          setValue("edit_supplier", data.row.supplier);
+          setValue("edit_description", data.row.description);
+          setValue("edit_amount", formatAmountValue(data.row.amount));
+          setValue(
+            "edit_date_received",
+            data.row.date_received ? data.row.date_received.split(" ")[0] : ""
+          );
+          setValue("edit_office", data.row.office);
+          setValue("edit_received_by", data.row.received_by);
+          setValue("edit_status", data.row.status);
+          bootstrap.Modal.getOrCreateInstance(editModalEl).show();
+        })
+        .catch(function (error) {
+          alert(error.message || "Error fetching data.");
+        })
+        .finally(function () {
+          setButtonLoading(editButton, false);
+          editButton.innerHTML = '<i class="fas fa-edit"></i>';
+        });
+      return;
+    }
+
+    const deleteButton = event.target.closest(".delete-btn");
+    if (deleteButton) {
+      pendingDeleteId = deleteButton.dataset.id || "";
+      hideActionError();
+      bootstrap.Modal.getOrCreateInstance(deleteModalEl).show();
+    }
+  });
+
+  if (editForm) {
+    editForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const submitButton = editForm.querySelector('[type="submit"]');
+      setButtonLoading(submitButton, true, "Saving");
 
       fetch("update_rfq.php", {
         method: "POST",
-        body: formData,
+        body: new FormData(editForm),
       })
-        .then((response) => response.json())
-        .then((data) => {
-          console.log("Response from server:", data); // Debug
-          if (data.success) {
-            var editModal = bootstrap.Modal.getInstance(
-              document.getElementById("editTransmittalModal")
-            );
-            if (editModal) editModal.hide();
-            location.reload();
-          } else {
+        .then(parseJsonResponse)
+        .then(function (data) {
+          if (!data.success) {
             alert("Update failed: " + (data.error || "Unknown error"));
+            return;
           }
+          bootstrap.Modal.getInstance(editModalEl)?.hide();
+          window.location.reload();
         })
-        .catch((err) => {
-          console.error("Fetch error:", err); // Debug
-          alert("Error updating transmittal.");
+        .catch(function (error) {
+          alert(error.message || "Error updating RFQ.");
+        })
+        .finally(function () {
+          setButtonLoading(submitButton, false);
         });
     });
-
-  // Delete button click handler
-  document.querySelectorAll(".delete-btn").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var id = this.getAttribute("data-id");
-      if (confirm("Are you sure you want to delete this transmittal?")) {
-        fetch("delete_rfq_row.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "id=" + encodeURIComponent(id),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              location.reload();
-            } else {
-              alert("Delete failed: " + (data.error || "Unknown error"));
-            }
-          })
-          .catch(() => alert("Error deleting transmittal."));
-      }
-    });
-  });
-});
-document.addEventListener("DOMContentLoaded", function () {
-  const searchInput = document.getElementById("searchInput");
-  const searchButton = document.getElementById("searchButton");
-  const table = document.querySelector(".table");
-  const rows = table.getElementsByTagName("tr");
-
-  function performSearch() {
-    const searchTerm = searchInput.value.toLowerCase();
-    for (let i = 1; i < rows.length; i++) {
-      const cells = rows[i].getElementsByTagName("td");
-      let found = false;
-      for (let j = 0; j < cells.length; j++) {
-        const cellText = cells[j].textContent.toLowerCase();
-        if (cellText.indexOf(searchTerm) > -1) {
-          found = true;
-          break;
-        }
-      }
-      if (found) {
-        rows[i].style.display = "";
-      } else {
-        rows[i].style.display = "none";
-      }
-    }
   }
 
-  searchButton.addEventListener("click", performSearch);
+  if (createForm) {
+    createForm.addEventListener("submit", function () {
+      setButtonLoading(createForm.querySelector('[type="submit"]'), true, "Submitting");
+    });
+  }
 
-  searchInput.addEventListener("keyup", function (event) {
-    performSearch();
-  });
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener("click", function () {
+      if (!pendingDeleteId) return;
+      hideActionError();
+      setButtonLoading(confirmDeleteBtn, true, "Deleting");
+
+      const body = new URLSearchParams();
+      body.set("id", pendingDeleteId);
+      body.set("csrf_token", csrfToken);
+
+      fetch("delete_rfq_row.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+      })
+        .then(parseJsonResponse)
+        .then(function (data) {
+          if (!data.success) {
+            showActionError(data.error || "Delete failed.");
+            return;
+          }
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showActionError(error.message || "Error deleting RFQ.");
+        })
+        .finally(function () {
+          setButtonLoading(confirmDeleteBtn, false);
+        });
+    });
+  }
 });

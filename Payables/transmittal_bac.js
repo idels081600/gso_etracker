@@ -1,147 +1,193 @@
-document.querySelectorAll(".days-left-num").forEach(function (el) {
-  var days = parseInt(el.textContent, 10);
-  el.classList.remove("days-left-red", "days-left-orange");
-  if (!isNaN(days)) {
-    if (days <= 14) {
-      el.classList.add("days-left-red");
-    } else if (days <= 28) {
-      el.classList.add("days-left-orange");
+document.addEventListener("DOMContentLoaded", function () {
+  const csrfToken =
+    document.querySelector('meta[name="payables-csrf-token"]')?.content || "";
+  const editForm = document.getElementById("editTransmittalForm");
+  const createForm = document.getElementById("transmittalForm");
+  const editModalEl = document.getElementById("editTransmittalModal");
+  const deleteModalEl = document.getElementById("deleteConfirmModal");
+  const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+  const actionError = document.getElementById("actionError");
+  let pendingDeleteId = "";
+
+  function parseJsonResponse(response) {
+    return response.text().then(function (text) {
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        throw new Error(
+          text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() ||
+            "Invalid server response."
+        );
+      }
+    });
+  }
+
+  function setButtonLoading(button, isLoading, loadingText) {
+    if (!button) return;
+    if (isLoading) {
+      button.dataset.originalText = button.textContent.trim();
+      button.disabled = true;
+      button.classList.add("is-loading");
+      button.innerHTML =
+        '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>' +
+        loadingText +
+        "</span>";
+      return;
+    }
+
+    button.disabled = false;
+    button.classList.remove("is-loading");
+    button.textContent = button.dataset.originalText || "Submit";
+  }
+
+  function showActionError(message) {
+    if (!actionError) {
+      alert(message);
+      return;
+    }
+    actionError.textContent = message;
+    actionError.classList.remove("d-none");
+  }
+
+  function hideActionError() {
+    if (actionError) {
+      actionError.classList.add("d-none");
+      actionError.textContent = "";
     }
   }
-});
 
-document.addEventListener("DOMContentLoaded", function () {
-  // Edit button click handler
-  document.querySelectorAll(".edit-btn").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var id = this.getAttribute("data-id");
-      // Fetch data for this ID
-      fetch("fetch_transmittal_row.php?id=" + encodeURIComponent(id))
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            document.getElementById("edit_id").value = data.row.id;
-            document.getElementById("edit_ib_no").value = data.row.ib_no;
-            document.getElementById("edit_project_name").value =
-              data.row.project_name;
-            document.getElementById("edit_date_received").value = data.row
-              .date_received
-              ? data.row.date_received.split(" ")[0]
-              : "";
-            document.getElementById("edit_transmittal_type").value =
-              data.row.transmittal_type;
-            document.getElementById("edit_office").value = data.row.office;
-            document.getElementById("edit_received_by").value =
-              data.row.received_by;
-            document.getElementById("edit_winning_bidders").value =
-              data.row.winning_bidders;
-            document.getElementById("edit_NOA_no").value = data.row.NOA_no;
-            document.getElementById("edit_COA_date").value = data.row.COA_date;
-            document.getElementById("edit_notice_proceed").value =
-              data.row.notice_proceed;
-            document.getElementById("edit_deadline").value =
-              data.row.calendar_days;
-            document.getElementById("edit_amount").value =
-              data.row.amount &&
-              data.row.amount !== "0" &&
-              data.row.amount !== "0.00"
-                ? parseFloat(data.row.amount).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })
-                : "";
-            var editModal = new bootstrap.Modal(
-              document.getElementById("editTransmittalModal")
-            );
-            editModal.show();
-          } else {
-            alert("Failed to fetch data.");
-          }
-        })
-        .catch(() => alert("Error fetching data."));
+  function setValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.value = value ?? "";
+  }
+
+  function formatAmountValue(value) {
+    const numeric = Number(String(value || "").replace(/[^\d.-]/g, ""));
+    if (!Number.isFinite(numeric) || numeric === 0) return "";
+    return numeric.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  document.querySelectorAll('input[name="amount"]').forEach(function (input) {
+    input.addEventListener("blur", function () {
+      input.value = formatAmountValue(input.value);
     });
   });
 
-  // Edit form submit handler (skeleton)
-  document
-    .getElementById("editTransmittalForm")
-    .addEventListener("submit", function (e) {
-      e.preventDefault();
-      var form = e.target;
-      var formData = new FormData(form);
+  document.addEventListener("click", function (event) {
+    const editButton = event.target.closest(".edit-btn");
+    if (editButton) {
+      const id = editButton.dataset.id || "";
+      setButtonLoading(editButton, true, "");
+      fetch("fetch_transmittal_row.php?id=" + encodeURIComponent(id))
+        .then(parseJsonResponse)
+        .then(function (data) {
+          if (!data.success) {
+            alert(data.error || "Failed to fetch data.");
+            return;
+          }
+
+          setValue("edit_id", data.row.id);
+          setValue("edit_ib_no", data.row.ib_no);
+          setValue("edit_project_name", data.row.project_name);
+          setValue(
+            "edit_date_received",
+            data.row.date_received ? data.row.date_received.split(" ")[0] : ""
+          );
+          setValue("edit_transmittal_type", data.row.transmittal_type);
+          setValue("edit_office", data.row.office);
+          setValue("edit_received_by", data.row.received_by);
+          setValue("edit_winning_bidders", data.row.winning_bidders);
+          setValue("edit_NOA_no", data.row.NOA_no);
+          setValue("edit_COA_date", data.row.COA_date);
+          setValue("edit_notice_proceed", data.row.notice_proceed);
+          setValue("edit_deadline", data.row.calendar_days);
+          setValue("edit_amount", formatAmountValue(data.row.amount));
+          bootstrap.Modal.getOrCreateInstance(editModalEl).show();
+        })
+        .catch(function (error) {
+          alert(error.message || "Error fetching data.");
+        })
+        .finally(function () {
+          setButtonLoading(editButton, false);
+          editButton.innerHTML = '<i class="fas fa-edit"></i>';
+        });
+      return;
+    }
+
+    const deleteButton = event.target.closest(".delete-btn");
+    if (deleteButton) {
+      pendingDeleteId = deleteButton.dataset.id || "";
+      hideActionError();
+      bootstrap.Modal.getOrCreateInstance(deleteModalEl).show();
+    }
+  });
+
+  if (editForm) {
+    editForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const submitButton = editForm.querySelector('[type="submit"]');
+      setButtonLoading(submitButton, true, "Saving");
+
       fetch("update_transmittal_row.php", {
         method: "POST",
-        body: formData,
+        body: new FormData(editForm),
       })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            // Optionally close the modal
-            var editModal = bootstrap.Modal.getInstance(
-              document.getElementById("editTransmittalModal")
-            );
-            if (editModal) editModal.hide();
-            // Reload the page or update the table row
-            location.reload();
-          } else {
+        .then(parseJsonResponse)
+        .then(function (data) {
+          if (!data.success) {
             alert("Update failed: " + (data.error || "Unknown error"));
+            return;
           }
+          bootstrap.Modal.getInstance(editModalEl)?.hide();
+          window.location.reload();
         })
-        .catch(() => alert("Error updating transmittal."));
-    });
-
-  // Delete button click handler
-  document.querySelectorAll(".delete-btn").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var id = this.getAttribute("data-id");
-      if (confirm("Are you sure you want to delete this transmittal?")) {
-        fetch("delete_transmittal_row.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "id=" + encodeURIComponent(id),
+        .catch(function (error) {
+          alert(error.message || "Error updating transmittal.");
         })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              location.reload();
-            } else {
-              alert("Delete failed: " + (data.error || "Unknown error"));
-            }
-          })
-          .catch(() => alert("Error deleting transmittal."));
-      }
+        .finally(function () {
+          setButtonLoading(submitButton, false);
+        });
     });
-  });
-});
-document.addEventListener("DOMContentLoaded", function () {
-  const searchInput = document.getElementById("searchInput");
-  const searchButton = document.getElementById("searchButton");
-  const table = document.querySelector(".table");
-  const rows = table.getElementsByTagName("tr");
-
-  function performSearch() {
-    const searchTerm = searchInput.value.toLowerCase();
-    for (let i = 1; i < rows.length; i++) {
-      const cells = rows[i].getElementsByTagName("td");
-      let found = false;
-      for (let j = 0; j < cells.length; j++) {
-        const cellText = cells[j].textContent.toLowerCase();
-        if (cellText.indexOf(searchTerm) > -1) {
-          found = true;
-          break;
-        }
-      }
-      if (found) {
-        rows[i].style.display = "";
-      } else {
-        rows[i].style.display = "none";
-      }
-    }
   }
 
-  searchButton.addEventListener("click", performSearch);
+  if (createForm) {
+    createForm.addEventListener("submit", function () {
+      setButtonLoading(createForm.querySelector('[type="submit"]'), true, "Submitting");
+    });
+  }
 
-  searchInput.addEventListener("keyup", function (event) {
-    performSearch();
-  });
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener("click", function () {
+      if (!pendingDeleteId) return;
+      hideActionError();
+      setButtonLoading(confirmDeleteBtn, true, "Deleting");
+
+      const body = new URLSearchParams();
+      body.set("id", pendingDeleteId);
+      body.set("csrf_token", csrfToken);
+
+      fetch("delete_transmittal_row.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+      })
+        .then(parseJsonResponse)
+        .then(function (data) {
+          if (!data.success) {
+            showActionError(data.error || "Delete failed.");
+            return;
+          }
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showActionError(error.message || "Error deleting transmittal.");
+        })
+        .finally(function () {
+          setButtonLoading(confirmDeleteBtn, false);
+        });
+    });
+  }
 });
