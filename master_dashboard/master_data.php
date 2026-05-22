@@ -7,18 +7,20 @@ require_once $masterRoot . DIRECTORY_SEPARATOR . 'db_asset.php';
 require_once $masterRoot . DIRECTORY_SEPARATOR . 'display_data_asset.php';
 require_once $masterRoot . DIRECTORY_SEPARATOR . 'motorpool_data_display.php';
 
-function master_rows_from_result($result, int $limit = 5): array
-{
-    $rows = [];
-    if (!$result) {
+if (!function_exists('master_rows_from_result')) {
+    function master_rows_from_result($result, int $limit = 5): array
+    {
+        $rows = [];
+        if (!$result) {
+            return $rows;
+        }
+
+        while (($row = mysqli_fetch_assoc($result)) && count($rows) < $limit) {
+            $rows[] = $row;
+        }
+
         return $rows;
     }
-
-    while (($row = mysqli_fetch_assoc($result)) && count($rows) < $limit) {
-        $rows[] = $row;
-    }
-
-    return $rows;
 }
 
 function master_asset_query_rows(mysqli $connection, string $sql, int $limit = 5): array

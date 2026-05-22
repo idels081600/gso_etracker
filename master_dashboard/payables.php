@@ -2,10 +2,6 @@
 require_once __DIR__ . '/master_layout.php';
 master_require_admin();
 
-if (empty($_SESSION['_master_csrf'])) {
-    $_SESSION['_master_csrf'] = bin2hex(random_bytes(32));
-}
-
 $envPath = dirname(__DIR__) . '/Payables/.env';
 $env = [];
 foreach (file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {

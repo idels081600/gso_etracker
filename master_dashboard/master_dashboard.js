@@ -289,6 +289,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function postForm(url, data) {
+    const csrf = document.querySelector('meta[name="master-csrf-token"]')?.content || "";
+    if (csrf && data instanceof FormData && !data.has("csrf_token")) {
+      data.append("csrf_token", csrf);
+    }
     return fetch(url, { method: "POST", body: data, headers: { "X-Requested-With": "XMLHttpRequest" } })
       .then(function (response) { return response.json(); });
   }
@@ -331,10 +335,11 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".repair-status-select").forEach(function (select) {
       select.addEventListener("change", function () {
         const data = new FormData();
+        data.append("action", "status");
         data.append("repair_id", select.dataset.recordId);
         data.append("status", select.value);
         select.classList.add("is-saving");
-        postForm("../update_repair_status_motorpool.php", data)
+        postForm("motorpool_action.php", data)
           .then(function (payload) { if (!payload.success) alert(payload.message || "Unable to update repair."); })
           .catch(function () { alert("Unable to update repair."); })
           .finally(function () { select.classList.remove("is-saving"); });
@@ -345,8 +350,9 @@ document.addEventListener("DOMContentLoaded", function () {
       button.addEventListener("click", function () {
         if (!confirm("Delete this repair record?")) return;
         const data = new FormData();
+        data.append("action", "delete");
         data.append("repair_id", button.dataset.recordId);
-        postForm("../delete_repair_motorpool.php", data)
+        postForm("motorpool_action.php", data)
           .then(function (payload) {
             if (payload.success) button.closest(".master-row")?.remove();
             else alert(payload.message || "Unable to delete repair.");
@@ -359,7 +365,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (editForm) {
       editForm.addEventListener("submit", function (event) {
         event.preventDefault();
-        postForm("../update_repair_motorpool.php", new FormData(editForm))
+        const data = new FormData(editForm);
+        data.append("action", "update");
+        postForm("motorpool_action.php", data)
           .then(function (payload) {
             if (payload.success) window.location.reload();
             else alert(payload.message || "Unable to update repair.");

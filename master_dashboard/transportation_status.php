@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/master_layout.php';
+master_require_admin();
+master_verify_csrf();
 require_once dirname(__DIR__) . '/db_asset.php';
 header('Content-Type: application/json');
 
@@ -46,4 +49,3 @@ echo json_encode([
     'message' => $transportOk && $vehicleOk ? 'Transportation status updated.' : 'Unable to update status.',
     'status' => $status,
 ]);
-

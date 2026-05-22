@@ -1,9 +1,6 @@
 <?php
-session_start();
-if (!isset($_SESSION['username'])) {
-    header('Location: ../login_v2.php');
-    exit();
-}
+require_once __DIR__ . '/master_layout.php';
+master_require_admin();
 
 require_once __DIR__ . '/master_data.php';
 

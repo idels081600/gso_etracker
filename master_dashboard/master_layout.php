@@ -6,8 +6,38 @@ function master_require_admin(): void
         session_start();
     }
 
-    if (!isset($_SESSION['username'])) {
+    $allowedRoles = ['master_admin', 'Admin', 'super_admin'];
+    $role = $_SESSION['role'] ?? '';
+
+    if (empty($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || !isset($_SESSION['username']) || !in_array($role, $allowedRoles, true)) {
         header('Location: ../login_v2.php');
+        exit();
+    }
+}
+
+function master_csrf_token(): string
+{
+    if (empty($_SESSION['_master_csrf'])) {
+        $_SESSION['_master_csrf'] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['_master_csrf'];
+}
+
+function master_csrf_input(): string
+{
+    return '<input type="hidden" name="csrf_token" value="' . master_h(master_csrf_token()) . '">';
+}
+
+function master_verify_csrf(): void
+{
+    $token = $_POST['csrf_token'] ?? '';
+    if (!$token || empty($_SESSION['_master_csrf']) || !hash_equals($_SESSION['_master_csrf'], $token)) {
+        http_response_code(403);
+        if (!headers_sent()) {
+            header('Content-Type: application/json');
+        }
+        echo json_encode(['success' => false, 'message' => 'Security token expired. Refresh and try again.']);
         exit();
     }
 }
@@ -63,6 +93,7 @@ function master_page_start(string $activePage, string $title, string $subtitle =
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="master-csrf-token" content="<?php echo master_h(master_csrf_token()); ?>">
     <title><?php echo master_h($title); ?></title>
     <link rel="stylesheet" href="master_dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">

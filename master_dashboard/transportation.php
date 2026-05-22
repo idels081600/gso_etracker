@@ -9,37 +9,50 @@ require_once $root . '/display_data_asset.php';
 
 $notice = '';
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    master_verify_csrf();
     $action = $_POST['master_action'] ?? '';
 
     if ($action === 'dispatch') {
-        $plateNo = mysqli_real_escape_string($conn, $_POST['plate_no'] ?? '');
-        $vehicle = mysqli_real_escape_string($conn, $_POST['vehicle'] ?? '');
-        $driver = mysqli_real_escape_string($conn, $_POST['driver'] ?? '');
-        $date = mysqli_real_escape_string($conn, $_POST['date'] ?? date('Y-m-d'));
-        $purpose = mysqli_real_escape_string($conn, $_POST['purpose'] ?? '');
-        $requestor = mysqli_real_escape_string($conn, $_POST['requestor'] ?? '');
-        $location = mysqli_real_escape_string($conn, $_POST['location'] ?? '');
+        $plateNo = trim($_POST['plate_no'] ?? '');
+        $vehicle = trim($_POST['vehicle'] ?? '');
+        $driver = trim($_POST['driver'] ?? '');
+        $date = trim($_POST['date'] ?? date('Y-m-d'));
+        $purpose = trim($_POST['purpose'] ?? '');
+        $requestor = trim($_POST['requestor'] ?? '');
+        $location = trim($_POST['location'] ?? '');
 
         if ($requestor !== '') {
-            mysqli_query($conn, "INSERT INTO requestingParty (requestor) VALUES ('$requestor')");
+            $requestorStmt = $conn->prepare('INSERT INTO requestingParty (requestor) VALUES (?)');
+            $requestorStmt->bind_param('s', $requestor);
+            $requestorStmt->execute();
+            $requestorStmt->close();
         }
 
-        $query = "INSERT INTO Transportation(Plate_no, Date, Requestor, Vehicle, Driver, Purpose, Location, Status, Status1)
-                  VALUES ('$plateNo', '$date', '$requestor', '$vehicle', '$driver', '$purpose', '$location', 'Stand By', 'Stand By')";
-        $notice = mysqli_query($conn, $query) ? 'Dispatch record added.' : 'Unable to add dispatch record.';
+        $status = 'Stand By';
+        $stmt = $conn->prepare('INSERT INTO Transportation(Plate_no, Date, Requestor, Vehicle, Driver, Purpose, Location, Status, Status1) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->bind_param('sssssssss', $plateNo, $date, $requestor, $vehicle, $driver, $purpose, $location, $status, $status);
+        $notice = $stmt->execute() ? 'Dispatch record added.' : 'Unable to add dispatch record.';
+        $stmt->close();
     }
 
     if ($action === 'vehicle_driver') {
-        $plateNo = mysqli_real_escape_string($conn, $_POST['plate_no'] ?? '');
-        $vehicle = mysqli_real_escape_string($conn, $_POST['vehicle'] ?? '');
-        $driver = mysqli_real_escape_string($conn, $_POST['driver'] ?? '');
+        $plateNo = trim($_POST['plate_no'] ?? '');
+        $vehicle = trim($_POST['vehicle'] ?? '');
+        $driver = trim($_POST['driver'] ?? '');
 
         if ($plateNo !== '' && $vehicle !== '') {
-            mysqli_query($conn, "INSERT INTO Vehicle(Plate_no, Name, Status) VALUES ('$plateNo', '$vehicle', 'Stand By')");
+            $status = 'Stand By';
+            $stmt = $conn->prepare('INSERT INTO Vehicle(Plate_no, Name, Status) VALUES (?, ?, ?)');
+            $stmt->bind_param('sss', $plateNo, $vehicle, $status);
+            $stmt->execute();
+            $stmt->close();
         }
 
         if ($driver !== '') {
-            mysqli_query($conn, "INSERT INTO Drivers(Name) VALUES ('$driver')");
+            $stmt = $conn->prepare('INSERT INTO Drivers(Name) VALUES (?)');
+            $stmt->bind_param('s', $driver);
+            $stmt->execute();
+            $stmt->close();
         }
 
         $notice = 'Vehicle/driver details saved.';
@@ -116,6 +129,7 @@ master_page_start('transportation', 'Transportation', 'Dispatch, search, and mon
         <button type="button" class="modal-close" data-modal-close>&times;</button>
         <h2>Dispatch Vehicle</h2>
         <form method="post" class="master-form">
+            <?php echo master_csrf_input(); ?>
             <input type="hidden" name="master_action" value="dispatch">
             <label>Plate No.<select name="plate_no" required><option value="">Select plate</option><?php foreach ($plates as $plate): ?><option value="<?php echo master_h($plate['Plate_No'] ?? $plate['Plate_no'] ?? ''); ?>"><?php echo master_h($plate['Plate_No'] ?? $plate['Plate_no'] ?? ''); ?></option><?php endforeach; ?></select></label>
             <label>Date<input type="date" name="date" value="<?php echo date('Y-m-d'); ?>" required></label>
@@ -134,6 +148,7 @@ master_page_start('transportation', 'Transportation', 'Dispatch, search, and mon
         <button type="button" class="modal-close" data-modal-close>&times;</button>
         <h2>Add Vehicle / Driver</h2>
         <form method="post" class="master-form">
+            <?php echo master_csrf_input(); ?>
             <input type="hidden" name="master_action" value="vehicle_driver">
             <label>Plate No.<input type="text" name="plate_no"></label>
             <label>Vehicle Type<input type="text" name="vehicle"></label>
