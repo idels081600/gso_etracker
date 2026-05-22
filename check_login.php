@@ -30,7 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($row && password_verify($password, $row['password'])) {
         // User found and password matches
         $_SESSION['username'] = $row['username'];
-        $_SESSION['role'] = $row['role']; 
+        $_SESSION['role'] = $row['role'];
         $_SESSION['office'] = isset($row['office']) ? $row['office'] : 'ASSET';
         $_SESSION['pay_name'] = $row['name'];
         $_SESSION['station_id'] = $row['station_id'];
@@ -42,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Change #1: close session write
         session_write_close();
-        
+
         mysqli_stmt_close($stmt);
         mysqli_close($conn);
 
@@ -87,6 +87,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "fuel_admin":
                 header("location:fuel_tracker/fuel_dashboard.php");
                 exit;
+            case "gas_checker":
+                header("location:fuel_tracker/gas_checker.php");
+                exit;
             case "advance_PO":
                 header("location:advance_request/dashboard.php");
                 exit;
@@ -108,6 +111,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "FOOD_REDEEMER":
                 header("location:subsidy/food/redeem_batch.php");
                 exit;
+            case "print_admin":
+                header("location:fuel_tracker/personnel_printing.php");
+                exit;
+            case "coa_admin":
+                header("location:fuel_tracker/sub_admin.php");
+                exit;
+            case "master_admin":
+                header("location:master_dashboard/dashboard.php");
+                exit;
             default:
                 header("location:login_v2.php");
                 exit;
@@ -116,11 +128,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Invalid credentials
         $_SESSION['LoginMessage'] = "Invalid username or password";
         header("location:login_v2.php");
-        
+
         // Cleanup before exit
-        if(isset($stmt)) mysqli_stmt_close($stmt);
+        if (isset($stmt)) mysqli_stmt_close($stmt);
         mysqli_close($conn);
         exit;
     }
 }
-?>
