@@ -1,0 +1,731 @@
+/* Gas Checker Styles - matching fuel_dashboard.css theme */
+
+.checker-shell {
+    max-width: 1480px;
+}
+
+.checker-page-header {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.checker-title-wrap {
+    align-items: flex-start;
+    display: flex;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.checker-title-icon {
+    align-items: center;
+    background: #e7f1ff;
+    border-radius: 0.65rem;
+    color: #0d6efd;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 42px;
+    justify-content: center;
+    width: 42px;
+}
+
+.checker-page-header h1 {
+    font-size: clamp(1.45rem, 2.5vw, 2rem);
+    line-height: 1.15;
+}
+
+.checker-page-header p {
+    max-width: 640px;
+}
+
+.checker-reset-btn {
+    flex: 0 0 auto;
+}
+
+/* Search section styling */
+.checker-search-section {
+    background: #039a00;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.checker-search-section .form-label {
+    color: #fff;
+    font-weight: 500;
+}
+
+.checker-search-section .form-control,
+.checker-search-section .input-group-text {
+    border: none;
+}
+
+.checker-search-section .input-group-text i {
+    color: #039a00 !important;
+}
+
+.checker-search-control {
+    align-items: stretch;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(240px, 1fr) auto;
+}
+
+.checker-search-actions {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(2, minmax(112px, auto));
+}
+
+.checker-search-actions .btn {
+    white-space: nowrap;
+}
+
+.checker-search-section .btn-primary {
+    background-color: #ffffff;
+    border-color: #ffffff;
+    color: #027300;
+    font-weight: 700;
+}
+
+.checker-search-section .btn-primary:hover,
+.checker-search-section .btn-primary:focus {
+    background-color: #f1fff1;
+    border-color: #f1fff1;
+    color: #025f00;
+}
+
+.checker-search-section .btn-light {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.65);
+    color: #fff;
+    font-weight: 700;
+}
+
+.checker-search-section .btn-light:hover,
+.checker-search-section .btn-light:focus {
+    background: rgba(255, 255, 255, 0.24);
+    border-color: #fff;
+    color: #fff;
+}
+
+.checker-search-section .stat-box {
+    border-color: #cce9cc;
+}
+
+.checker-search-section .search-stat-box {
+    background: #fff;
+    box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.12);
+}
+
+.checker-search-section .search-stat-box .stat-value {
+    color: #039a00;
+}
+
+.checker-search-section .search-stat-box .stat-label {
+    color: #263238;
+}
+
+.qr-scanner-frame {
+    background: #0f172a;
+    border-radius: 0.75rem;
+    min-height: 320px;
+    overflow: hidden;
+    position: relative;
+}
+
+.qr-scanner-video {
+    display: block;
+    height: min(62vh, 460px);
+    object-fit: cover;
+    width: 100%;
+}
+
+.qr-scanner-target {
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    border-radius: 1rem;
+    box-shadow: 0 0 0 999px rgba(15, 23, 42, 0.35);
+    height: min(58vw, 260px);
+    left: 50%;
+    max-height: 260px;
+    max-width: 260px;
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(58vw, 260px);
+}
+
+/* Vehicle Details Card */
+.vehicle-details-card {
+    display: none;
+    transition: all 0.3s ease-in-out;
+}
+
+.vehicle-details-card.show {
+    display: block;
+}
+
+.vehicle-details-card .card-body {
+    padding: 1.25rem;
+}
+
+.issuance-detail-grid + .issuance-detail-grid {
+    margin-top: 0;
+}
+
+.vehicle-details-card .detail-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: center;
+    min-height: 86px;
+    padding: 0.85rem 1rem;
+}
+
+.vehicle-details-card .detail-item-purpose {
+    min-height: 78px;
+}
+
+.vehicle-details-card .detail-label {
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.vehicle-details-card .detail-value {
+    color: #212529;
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 500;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+/* Vehicle item in list */
+.vehicle-item {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.vehicle-item:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+    border-color: #0d6efd;
+}
+
+.vehicle-item.selected {
+    background-color: #e3f2fd;
+    border-color: #0d6efd;
+    box-shadow: 0 0.25rem 0.75rem rgba(13, 110, 253, 0.2);
+}
+
+.vehicle-item .vehicle-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.25rem;
+}
+
+/* Checker form section */
+.checker-form-section {
+    display: none;
+    transition: all 0.3s ease-in-out;
+}
+
+.checker-form-section.show {
+    display: block;
+}
+
+.checker-form-section .card {
+    border: 2px solid #e9ecef;
+}
+
+.checker-form-section .card-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+}
+
+/* Issued gas details */
+.issued-gas-info {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    border: 1px solid #e9ecef;
+}
+
+.issued-gas-info .gas-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.issued-gas-info .gas-item:last-child {
+    border-bottom: none;
+}
+
+/* Signature pad */
+.signature-pad-wrap {
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 0.5rem;
+    min-height: 180px;
+    overflow: hidden;
+    position: relative;
+}
+
+.signature-pad-wrap.is-invalid {
+    border-color: #dc3545;
+}
+
+.signature-pad {
+    cursor: crosshair;
+    display: block;
+    height: 180px;
+    touch-action: none;
+    width: 100%;
+}
+
+.signature-placeholder {
+    color: #adb5bd;
+    font-size: 1.25rem;
+    left: 50%;
+    letter-spacing: 0.04rem;
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.signature-pad-wrap.has-signature .signature-placeholder {
+    display: none;
+}
+
+/* Status badges */
+.badge-fuel-type {
+    align-self: flex-start;
+    font-size: 0.85rem;
+    padding: 0.35rem 0.75rem;
+}
+
+.vehicle-details-card .badge {
+    align-self: flex-start;
+    max-width: 100%;
+    white-space: normal;
+}
+
+/* Step indicator */
+.step-indicator {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    padding: 0.15rem 0.1rem 0.4rem;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    margin: 0 1rem;
+}
+
+.step-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: 2px solid #dee2e6;
+    color: #6c757d;
+    background: #fff;
+    transition: all 0.3s ease;
+}
+
+.step-item.active .step-number {
+    background: #0d6efd;
+    color: #fff;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.2);
+}
+
+.step-item.completed .step-number {
+    background: #198754;
+    color: #fff;
+    border-color: #198754;
+}
+
+.step-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-left: 0.5rem;
+    font-weight: 500;
+}
+
+.step-item.active .step-label {
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.step-item.completed .step-label {
+    color: #198754;
+}
+
+.step-connector {
+    width: 40px;
+    height: 2px;
+    background: #dee2e6;
+    margin: 0 0.5rem;
+}
+
+.step-item.completed + .step-connector {
+    background: #198754;
+}
+
+/* Loading overlays */
+.checker-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+/* Results count badge */
+.results-count {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .checker-shell {
+        margin-top: 1.25rem !important;
+        padding-left: 0.85rem;
+        padding-right: 0.85rem;
+    }
+
+    .checker-page-header {
+        align-items: stretch;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .checker-title-wrap {
+        align-items: flex-start;
+        gap: 0.6rem;
+    }
+
+    .checker-title-icon {
+        height: 34px;
+        width: 34px;
+    }
+
+    .checker-page-header p {
+        font-size: 0.86rem;
+        line-height: 1.35;
+    }
+
+    .checker-reset-btn {
+        align-self: stretch;
+        min-height: 40px;
+        padding-left: 0.7rem;
+        padding-right: 0.7rem;
+        width: 100%;
+    }
+
+    .checker-search-section {
+        border-radius: 0.45rem;
+        padding: 1rem;
+    }
+
+    .checker-search-section .form-label {
+        font-size: 0.86rem;
+        margin-bottom: 0.55rem;
+    }
+
+    .checker-search-control {
+        grid-template-columns: 1fr;
+    }
+
+    .checker-search-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .checker-search-actions .btn {
+        min-height: 44px;
+        padding-left: 0.55rem;
+        padding-right: 0.55rem;
+    }
+
+    .checker-id-group .form-control,
+    .checker-id-group .input-group-text {
+        min-height: 46px;
+    }
+
+    .checker-search-section small {
+        font-size: 0.76rem;
+        line-height: 1.35;
+    }
+
+    .vehicle-details-card .card-body {
+        padding: 1rem;
+    }
+
+    .vehicle-details-card .detail-item {
+        min-height: auto;
+    }
+
+    .signature-pad-wrap {
+        min-height: 150px;
+    }
+
+    .signature-pad {
+        height: 150px;
+    }
+
+    .step-indicator {
+        align-items: stretch;
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.65rem;
+        display: grid;
+        gap: 0.4rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-bottom: 1.25rem;
+        padding: 0.55rem;
+    }
+
+    .step-item {
+        align-items: center;
+        flex-direction: column;
+        justify-content: center;
+        margin: 0;
+        min-width: 0;
+        text-align: center;
+    }
+
+    .step-connector {
+        display: none;
+    }
+
+    .step-number {
+        height: 28px;
+        width: 28px;
+    }
+
+    .step-label {
+        font-size: 0.7rem;
+        line-height: 1.2;
+        margin-left: 0;
+        margin-top: 0.35rem;
+        overflow-wrap: anywhere;
+    }
+
+    .qr-scanner-frame {
+        min-height: 260px;
+    }
+
+    .qr-scanner-video {
+        height: min(58vh, 360px);
+    }
+
+    .checker-result-card {
+        padding: 0.85rem;
+    }
+
+    .checker-result-heading {
+        gap: 0.55rem;
+    }
+
+    .checker-result-heading i {
+        font-size: 1.35rem;
+    }
+
+    .checker-result-heading h5 {
+        font-size: 0.95rem;
+    }
+
+    .checker-result-heading small {
+        display: block;
+        font-size: 0.76rem;
+        line-height: 1.25;
+    }
+
+    .checker-result-list > div {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+        padding: 0.55rem 0;
+    }
+
+    .checker-result-list dt {
+        font-size: 0.72rem;
+    }
+}
+
+/* Card hover effects */
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Form validation styling */
+.was-validated .form-control:invalid,
+.form-control.is-invalid {
+    border-color: #dc3545;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.was-validated .form-control:valid,
+.form-control.is-valid {
+    border-color: #198754;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+/* Animation for results */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.vehicle-item,
+.checker-form-section.show {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Stat boxes */
+.stat-box {
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid #e9ecef;
+}
+
+.stat-box .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0d6efd;
+}
+
+.stat-box .stat-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.checker-result-card {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.checker-result-heading {
+    align-items: flex-start;
+    display: flex;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.checker-result-heading i {
+    flex: 0 0 auto;
+    font-size: 1.75rem;
+}
+
+.checker-result-heading .min-w-0 {
+    min-width: 0;
+}
+
+.checker-result-list {
+    display: grid;
+    gap: 0;
+}
+
+.checker-result-list > div {
+    border-bottom: 1px solid rgba(25, 135, 84, 0.18);
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: minmax(108px, 0.45fr) minmax(0, 1fr);
+    padding: 0.75rem 0;
+}
+
+.checker-result-list > div:last-child {
+    border-bottom: 0;
+}
+
+.checker-result-list dt {
+    color: #3f5f4c;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.checker-result-list dd {
+    margin-bottom: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.check-result-pass {
+    color: #198754;
+}
+
+.check-result-fail {
+    color: #dc3545;
+}

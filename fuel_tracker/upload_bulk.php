@@ -1,6 +1,13 @@
 <?php
+require_once __DIR__ . '/auth_guard.php';
+requireFuelRole('fuel_admin', 'json');
+requireFuelAjaxRequest();
 header('Content-Type: application/json');
-require_once '../db_asset.php';
+
+require_once __DIR__ . '/rate_limiter.php';
+require_rate_limit(5, 600, 'upload_bulk', 'json');
+
+require_once __DIR__ . '/db.php';
 define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5 MB
 define('ALLOWED_MIMES', ['text/csv', 'application/vnd.ms-excel']);
 function sanitizeData($data)
@@ -62,6 +69,12 @@ try {
             }
         }
         $tableName = 'fuel';
+        $insertStmt = $conn->prepare("
+            INSERT INTO {$tableName}
+                (date, office, vehicle, plate_no, driver, purpose, fuel_type, liters_issued, remarks)
+            VALUES
+                (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
         $rowNumber = 1;
         while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
             $data = array_map('trim', $data); // Trim each field
@@ -123,29 +136,39 @@ try {
             }
             $validatedData['remarks'] = !empty($rowData['remarks']) ? sanitizeData($rowData['remarks']) : null;
             if (empty($rowErrors)) {
-                $escapedDate = $conn->real_escape_string($validatedData['date']);
-                $escapedOffice = $conn->real_escape_string($validatedData['office']);
-                $escapedVehicle = $conn->real_escape_string($validatedData['vehicle']);
-                $escapedPlateNo = $validatedData['plate_no'] !== null ? "'" . $conn->real_escape_string($validatedData['plate_no']) . "'" : 'NULL';
-                $escapedDriver = $validatedData['driver'] !== null ? "'" . $conn->real_escape_string($validatedData['driver']) . "'" : 'NULL';
-                $escapedPurpose = $validatedData['purpose'] !== null ? "'" . $conn->real_escape_string($validatedData['purpose']) . "'" : 'NULL';
-                // Use the uppercase fuel type for insertion
-                $escapedFuelType = $conn->real_escape_string($validatedData['fuel_type']);
-                $escapedLitersIssued = $validatedData['liters_issued'];
-                $escapedRemarks = $validatedData['remarks'] !== null ? "'" . $conn->real_escape_string($validatedData['remarks']) . "'" : 'NULL';
-                $sql = "INSERT INTO {$tableName} (date, office, vehicle, plate_no, driver, purpose, fuel_type, liters_issued, remarks)
-VALUES ('$escapedDate', '$escapedOffice', '$escapedVehicle', $escapedPlateNo, $escapedDriver, $escapedPurpose,
-'$escapedFuelType', $escapedLitersIssued, $escapedRemarks)";
-                if ($conn->query($sql) === TRUE) {
+                $insertDate = $validatedData['date'];
+                $insertOffice = $validatedData['office'];
+                $insertVehicle = $validatedData['vehicle'];
+                $insertPlateNo = $validatedData['plate_no'];
+                $insertDriver = $validatedData['driver'];
+                $insertPurpose = $validatedData['purpose'];
+                $insertFuelType = $validatedData['fuel_type'];
+                $insertLiters = $validatedData['liters_issued'];
+                $insertRemarks = $validatedData['remarks'];
+                $insertStmt->bind_param(
+                    'sssssssds',
+                    $insertDate,
+                    $insertOffice,
+                    $insertVehicle,
+                    $insertPlateNo,
+                    $insertDriver,
+                    $insertPurpose,
+                    $insertFuelType,
+                    $insertLiters,
+                    $insertRemarks
+                );
+                if ($insertStmt->execute()) {
                     $successfulRows++;
                 } else {
-                    $rowErrors[] = "Row $rowNumber: Database error: " . $conn->error;
+                    error_log('Fuel CSV import row error: ' . $insertStmt->error);
+                    $rowErrors[] = "Row $rowNumber: Database error while saving this row.";
                     $failedRows[] = ['row' => $rowNumber, 'data' => $rowData, 'errors' => $rowErrors];
                 }
             } else {
                 $failedRows[] = ['row' => $rowNumber, 'data' => $rowData, 'errors' => $rowErrors];
             }
         }
+        $insertStmt->close();
         fclose($handle);
     } else {
         throw new Exception("Failed to open uploaded CSV file.");
@@ -177,7 +200,8 @@ VALUES ('$escapedDate', '$escapedOffice', '$escapedVehicle', $escapedPlateNo, $e
         $conn->rollback();
     }
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Server error during CSV import: ' . $e->getMessage()]);
+    error_log('Fuel CSV import error: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Server error during CSV import.']);
 } finally {
     if (isset($conn)) {
         $conn->close();

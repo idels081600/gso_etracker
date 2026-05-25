@@ -2,17 +2,17 @@
 async function loadFuelRecords() {
   try {
     const tbody = document.getElementById("fuelRecordsBody");
-    const response = await fetch("display_fuel_records.php");
+    if (!tbody) return;
+    const response = await fetch("get_fuel_data.php?action=budget_deductions");
     if (!response.ok) throw new Error("Network response was not ok");
-    const html = await response.text();
-    tbody.innerHTML = html;
-    // Reinitialize any event handlers
-    initializeActionButtons();
-    // Move initializeTableCheckboxes call here, after the DOM is updated
-    initializeTableCheckboxes();
+    const payload = await response.json();
+    if (!payload.success) {
+      throw new Error(payload.message || "Failed to load budget deductions");
+    }
+    updateBudgetDeductionTable(payload.data || []);
   } catch (error) {
-    console.error("Error loading records:", error);
-    showNotification("Failed to load records", "danger");
+    console.error("Error loading budget deductions:", error);
+    showNotification("Failed to load budget deduction transactions", "danger");
   }
 }
 
@@ -20,6 +20,8 @@ async function loadFuelRecords() {
 window.viewRecord = viewRecord;
 window.editRecord = editRecord;
 window.deleteRecord = deleteRecord;
+
+const debouncedHandleSearchFilters = debounce(handleSearchFilters, 500);
 
 function initializeTableCheckboxes() {
   const selectAllCheckbox = document.querySelector("#selectAll");
@@ -131,10 +133,8 @@ async function handleExportRecords() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-  // Load fuel records immediately when page loads
-  loadFuelRecords();
-  loadFuelStatistics(); // Load statistics for the cards
+document.addEventListener("DOMContentLoaded", async function () {
+  prepareBudgetBarAnimation();
   initializeActionButtons();
 
   // Add event listener for saving fuel records
@@ -142,7 +142,29 @@ document.addEventListener("DOMContentLoaded", function () {
   if (saveFuelRecordBtn) {
     saveFuelRecordBtn.addEventListener("click", saveFuelRecord);
   }
+
+  const saveBudgetBtn = document.getElementById("saveBudgetBtn");
+  if (saveBudgetBtn) {
+    saveBudgetBtn.addEventListener("click", saveFuelBudget);
+  }
+
+  await loadDashboardVisuals();
+
+  loadFuelRecords();
+  loadFuelStatistics();
 });
+
+function prepareBudgetBarAnimation() {
+  document.querySelectorAll(".budget-progress-fill").forEach((bar) => {
+    bar.dataset.targetWidth = bar.style.width || "0%";
+    bar.style.width = "0%";
+  });
+}
+
+function handleRefreshRecords() {
+  loadFuelRecords();
+  showNotification("Budget deduction transactions refreshed", "success");
+}
 
 async function saveFuelRecord() {
   const form = document.getElementById("addFuelRecordForm");
@@ -175,6 +197,7 @@ async function saveFuelRecord() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
       },
       body: JSON.stringify({
         date: data.fuel_date,
@@ -254,8 +277,8 @@ function initializeActionButtons() {
 
   [officeFilter, vehicleFilter, driverFilter].forEach((filter) => {
     if (filter) {
-      filter.removeEventListener("input", handleSearchFilters);
-      filter.addEventListener("input", debounce(handleSearchFilters, 500));
+      filter.removeEventListener("input", debouncedHandleSearchFilters);
+      filter.addEventListener("input", debouncedHandleSearchFilters);
     }
   });
 
@@ -269,10 +292,8 @@ function initializeActionButtons() {
   // Refresh Button
   const refreshBtn = document.getElementById("refreshBtn");
   if (refreshBtn) {
-    refreshBtn.addEventListener("click", function () {
-      loadFuelRecords();
-      showNotification("Records refreshed", "success");
-    });
+    refreshBtn.removeEventListener("click", handleRefreshRecords);
+    refreshBtn.addEventListener("click", handleRefreshRecords);
   }
 
   // Initialize row action buttons
@@ -281,40 +302,41 @@ function initializeActionButtons() {
 
 // New function to initialize row action buttons
 function initializeRowActionButtons() {
-  // View buttons
-  const viewButtons = document.querySelectorAll(".action-view");
-  viewButtons.forEach((button) => {
-    button.addEventListener("click", function(e) {
-      e.preventDefault();
-      const row = this.closest("tr");
-      const recordId = row.querySelector(".row-checkbox").value;
+  const tbody = document.getElementById("fuelRecordsBody");
+  if (!tbody || tbody.dataset.actionsBound === "true") {
+    return;
+  }
+
+  tbody.addEventListener("click", function (e) {
+    const button = e.target.closest(".action-view, .action-edit, .action-delete");
+    if (!button) {
+      return;
+    }
+
+    e.preventDefault();
+    const row = button.closest("tr");
+    const checkbox = row ? row.querySelector(".row-checkbox") : null;
+    if (!row || !checkbox) {
+      return;
+    }
+
+    const recordId = checkbox.value;
+    if (button.classList.contains("action-view")) {
       viewRecord(recordId);
-    });
-  });
+      return;
+    }
 
-  // Edit buttons
-  const editButtons = document.querySelectorAll(".action-edit");
-  editButtons.forEach((button) => {
-    button.addEventListener("click", function(e) {
-      e.preventDefault();
-      const row = this.closest("tr");
-      const recordId = row.querySelector(".row-checkbox").value;
+    if (button.classList.contains("action-edit")) {
       editRecord(recordId, row);
-    });
+      return;
+    }
+
+    if (confirm("Are you sure you want to delete this fuel record?")) {
+      deleteRecord(recordId, row);
+    }
   });
 
-  // Delete buttons
-  const deleteButtons = document.querySelectorAll(".action-delete");
-  deleteButtons.forEach((button) => {
-    button.addEventListener("click", function(e) {
-      e.preventDefault();
-      const row = this.closest("tr");
-      const recordId = row.querySelector(".row-checkbox").value;
-      if (confirm("Are you sure you want to delete this fuel record?")) {
-        deleteRecord(recordId, row);
-      }
-    });
-  });
+  tbody.dataset.actionsBound = "true";
 }
 
 function handleFilterClick(e) {
@@ -422,7 +444,7 @@ function debounce(func, wait) {
 async function loadFilteredFuelRecords(filters) {
   try {
     const params = new URLSearchParams();
-    params.append("action", "filtered");
+    params.append("action", "budget_deductions");
 
     // Add non-empty filters to params
     Object.keys(filters).forEach((key) => {
@@ -435,19 +457,110 @@ async function loadFilteredFuelRecords(filters) {
     if (!response.ok) throw new Error("Network response was not ok");
 
     const data = await response.json();
-    // Load statistics for the current filters
-    loadFuelStatistics(filters);
-
     if (data.success) {
-      updateTableWithFilteredData(data);
-      showNotification(`Showing ${data.data.length} filtered records`, "info");
+      updateBudgetDeductionTable(data.data || []);
+      showNotification(`Showing ${(data.data || []).length} budget deduction transactions`, "info");
     } else {
-      throw new Error(data.message || "Failed to load filtered records");
+      throw new Error(data.message || "Failed to load budget deduction transactions");
     }
   } catch (error) {
-    console.error("Error loading filtered records:", error);
+    console.error("Error loading filtered budget deductions:", error);
     showNotification(error.message, "danger");
   }
+}
+
+function escapeHtml(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  }[character]));
+}
+
+function formatMoney(value) {
+  return Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatLiters(value) {
+  return Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(String(value).replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return escapeHtml(value);
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatPeriod(startDate, endDate) {
+  if (!startDate && !endDate) return "All dates";
+  if (startDate && endDate && startDate !== endDate) {
+    return `${startDate} to ${endDate}`;
+  }
+  return startDate || endDate || "All dates";
+}
+
+function updateBudgetDeductionTable(records) {
+  const tbody = document.getElementById("fuelRecordsBody");
+  if (!tbody) return;
+  const totalRecordsElement = document.getElementById("totalRecords");
+
+  tbody.innerHTML = "";
+  if (!records.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center text-muted py-4">
+          <i class="fas fa-receipt me-2"></i>No budget deduction transactions found
+        </td>
+      </tr>`;
+    if (totalRecordsElement) totalRecordsElement.textContent = "0";
+    updateSelectedCount();
+    return;
+  }
+
+  records.forEach((record) => {
+    const row = document.createElement("tr");
+    const ref = record.summary_group_hash
+      ? String(record.summary_group_hash).slice(0, 10).toUpperCase()
+      : "-";
+    row.innerHTML = `
+      <td><span class="fw-medium">${formatDateTime(record.created_at)}</span></td>
+      <td><span class="font-monospace fw-semibold">${escapeHtml(record.ib_no || "-")}</span></td>
+      <td>
+        <span class="fw-semibold">${escapeHtml(record.office || "All Offices")}</span>
+        <small class="text-muted d-block">${escapeHtml(formatPeriod(record.start_date, record.end_date))}</small>
+      </td>
+      <td class="text-end">
+        <span class="fw-bold text-warning">${formatPeso(record.diesel_amount)}</span>
+        <small class="text-muted d-block">${formatLiters(record.diesel_liters)} L</small>
+      </td>
+      <td class="text-end">
+        <span class="fw-bold text-success">${formatPeso(record.unleaded_amount)}</span>
+        <small class="text-muted d-block">${formatLiters(record.unleaded_liters)} L</small>
+      </td>
+      <td class="text-end"><span class="fw-bold text-primary">${formatPeso(record.total_amount)}</span></td>
+      <td>${escapeHtml(record.created_by || "-")}</td>
+      <td><span class="badge bg-light text-dark font-monospace">${escapeHtml(ref)}</span></td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  if (totalRecordsElement) totalRecordsElement.textContent = String(records.length);
+  updateSelectedCount();
 }
 
 function updateTableWithFilteredData(data) {
@@ -632,6 +745,328 @@ function updateFuelStatistics(statistics, filters = null) {
   });
 }
 
+async function loadFuelBudgetSummary() {
+  try {
+    updateFuelBudgetSummary(await fetchFuelBudgetSummary());
+  } catch (error) {
+    console.error("Error loading fuel budget summary:", error);
+  }
+}
+
+async function fetchFuelBudgetSummary() {
+  const response = await fetch("get_fuel_data.php?action=budget_summary");
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  if (!payload.success) {
+    throw new Error(payload.message || "Unable to load budget summary.");
+  }
+
+  return payload.data || {};
+}
+
+function formatPeso(value) {
+  return "\u20b1" + Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function updateFuelBudgetSummary(summary) {
+  const dieselRemaining = document.getElementById("budgetDieselRemaining");
+  const unleadedRemaining = document.getElementById("budgetUnleadedRemaining");
+  const dieselBar = document.getElementById("budgetDieselBar");
+  const unleadedBar = document.getElementById("budgetUnleadedBar");
+  const dieselPercentText = document.getElementById("budgetDieselPercent");
+  const unleadedPercentText = document.getElementById("budgetUnleadedPercent");
+  const dieselTotalText = document.getElementById("budgetDieselTotal");
+  const unleadedTotalText = document.getElementById("budgetUnleadedTotal");
+  const total = document.getElementById("budgetTotal");
+  const used = document.getElementById("budgetUsed");
+  const dieselTotal = Number(summary.total_diesel_budget || 0) || 0;
+  const dieselLeft = Number(summary.remaining_diesel_budget || 0) || 0;
+  const unleadedTotal = Number(summary.total_unleaded_budget || 0) || 0;
+  const unleadedLeft = Number(summary.remaining_unleaded_budget || 0) || 0;
+  const dieselPercent = dieselTotal > 0 ? Math.max(0, Math.min(100, (dieselLeft / dieselTotal) * 100)) : 0;
+  const unleadedPercent = unleadedTotal > 0 ? Math.max(0, Math.min(100, (unleadedLeft / unleadedTotal) * 100)) : 0;
+
+  if (dieselRemaining) {
+    dieselRemaining.textContent = formatPeso(dieselLeft);
+  }
+  if (unleadedRemaining) {
+    unleadedRemaining.textContent = formatPeso(unleadedLeft);
+  }
+  if (dieselBar) {
+    dieselBar.style.width = `${dieselPercent.toFixed(2)}%`;
+    dieselBar.parentElement?.setAttribute("aria-valuenow", Math.round(dieselPercent).toString());
+  }
+  if (unleadedBar) {
+    unleadedBar.style.width = `${unleadedPercent.toFixed(2)}%`;
+    unleadedBar.parentElement?.setAttribute("aria-valuenow", Math.round(unleadedPercent).toString());
+  }
+  if (dieselPercentText) dieselPercentText.textContent = `${Math.round(dieselPercent)}% left`;
+  if (unleadedPercentText) unleadedPercentText.textContent = `${Math.round(unleadedPercent)}% left`;
+  if (dieselTotalText) dieselTotalText.textContent = `of ${formatPeso(dieselTotal)}`;
+  if (unleadedTotalText) unleadedTotalText.textContent = `of ${formatPeso(unleadedTotal)}`;
+  if (total) total.textContent = formatPeso(summary.total_budget || 0);
+  if (used) used.textContent = formatPeso(summary.used_budget || 0);
+}
+
+let officeConsumptionChart = null;
+let vehicleConsumptionChart = null;
+
+async function loadConsumptionRankings() {
+  try {
+    renderConsumptionRankings(await fetchConsumptionRankings());
+  } catch (error) {
+    console.error("Error loading consumption rankings:", error);
+  }
+}
+
+async function fetchConsumptionRankings() {
+  const response = await fetch("get_fuel_data.php?action=consumption_rankings");
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  if (!payload.success) {
+    throw new Error(payload.message || "Unable to load consumption rankings.");
+  }
+
+  return payload.data || {};
+}
+
+async function loadDashboardVisuals() {
+  const [summaryResult, rankingsResult] = await Promise.allSettled([
+    fetchFuelBudgetSummary(),
+    fetchConsumptionRankings(),
+  ]);
+
+  requestAnimationFrame(() => {
+    if (summaryResult.status === "fulfilled") {
+      updateFuelBudgetSummary(summaryResult.value);
+    } else {
+      console.error("Error loading fuel budget summary:", summaryResult.reason);
+    }
+
+    if (rankingsResult.status === "fulfilled") {
+      renderConsumptionRankings(rankingsResult.value);
+    } else {
+      console.error("Error loading consumption rankings:", rankingsResult.reason);
+    }
+  });
+}
+
+function renderConsumptionRankings(rankings) {
+  renderRankingChart("officeConsumptionChart", "officeChartEmpty", rankings?.offices || [], "office");
+  renderRankingChart("vehicleConsumptionChart", "vehicleChartEmpty", rankings?.vehicles || [], "vehicle");
+}
+
+const rankingDataLabelPlugin = {
+  id: "rankingDataLabelPlugin",
+  afterDatasetsDraw(chart) {
+    const { ctx, scales } = chart;
+    const xScale = scales.x;
+    const yScale = scales.y;
+    if (!xScale || !yScale) return;
+
+    ctx.save();
+    ctx.fillStyle = "#334155";
+    ctx.font = "700 11px Arial, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+
+    chart.data.labels.forEach((_, index) => {
+      const total = chart.data.datasets.reduce(
+        (sum, dataset) => sum + Number(dataset.data[index] || 0),
+        0
+      );
+      if (total <= 0) return;
+
+      const x = Math.min(xScale.getPixelForValue(total) + 8, chart.chartArea.right - 44);
+      const y = yScale.getPixelForValue(index);
+      ctx.fillText(`${total.toFixed(2)} L`, x, y);
+    });
+    ctx.restore();
+  },
+};
+
+function renderRankingChart(canvasId, emptyId, rows, chartType) {
+  const canvas = document.getElementById(canvasId);
+  const empty = document.getElementById(emptyId);
+  if (!canvas || typeof Chart === "undefined") {
+    return;
+  }
+
+  const cleanRows = rows
+    .map((row) => ({
+      label: row.label || "Unknown",
+      total_liters: Number(row.total_liters || 0),
+      diesel_liters: Number(row.diesel_liters || 0),
+      unleaded_liters: Number(row.unleaded_liters || 0),
+    }))
+    .filter((row) => row.total_liters > 0);
+
+  canvas.classList.toggle("d-none", cleanRows.length === 0);
+  if (empty) empty.classList.toggle("d-none", cleanRows.length > 0);
+
+  const existingChart =
+    chartType === "office" ? officeConsumptionChart : vehicleConsumptionChart;
+  if (existingChart) {
+    existingChart.destroy();
+  }
+
+  if (cleanRows.length === 0) {
+    if (chartType === "office") officeConsumptionChart = null;
+    else vehicleConsumptionChart = null;
+    return;
+  }
+
+  const maxLiters = Math.max(...cleanRows.map((row) => row.total_liters), 0);
+  const chart = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: cleanRows.map((row) => row.label),
+      datasets: [
+        {
+          label: "Diesel",
+          data: cleanRows.map((row) => row.diesel_liters),
+          backgroundColor: "#f5b301",
+          borderColor: "#d99a00",
+          borderWidth: 1,
+          borderRadius: 5,
+          barThickness: 16,
+        },
+        {
+          label: "Unleaded",
+          data: cleanRows.map((row) => row.unleaded_liters),
+          backgroundColor: "#198754",
+          borderColor: "#146c43",
+          borderWidth: 1,
+          borderRadius: 5,
+          barThickness: 16,
+        },
+      ],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 850,
+        easing: "easeOutQuart",
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: "bottom",
+          labels: {
+            boxWidth: 10,
+            boxHeight: 10,
+            usePointStyle: true,
+            pointStyle: "rectRounded",
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.dataset.label}: ${Number(context.raw || 0).toFixed(2)} L`,
+            footer: (items) => {
+              const total = items.reduce((sum, item) => sum + Number(item.raw || 0), 0);
+              return `Total: ${total.toFixed(2)} L`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          stacked: true,
+          suggestedMax: maxLiters > 0 ? maxLiters * 1.12 : undefined,
+          grace: "12%",
+          border: {
+            display: false,
+          },
+          ticks: {
+            callback: (value) => `${value} L`,
+            padding: 8,
+            maxTicksLimit: 6,
+          },
+          grid: {
+            color: "rgba(15, 23, 42, 0.06)",
+          },
+        },
+        y: {
+          stacked: true,
+          ticks: {
+            autoSkip: false,
+            padding: 10,
+            font: {
+              size: 11,
+              weight: "600",
+            },
+          },
+          grid: {
+            display: false,
+          },
+        },
+      },
+    },
+    plugins: [rankingDataLabelPlugin],
+  });
+
+  if (chartType === "office") officeConsumptionChart = chart;
+  else vehicleConsumptionChart = chart;
+}
+
+async function saveFuelBudget() {
+  const form = document.getElementById("addBudgetForm");
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+
+  const button = document.getElementById("saveBudgetBtn");
+  const originalHtml = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+
+  try {
+    const response = await fetch("fuel_budget_save.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: JSON.stringify({
+        ib_no: document.getElementById("budgetIbNo").value,
+        description: document.getElementById("budgetDescription").value,
+        diesel_allocation: document.getElementById("budgetDieselAllocation").value,
+        unleaded_allocation: document.getElementById("budgetUnleadedAllocation").value,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.message || "Unable to save IB budget.");
+    }
+
+    updateFuelBudgetSummary(payload.budget_summary || {});
+    form.reset();
+    document.getElementById("budgetDieselAllocation").value = "0";
+    document.getElementById("budgetUnleadedAllocation").value = "0";
+    const modal = bootstrap.Modal.getInstance(document.getElementById("addBudgetModal"));
+    if (modal) modal.hide();
+    showNotification(payload.message || "IB budget saved.", "success");
+  } catch (error) {
+    showNotification(error.message, "danger");
+  } finally {
+    button.disabled = false;
+    button.innerHTML = originalHtml;
+  }
+}
+
 // Function to edit a record
 function editRecord(recordId, row) {
   // Find the record data from the row's cells
@@ -708,6 +1143,7 @@ if (document.getElementById("updateFuelRecord")) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
           },
           body: JSON.stringify(payload),
         });
@@ -906,6 +1342,7 @@ async function deleteRecord(recordId, row) {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
       },
     });
 
@@ -955,6 +1392,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const uploadCsvBtn = document.getElementById("uploadCsvBtn");
   const csvUploadInput = document.getElementById("csvUploadInput");
 
+  if (!uploadCsvBtn || !csvUploadInput) {
+    return;
+  }
+
   uploadCsvBtn.addEventListener("click", function () {
     csvUploadInput.click();
   });
@@ -969,6 +1410,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
       fetch("upload_bulk.php", {
         method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
         body: formData,
       })
         .then((response) => {
@@ -1033,26 +1477,31 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
-document.getElementById("searchBtn").addEventListener("click", function () {
-  const searchValue = document.getElementById("searchBar").value.toLowerCase();
-  const rows = document.querySelectorAll("#fuelRecordsBody tr");
+const searchBtn = document.getElementById("searchBtn");
+const searchBar = document.getElementById("searchBar");
 
-  rows.forEach((row) => {
-    const rowText = row.textContent.toLowerCase();
-    if (rowText.includes(searchValue)) {
-      row.style.display = ""; // Show row
-    } else {
-      row.style.display = "none"; // Hide row
+if (searchBtn && searchBar) {
+  searchBtn.addEventListener("click", function () {
+    const searchValue = searchBar.value.toLowerCase();
+    const rows = document.querySelectorAll("#fuelRecordsBody tr");
+
+    rows.forEach((row) => {
+      const rowText = row.textContent.toLowerCase();
+      if (rowText.includes(searchValue)) {
+        row.style.display = ""; // Show row
+      } else {
+        row.style.display = "none"; // Hide row
+      }
+    });
+  });
+
+  // Optional: Trigger search when pressing Enter key
+  searchBar.addEventListener("keypress", function (e) {
+    if (e.key === "Enter") {
+      searchBtn.click();
     }
   });
-});
-
-// Optional: Trigger search when pressing Enter key
-document.getElementById("searchBar").addEventListener("keypress", function (e) {
-  if (e.key === "Enter") {
-    document.getElementById("searchBtn").click();
-  }
-});
+}
 async function loadFuelStatistics(filters = {}) {
   try {
     // Build query string based on filters
@@ -1208,8 +1657,7 @@ document.addEventListener("DOMContentLoaded", function () {
     dateToInput.addEventListener("change", onDateFilterChange);
   }
 
-  // Load initial statistics
-  loadFuelStatistics();
+  // Initial statistics are loaded by the primary startup flow after the budget animation.
 });
 function debounce(func, wait) {
   let timeout;
@@ -1275,3 +1723,4 @@ async function loadFuelData(filters = {}) {
     showNotification("Failed to load fuel data", "danger");
   }
 }
+

@@ -1,7 +1,13 @@
 <?php
+require_once __DIR__ . '/auth_guard.php';
+requireFuelRole('fuel_admin', 'json');
+requireFuelAjaxRequest();
 header('Content-Type: application/json');
 
-require_once '../db_asset.php'; // Use this for DB connection
+require_once __DIR__ . '/rate_limiter.php';
+require_rate_limit(30, 60, 'update_fuel_record', 'json');
+
+require_once __DIR__ . '/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

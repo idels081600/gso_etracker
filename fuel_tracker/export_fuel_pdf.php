@@ -1,6 +1,11 @@
 <?php
+require_once __DIR__ . '/auth_guard.php';
+requireFuelRole('fuel_admin', 'text');
+require_once __DIR__ . '/rate_limiter.php';
+require_rate_limit(10, 60, 'export_fuel_pdf', 'text');
+
 require('../fpdf/fpdf.php');
-require_once '../db_asset.php'; // Ensure this path is correct for your database connection
+require_once __DIR__ . '/db.php';
 
 // Check if selected_ids are provided and not empty
 if (!isset($_POST['selected_ids']) || empty($_POST['selected_ids'])) {

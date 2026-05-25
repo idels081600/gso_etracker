@@ -1,8 +1,23 @@
 <?php
-session_start();
+require_once __DIR__ . '/auth_guard.php';
+requireFuelRole('fuel_admin');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/fuel_budget_data.php';
+
+$budgetSummary = [
+    'total_budget' => 0,
+    'used_budget' => 0,
+    'remaining_budget' => 0,
+];
+
+try {
+    $budgetSummary = fuelBudgetSummary($conn);
+} catch (Throwable $e) {
+    error_log('Dashboard budget summary error: ' . $e->getMessage());
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -46,15 +61,20 @@ header('Expires: 0');
                             <i class="fas fa-tachometer-alt me-1"></i>Dashboard
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#addFuelRecordModal">
                             <i class="fas fa-plus-circle me-1"></i>Add Fuel Record
+                        </a>
+                    </li> -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="gas_issuance.php">
+                            <i class="fas fa-receipt me-1"></i>Gas Issuance
                         </a>
                     </li>
                 </ul>
 
                 <!-- Right side items -->
-                <div class="d-flex align-items-center">
+                <div class="navbar-user-actions d-flex align-items-center">
 
                     <!-- User dropdown -->
                     <div class="dropdown">
@@ -199,6 +219,7 @@ header('Expires: 0');
                                 </label>
                                 <textarea class="form-control" id="remarks" name="remarks" rows="3"
                                     placeholder="Additional notes or comments..."></textarea>
+                            </div>
                             </div>
                         </div>
                     </form>
@@ -386,18 +407,24 @@ header('Expires: 0');
     </div>
 
     <!-- Main Content -->
-    <!-- Main Content -->
-    <div class="container-fluid mt-4">
+    <div class="container-fluid dashboard-shell mt-4">
         <div class="row">
             <div class="col-12">
-                <h1 class="mb-4">Gas Issuance</h1>
+                <div class="dashboard-page-header">
+                    <div>
+                        <h1 class="mb-1">
+                            <i class="fas fa-gas-pump text-primary me-2"></i>Fuel Tracker
+                        </h1>
+                        <p class="text-muted mb-0">Monitor fuel records, totals, budgets, and statistics.</p>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Fuel Tally Cards -->
-        <div class="row mb-4">
+        <div class="row g-3 mb-4 fuel-summary-grid">
             <!-- Unleaded Card -->
-            <div class="col-lg-4 col-md-6 mb-3">
+            <div class="col-md-6 col-xl-4">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -430,7 +457,7 @@ header('Expires: 0');
             </div>
 
             <!-- Diesel Card -->
-            <div class="col-lg-4 col-md-6 mb-3">
+            <div class="col-md-6 col-xl-4">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -460,32 +487,187 @@ header('Expires: 0');
                     </div>
                 </div>
             </div>
+
+            <!-- Fuel Budget Card -->
+            <div class="col-md-12 col-xl-4">
+                <div class="card border-0 shadow-sm h-100 budget-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0">
+                                <div class="bg-primary bg-gradient rounded-circle p-3">
+                                    <i class="fas fa-wallet text-white fa-2x"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="card-title text-muted mb-1">FUEL BUDGET LEFT</h5>
+                                <?php
+                                $dieselRemaining = (float) ($budgetSummary['remaining_diesel_budget'] ?? 0);
+                                $dieselTotal = (float) ($budgetSummary['total_diesel_budget'] ?? 0);
+                                $dieselPercent = $dieselTotal > 0 ? max(0, min(100, ($dieselRemaining / $dieselTotal) * 100)) : 0;
+                                $unleadedRemaining = (float) ($budgetSummary['remaining_unleaded_budget'] ?? 0);
+                                $unleadedTotal = (float) ($budgetSummary['total_unleaded_budget'] ?? 0);
+                                $unleadedPercent = $unleadedTotal > 0 ? max(0, min(100, ($unleadedRemaining / $unleadedTotal) * 100)) : 0;
+                                ?>
+                                <div class="budget-progress-stack mt-2">
+                                    <div class="budget-progress-item">
+                                        <div class="budget-progress-head">
+                                            <span class="budget-metric-label">Diesel</span>
+                                            <span class="budget-metric-value text-warning" id="budgetDieselRemaining">&#8369;<?php echo htmlspecialchars(number_format($dieselRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                        </div>
+                                        <div class="budget-progress-track" role="progressbar" aria-label="Diesel budget remaining" aria-valuenow="<?php echo htmlspecialchars(number_format($dieselPercent, 0), ENT_QUOTES, 'UTF-8'); ?>" aria-valuemin="0" aria-valuemax="100">
+                                            <span class="budget-progress-fill budget-progress-diesel" id="budgetDieselBar" style="width: <?php echo htmlspecialchars(number_format($dieselPercent, 2), ENT_QUOTES, 'UTF-8'); ?>%;"></span>
+                                        </div>
+                                        <small class="budget-progress-meta">
+                                            <span id="budgetDieselPercent"><?php echo htmlspecialchars(number_format($dieselPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
+                                            <span id="budgetDieselTotal">of &#8369;<?php echo htmlspecialchars(number_format($dieselTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                        </small>
+                                    </div>
+                                    <div class="budget-progress-item">
+                                        <div class="budget-progress-head">
+                                            <span class="budget-metric-label">Unleaded</span>
+                                            <span class="budget-metric-value text-success" id="budgetUnleadedRemaining">&#8369;<?php echo htmlspecialchars(number_format($unleadedRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                        </div>
+                                        <div class="budget-progress-track" role="progressbar" aria-label="Unleaded budget remaining" aria-valuenow="<?php echo htmlspecialchars(number_format($unleadedPercent, 0), ENT_QUOTES, 'UTF-8'); ?>" aria-valuemin="0" aria-valuemax="100">
+                                            <span class="budget-progress-fill budget-progress-unleaded" id="budgetUnleadedBar" style="width: <?php echo htmlspecialchars(number_format($unleadedPercent, 2), ENT_QUOTES, 'UTF-8'); ?>%;"></span>
+                                        </div>
+                                        <small class="budget-progress-meta">
+                                            <span id="budgetUnleadedPercent"><?php echo htmlspecialchars(number_format($unleadedPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
+                                            <span id="budgetUnleadedTotal">of &#8369;<?php echo htmlspecialchars(number_format($unleadedTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="budget-context-grid mt-3">
+                            <div class="budget-context-item">
+                                <small>Total Budget</small>
+                                <span id="budgetTotal">&#8369;<?php echo htmlspecialchars(number_format((float) $budgetSummary['total_budget'], 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                            </div>
+                            <div class="budget-context-item">
+                                <small>Deducted</small>
+                                <span class="text-danger" id="budgetUsed">&#8369;<?php echo htmlspecialchars(number_format((float) $budgetSummary['used_budget'], 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-3" data-bs-toggle="modal" data-bs-target="#addBudgetModal">
+                            <i class="fas fa-plus-circle me-1"></i>Add IB Budget
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="addBudgetModal" tabindex="-1" aria-labelledby="addBudgetModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="addBudgetModalLabel">
+                            <i class="fas fa-wallet me-2"></i>Add IB Budget
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addBudgetForm">
+                            <div class="mb-3">
+                                <label for="budgetIbNo" class="form-label">IB Number</label>
+                                <input type="text" class="form-control text-uppercase" id="budgetIbNo" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="budgetDescription" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="budgetDescription" placeholder="Fuel budget">
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="budgetDieselAllocation" class="form-label">Diesel Allocation</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">&#8369;</span>
+                                        <input type="number" class="form-control" id="budgetDieselAllocation" min="0" step="0.01" value="0" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="budgetUnleadedAllocation" class="form-label">Unleaded Allocation</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">&#8369;</span>
+                                        <input type="number" class="form-control" id="budgetUnleadedAllocation" min="0" step="0.01" value="0" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-2">Fuel summary deductions use the matching diesel and unleaded allocations automatically.</small>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="saveBudgetBtn">
+                            <i class="fas fa-save me-1"></i>Save Budget
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-building me-2 text-primary"></i>Office Consumption Ranking
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-panel">
+                            <canvas id="officeConsumptionChart" height="260" aria-label="Office fuel consumption ranking"></canvas>
+                        </div>
+                        <div class="chart-empty-state d-none" id="officeChartEmpty">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>No used gas issuance data for office ranking yet.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-car-side me-2 text-success"></i>Vehicle Consumption Ranking
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-panel">
+                            <canvas id="vehicleConsumptionChart" height="260" aria-label="Vehicle fuel consumption ranking"></canvas>
+                        </div>
+                        <div class="chart-empty-state d-none" id="vehicleChartEmpty">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>No used gas issuance data for vehicle ranking yet.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Additional Dashboard Content -->
         <div class="row">
             <div class="col-12">
-                <!-- Fuel Records Table -->
+                <!-- Budget Deduction Transactions Table -->
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-bottom">
-                        <div class="row align-items-center">
-                            <div class="col">
+                        <div class="row g-3 align-items-start align-items-xl-center">
+                            <div class="col-12 col-xl">
                                 <h5 class="card-title mb-0">
-                                    <i class="fas fa-list me-2"></i>Recent Fuel Records
+                                    <i class="fas fa-receipt me-2"></i>Budget Deduction Transactions
                                 </h5>
+                                <p class="text-muted small mb-0 mt-1">Saved deductions from fuel summaries, grouped by IB allocation.</p>
                             </div>
-                            <div class="col-auto">
-                                <div class="d-flex gap-2 align-items-center">
+                            <div class="col-12 col-xl-auto">
+                                <div class="dashboard-toolbar d-flex flex-wrap gap-2 align-items-center justify-content-start justify-content-xl-end">
                                     <!-- Add a search bar to the top of the page -->
-                                    <div class="input-group input-group-sm">
-                                        <input type="search" id="searchBar" class="form-control" placeholder="Search for records...">
+                                    <div class="input-group input-group-sm toolbar-search">
+                                        <input type="search" id="searchBar" class="form-control" placeholder="Search IB, office, user, ref...">
                                         <button class="btn btn-outline-secondary" id="searchBtn" type="button">
                                             <i class="fas fa-search"></i>
                                         </button>
                                     </div>
-                                    <input type="date" class="form-control form-control-sm" id="dateFilterStart" placeholder="Start Date" style="max-width: 150px;">
-                                    <span class="mx-1">to</span>
-                                    <input type="date" class="form-control form-control-sm" id="dateFilterEnd" placeholder="End Date" style="max-width: 150px;">
+                                    <input type="date" class="form-control form-control-sm toolbar-date" id="dateFilterStart" placeholder="Start Date">
+                                    <span class="date-range-separator">to</span>
+                                    <input type="date" class="form-control form-control-sm toolbar-date" id="dateFilterEnd" placeholder="End Date">
                                     <button class="btn btn-outline-secondary btn-sm" id="dateFilterBtn">
                                         <i class="fas fa-calendar-alt me-1"></i>Date
                                     </button>
@@ -496,7 +678,7 @@ header('Expires: 0');
                                             <i class="fas fa-filter me-1"></i>Filter
                                         </button>
                                         <ul class="dropdown-menu" aria-labelledby="filterDropdown">
-                                            <li><a class="dropdown-item" href="#" data-filter="all">All Records</a></li>
+                                            <li><a class="dropdown-item" href="#" data-filter="all">All Transactions</a></li>
                                             <li><a class="dropdown-item" href="#" data-filter="today">Today</a></li>
                                             <li><a class="dropdown-item" href="#" data-filter="week">This Week</a></li>
                                             <li><a class="dropdown-item" href="#" data-filter="month">This Month</a></li>
@@ -507,16 +689,6 @@ header('Expires: 0');
                                             <li><a class="dropdown-item" href="#" data-filter="diesel">Diesel Only</a></li> -->
                                         </ul>
                                     </div>
-
-                                    <div class="position-relative">
-                                        <input type="file" id="csvUploadInput" accept=".csv" class="d-none"> <button type="button" class="btn btn-outline-success btn-sm" id="uploadCsvBtn">
-                                            <i class="fas fa-upload me-1"></i>Bulk Upload
-                                        </button>
-                                    </div>
-
-                                    <button type="button" class="btn btn-outline-primary btn-sm" id="exportBtn">
-                                        <i class="fas fa-download me-1"></i>Export
-                                    </button>
 
                                     <button class="btn btn-outline-success btn-sm" id="refreshBtn">
                                         <i class="fas fa-sync-alt me-1"></i>Refresh
@@ -531,19 +703,14 @@ header('Expires: 0');
                             <table class="table table-hover mb-0 table-sticky-header" id="fuelRecordsTable">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        <th scope="col" class="border-0">
-                                            <input type="checkbox" class="form-check-input" id="selectAll">
-                                        </th>
-                                        <th scope="col" class="border-0">Date</th>
-                                        <th scope="col" class="border-0">Office</th>
-                                        <th scope="col" class="border-0">Vehicle</th>
-                                        <th scope="col" class="border-0">Plate No.</th>
-                                        <th scope="col" class="border-0">Driver</th>
-                                        <th scope="col" class="border-0">Purpose/Destination</th>
-                                        <th scope="col" class="border-0">Fuel Type</th>
-                                        <th scope="col" class="border-0">Liters</th>
-                                        <th scope="col" class="border-0">Remarks</th>
-                                        <th scope="col" class="border-0">Actions</th>
+                                        <th scope="col" class="border-0">Saved</th>
+                                        <th scope="col" class="border-0">IB No.</th>
+                                        <th scope="col" class="border-0">Office / Period</th>
+                                        <th scope="col" class="border-0 text-end">Diesel</th>
+                                        <th scope="col" class="border-0 text-end">Unleaded</th>
+                                        <th scope="col" class="border-0 text-end">Total</th>
+                                        <th scope="col" class="border-0">Saved By</th>
+                                        <th scope="col" class="border-0">Ref</th>
                                     </tr>
                                 </thead>
                                 <tbody id="fuelRecordsBody">
@@ -553,13 +720,13 @@ header('Expires: 0');
                         </div>
                     </div>
                     <div class="card-footer bg-white border-top">
-                        <div class="row align-items-center">
-                            <div class="col">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-sm">
                                 <small class="text-muted">
-                                    Total records: <span id="totalRecords">0</span>
+                                    Total transactions: <span id="totalRecords">0</span>
                                 </small>
                             </div>
-                            <div class="col-auto">
+                            <div class="col-12 col-sm-auto">
                                 <small class="text-muted" id="lastUpdated">
                                     Last updated: <span id="lastUpdateTime">Never</span>
                                 </small>
@@ -574,6 +741,7 @@ header('Expires: 0');
 
     <!-- Bootstrap 5 JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
     <!-- jQuery (if needed for your custom functionality) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -583,3 +751,4 @@ header('Expires: 0');
 </body>
 
 </html>
+

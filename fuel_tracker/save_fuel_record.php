@@ -1,10 +1,16 @@
 <?php
+require_once __DIR__ . '/auth_guard.php';
+requireFuelRole('fuel_admin', 'json');
+requireFuelAjaxRequest();
 // Enable error reporting for debugging
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
+
+require_once __DIR__ . '/rate_limiter.php';
+require_rate_limit(30, 60, 'save_fuel_record', 'json');
 
 // Include database connection
-require_once '../db_asset.php';
+require_once __DIR__ . '/db.php';
 
 // Set content type to JSON
 header('Content-Type: application/json');

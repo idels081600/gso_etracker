@@ -1,14 +1,19 @@
 <?php
+require_once __DIR__ . '/auth_guard.php';
+requireFuelRole('fuel_admin', 'text');
 // Enable error reporting
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
+
+require_once __DIR__ . '/rate_limiter.php';
+require_rate_limit(120, 60, 'display_fuel_records', 'html');
 
 // Include database connection
-require_once '../db_asset.php';
+require_once __DIR__ . '/db.php';
 
 try {
-    // Query to get all records
-    $sql = "SELECT * FROM fuel ORDER BY date DESC";
+    // Keep the legacy table endpoint bounded so large imports do not overload the dashboard.
+    $sql = "SELECT * FROM fuel ORDER BY date DESC, id DESC LIMIT 300";
     $result = mysqli_query($conn, $sql);
 
     if (!$result) {
