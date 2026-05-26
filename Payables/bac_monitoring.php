@@ -3,38 +3,182 @@ session_start();
 require_once 'auth_payables.php';
 $full_name = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : '';
 require_once 'transmit_db.php';
-require_once 'payables_workflow.php';
+require_once 'payables_helpers.php';
 
-payables_ensure_workflow_table();
+$formErrors = [];
+$formValues = [
+    'id' => '',
+    'ib_no' => '',
+    'project_name' => '',
+    'abc' => '',
+    'bidder' => '',
+    'date_of_bidding' => '',
+    'post_qual' => '',
+    'status' => '',
+];
+$showAddModal = false;
+$showEditModal = false;
 
-$workflowStatuses = PAYABLES_WORKFLOW_STATUSES;
-$activeStatus = strtoupper(trim($_GET['status'] ?? 'GSO'));
-if (!in_array($activeStatus, $workflowStatuses, true)) {
-    $activeStatus = 'GSO';
+$validateBacForm = function (array $values): array {
+    $errors = [];
+
+    if ($values['ib_no'] === '') {
+        $errors[] = 'IB No. is required.';
+    }
+    if ($values['project_name'] === '') {
+        $errors[] = 'Name of project is required.';
+    }
+    if ($values['abc'] === '') {
+        $errors[] = 'ABC is required.';
+    }
+    if ($values['bidder'] === '') {
+        $errors[] = 'Bidder is required.';
+    }
+    if ($values['date_of_bidding'] !== '') {
+        $date = DateTime::createFromFormat('Y-m-d', $values['date_of_bidding']);
+        if (!$date || $date->format('Y-m-d') !== $values['date_of_bidding']) {
+            $errors[] = 'Date of bidding must be a valid date.';
+        }
+    }
+
+    return $errors;
+};
+
+$action = $_POST['action'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitoring', 'edit_bac_monitoring', 'delete_bac_monitoring'], true)) {
+    $formValues = [
+        'id' => trim($_POST['id'] ?? ''),
+        'ib_no' => trim($_POST['ib_no'] ?? ''),
+        'project_name' => trim($_POST['project_name'] ?? ''),
+        'abc' => trim($_POST['abc'] ?? ''),
+        'bidder' => trim($_POST['bidder'] ?? ''),
+        'date_of_bidding' => trim($_POST['date_of_bidding'] ?? ''),
+        'post_qual' => trim($_POST['post_qual'] ?? ''),
+        'status' => trim($_POST['status'] ?? ''),
+    ];
+    if ($formValues['status'] === '') {
+        $formValues['status'] = 'Pending';
+    }
+    $token = $_POST['csrf_token'] ?? '';
+    $sessionToken = $_SESSION['_payables_csrf_token'] ?? '';
+
+    if (!$token || !$sessionToken || !hash_equals($sessionToken, $token)) {
+        $formErrors[] = 'Security token expired. Please refresh and try again.';
+    }
+
+    if ($action === 'delete_bac_monitoring') {
+        $recordId = filter_var($formValues['id'], FILTER_VALIDATE_INT);
+        if (!$recordId || $recordId < 1) {
+            $formErrors[] = 'Invalid BAC monitoring record.';
+        }
+
+        if (!$formErrors) {
+            $stmt = $conn->prepare("DELETE FROM bac_monitoring WHERE id = ? LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param('i', $recordId);
+                if ($stmt->execute()) {
+                    $stmt->close();
+                    header('Location: bac_monitoring.php?deleted=1');
+                    exit;
+                }
+
+                $formErrors[] = 'Unable to delete BAC monitoring record right now.';
+                $stmt->close();
+            } else {
+                $formErrors[] = 'Unable to prepare BAC monitoring delete.';
+            }
+        }
+    } else {
+        $formErrors = array_merge($formErrors, $validateBacForm($formValues));
+        $recordId = filter_var($formValues['id'], FILTER_VALIDATE_INT);
+        if ($action === 'edit_bac_monitoring' && (!$recordId || $recordId < 1)) {
+            $formErrors[] = 'Invalid BAC monitoring record.';
+        }
+
+        $abc = (float)str_replace(',', '', payables_sanitize_amount($formValues['abc']));
+        $dateOfBidding = $formValues['date_of_bidding'] !== '' ? $formValues['date_of_bidding'] : null;
+
+        if (!$formErrors && $action === 'add_bac_monitoring') {
+            $stmt = $conn->prepare("
+                INSERT INTO bac_monitoring (ib_no, project_name, abc, bidder, date_of_bidding, post_qual, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            if ($stmt) {
+                $stmt->bind_param(
+                    'ssdssss',
+                    $formValues['ib_no'],
+                    $formValues['project_name'],
+                    $abc,
+                    $formValues['bidder'],
+                    $dateOfBidding,
+                    $formValues['post_qual'],
+                    $formValues['status']
+                );
+                if ($stmt->execute()) {
+                    $stmt->close();
+                    header('Location: bac_monitoring.php?added=1');
+                    exit;
+                }
+
+                $formErrors[] = 'Unable to add BAC monitoring record right now.';
+                $stmt->close();
+            } else {
+                $formErrors[] = 'Unable to prepare BAC monitoring record.';
+            }
+        }
+
+        if (!$formErrors && $action === 'edit_bac_monitoring') {
+            $stmt = $conn->prepare("
+                UPDATE bac_monitoring
+                SET ib_no = ?, project_name = ?, abc = ?, bidder = ?, date_of_bidding = ?, post_qual = ?, status = ?
+                WHERE id = ?
+                LIMIT 1
+            ");
+            if ($stmt) {
+                $stmt->bind_param(
+                    'ssdssssi',
+                    $formValues['ib_no'],
+                    $formValues['project_name'],
+                    $abc,
+                    $formValues['bidder'],
+                    $dateOfBidding,
+                    $formValues['post_qual'],
+                    $formValues['status'],
+                    $recordId
+                );
+                if ($stmt->execute()) {
+                    $stmt->close();
+                    header('Location: bac_monitoring.php?updated=1');
+                    exit;
+                }
+
+                $formErrors[] = 'Unable to update BAC monitoring record right now.';
+                $stmt->close();
+            } else {
+                $formErrors[] = 'Unable to prepare BAC monitoring update.';
+            }
+        }
+    }
+
+    $showAddModal = $action === 'add_bac_monitoring';
+    $showEditModal = $action === 'edit_bac_monitoring';
 }
+
 $searchTerm = trim($_GET['search'] ?? '');
-$isGlobalSearch = $searchTerm !== '';
-$tableStatus = $isGlobalSearch ? 'SEARCH' : $activeStatus;
 $currentPage = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT) ?: 1;
 if ($currentPage < 1) {
     $currentPage = 1;
 }
+
 $perPage = 25;
 $offset = ($currentPage - 1) * $perPage;
-
-$where = ["tb.delete_status = 0"];
+$where = ["1 = 1"];
 $types = '';
 $params = [];
 
-if (!$isGlobalSearch) {
-    $where[] = "COALESCE(pws.main_status, 'GSO') = ?";
-    $types .= 's';
-    $params[] = $activeStatus;
-}
-
 if ($searchTerm !== '') {
     $searchLike = '%' . $searchTerm . '%';
-    $where[] = "(tb.ib_no LIKE ? OR tb.winning_bidders LIKE ? OR tb.project_name LIKE ? OR CAST(tb.amount AS CHAR) LIKE ? OR COALESCE(pws.main_status, 'GSO') LIKE ? OR COALESCE(pws.current_location, 'ACCOUNTING') LIKE ?)";
+    $where[] = "(ib_no LIKE ? OR project_name LIKE ? OR bidder LIKE ? OR CAST(abc AS CHAR) LIKE ? OR post_qual LIKE ? OR status LIKE ?)";
     $types .= 'ssssss';
     array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
 }
@@ -44,10 +188,7 @@ $whereSql = implode(' AND ', $where);
 $totalRows = 0;
 $countSql = "
     SELECT COUNT(*) AS total
-    FROM transmittal_bac tb
-    LEFT JOIN payables_workflow_status pws
-        ON pws.record_type = 'bac'
-       AND pws.record_id = tb.id
+    FROM bac_monitoring
     WHERE {$whereSql}";
 $countStmt = $conn->prepare($countSql);
 if ($countStmt) {
@@ -62,45 +203,14 @@ if ($countStmt) {
     $countStmt->close();
 }
 
-$metricCounts = [
-    'GSO' => 0,
-    'BUDGET' => 0,
-    'ACCOUNTING' => 0,
-    'CTO' => 0,
-    'RELEASED' => 0,
-];
-$metricsSql = "
-    SELECT
-        SUM(CASE WHEN COALESCE(pws.main_status, 'GSO') = 'GSO' THEN 1 ELSE 0 END) AS gso_count,
-        SUM(CASE WHEN COALESCE(pws.main_status, 'GSO') = 'BUDGET' THEN 1 ELSE 0 END) AS budget_count,
-        SUM(CASE WHEN COALESCE(pws.main_status, 'GSO') = 'ACCOUNTING' THEN 1 ELSE 0 END) AS accounting_count,
-        SUM(CASE WHEN COALESCE(pws.main_status, 'GSO') = 'CTO' THEN 1 ELSE 0 END) AS cto_count,
-        SUM(CASE WHEN COALESCE(pws.released, 0) = 1 THEN 1 ELSE 0 END) AS released_count
-    FROM transmittal_bac tb
-    LEFT JOIN payables_workflow_status pws
-        ON pws.record_type = 'bac'
-       AND pws.record_id = tb.id
-    WHERE tb.delete_status = 0";
-$metricsResult = mysqli_query($conn, $metricsSql);
-if ($metricsResult && $metricsRow = mysqli_fetch_assoc($metricsResult)) {
-    $metricCounts['GSO'] = (int)($metricsRow['gso_count'] ?? 0);
-    $metricCounts['BUDGET'] = (int)($metricsRow['budget_count'] ?? 0);
-    $metricCounts['ACCOUNTING'] = (int)($metricsRow['accounting_count'] ?? 0);
-    $metricCounts['CTO'] = (int)($metricsRow['cto_count'] ?? 0);
-    $metricCounts['RELEASED'] = (int)($metricsRow['released_count'] ?? 0);
-}
-
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
 if ($currentPage > $totalPages) {
     $currentPage = $totalPages;
     $offset = ($currentPage - 1) * $perPage;
 }
 
-$buildPageUrl = function (string $status, int $page = 1) use ($searchTerm): string {
-    $query = [
-        'status' => $status,
-        'page' => $page,
-    ];
+$buildPageUrl = function (int $page = 1) use ($searchTerm): string {
+    $query = ['page' => $page];
     if ($searchTerm !== '') {
         $query['search'] = $searchTerm;
     }
@@ -108,63 +218,32 @@ $buildPageUrl = function (string $status, int $page = 1) use ($searchTerm): stri
     return 'bac_monitoring.php?' . http_build_query($query);
 };
 
-$payablesRows = [];
-$payablesSql = "
+$bacRows = [];
+$bacSql = "
     SELECT
-        tb.id,
-        tb.ib_no,
-        tb.winning_bidders,
-        tb.project_name,
-        tb.amount,
-        tb.remarks,
-        COALESCE(pws.main_status, 'GSO') AS main_status,
-        COALESCE(pws.inspection, 0) AS inspection,
-        COALESCE(pws.obr, 0) AS obr,
-        COALESCE(pws.ics, 0) AS ics,
-        COALESCE(pws.par, 0) AS par,
-        COALESCE(pws.ris, 0) AS ris,
-        COALESCE(pws.released, 0) AS released,
-        COALESCE(pws.current_location, 'ACCOUNTING') AS current_location
-    FROM transmittal_bac tb
-    LEFT JOIN payables_workflow_status pws
-        ON pws.record_type = 'bac'
-       AND pws.record_id = tb.id
+        id,
+        ib_no,
+        project_name,
+        abc,
+        bidder,
+        date_of_bidding,
+        post_qual,
+        status
+    FROM bac_monitoring
     WHERE {$whereSql}
-    ORDER BY tb.id DESC
+    ORDER BY id DESC
     LIMIT ? OFFSET ?";
 $pageTypes = $types . 'ii';
 $pageParams = array_merge($params, [$perPage, $offset]);
-$payablesStmt = $conn->prepare($payablesSql);
-if ($payablesStmt) {
-    $payablesStmt->bind_param($pageTypes, ...$pageParams);
-    $payablesStmt->execute();
-    $payablesResult = $payablesStmt->get_result();
-    while ($row = mysqli_fetch_assoc($payablesResult)) {
-        $payablesRows[] = $row;
+$bacStmt = $conn->prepare($bacSql);
+if ($bacStmt) {
+    $bacStmt->bind_param($pageTypes, ...$pageParams);
+    $bacStmt->execute();
+    $bacResult = $bacStmt->get_result();
+    while ($row = $bacResult ? $bacResult->fetch_assoc() : null) {
+        $bacRows[] = $row;
     }
-    $payablesStmt->close();
-}
-
-$recordIds = array_column($payablesRows, 'id');
-$locationHistoryMap = payables_get_location_history_map('bac', $recordIds);
-$remarksHistoryMap = payables_get_remarks_history_map('bac', $recordIds);
-
-$latestTransactions = [];
-$latestSql = "
-    SELECT 'BAC' AS source, ib_no AS reference_no, project_name AS title, date_received AS transaction_date
-    FROM transmittal_bac
-    WHERE delete_status = 0
-    UNION ALL
-    SELECT 'RFQ' AS source, RFQ_no AS reference_no, supplier AS title, date_received AS transaction_date
-    FROM PO_sap
-    WHERE delete_status = 0
-    ORDER BY transaction_date DESC
-    LIMIT 8";
-$latestResult = mysqli_query($conn, $latestSql);
-if ($latestResult) {
-    while ($row = mysqli_fetch_assoc($latestResult)) {
-        $latestTransactions[] = $row;
-    }
+    $bacStmt->close();
 }
 ?>
 <!DOCTYPE html>
@@ -172,389 +251,305 @@ if ($latestResult) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="payables-csrf-token" content="<?php echo htmlspecialchars(payables_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
     <link rel="stylesheet" href="sidebar_asset.css">
     <link rel="stylesheet" href="payables_dashboard.css">
+    <link rel="stylesheet" href="bac_monitoring.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <title>Payables - Dashboard</title>
+    <title>BAC Monitoring</title>
 </head>
-<body class="payables-dashboard-page">
-    <?php $payablesActivePage = 'monitoring'; require 'payables_sidebar.php'; ?>
-    <main class="dashboard-content">
-        <section class="dashboard-grid" aria-label="Payables dashboard layout">
-            <article class="dashboard-card metric-card metric-card-gso">
-                <div class="metric-icon"><i class="fas fa-clipboard-check"></i></div>
-                <div class="metric-copy">
-                    <span>GSO</span>
-                    <strong><?php echo number_format($metricCounts['GSO']); ?></strong>
-                    <small>Total</small>
+<body class="bac-monitoring-page">
+    <?php $payablesActivePage = 'bac_monitoring'; require 'payables_sidebar.php'; ?>
+    <main class="bac-monitoring-content">
+        <section class="bac-monitoring-shell" aria-label="BAC monitoring list">
+            <div class="bac-monitoring-header">
+                <div>
+                    <span class="bac-monitoring-eyebrow">BAC Monitoring</span>
+                    <h1>Active BAC Documents</h1>
+                    <p>Imported BAC monitoring records from the BAC monitoring table.</p>
                 </div>
-            </article>
-            <article class="dashboard-card metric-card metric-card-budget">
-                <div class="metric-icon"><i class="fas fa-wallet"></i></div>
-                <div class="metric-copy">
-                    <span>Budget</span>
-                    <strong><?php echo number_format($metricCounts['BUDGET']); ?></strong>
-                    <small>Total</small>
+                <div class="bac-monitoring-actions">
+                    <button type="button" class="bac-add-button" data-bs-toggle="modal" data-bs-target="#addBacMonitoringModal">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Data</span>
+                    </button>
+                    <form class="bac-monitoring-search" method="get" role="search">
+                        <input type="search" name="search" value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Search IB, project, bidder, ABC, or status" aria-label="Search BAC documents">
+                        <button type="submit" aria-label="Search">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
                 </div>
-            </article>
-            <article class="dashboard-card metric-card metric-card-accounting">
-                <div class="metric-icon"><i class="fas fa-file-invoice-dollar"></i></div>
-                <div class="metric-copy">
-                    <span>Accounting</span>
-                    <strong><?php echo number_format($metricCounts['ACCOUNTING']); ?></strong>
-                    <small>Total</small>
+            </div>
+
+            <?php if (isset($_GET['added'])): ?>
+                <div class="bac-monitoring-alert is-success" role="status">
+                    <i class="fas fa-check"></i>
+                    BAC monitoring data added successfully.
                 </div>
-            </article>
-            <article class="dashboard-card metric-card metric-card-cto">
-                <div class="metric-icon"><i class="fas fa-building"></i></div>
-                <div class="metric-copy">
-                    <span>CTO</span>
-                    <strong><?php echo number_format($metricCounts['CTO']); ?></strong>
-                    <small>Total</small>
+            <?php endif; ?>
+            <?php if (isset($_GET['updated'])): ?>
+                <div class="bac-monitoring-alert is-success" role="status">
+                    <i class="fas fa-check"></i>
+                    BAC monitoring data updated successfully.
                 </div>
-            </article>
-            <article class="dashboard-card metric-card metric-card-released">
-                <div class="metric-icon"><i class="fas fa-check-double"></i></div>
-                <div class="metric-copy">
-                    <span>Checked Releases</span>
-                    <strong><?php echo number_format($metricCounts['RELEASED']); ?></strong>
-                    <small>Total</small>
+            <?php endif; ?>
+            <?php if (isset($_GET['deleted'])): ?>
+                <div class="bac-monitoring-alert is-success" role="status">
+                    <i class="fas fa-check"></i>
+                    BAC monitoring data deleted successfully.
                 </div>
-            </article>
-            <section class="dashboard-card dashboard-main-panel">
-                <div class="task-panel">
-                    <div class="task-header">
-                        <h1>Payables List </h1>
-                        <div class="task-header-actions">
-                            <button type="button" class="task-filter">BAC Records <i class="fas fa-chevron-down"></i></button>
-                        </div>
-                    </div>
-                    <div class="task-control-row">
-                        <div class="task-tabs" aria-label="Task category filters">
-                            <button type="button" class="<?php echo !$isGlobalSearch && $activeStatus === 'GSO' ? 'active' : ''; ?>" data-status-filter="GSO" data-status-url="<?php echo htmlspecialchars($buildPageUrl('GSO'), ENT_QUOTES, 'UTF-8'); ?>">GSO Checklist</button>
-                            <button type="button" class="<?php echo !$isGlobalSearch && $activeStatus === 'BUDGET' ? 'active' : ''; ?>" data-status-filter="BUDGET" data-status-url="<?php echo htmlspecialchars($buildPageUrl('BUDGET'), ENT_QUOTES, 'UTF-8'); ?>">Budget</button>
-                            <button type="button" class="<?php echo !$isGlobalSearch && $activeStatus === 'ACCOUNTING' ? 'active' : ''; ?>" data-status-filter="ACCOUNTING" data-status-url="<?php echo htmlspecialchars($buildPageUrl('ACCOUNTING'), ENT_QUOTES, 'UTF-8'); ?>">Accounting</button>
-                            <button type="button" class="<?php echo !$isGlobalSearch && $activeStatus === 'CTO' ? 'active' : ''; ?>" data-status-filter="CTO" data-status-url="<?php echo htmlspecialchars($buildPageUrl('CTO'), ENT_QUOTES, 'UTF-8'); ?>">CTO</button>
-                        </div>
-                        <div class="task-search" role="search" data-active-status="<?php echo htmlspecialchars($tableStatus, ENT_QUOTES, 'UTF-8'); ?>">
-                            <input type="search" id="monitoringSearchInput" placeholder="Search records" aria-label="Search BAC records" value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>">
-                            <button type="button" id="monitoringSearchButton" aria-label="Search">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="task-table" role="table" aria-label="Payables workflow task list" data-active-status="<?php echo htmlspecialchars($tableStatus, ENT_QUOTES, 'UTF-8'); ?>">
-                        <div class="task-row task-row-head" role="row">
-                            <div>IB / RFQ No.</div>
-                            <div>Winning Bidder / Project</div>
-                            <div>Amount</div>
-                            <div class="search-status-head">Status</div>
-                            <div id="workflowDetailHeader"><?php echo $isGlobalSearch ? 'Details' : ($activeStatus === 'GSO' ? 'Checklist' : 'Remarks'); ?></div>
-                            <div class="accounting-location-head">Location</div>
-                            <div id="workflowActionHeader"><?php
-                                echo $isGlobalSearch
-                                    ? 'Action'
-                                    : ($activeStatus === 'BUDGET'
-                                    ? 'To Accounting'
-                                    : ($activeStatus === 'ACCOUNTING'
-                                        ? 'To CTO'
-                                        : ($activeStatus === 'CTO' ? 'Completed' : 'Transmit to Budget')));
-                            ?></div>
-                            <div class="cto-release-head">Check Released</div>
-                        </div>
-                        <?php if ($payablesRows): ?>
-                            <?php foreach ($payablesRows as $row): ?>
-                                <?php
-                                $checkKeys = ['inspection', 'obr'];
-                                $gsoChecklistItems = [
-                                    'inspection' => 'Inspection',
-                                    'obr' => 'OBR',
-                                    'ics' => 'ICS',
-                                    'par' => 'PAR',
-                                    'ris' => 'RIS',
-                                ];
-                                $mainStatus = in_array($row['main_status'] ?? '', PAYABLES_WORKFLOW_STATUSES, true) ? $row['main_status'] : 'GSO';
-                                $completeCount = 0;
-                                foreach ($checkKeys as $key) {
-                                    if (!empty($row[$key])) {
-                                        $completeCount++;
-                                    }
-                                }
-                                $canTransmitToBudget = $mainStatus === 'GSO';
-                                $canTransmitToAccounting = $mainStatus === 'BUDGET';
-                                $canTransmitToCto = $mainStatus === 'ACCOUNTING';
-                                $actionEnabled = $canTransmitToBudget || $canTransmitToAccounting || $canTransmitToCto;
-                                $currentLocation = payables_normalize_location($row['current_location'] ?? '');
-                                $locationHistory = $locationHistoryMap[(int)$row['id']] ?? [];
-                                if (!$locationHistory) {
-                                    $locationHistory[] = [
-                                        'location' => $currentLocation,
-                                        'changed_by' => '',
-                                        'changed_at' => '',
-                                    ];
-                                }
-                                $locationHistoryJson = htmlspecialchars(json_encode($locationHistory), ENT_QUOTES, 'UTF-8');
-                                $remarksHistory = $remarksHistoryMap[(int)$row['id']] ?? [];
-                                if (!$remarksHistory) {
-                                    $remarksHistory[] = [
-                                        'remarks' => trim($row['remarks'] ?? '') !== '' ? trim($row['remarks']) : 'No remarks yet.',
-                                        'changed_by' => '',
-                                        'changed_at' => '',
-                                    ];
-                                }
-                                $remarksHistoryJson = htmlspecialchars(json_encode($remarksHistory), ENT_QUOTES, 'UTF-8');
-                                $actionTitle = $canTransmitToBudget
-                                    ? 'Transmit to Budget'
-                                    : ($canTransmitToAccounting
-                                        ? 'Transmit to Accounting'
-                                        : ($canTransmitToCto ? 'Transmit to CTO' : 'Complete the previous stage first'));
-                                ?>
-                                <div class="task-row payables-row" role="row" data-main-status="<?php echo htmlspecialchars($mainStatus, ENT_QUOTES, 'UTF-8'); ?>">
-                                    <div class="task-name"><strong><?php echo htmlspecialchars($row['ib_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?></strong><span>BAC transmittal</span></div>
-                                    <div class="task-name task-project-stack">
-                                        <strong><?php echo htmlspecialchars($row['winning_bidders'] ?? '', ENT_QUOTES, 'UTF-8'); ?></strong>
-                                        <span><?php echo htmlspecialchars($row['project_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
-                                    </div>
-                                    <div class="amount-cell">&#8369;<?php echo number_format((float)$row['amount'], 2); ?></div>
-                                    <div class="search-status-cell">
-                                        <span class="search-status-badge status-<?php echo strtolower(htmlspecialchars($mainStatus, ENT_QUOTES, 'UTF-8')); ?>">
-                                            <?php echo htmlspecialchars($mainStatus, ENT_QUOTES, 'UTF-8'); ?>
-                                        </span>
-                                    </div>
-                                    <div class="checklist-cell">
-                                        <div class="gso-checklist-strip" aria-label="GSO checklist">
-                                            <?php foreach ($gsoChecklistItems as $key => $label): ?>
-                                                <?php $isComplete = !empty($row[$key]); ?>
-                                                <button
-                                                    type="button"
-                                                    class="gso-check-chip <?php echo $isComplete ? 'is-complete' : 'is-missing'; ?>"
-                                                    title="<?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>"
-                                                    aria-pressed="<?php echo $isComplete ? 'true' : 'false'; ?>"
-                                                    data-check-key="<?php echo htmlspecialchars($key, ENT_QUOTES, 'UTF-8'); ?>"
-                                                    <?php echo in_array($key, $checkKeys, true) ? 'data-required-check="1"' : ''; ?>
-                                                >
-                                                    <i class="fas <?php echo $isComplete ? 'fa-check' : 'fa-minus'; ?>"></i>
-                                                    <span><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></span>
-                                                </button>
-                                            <?php endforeach; ?>
-                                        </div>
-                                        <div class="budget-remarks">
-                                            <strong data-remark-for="BUDGET">Ready for Budget review</strong>
-                                            <span data-remark-for="BUDGET">Validate obligation and funding details.</span>
-                                            <strong data-remark-for="ACCOUNTING">For Audit</strong>
-                                            <span data-remark-for="ACCOUNTING">Accounting review and audit validation.</span>
-                                            <strong data-remark-for="CTO"></strong>
-                                            <button
-                                                type="button"
-                                                class="cto-remarks-edit"
-                                                data-remark-for="CTO"
-                                                data-record-id="<?php echo (int)$row['id']; ?>"
-                                                data-reference="<?php echo htmlspecialchars($row['ib_no'] ?? 'record', ENT_QUOTES, 'UTF-8'); ?>"
-                                                data-current-remarks="<?php echo htmlspecialchars(trim($row['remarks'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                            >
-                                                <?php echo htmlspecialchars(trim($row['remarks'] ?? '') !== '' ? $row['remarks'] : 'No remarks yet.', ENT_QUOTES, 'UTF-8'); ?>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="accounting-location-cell">
-                                        <select
-                                            class="accounting-location-select"
-                                            aria-label="Location for <?php echo htmlspecialchars($row['ib_no'] ?? 'record', ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-record-id="<?php echo (int)$row['id']; ?>"
-                                        >
-                                            <?php foreach (PAYABLES_LOCATION_OPTIONS as $locationOption): ?>
-                                                <option value="<?php echo htmlspecialchars($locationOption, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $currentLocation === $locationOption ? 'selected' : ''; ?>>
-                                                    <?php echo htmlspecialchars($locationOption, ENT_QUOTES, 'UTF-8'); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="transmit-action-cell">
-                                        <?php if ($mainStatus === 'CTO'): ?>
-                                            <span class="completed-check-icon" title="Completed" aria-label="Completed">
-                                                <i class="fas fa-check"></i>
-                                            </span>
-                                        <?php else: ?>
-                                            <div class="transmit-action-group">
-                                                <button
-                                                    type="button"
-                                                    class="transmit-budget-btn"
-                                                    title="<?php echo htmlspecialchars($actionTitle, ENT_QUOTES, 'UTF-8'); ?>"
-                                                    aria-label="<?php echo htmlspecialchars($actionTitle . ' for ' . ($row['ib_no'] ?? 'record'), ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-record-id="<?php echo (int)$row['id']; ?>"
-                                                    data-inspection="<?php echo !empty($row['inspection']) ? '1' : '0'; ?>"
-                                                    data-obr="<?php echo !empty($row['obr']) ? '1' : '0'; ?>"
-                                                    data-ics="<?php echo !empty($row['ics']) ? '1' : '0'; ?>"
-                                                    data-par="<?php echo !empty($row['par']) ? '1' : '0'; ?>"
-                                                    data-ris="<?php echo !empty($row['ris']) ? '1' : '0'; ?>"
-                                                    <?php echo $actionEnabled ? '' : 'disabled'; ?>
-                                                >
-                                                    <i class="fas fa-paper-plane"></i>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    class="location-history-btn"
-                                                    title="View location history"
-                                                    aria-label="<?php echo htmlspecialchars('View location history for ' . ($row['ib_no'] ?? 'record'), ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-reference="<?php echo htmlspecialchars($row['ib_no'] ?? 'record', ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-location-history="<?php echo $locationHistoryJson; ?>"
-                                                >
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="cto-release-cell">
-                                        <div class="cto-release-actions">
-                                            <label class="cto-release-check" title="Mark as released">
-                                                <input
-                                                    type="checkbox"
-                                                    class="cto-release-checkbox"
-                                                    aria-label="Check released for <?php echo htmlspecialchars($row['ib_no'] ?? 'record', ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-record-id="<?php echo (int)$row['id']; ?>"
-                                                    <?php echo !empty($row['released']) ? 'checked' : ''; ?>
-                                                >
-                                                <span></span>
-                                            </label>
-                                            <button
-                                                type="button"
-                                                class="remarks-history-btn"
-                                                title="View remarks history"
-                                                aria-label="<?php echo htmlspecialchars('View remarks history for ' . ($row['ib_no'] ?? 'record'), ENT_QUOTES, 'UTF-8'); ?>"
-                                                data-reference="<?php echo htmlspecialchars($row['ib_no'] ?? 'record', ENT_QUOTES, 'UTF-8'); ?>"
-                                                data-remarks-history="<?php echo $remarksHistoryJson; ?>"
-                                            >
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="task-row payables-row empty-row" role="row">
-                                <div class="text-muted"><?php echo $searchTerm !== '' ? 'No matching BAC records found.' : 'No BAC records found.'; ?></div>
+            <?php endif; ?>
+
+            <div class="bac-monitoring-summary">
+                <span><?php echo number_format($totalRows); ?></span>
+                <strong>not final</strong>
+            </div>
+
+            <div class="bac-monitoring-table" role="table" aria-label="BAC documents not final">
+                <div class="bac-monitoring-row bac-monitoring-row-head" role="row">
+                    <div>IB No.</div>
+                    <div>Name of Project</div>
+                    <div>ABC</div>
+                    <div>Bidder</div>
+                    <div>Date of Bidding</div>
+                    <div>Post Qual.</div>
+                    <div>Status</div>
+                    <div>Actions</div>
+                </div>
+                <?php if ($bacRows): ?>
+                    <?php foreach ($bacRows as $row): ?>
+                        <?php
+                        $dateValue = $row['date_of_bidding'] ?? '';
+                        $displayDate = $dateValue ? date('M d, Y', strtotime((string)$dateValue)) : '-';
+                        $postQual = trim((string)($row['post_qual'] ?? ''));
+                        $hasPostQual = $postQual !== '';
+                        $status = trim((string)($row['status'] ?? ''));
+                        $hasStatus = $status !== '';
+                        ?>
+                        <div class="bac-monitoring-row" role="row">
+                            <div class="bac-ref"><?php echo htmlspecialchars($row['ib_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="bac-project"><?php echo htmlspecialchars($row['project_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="bac-amount">&#8369;<?php echo number_format((float)($row['abc'] ?? 0), 2); ?></div>
+                            <div class="bac-bidder"><?php echo htmlspecialchars($row['bidder'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="bac-date"><?php echo htmlspecialchars($displayDate, ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div>
+                                <span class="post-qual-badge <?php echo $hasPostQual ? 'is-done' : 'is-pending'; ?>">
+                                    <?php echo htmlspecialchars($hasPostQual ? $postQual : 'Pending', ENT_QUOTES, 'UTF-8'); ?>
+                                </span>
                             </div>
-                        <?php endif; ?>
-                    </div>
-                    <div class="task-pagination" aria-label="Payables pagination">
-                        <span>
-                            Showing <?php echo $totalRows === 0 ? 0 : $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?>
-                            of <?php echo $totalRows; ?>
-                        </span>
-                        <div class="task-page-buttons">
-                            <a class="<?php echo $currentPage <= 1 ? 'is-disabled' : ''; ?>" href="<?php echo htmlspecialchars($buildPageUrl($activeStatus, max(1, $currentPage - 1)), ENT_QUOTES, 'UTF-8'); ?>" aria-label="Previous page">
-                                <i class="fas fa-chevron-left"></i>
-                            </a>
-                            <strong>Page <?php echo $currentPage; ?> of <?php echo $totalPages; ?></strong>
-                            <a class="<?php echo $currentPage >= $totalPages ? 'is-disabled' : ''; ?>" href="<?php echo htmlspecialchars($buildPageUrl($activeStatus, min($totalPages, $currentPage + 1)), ENT_QUOTES, 'UTF-8'); ?>" aria-label="Next page">
-                                <i class="fas fa-chevron-right"></i>
-                            </a>
+                            <div>
+                                <span class="bac-status-badge <?php echo $status === 'Transmitted to GSO' ? 'is-transmitted' : 'is-pending'; ?>">
+                                    <?php echo htmlspecialchars($hasStatus ? $status : 'Pending', ENT_QUOTES, 'UTF-8'); ?>
+                                </span>
+                            </div>
+                            <div class="bac-row-actions">
+                                <button
+                                    type="button"
+                                    class="bac-icon-button bac-edit-row"
+                                    title="Edit"
+                                    aria-label="<?php echo htmlspecialchars('Edit ' . ($row['ib_no'] ?? 'record'), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-id="<?php echo (int)$row['id']; ?>"
+                                    data-ib-no="<?php echo htmlspecialchars($row['ib_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-project-name="<?php echo htmlspecialchars($row['project_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-abc="<?php echo htmlspecialchars((string)($row['abc'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-bidder="<?php echo htmlspecialchars($row['bidder'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-date-of-bidding="<?php echo htmlspecialchars($row['date_of_bidding'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-post-qual="<?php echo htmlspecialchars($row['post_qual'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-status="<?php echo htmlspecialchars($row['status'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                >
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <form method="post" action="bac_monitoring.php" class="bac-delete-form">
+                                    <?php echo payables_csrf_input(); ?>
+                                    <input type="hidden" name="action" value="delete_bac_monitoring">
+                                    <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                    <button
+                                        type="submit"
+                                        class="bac-icon-button is-danger"
+                                        title="Delete"
+                                        aria-label="<?php echo htmlspecialchars('Delete ' . ($row['ib_no'] ?? 'record'), ENT_QUOTES, 'UTF-8'); ?>"
+                                    >
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="bac-monitoring-empty">
+                        <?php echo $searchTerm !== '' ? 'No matching active BAC documents found.' : 'No active BAC documents found.'; ?>
                     </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="bac-monitoring-pagination" aria-label="BAC monitoring pagination">
+                <span>
+                    Showing <?php echo $totalRows === 0 ? 0 : $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?>
+                    of <?php echo number_format($totalRows); ?>
+                </span>
+                <div>
+                    <a class="<?php echo $currentPage <= 1 ? 'is-disabled' : ''; ?>" href="<?php echo htmlspecialchars($buildPageUrl(max(1, $currentPage - 1)), ENT_QUOTES, 'UTF-8'); ?>" aria-label="Previous page">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <strong>Page <?php echo $currentPage; ?> of <?php echo $totalPages; ?></strong>
+                    <a class="<?php echo $currentPage >= $totalPages ? 'is-disabled' : ''; ?>" href="<?php echo htmlspecialchars($buildPageUrl(min($totalPages, $currentPage + 1)), ENT_QUOTES, 'UTF-8'); ?>" aria-label="Next page">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
                 </div>
-            </section>
-            <aside class="dashboard-card dashboard-side-panel">
-                <div class="history-panel">
-                    <div class="history-header">
-                        <h2>Latest Transaction</h2>
-                        <span>History</span>
-                    </div>
-                    <div class="history-list">
-                        <?php if ($latestTransactions): ?>
-                            <?php foreach ($latestTransactions as $item): ?>
-                                <div class="history-item">
-                                    <span class="history-icon"><?php echo htmlspecialchars(substr($item['source'], 0, 1), ENT_QUOTES, 'UTF-8'); ?></span>
-                                    <div class="history-copy">
-                                        <strong><?php echo htmlspecialchars($item['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?></strong>
-                                        <span><?php echo htmlspecialchars($item['source'] . ' • ' . ($item['reference_no'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></span>
-                                    </div>
-                                    <time><?php echo htmlspecialchars(substr((string)$item['transaction_date'], 0, 10), ENT_QUOTES, 'UTF-8'); ?></time>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="history-empty">No recent transactions.</div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </aside>
+            </div>
         </section>
     </main>
-    <div class="modal fade" id="transmitConfirmModal" tabindex="-1" aria-labelledby="transmitConfirmModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered transmit-confirm-dialog">
-            <div class="modal-content transmit-confirm-modal">
+    <div class="modal fade" id="addBacMonitoringModal" tabindex="-1" aria-labelledby="addBacMonitoringModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered bac-add-dialog">
+            <form class="modal-content bac-add-modal" method="post" action="bac_monitoring.php">
                 <div class="modal-header">
                     <div>
-                        <h5 class="modal-title" id="transmitConfirmModalLabel">Confirm Transmittal</h5>
-                        <div class="transmit-confirm-subtitle" id="transmitConfirmSubtitle">Review this routing action before continuing.</div>
+                        <h5 class="modal-title" id="addBacMonitoringModalLabel">Add BAC Data</h5>
+                        <div class="bac-add-subtitle">Enter the BAC monitoring details for this document.</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p id="transmitConfirmMessage" class="transmit-confirm-message mb-0">Transmit this record?</p>
-                    <div class="transmit-success d-none mt-3" id="transmitSuccessAlert" role="status" aria-live="polite">
-                        <span class="transmit-success-mark">
-                            <i class="fas fa-check"></i>
-                        </span>
-                        <span class="transmit-success-text">Record transmitted successfully.</span>
+                    <?php echo payables_csrf_input(); ?>
+                    <input type="hidden" name="action" value="add_bac_monitoring">
+                    <?php if ($formErrors): ?>
+                        <div class="bac-monitoring-alert is-error" role="alert">
+                            <?php echo htmlspecialchars(implode(' ', $formErrors), ENT_QUOTES, 'UTF-8'); ?>
+                        </div>
+                    <?php endif; ?>
+                    <div class="bac-add-grid">
+                        <label>
+                            <span>IB No.</span>
+                            <input type="text" name="ib_no" value="<?php echo htmlspecialchars($formValues['ib_no'], ENT_QUOTES, 'UTF-8'); ?>" required>
+                        </label>
+                        <label>
+                            <span>ABC</span>
+                            <input type="text" name="abc" value="<?php echo htmlspecialchars($formValues['abc'], ENT_QUOTES, 'UTF-8'); ?>" inputmode="decimal" required>
+                        </label>
+                        <label class="is-wide">
+                            <span>Name of Project</span>
+                            <input type="text" name="project_name" value="<?php echo htmlspecialchars($formValues['project_name'], ENT_QUOTES, 'UTF-8'); ?>" required>
+                        </label>
+                        <label class="is-wide">
+                            <span>Bidder</span>
+                            <input type="text" name="bidder" value="<?php echo htmlspecialchars($formValues['bidder'], ENT_QUOTES, 'UTF-8'); ?>" required>
+                        </label>
+                        <label>
+                            <span>Date of Bidding</span>
+                            <input type="date" name="date_of_bidding" value="<?php echo htmlspecialchars($formValues['date_of_bidding'], ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+                        <label>
+                            <span>Post Qual.</span>
+                            <input type="text" name="post_qual" value="<?php echo htmlspecialchars($formValues['post_qual'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="Pending, date, or remarks">
+                        </label>
+                        <label class="is-wide">
+                            <span>Status</span>
+                            <input type="text" name="status" value="<?php echo htmlspecialchars($formValues['status'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="Pending, Transmitted to GSO, etc.">
+                        </label>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light transmit-cancel-btn" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success transmit-confirm-btn" id="confirmTransmitBtn">
-                        <span class="transmit-confirm-icon transmit-confirm-icon-idle">
-                            <i class="fas fa-paper-plane"></i>
-                        </span>
-                        <span class="transmit-confirm-icon transmit-confirm-icon-loading" aria-hidden="true"></span>
-                        <span class="transmit-confirm-label">Transmit</span>
-                    </button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success bac-save-button">Save Data</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
-    <div class="modal fade" id="locationHistoryModal" tabindex="-1" aria-labelledby="locationHistoryModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered location-history-dialog">
-            <div class="modal-content location-history-modal">
+    <div class="modal fade" id="editBacMonitoringModal" tabindex="-1" aria-labelledby="editBacMonitoringModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered bac-add-dialog">
+            <form class="modal-content bac-add-modal" method="post" action="bac_monitoring.php">
                 <div class="modal-header">
                     <div>
-                        <h5 class="modal-title" id="locationHistoryModalLabel">Location History</h5>
-                        <div class="location-history-subtitle" id="locationHistorySubtitle">Review location changes for this record.</div>
+                        <h5 class="modal-title" id="editBacMonitoringModalLabel">Edit BAC Data</h5>
+                        <div class="bac-add-subtitle">Update this BAC monitoring document.</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="location-history-list" id="locationHistoryList" role="list"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="remarksEditModal" tabindex="-1" aria-labelledby="remarksEditModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered remarks-edit-dialog">
-            <form class="modal-content remarks-edit-modal" id="remarksEditForm">
-                <div class="modal-header">
-                    <div>
-                        <h5 class="modal-title" id="remarksEditModalLabel">Edit CTO Remarks</h5>
-                        <div class="remarks-edit-subtitle" id="remarksEditSubtitle">Update remarks for this record.</div>
+                    <?php echo payables_csrf_input(); ?>
+                    <input type="hidden" name="action" value="edit_bac_monitoring">
+                    <input type="hidden" name="id" id="editBacId" value="<?php echo htmlspecialchars($formValues['id'], ENT_QUOTES, 'UTF-8'); ?>">
+                    <?php if ($formErrors && $showEditModal): ?>
+                        <div class="bac-monitoring-alert is-error" role="alert">
+                            <?php echo htmlspecialchars(implode(' ', $formErrors), ENT_QUOTES, 'UTF-8'); ?>
+                        </div>
+                    <?php endif; ?>
+                    <div class="bac-add-grid">
+                        <label>
+                            <span>IB No.</span>
+                            <input type="text" name="ib_no" id="editBacIbNo" value="<?php echo htmlspecialchars($showEditModal ? $formValues['ib_no'] : '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                        </label>
+                        <label>
+                            <span>ABC</span>
+                            <input type="text" name="abc" id="editBacAbc" value="<?php echo htmlspecialchars($showEditModal ? $formValues['abc'] : '', ENT_QUOTES, 'UTF-8'); ?>" inputmode="decimal" required>
+                        </label>
+                        <label class="is-wide">
+                            <span>Name of Project</span>
+                            <input type="text" name="project_name" id="editBacProjectName" value="<?php echo htmlspecialchars($showEditModal ? $formValues['project_name'] : '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                        </label>
+                        <label class="is-wide">
+                            <span>Bidder</span>
+                            <input type="text" name="bidder" id="editBacBidder" value="<?php echo htmlspecialchars($showEditModal ? $formValues['bidder'] : '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                        </label>
+                        <label>
+                            <span>Date of Bidding</span>
+                            <input type="date" name="date_of_bidding" id="editBacDateOfBidding" value="<?php echo htmlspecialchars($showEditModal ? $formValues['date_of_bidding'] : '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+                        <label>
+                            <span>Post Qual.</span>
+                            <input type="text" name="post_qual" id="editBacPostQual" value="<?php echo htmlspecialchars($showEditModal ? $formValues['post_qual'] : '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Pending, date, or remarks">
+                        </label>
+                        <label class="is-wide">
+                            <span>Status</span>
+                            <input type="text" name="status" id="editBacStatus" value="<?php echo htmlspecialchars($showEditModal ? $formValues['status'] : '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Pending, Transmitted to GSO, etc.">
+                        </label>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="remarksEditRecordId" name="record_id">
-                    <label class="remarks-edit-label" for="remarksEditText">Remarks</label>
-                    <textarea id="remarksEditText" name="remarks" rows="4" maxlength="1000" placeholder="Enter CTO remarks"></textarea>
-                    <div class="remarks-edit-error d-none" id="remarksEditError" role="alert"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light transmit-cancel-btn" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success remarks-save-btn" id="remarksSaveBtn">
-                        <span class="remarks-save-label">Save Remarks</span>
-                    </button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success bac-save-button">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="bac_monitoring.js"></script>
+    <script>
+        document.querySelectorAll(".bac-edit-row").forEach(function (button) {
+            button.addEventListener("click", function () {
+                document.getElementById("editBacId").value = button.dataset.id || "";
+                document.getElementById("editBacIbNo").value = button.dataset.ibNo || "";
+                document.getElementById("editBacProjectName").value = button.dataset.projectName || "";
+                document.getElementById("editBacAbc").value = button.dataset.abc || "";
+                document.getElementById("editBacBidder").value = button.dataset.bidder || "";
+                document.getElementById("editBacDateOfBidding").value = button.dataset.dateOfBidding || "";
+                document.getElementById("editBacPostQual").value = button.dataset.postQual || "";
+                document.getElementById("editBacStatus").value = button.dataset.status || "";
+                bootstrap.Modal.getOrCreateInstance(document.getElementById("editBacMonitoringModal")).show();
+            });
+        });
+
+        document.querySelectorAll(".bac-delete-form").forEach(function (form) {
+            form.addEventListener("submit", function (event) {
+                if (!confirm("Delete this BAC monitoring record?")) {
+                    event.preventDefault();
+                }
+            });
+        });
+    </script>
+    <?php if ($showAddModal): ?>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                bootstrap.Modal.getOrCreateInstance(document.getElementById("addBacMonitoringModal")).show();
+            });
+        </script>
+    <?php endif; ?>
+    <?php if ($showEditModal): ?>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                bootstrap.Modal.getOrCreateInstance(document.getElementById("editBacMonitoringModal")).show();
+            });
+        </script>
+    <?php endif; ?>
 </body>
 </html>
