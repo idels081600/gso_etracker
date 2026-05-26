@@ -8,7 +8,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const locationSelects = document.querySelectorAll(".accounting-location-select");
   const locationHistoryButtons = document.querySelectorAll(".location-history-btn");
   const remarksHistoryButtons = document.querySelectorAll(".remarks-history-btn");
-  const ctoRemarksButtons = document.querySelectorAll(".cto-remarks-edit");
+  const remarksEditButtons = document.querySelectorAll(
+    ".workflow-remarks-edit, .workflow-remarks-action"
+  );
   const releaseCheckboxes = document.querySelectorAll(".cto-release-checkbox");
   const taskTable = document.querySelector(".task-table");
   const detailHeader = document.getElementById("workflowDetailHeader");
@@ -25,6 +27,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const locationHistorySubtitle = document.getElementById("locationHistorySubtitle");
   const locationHistoryList = document.getElementById("locationHistoryList");
   const remarksEditModalEl = document.getElementById("remarksEditModal");
+  const remarksEditTitle = document.getElementById("remarksEditModalLabel");
   const remarksEditForm = document.getElementById("remarksEditForm");
   const remarksEditRecordId = document.getElementById("remarksEditRecordId");
   const remarksEditText = document.getElementById("remarksEditText");
@@ -93,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       params.set("status", activeStatus === "SEARCH" ? "GSO" : activeStatus);
     }
-    window.location.href = "bac_monitoring.php?" + params.toString();
+    window.location.href = "bac_dashboard.php?" + params.toString();
   }
 
   function getCheckedKeys(row) {
@@ -241,7 +244,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     if (locationHistorySubtitle) {
       locationHistorySubtitle.textContent =
-        "CTO remarks history for " + (reference || "this record") + ".";
+        "Remarks history for " + (reference || "this record") + ".";
     }
     if (!locationHistoryList) return;
 
@@ -374,6 +377,10 @@ document.addEventListener("DOMContentLoaded", function () {
   function openRemarksEditor(button) {
     activeRemarksButton = button;
     setRemarksError("");
+    const stage = button.dataset.remarksStage || "Workflow";
+    if (remarksEditTitle) {
+      remarksEditTitle.textContent = "Edit " + stage + " Remarks";
+    }
     if (remarksEditRecordId) {
       remarksEditRecordId.value = button.dataset.recordId || "";
     }
@@ -382,7 +389,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     if (remarksEditSubtitle) {
       remarksEditSubtitle.textContent =
-        "Update CTO remarks for " + (button.dataset.reference || "this record") + ".";
+        "Update remarks for " + (button.dataset.reference || "this record") + ".";
     }
     bootstrap.Modal.getOrCreateInstance(remarksEditModalEl).show();
     window.setTimeout(function () {
@@ -401,7 +408,7 @@ document.addEventListener("DOMContentLoaded", function () {
     setRemarksSaving(true);
     setRemarksError("");
 
-    fetch("update_cto_remarks.php", {
+    fetch("update_workflow_remarks.php", {
       method: "POST",
       body: formData,
     })
@@ -414,9 +421,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const remarks = data.remarks || "";
         activeRemarksButton.dataset.currentRemarks = remarks;
-        activeRemarksButton.textContent = remarks || "No remarks yet.";
 
         const row = activeRemarksButton.closest(".payables-row");
+        if (activeRemarksButton.classList.contains("workflow-remarks-edit")) {
+          activeRemarksButton.textContent = remarks || "No remarks yet.";
+        }
+        row?.querySelectorAll(".workflow-remarks-preview").forEach(function (preview) {
+          preview.textContent = remarks || "No remarks yet.";
+        });
+        row
+          ?.querySelectorAll(".workflow-remarks-edit, .workflow-remarks-action")
+          .forEach(function (button) {
+            button.dataset.currentRemarks = remarks;
+          });
         const historyButton = row?.querySelector(".remarks-history-btn");
         if (historyButton && Array.isArray(data.history)) {
           historyButton.dataset.remarksHistory = JSON.stringify(data.history);
@@ -561,7 +578,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   filterButtons.forEach(function (button) {
     button.addEventListener("click", function () {
-      window.location.href = button.dataset.statusUrl || "bac_monitoring.php";
+      window.location.href = button.dataset.statusUrl || "bac_dashboard.php";
     });
   });
 
@@ -644,7 +661,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  ctoRemarksButtons.forEach(function (button) {
+  remarksEditButtons.forEach(function (button) {
     button.addEventListener("click", function () {
       openRemarksEditor(button);
     });

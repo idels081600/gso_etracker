@@ -1031,7 +1031,7 @@
   white-space: nowrap;
 }
 
-.cto-remarks-edit {
+.workflow-remarks-edit {
   overflow: hidden;
   width: 100%;
   border: 0;
@@ -1047,12 +1047,34 @@
   white-space: nowrap;
 }
 
-.cto-remarks-edit:hover,
-.cto-remarks-edit:focus-visible {
+.workflow-remarks-edit:hover,
+.workflow-remarks-edit:focus-visible {
   color: #159383;
   outline: none;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.workflow-remarks-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #475467;
+  font-size: 0.76rem;
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.workflow-remarks-action:hover,
+.workflow-remarks-action:focus-visible {
+  border-color: #20a797;
+  color: #159383;
+  outline: none;
+  transform: translateY(-1px);
 }
 
 .remarks-edit-dialog {
