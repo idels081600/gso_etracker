@@ -1,5 +1,7 @@
 <?php
-session_start();
+require_once 'auth_security.php';
+start_secure_session();
+
 $full_name = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : '';
 require_once 'passlip/dbh.php';
 
@@ -8,8 +10,16 @@ if ($conn === false) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $input = $_POST['username'];
-    $password = $_POST['password'];
+    $input = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    $throttle = current_login_throttle($input);
+    if ($throttle['locked']) {
+        $_SESSION['LoginMessage'] = login_throttle_message($throttle['remaining_seconds']);
+        header("location:login_v2.php");
+        mysqli_close($conn);
+        exit;
+    }
 
     // UPDATED: We only search by ID/Username. We do NOT check password in SQL anymore.
     if (is_numeric($input)) {
@@ -28,6 +38,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // UPDATED: Use password_verify to check the Bcrypt hash
     if ($row && password_verify($password, $row['password'])) {
+        clear_login_attempts($input);
+        session_regenerate_id(true);
+
         // User found and password matches
         $_SESSION['username'] = $row['username'];
         $_SESSION['role'] = $row['role'];
@@ -125,8 +138,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
         }
     } else {
+        $throttle = register_failed_login($input);
+
         // Invalid credentials
-        $_SESSION['LoginMessage'] = "Invalid username or password";
+        $_SESSION['LoginMessage'] = $throttle['locked']
+            ? login_throttle_message($throttle['remaining_seconds'])
+            : "Invalid username or password";
         header("location:login_v2.php");
 
         // Cleanup before exit

@@ -1,12 +1,13 @@
 <?php
-require_once 'dbh.php';
-session_start();
+require_once 'auth_security.php';
+require_once 'passlip/dbh.php';
+start_secure_session();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <title>Login</title>
+  <title>E-CGSO Login</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
@@ -16,285 +17,545 @@ session_start();
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 
   <style>
-    .container_logo {
-      translate: 70% 0%;
-    }
-
-    body {
-      background-color: #f0f0f0;
+    :root {
+      --cgso-ink: #17212b;
+      --cgso-muted: #65717d;
+      --cgso-line: #dbe3e8;
+      --cgso-teal: #064f59;
+      --cgso-teal-dark: #043f46;
+      --cgso-gold: #f0b84c;
+      --cgso-surface: #ffffff;
+      --cgso-soft: #f4f7f8;
     }
 
     * {
-      margin: 0;
-      padding: 0;
+      box-sizing: border-box;
     }
 
-    .background-div {
-      background-image: url('bg_image.jpg');
-      background-size: cover;
-      background-repeat: no-repeat;
+    body {
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       margin: 0;
-      padding: 0;
-      background-color: rgba(0, 0, 0, 0.1);
-      border-image: fill 0 linear-gradient(#00000040, #00000000);
-
+      color: var(--cgso-ink);
+      background: #dde6e7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     }
 
-    .background-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(255, 255, 255, 0.0);
-      /* Change to white with desired opacity */
-      z-index: 1;
-      /* Place the overlay above the background image */
+    a {
+      color: var(--cgso-teal);
     }
 
-    .container {
-      position: relative;
-      /* Ensure relative positioning for contained elements */
-      z-index: 2;
-      /* Place the container above the overlay */
+    .login-shell {
+      min-height: 100vh;
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .background-div-mobile {
-      display: none;
-      background-image: url('bg_image.jpg');
-      background-size: cover;
-      background-repeat: no-repeat;
-      height: 300px;
-      border-radius: 10px 10px 30px 30px;
+    .login-frame {
+      width: min(1180px, 100%);
+      min-height: 720px;
+      display: grid;
+      grid-template-columns: minmax(380px, 0.92fr) minmax(460px, 1.08fr);
+      background: var(--cgso-surface);
+      border: 1px solid rgba(15, 77, 86, 0.14);
+      box-shadow: 0 26px 70px rgba(17, 38, 45, 0.18);
       overflow: hidden;
-
     }
 
-    .form-container {
-      background-color: rgba(255, 255, 255, 0.5);
+    .login-panel {
       position: relative;
-      border-radius: 10px;
-      padding: 30px;
-      width: 18rem;
-      margin-top: -490px;
-      margin-left: auto;
-      margin-right: auto;
-      z-index: 1;
+      padding: 54px clamp(32px, 6vw, 98px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
-    .text-center {
-      text-align: center;
+    .brand {
+      position: absolute;
+      top: 54px;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--cgso-teal-dark);
+      font-weight: 700;
+      letter-spacing: 0;
+      text-decoration: none;
+    }
+
+    .brand:hover {
+      color: var(--cgso-teal-dark);
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 10px 22px rgba(4, 79, 89, 0.16);
+    }
+
+    .form-wrap {
+      width: 100%;
+      max-width: 430px;
+      margin-top: 72px;
+    }
+
+    .eyebrow {
+      margin-bottom: 12px;
+      color: var(--cgso-teal);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: var(--cgso-ink);
+      font-size: clamp(2rem, 4vw, 2.65rem);
+      font-weight: 750;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .intro {
+      margin: 0 0 32px;
+      color: var(--cgso-muted);
+      line-height: 1.65;
+    }
+
+    .alert {
+      border-radius: 8px;
+      font-size: 0.92rem;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      margin-bottom: 8px;
+      color: #28333d;
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .input-shell {
+      position: relative;
+    }
+
+    .input-shell > i {
+      position: absolute;
+      top: 50%;
+      left: 16px;
+      color: #7c8b94;
+      transform: translateY(-50%);
+      pointer-events: none;
     }
 
     .form-control {
-      background-color: rgba(255, 255, 255, 0.4);
-      height: 30px;
-      width: 100%;
-      margin-bottom: 10px;
-      border-radius: 2px;
-      border: 1px solid #e9eced;
-      font-size: 15px;
-      padding: 4px;
+      height: 52px;
+      padding: 13px 44px;
+      color: var(--cgso-ink);
+      border: 1px solid var(--cgso-line);
+      border-radius: 8px;
+      background: #fbfdfe;
+      font-size: 0.95rem;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
     }
 
     .form-control:focus {
-      background-color: rgba(255, 255, 255, 0.9);
-      border: 20pxpx solid #e9eced;
-      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
-      /* Increase the shadow on focus */
+      border-color: var(--cgso-teal);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(6, 79, 89, 0.12);
     }
 
-    .btn {
-      background-color: #007bff;
-      color: white;
-      width: 50%;
-      border: none;
+    .password-toggle {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #7c8b94;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      transform: translateY(-50%);
       cursor: pointer;
-      opacity: 0.8;
-      transition: opacity 0.3s;
     }
 
-    .btn:hover {
-      opacity: 1;
+    .password-toggle:hover,
+    .password-toggle:focus {
+      color: var(--cgso-teal);
+      background: #edf4f5;
+      outline: none;
     }
 
-    .btn-center {
-      display: block;
-      margin: 0 auto;
+    .password-toggle i {
+      position: static;
+      color: inherit;
+      transform: none;
+      pointer-events: auto;
     }
 
-    .navbar {
-      background-color: transparent;
-      position: fixed;
+    .login-actions {
+      margin-top: 28px;
+    }
+
+    .btn-login {
       width: 100%;
-      z-index: 2;
+      height: 52px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--cgso-teal);
+      color: #fff;
+      font-weight: 700;
+      transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
     }
 
-    .navbar-brand .logo-text {
-      color: white;
-      font-weight: bold;
-      font-size: 24px;
-      line-height: 40px;
-
+    .btn-login:hover,
+    .btn-login:focus {
+      background: var(--cgso-teal-dark);
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(4, 79, 89, 0.22);
+      transform: translateY(-1px);
     }
 
-    .logo-img {
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      object-fit: cover;
+    .support-row {
+      margin-top: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      color: var(--cgso-muted);
+      font-size: 0.92rem;
     }
 
-    @media screen and (max-width: 767px) {
-      .background-div {
-        display: none;
-        /* Hide the desktop background */
-        border-image: fill 0 linear-gradient(#00000040, #00000000);
-      }
+    .support-row a {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #33414a;
+      font-weight: 650;
+      text-decoration: none;
+    }
 
-      .background-div-mobile {
-        height: 300px;
-        border-radius: 10px 10px 30px 30px;
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 0;
+    .support-row a:hover {
+      color: var(--cgso-teal);
+      text-decoration: none;
+    }
+
+    .login-footer {
+      margin-top: 28px;
+      color: #7b8790;
+      font-size: 0.78rem;
+      font-weight: 650;
+      letter-spacing: 0.02em;
+      text-align: center;
+    }
+
+    .showcase-panel {
+      position: relative;
+      min-height: 720px;
+      padding: 70px clamp(44px, 6vw, 78px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      color: #fff;
+      background:
+        linear-gradient(135deg, rgba(4, 63, 70, 0.96), rgba(6, 79, 89, 0.87)),
+        url('bg_image.jpg') center / cover no-repeat;
+    }
+
+    .showcase-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 78% 10%, rgba(240, 184, 76, 0.22), transparent 32%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 45%);
+      pointer-events: none;
+    }
+
+    .showcase-content {
+      position: relative;
+      z-index: 1;
+      max-width: 540px;
+    }
+
+    .showcase-kicker {
+      margin-bottom: 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .showcase-kicker::before {
+      content: "";
+      width: 34px;
+      height: 2px;
+      background: var(--cgso-gold);
+    }
+
+    .showcase-panel h2 {
+      margin: 0 0 22px;
+      font-size: clamp(2rem, 3.2vw, 3rem);
+      font-weight: 740;
+      line-height: 1.16;
+      letter-spacing: 0;
+    }
+
+    .quote {
+      margin: 0;
+      padding-left: 20px;
+      border-left: 4px solid var(--cgso-gold);
+      color: rgba(255, 255, 255, 0.84);
+      font-size: 1.03rem;
+      line-height: 1.75;
+    }
+
+    .module-list {
+      position: relative;
+      z-index: 1;
+      margin-top: auto;
+      padding-top: 64px;
+    }
+
+    .module-heading {
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .module-heading::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 24px;
+    }
+
+    .module-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 0.93rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .module-item i {
+      width: 24px;
+      color: var(--cgso-gold);
+      text-align: center;
+    }
+
+    @media (max-width: 991px) {
+      .login-shell {
         padding: 0;
+        align-items: stretch;
       }
 
-      .form-container {
-        background-color: rgba(255, 255, 255, 0.6);
-        /* More opaque background */
-        width: 75% !important;
-        /* Make the form container wider */
-        height: 380px;
-        padding: 30px;
-        /* Increase padding, both top and bottom */
-        margin: 10px auto !important;
-        /* Center the form container and move it down */
-        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-        /* Add a rounded shadow */
-        background-repeat: no-repeat;
-        /* Prevent the background image from repeating */
-        background-position: center center;
-        /* Center the background image horizontally and vertically */
-        border-radius: 10px;
-        /* Add rounded corners */
+      .login-frame {
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+        border: 0;
+        box-shadow: none;
       }
 
-      .form-control:focus {
-        background-color: rgba(255, 255, 255, 0.9);
-        border: 20pxpx solid #e9eced;
-        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
-        /* Increase the shadow on focus */
+      .login-panel {
+        min-height: auto;
+        padding: 36px 24px 40px;
       }
 
-      .form-control {
-        height: 40px;
-        /* Increase input field height */
-        font-size: 14px;
-        /* Adjust font size for mobile */
-
+      .brand {
+        position: static;
+        margin-bottom: 46px;
       }
 
-      .btn-center {
-        width: 80%;
-        /* Make the login button wider */
+      .form-wrap {
+        max-width: 520px;
+        margin: 0 auto;
       }
 
-      .social-icons {
-        text-align: center;
-        margin-top: 10px !important;
-        /* Add spacing to the top of social icons */
+      .showcase-panel {
+        min-height: auto;
+        padding: 42px 24px;
       }
 
-      .social-icons a {
-        color: #007bff;
-        /* Change icon color */
-        font-size: 24px;
-        /* Adjust icon size */
-        margin: 0 10px;
-        /* Add spacing between icons */
+      .module-list {
+        padding-top: 34px;
+      }
+    }
+
+    @media (max-width: 575px) {
+      .login-panel {
+        padding: 28px 18px 34px;
       }
 
-      #login_btn {
-        width: 120px;
-        /* Adjust the width as needed */
-        height: 40px;
-        /* Adjust the height as needed */
-        background-color: #007bff;
-        /* Button background color */
-        color: white;
-        border: none;
-        cursor: pointer;
-        font-size: 16px;
+      .brand {
+        margin-bottom: 36px;
+      }
 
+      .brand-mark {
+        width: 34px;
+        height: 34px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .intro {
+        margin-bottom: 26px;
+      }
+
+      .support-row {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .showcase-panel {
+        padding: 34px 18px;
+      }
+
+      .showcase-panel h2 {
+        font-size: 1.85rem;
+      }
+
+      .module-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
   <link rel="canonicalize" href="https://gso.etracker.tagbilaran.gov.ph">
 </head>
-<nav class="navbar navbar-expand-lg fixed-top">
-  <div class="container_logo">
-    <a class="navbar-brand" href="login_v2.php">
-      <img src="logo.png" alt="Logo" class="logo-img">
-      <span class="logo-text">E-CGSO </span>
-    </a>
-  </div>
-</nav>
 
 <body>
-  <div class="background-div"></div>
-  <div class="background-overlay"></div>
-  <div class="background-div-mobile"></div>
-  <div class="container">
-    <div class="form-container">
-      <form action="check_login.php" method="POST">
-        <div class="text-center">
+  <main class="login-shell">
+    <section class="login-frame" aria-label="E-CGSO login">
+      <div class="login-panel">
+        <a class="brand" href="login_v2.php" aria-label="E-CGSO home">
+          <img src="logo.png" alt="" class="brand-mark">
+          <span>E-CGSO</span>
+        </a>
 
-          <h2>Welcome!</h2>
+        <div class="form-wrap">
+          <h1>Welcome Back!</h1>
+          <p class="intro">Open your dashboard and continue managing CGSO requests, records, and operations.</p>
+
           <?php if (isset($_SESSION['LoginMessage'])) : ?>
-            <div class="alert alert-danger" id="error-alert">
-              <?php echo $_SESSION['LoginMessage']; ?>
+            <div class="alert alert-danger" id="error-alert" role="alert">
+              <?php echo htmlspecialchars($_SESSION['LoginMessage'], ENT_QUOTES, 'UTF-8'); ?>
             </div>
             <?php unset($_SESSION['LoginMessage']); ?>
           <?php endif; ?>
 
-        </div>
-        <div>
-        </div>
+          <form action="check_login.php" method="POST">
+            <div class="form-group">
+              <label class="form-label" for="usr">Username or ID number</label>
+              <div class="input-shell">
+                <i class="fas fa-user" aria-hidden="true"></i>
+                <input type="text" class="form-control" id="usr" name="username" autocomplete="username" placeholder="Enter your username or ID" required autofocus>
+              </div>
+            </div>
 
-        <div class="form-group">
-          <label for="usr">Username:</label>
-          <input type="text" class="form-control" id="usr" name="username" required>
-        </div>
-        <div class="form-group">
-          <label for="pwd">Password:</label>
-          <input type="password" class="form-control" id="pwd" name="password" required>
-        </div>
-        <div class="text-center">
-          <button type="submit" name="login" id="login_btn" class="btn btn-primary btn-center">Login</button><br>
-          <div class="text-center mt-3">
+            <div class="form-group">
+              <label class="form-label" for="pwd">Password</label>
+              <div class="input-shell">
+                <i class="fas fa-lock" aria-hidden="true"></i>
+                <input type="password" class="form-control" id="pwd" name="password" autocomplete="current-password" placeholder="Enter your password" required>
+                <button class="password-toggle" type="button" aria-label="Show password" title="Show password">
+                  <i class="fas fa-eye" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="login-actions">
+              <button type="submit" name="login" id="login_btn" class="btn-login">
+                <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                <span>Login</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="support-row" aria-label="CGSO links">
             <a href="https://www.facebook.com/tagbilarancitygso" target="_blank" rel="noopener noreferrer">
-              <i class="fab fa-facebook fa-lg text-dark"></i>
+              <i class="fab fa-facebook" aria-hidden="true"></i>
+              <span>Facebook</span>
             </a>
-            <a href="https://cgsotagbilaran.com" target="_blank" rel="noopener noreferrer" class="ml-2">
-              <i class="fas fa-globe fa-lg text-dark"></i>
+            <a href="https://cgsotagbilaran.com" target="_blank" rel="noopener noreferrer">
+              <i class="fas fa-globe" aria-hidden="true"></i>
+              <span>Website</span>
             </a>
           </div>
-        </div>
-      </form>
 
-      <script>
-        setTimeout(function() {
-          document.getElementById('error-alert').style.display = 'none';
-        }, 1000);
-      </script>
+          <footer class="login-footer">
+            Powered by CGSO-IT
+          </footer>
+        </div>
+      </div>
+
+      <aside class="showcase-panel" aria-label="CGSO operations overview">
+        <div class="showcase-content">
+          <div class="showcase-kicker">City General Services Office</div>
+          <h2>City General Services Office where service is our passion and performance is our commitment.</h2>
+          <p class="quote">A unified access point for requests, assets, documents, fuel monitoring, and field operations across CGSO systems.</p>
+        </div>
+
+
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    var errorAlert = document.getElementById('error-alert');
+    if (errorAlert) {
+      setTimeout(function() {
+        errorAlert.style.display = 'none';
+      }, 3500);
+    }
+
+    var passwordToggle = document.querySelector('.password-toggle');
+    var passwordInput = document.getElementById('pwd');
+
+    if (passwordToggle && passwordInput) {
+      passwordToggle.addEventListener('click', function() {
+        var isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+        passwordToggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        passwordToggle.setAttribute('title', isPassword ? 'Hide password' : 'Show password');
+        passwordToggle.querySelector('i').className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+      });
+    }
+  </script>
 </body>
 
 </html>
