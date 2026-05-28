@@ -61,7 +61,7 @@ body.sidebar-collapsed .bac-monitoring-content {
 
 .bac-monitoring-search {
   display: grid;
-  grid-template-columns: minmax(220px, 320px) 38px;
+  grid-template-columns: minmax(190px, 230px) minmax(220px, 320px) 38px;
   gap: 8px;
   align-items: center;
 }
@@ -96,7 +96,8 @@ body.sidebar-collapsed .bac-monitoring-content {
   outline: none;
 }
 
-.bac-monitoring-search input {
+.bac-monitoring-search input,
+.bac-sort-select {
   height: 38px;
   border: 1px solid #d9dee8;
   border-radius: 8px;
@@ -107,7 +108,14 @@ body.sidebar-collapsed .bac-monitoring-content {
   padding: 0 12px;
 }
 
-.bac-monitoring-search input:focus {
+.bac-sort-select {
+  background: #fff;
+  color: #344054;
+  cursor: pointer;
+}
+
+.bac-monitoring-search input:focus,
+.bac-sort-select:focus {
   border-color: #20a797;
   box-shadow: 0 0 0 3px rgba(32, 167, 151, 0.12);
 }
@@ -184,10 +192,10 @@ body.sidebar-collapsed .bac-monitoring-content {
 
 .bac-monitoring-row {
   display: grid;
-  grid-template-columns: minmax(95px, 0.5fr) minmax(235px, 1.32fr) minmax(118px, 0.56fr) minmax(170px, 0.82fr) minmax(122px, 0.56fr) minmax(100px, 0.45fr) minmax(145px, 0.62fr) minmax(86px, 0.34fr);
+  grid-template-columns: minmax(95px, 0.48fr) minmax(235px, 1.15fr) minmax(118px, 0.48fr) minmax(125px, 0.5fr) minmax(170px, 0.76fr) minmax(122px, 0.5fr) minmax(105px, 0.43fr) minmax(145px, 0.58fr) minmax(150px, 0.56fr) minmax(140px, 0.54fr) minmax(105px, 0.42fr) minmax(150px, 0.56fr) minmax(150px, 0.56fr) minmax(110px, 0.44fr) minmax(135px, 0.54fr) minmax(86px, 0.34fr);
   gap: 12px;
   align-items: center;
-  min-width: 1210px;
+  min-width: 2410px;
   min-height: 54px;
   border: 1px solid #edf0f4;
   border-radius: 8px;
@@ -214,7 +222,8 @@ body.sidebar-collapsed .bac-monitoring-content {
 .bac-project,
 .bac-bidder,
 .bac-amount,
-.bac-date {
+.bac-date,
+.bac-office {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -229,6 +238,7 @@ body.sidebar-collapsed .bac-monitoring-content {
 }
 
 .bac-bidder,
+.bac-office,
 .bac-date {
   color: #344054;
   font-size: 0.76rem;
@@ -374,7 +384,7 @@ body.sidebar-collapsed .bac-monitoring-content {
 }
 
 .bac-add-dialog {
-  max-width: 620px;
+  max-width: 760px;
 }
 
 .bac-add-modal {
@@ -422,7 +432,8 @@ body.sidebar-collapsed .bac-monitoring-content {
   font-weight: 850;
 }
 
-.bac-add-grid input {
+.bac-add-grid input,
+.bac-add-grid select {
   width: 100%;
   height: 38px;
   border: 1px solid #d9dee8;
@@ -434,7 +445,12 @@ body.sidebar-collapsed .bac-monitoring-content {
   padding: 0 10px;
 }
 
-.bac-add-grid input:focus {
+.bac-add-grid select {
+  background: #fff;
+}
+
+.bac-add-grid input:focus,
+.bac-add-grid select:focus {
   border-color: #20a797;
   box-shadow: 0 0 0 3px rgba(32, 167, 151, 0.12);
 }
@@ -484,6 +500,10 @@ body.sidebar-collapsed .bac-monitoring-content {
   .bac-monitoring-search {
     grid-template-columns: minmax(0, 1fr) 38px;
     width: 100%;
+  }
+
+  .bac-sort-select {
+    grid-column: 1 / -1;
   }
 
   .bac-add-grid {

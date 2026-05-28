@@ -21,7 +21,7 @@ if (!$recordId || $recordId < 1) {
     payables_json_response(['success' => false, 'error' => 'Invalid record.'], 422);
 }
 
-$existsStmt = $conn->prepare("SELECT id FROM transmittal_bac WHERE id = ? AND delete_status = 0 LIMIT 1");
+$existsStmt = $conn->prepare("SELECT id FROM bac_monitoring WHERE id = ? LIMIT 1");
 if (!$existsStmt) {
     payables_log_error('Release source lookup prepare failed: ' . $conn->error);
     payables_json_response(['success' => false, 'error' => 'Unable to update release status right now.'], 500);
@@ -40,7 +40,7 @@ payables_ensure_workflow_table();
 
 $stmt = $conn->prepare("INSERT INTO payables_workflow_status (
     record_type, record_id, main_status, released, updated_by
-) VALUES ('bac', ?, 'CTO', ?, ?)
+) VALUES ('bac_monitoring', ?, 'CTO', ?, ?)
 ON DUPLICATE KEY UPDATE
     released = VALUES(released),
     updated_by = VALUES(updated_by),

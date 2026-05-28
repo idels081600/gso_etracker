@@ -24,57 +24,57 @@ $perPage = 25;
     <title>Payables - RFQ Receiving</title>
 </head>
 
-<body>
+<body class="rfq-receiving-page">
     <?php $payablesActivePage = 'po'; require 'payables_sidebar.php'; ?>
     <div class="content receiving-content">
-        <div class="container py-4">
-            <!-- Add Transmittal Button -->
-            <div class="mb-3 d-flex justify-content-end gap-2">
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addTransmittalModal">
-                    <i class="fas fa-plus"></i> Receive
-                </button>
-            </div>
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <h3 class="mb-4">RFQ Receiving</h3>
-                    <form class="table-toolbar mb-3" method="get" role="search">
-                        <div class="input-group">
-                            <input type="search" id="searchInput" name="search" class="form-control" placeholder="Search RFQ records" aria-label="Search RFQ records" value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>">
-                            <button class="btn btn-outline-secondary" type="submit" id="searchButton">
-                                <i class="fas fa-search"></i>
-                            </button>
-                            <?php if ($searchTerm !== ''): ?>
-                                <a class="btn btn-outline-secondary" href="Po_sap.php" aria-label="Clear search">
-                                    <i class="fas fa-times"></i>
-                                </a>
-                            <?php endif; ?>
-                        </div>
+        <section class="rfq-shell" aria-label="RFQ receiving list">
+            <div class="rfq-header">
+                <div>
+                    <span class="rfq-eyebrow">Purchase Order</span>
+                    <h1>RFQ Receiving</h1>
+                </div>
+                <div class="rfq-actions">
+                    <button type="button" class="rfq-add-button" data-bs-toggle="modal" data-bs-target="#addTransmittalModal">
+                        <i class="fas fa-plus"></i>
+                        <span>Receive</span>
+                    </button>
+                    <form class="rfq-search" method="get" role="search">
+                        <input type="search" id="searchInput" name="search" placeholder="Search RFQ records" aria-label="Search RFQ records" value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>">
+                        <button type="submit" id="searchButton" aria-label="Search">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <?php if ($searchTerm !== ''): ?>
+                            <a href="Po_sap.php" aria-label="Clear search">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        <?php endif; ?>
                     </form>
-                    <div class="table-responsive scrollable-table">
-                        <table class="table table-bordered table-hover align-middle bg-white rounded-3 overflow-hidden">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>RFQ No,</th>
-                                    <th>Supplier</th>
-                                    <th>Description</th>
-                                    <th>Amount</th>
-                                    <th>Date Received</th>
-                                    <th>Office</th>
-                                    <th>Received by</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php require_once 'display_transmit_data.php';
-                                $pagination = display_transmittal_rfq_data($searchTerm, $currentPage, $perPage); ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <?php payables_render_pagination('Po_sap.php', $pagination['page'], $pagination['total_rows'], $pagination['per_page'], $searchTerm); ?>
                 </div>
             </div>
-        </div>
+
+            <div class="rfq-table-wrap">
+                <table class="rfq-table">
+                    <thead>
+                        <tr>
+                            <th>RFQ No.</th>
+                            <th>Supplier</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Date Received</th>
+                            <th>Office</th>
+                            <th>Received by</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php require_once 'display_transmit_data.php';
+                        $pagination = display_transmittal_rfq_data($searchTerm, $currentPage, $perPage); ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php payables_render_pagination('Po_sap.php', $pagination['page'], $pagination['total_rows'], $pagination['per_page'], $searchTerm); ?>
+        </section>
     </div>
     <!-- Add Transmittal Modal -->
     <div class="modal fade" id="addTransmittalModal" tabindex="-1" aria-labelledby="addTransmittalModalLabel" aria-hidden="true">

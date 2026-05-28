@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 payables_verify_csrf_token();
 
 $requestedRecordType = $_POST['record_type'] ?? '';
-if (!in_array($requestedRecordType, ['bac', 'rfq'], true)) {
+if (!in_array($requestedRecordType, ['bac', 'bac_monitoring', 'rfq'], true)) {
     payables_json_response(['success' => false, 'error' => 'Invalid record type.'], 422);
 }
 
@@ -30,8 +30,9 @@ if (!in_array($mainStatus, PAYABLES_WORKFLOW_STATUSES, true)) {
     payables_json_response(['success' => false, 'error' => 'Invalid workflow status.'], 422);
 }
 
-$sourceTable = $recordType === 'rfq' ? 'PO_sap' : 'transmittal_bac';
-$existsStmt = $conn->prepare("SELECT id FROM {$sourceTable} WHERE id = ? AND delete_status = 0 LIMIT 1");
+$sourceTable = $recordType === 'rfq' ? 'PO_sap' : ($recordType === 'bac_monitoring' ? 'bac_monitoring' : 'transmittal_bac');
+$deleteFilter = $recordType === 'bac_monitoring' ? '' : ' AND delete_status = 0';
+$existsStmt = $conn->prepare("SELECT id FROM {$sourceTable} WHERE id = ?{$deleteFilter} LIMIT 1");
 if (!$existsStmt) {
     payables_log_error('Workflow source lookup prepare failed: ' . $conn->error);
     payables_json_response(['success' => false, 'error' => 'Unable to save workflow right now.'], 500);

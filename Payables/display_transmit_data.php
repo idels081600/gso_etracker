@@ -201,23 +201,30 @@ function display_transmittal_rfq_data(string $searchTerm = '', int $page = 1, in
 
     if ($result && $result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
+            $status = trim((string)($row['status'] ?? ''));
+            $statusClass = strtolower(preg_replace('/[^a-z0-9]+/', '-', $status));
+            $statusClass = trim($statusClass, '-');
+            if ($statusClass === '') {
+                $statusClass = 'pending';
+            }
+
             echo '<tr>';
-            echo '<td>' . htmlspecialchars($row['RFQ_no'] ?? '') . '</td>';
-            echo '<td>' . htmlspecialchars($row['supplier'] ?? '') . '</td>';
-            echo '<td>' . htmlspecialchars($row['description'] ?? '') . '</td>';
-            echo '<td>&#8369;' . number_format((float)$row['amount'], 2) . '</td>';
-            echo '<td>' . htmlspecialchars(substr((string)($row['date_received'] ?? ''), 0, 10)) . '</td>';
-            echo '<td>' . htmlspecialchars($row['office'] ?? '') . '</td>';
-            echo '<td>' . htmlspecialchars($row['received_by'] ?? '') . '</td>';
-            echo '<td>' . htmlspecialchars($row['status'] ?? '') . '</td>';
+            echo '<td class="rfq-ref">' . htmlspecialchars($row['RFQ_no'] ?? '') . '</td>';
+            echo '<td class="rfq-supplier">' . htmlspecialchars($row['supplier'] ?? '') . '</td>';
+            echo '<td class="rfq-description">' . htmlspecialchars($row['description'] ?? '') . '</td>';
+            echo '<td class="rfq-amount">&#8369;' . number_format((float)$row['amount'], 2) . '</td>';
+            echo '<td class="rfq-date">' . htmlspecialchars(substr((string)($row['date_received'] ?? ''), 0, 10)) . '</td>';
+            echo '<td class="rfq-office">' . htmlspecialchars($row['office'] ?? '') . '</td>';
+            echo '<td class="rfq-person">' . htmlspecialchars($row['received_by'] ?? '') . '</td>';
+            echo '<td><span class="rfq-status-badge is-' . htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($status !== '' ? $status : 'Pending') . '</span></td>';
             echo '<td class="text-center action-cell">';
-            echo '<button type="button" class="btn btn-sm btn-primary edit-btn" data-id="' . (int)$row['id'] . '" title="Edit" aria-label="Edit RFQ"><i class="fas fa-edit"></i></button> ';
-            echo '<button type="button" class="btn btn-sm btn-danger delete-btn" data-id="' . (int)$row['id'] . '" title="Delete" aria-label="Delete RFQ"><i class="fas fa-trash-alt"></i></button>';
+            echo '<button type="button" class="rfq-icon-button edit-btn" data-id="' . (int)$row['id'] . '" title="Edit" aria-label="Edit RFQ"><i class="fas fa-edit"></i></button> ';
+            echo '<button type="button" class="rfq-icon-button is-danger delete-btn" data-id="' . (int)$row['id'] . '" title="Delete" aria-label="Delete RFQ"><i class="fas fa-trash-alt"></i></button>';
             echo '</td>';
             echo '</tr>';
         }
     } else {
-        echo '<tr><td colspan="9" class="text-center text-muted">' . ($searchTerm !== '' ? 'No matching RFQ records found.' : 'No RFQ records found.') . '</td></tr>';
+        echo '<tr><td colspan="9" class="rfq-empty">' . ($searchTerm !== '' ? 'No matching RFQ records found.' : 'No RFQ records found.') . '</td></tr>';
     }
 
     $stmt->close();

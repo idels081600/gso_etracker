@@ -14,9 +14,10 @@ $conn = mysqli_connect($servername, $username, $password, $dbname);
 
 // Check if the connection was successful
 if (!$conn) {
-    // If connection fails, output the error message
-    echo "Connection failed: " . mysqli_connect_error();
-    exit(); // Exit the script to prevent further execution
+    error_log(date('[Y-m-d H:i:s] ') . 'Database connection failed: ' . mysqli_connect_error() . PHP_EOL, 3, rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'payables_error.log');
+    http_response_code(500);
+    echo "Database connection failed. Please try again later.";
+    exit();
 }
 
 // Set the character set

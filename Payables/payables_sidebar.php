@@ -3,8 +3,7 @@ $payablesActivePage = $payablesActivePage ?? '';
 $payablesFullName = $full_name ?? '';
 $payablesNav = [
     'monitoring' => ['href' => 'bac_dashboard.php', 'icon' => 'fas fa-th-large', 'label' => 'Dashboard'],
-    'bac_monitoring' => ['href' => 'bac_monitoring.php', 'icon' => 'fas fa-table', 'label' => 'BAC Monitoring'],
-    'bac' => ['href' => 'transmittal_bac.php', 'icon' => 'fas fa-gavel', 'label' => 'Bidding & RFQ'],
+    'bac_monitoring' => ['href' => 'bac_monitoring.php', 'icon' => 'fas fa-table', 'label' => 'IB/RFQ Monitoring'],
     'po' => ['href' => 'Po_sap.php', 'icon' => 'fas fa-shopping-cart', 'label' => 'Purchase Order'],
 ];
 ?>

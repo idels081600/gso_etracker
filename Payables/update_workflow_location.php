@@ -21,7 +21,7 @@ if (!$recordId || $recordId < 1) {
     payables_json_response(['success' => false, 'error' => 'Invalid record.'], 422);
 }
 
-$existsStmt = $conn->prepare("SELECT id FROM transmittal_bac WHERE id = ? AND delete_status = 0 LIMIT 1");
+$existsStmt = $conn->prepare("SELECT id FROM bac_monitoring WHERE id = ? LIMIT 1");
 if (!$existsStmt) {
     payables_log_error('Location source lookup prepare failed: ' . $conn->error);
     payables_json_response(['success' => false, 'error' => 'Unable to update location right now.'], 500);
@@ -37,12 +37,12 @@ if (!$existsResult || !$existsResult->fetch_assoc()) {
 $existsStmt->close();
 
 payables_ensure_workflow_table();
-$workflow = payables_get_workflow('bac', $recordId);
+$workflow = payables_get_workflow('bac_monitoring', $recordId);
 $previousLocation = payables_normalize_location($workflow['current_location'] ?? '');
 
 $stmt = $conn->prepare("INSERT INTO payables_workflow_status (
     record_type, record_id, main_status, current_location, updated_by
-) VALUES ('bac', ?, 'ACCOUNTING', ?, ?)
+) VALUES ('bac_monitoring', ?, 'ACCOUNTING', ?, ?)
 ON DUPLICATE KEY UPDATE
     current_location = VALUES(current_location),
     updated_by = VALUES(updated_by),
@@ -64,7 +64,7 @@ $stmt->close();
 if ($location !== $previousLocation) {
     $historyStmt = $conn->prepare("INSERT INTO payables_location_history (
         record_type, record_id, location, changed_by
-    ) VALUES ('bac', ?, ?, ?)");
+    ) VALUES ('bac_monitoring', ?, ?, ?)");
     if ($historyStmt) {
         $historyStmt->bind_param('iss', $recordId, $location, $updatedBy);
         if (!$historyStmt->execute()) {
@@ -76,7 +76,7 @@ if ($location !== $previousLocation) {
     }
 }
 
-$history = payables_get_location_history_map('bac', [$recordId]);
+$history = payables_get_location_history_map('bac_monitoring', [$recordId]);
 
 payables_json_response([
     'success' => true,

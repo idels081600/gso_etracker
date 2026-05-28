@@ -136,7 +136,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function buildWorkflowFormData(row, status) {
     const transmitButton = row.querySelector(".transmit-budget-btn");
     const formData = new FormData();
-    formData.append("record_type", "bac");
+    formData.append("record_type", "bac_monitoring");
     formData.append("record_id", transmitButton?.dataset.recordId || "");
     formData.append("main_status", status);
     if (csrfToken) {

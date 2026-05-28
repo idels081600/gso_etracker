@@ -22,7 +22,7 @@ if ($currentPage < 1) {
 $perPage = 25;
 $offset = ($currentPage - 1) * $perPage;
 
-$where = ["tb.delete_status = 0"];
+$where = ["1 = 1"];
 $types = '';
 $params = [];
 
@@ -34,7 +34,7 @@ if (!$isGlobalSearch) {
 
 if ($searchTerm !== '') {
     $searchLike = '%' . $searchTerm . '%';
-    $where[] = "(tb.ib_no LIKE ? OR tb.winning_bidders LIKE ? OR tb.project_name LIKE ? OR CAST(tb.amount AS CHAR) LIKE ? OR COALESCE(pws.main_status, 'GSO') LIKE ? OR COALESCE(pws.current_location, 'ACCOUNTING') LIKE ?)";
+    $where[] = "(tb.ib_no LIKE ? OR tb.bidder LIKE ? OR tb.project_name LIKE ? OR CAST(COALESCE(NULLIF(tb.final_amount, 0), tb.abc) AS CHAR) LIKE ? OR COALESCE(pws.main_status, 'GSO') LIKE ? OR COALESCE(pws.current_location, 'ACCOUNTING') LIKE ?)";
     $types .= 'ssssss';
     array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
 }
@@ -44,9 +44,9 @@ $whereSql = implode(' AND ', $where);
 $totalRows = 0;
 $countSql = "
     SELECT COUNT(*) AS total
-    FROM transmittal_bac tb
+    FROM bac_monitoring tb
     LEFT JOIN payables_workflow_status pws
-        ON pws.record_type = 'bac'
+        ON pws.record_type = 'bac_monitoring'
        AND pws.record_id = tb.id
     WHERE {$whereSql}";
 $countStmt = $conn->prepare($countSql);
@@ -76,11 +76,11 @@ $metricsSql = "
         SUM(CASE WHEN COALESCE(pws.main_status, 'GSO') = 'ACCOUNTING' THEN 1 ELSE 0 END) AS accounting_count,
         SUM(CASE WHEN COALESCE(pws.main_status, 'GSO') = 'CTO' THEN 1 ELSE 0 END) AS cto_count,
         SUM(CASE WHEN COALESCE(pws.released, 0) = 1 THEN 1 ELSE 0 END) AS released_count
-    FROM transmittal_bac tb
+    FROM bac_monitoring tb
     LEFT JOIN payables_workflow_status pws
-        ON pws.record_type = 'bac'
+        ON pws.record_type = 'bac_monitoring'
        AND pws.record_id = tb.id
-    WHERE tb.delete_status = 0";
+";
 $metricsResult = mysqli_query($conn, $metricsSql);
 if ($metricsResult && $metricsRow = mysqli_fetch_assoc($metricsResult)) {
     $metricCounts['GSO'] = (int)($metricsRow['gso_count'] ?? 0);
@@ -113,9 +113,9 @@ $payablesSql = "
     SELECT
         tb.id,
         tb.ib_no,
-        tb.winning_bidders,
+        tb.bidder AS winning_bidders,
         tb.project_name,
-        tb.amount,
+        COALESCE(NULLIF(tb.final_amount, 0), tb.abc) AS amount,
         tb.remarks,
         COALESCE(pws.main_status, 'GSO') AS main_status,
         COALESCE(pws.inspection, 0) AS inspection,
@@ -125,9 +125,9 @@ $payablesSql = "
         COALESCE(pws.ris, 0) AS ris,
         COALESCE(pws.released, 0) AS released,
         COALESCE(pws.current_location, 'ACCOUNTING') AS current_location
-    FROM transmittal_bac tb
+    FROM bac_monitoring tb
     LEFT JOIN payables_workflow_status pws
-        ON pws.record_type = 'bac'
+        ON pws.record_type = 'bac_monitoring'
        AND pws.record_id = tb.id
     WHERE {$whereSql}
     ORDER BY tb.id DESC
@@ -146,14 +146,13 @@ if ($payablesStmt) {
 }
 
 $recordIds = array_column($payablesRows, 'id');
-$locationHistoryMap = payables_get_location_history_map('bac', $recordIds);
-$remarksHistoryMap = payables_get_remarks_history_map('bac', $recordIds);
+$locationHistoryMap = payables_get_location_history_map('bac_monitoring', $recordIds);
+$remarksHistoryMap = payables_get_remarks_history_map('bac_monitoring', $recordIds);
 
 $latestTransactions = [];
 $latestSql = "
-    SELECT 'BAC' AS source, ib_no AS reference_no, project_name AS title, date_received AS transaction_date
-    FROM transmittal_bac
-    WHERE delete_status = 0
+    SELECT 'BAC' AS source, ib_no AS reference_no, project_name AS title, date_transmitted_from_bac AS transaction_date
+    FROM bac_monitoring
     UNION ALL
     SELECT 'RFQ' AS source, RFQ_no AS reference_no, supplier AS title, date_received AS transaction_date
     FROM PO_sap

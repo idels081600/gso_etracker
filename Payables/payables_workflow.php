@@ -99,7 +99,11 @@ function payables_ensure_workflow_table(): void
 
 function payables_normalize_record_type(string $recordType): string
 {
-    return $recordType === 'rfq' ? 'rfq' : 'bac';
+    if ($recordType === 'rfq') {
+        return 'rfq';
+    }
+
+    return $recordType === 'bac_monitoring' ? 'bac_monitoring' : 'bac';
 }
 
 function payables_default_workflow(string $recordType, int $recordId): array

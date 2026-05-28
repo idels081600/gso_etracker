@@ -21,7 +21,7 @@ if (!$recordId || $recordId < 1) {
     payables_json_response(['success' => false, 'error' => 'Invalid record.'], 422);
 }
 
-$existsStmt = $conn->prepare("SELECT id, remarks FROM transmittal_bac WHERE id = ? AND delete_status = 0 LIMIT 1");
+$existsStmt = $conn->prepare("SELECT id, remarks FROM bac_monitoring WHERE id = ? LIMIT 1");
 if (!$existsStmt) {
     payables_log_error('Workflow remarks source lookup prepare failed: ' . $conn->error);
     payables_json_response(['success' => false, 'error' => 'Unable to update remarks right now.'], 500);
@@ -38,7 +38,7 @@ if (!$existingRow) {
 $existsStmt->close();
 
 $oldRemarks = trim($existingRow['remarks'] ?? '');
-$stmt = $conn->prepare("UPDATE transmittal_bac SET remarks = ? WHERE id = ? AND delete_status = 0");
+$stmt = $conn->prepare("UPDATE bac_monitoring SET remarks = ? WHERE id = ?");
 if (!$stmt) {
     payables_log_error('Workflow remarks update prepare failed: ' . $conn->error);
     payables_json_response(['success' => false, 'error' => 'Unable to update remarks right now.'], 500);
@@ -53,10 +53,10 @@ if (!$stmt->execute()) {
 $stmt->close();
 
 if ($remarks !== $oldRemarks) {
-    payables_record_remarks_history('bac', $recordId, $remarks, $updatedBy);
+    payables_record_remarks_history('bac_monitoring', $recordId, $remarks, $updatedBy);
 }
 
-$historyMap = payables_get_remarks_history_map('bac', [$recordId]);
+$historyMap = payables_get_remarks_history_map('bac_monitoring', [$recordId]);
 $history = $historyMap[$recordId] ?? [];
 if (!$history) {
     $history[] = [
