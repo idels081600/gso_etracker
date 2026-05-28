@@ -82,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("location:LogiSys/Logi_Sys_Dashboard.php");
                 exit;
             case "Pay_admin":
-                header("location:Payables/transmittal_bac.php");
+                header("location:Payables/bac_dashboard.php");
                 exit;
             case "fuel_admin":
                 header("location:fuel_tracker/fuel_dashboard.php");
