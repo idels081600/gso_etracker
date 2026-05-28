@@ -20,6 +20,7 @@ $formValues = [
     'office' => '',
     'noa_no' => '',
     'notice_to_proceed_date' => '',
+    'contract_date' => '',
     'calendar_days_delivery' => '',
     'deadline' => '',
     'received_by' => '',
@@ -49,7 +50,7 @@ $validateBacForm = function (array $values): array {
             $errors[] = 'Date of bidding must be a valid date.';
         }
     }
-    foreach (['date_transmitted_from_bac' => 'Date transmitted from BAC', 'notice_to_proceed_date' => 'Notice to proceed date'] as $key => $label) {
+    foreach (['date_transmitted_from_bac' => 'Date transmitted from BAC', 'noa_no' => 'NOA date', 'notice_to_proceed_date' => 'Notice to proceed date', 'contract_date' => 'Contract date'] as $key => $label) {
         if ($values[$key] !== '') {
             $date = DateTime::createFromFormat('Y-m-d', $values[$key]);
             if (!$date || $date->format('Y-m-d') !== $values[$key]) {
@@ -80,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
         'office' => trim($_POST['office'] ?? ''),
         'noa_no' => trim($_POST['noa_no'] ?? ''),
         'notice_to_proceed_date' => trim($_POST['notice_to_proceed_date'] ?? ''),
+        'contract_date' => trim($_POST['contract_date'] ?? ''),
         'calendar_days_delivery' => trim($_POST['calendar_days_delivery'] ?? ''),
         'deadline' => trim($_POST['deadline'] ?? ''),
         'received_by' => trim($_POST['received_by'] ?? ''),
@@ -133,20 +135,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
         }
         $dateOfBidding = $formValues['date_of_bidding'] !== '' ? $formValues['date_of_bidding'] : null;
         $dateTransmittedFromBac = $formValues['date_transmitted_from_bac'] !== '' ? $formValues['date_transmitted_from_bac'] : null;
+        $noaDate = $formValues['noa_no'] !== '' ? $formValues['noa_no'] : null;
         $noticeToProceedDate = $formValues['notice_to_proceed_date'] !== '' ? $formValues['notice_to_proceed_date'] : null;
+        $contractDate = $formValues['contract_date'] !== '' ? $formValues['contract_date'] : null;
 
         if (!$formErrors && $action === 'add_bac_monitoring') {
             $stmt = $conn->prepare("
                 INSERT INTO bac_monitoring (
                     ib_no, project_name, abc, final_amount, bidder, date_of_bidding, post_qual, status,
-                    date_transmitted_from_bac, office, noa_no, notice_to_proceed_date,
+                    date_transmitted_from_bac, office, noa_no, notice_to_proceed_date, contract_date,
                     calendar_days_delivery, deadline, received_by
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             if ($stmt) {
                 $stmt->bind_param(
-                    'ssddsssssssssss',
+                    'ssddssssssssssss',
                     $formValues['ib_no'],
                     $formValues['project_name'],
                     $abc,
@@ -157,8 +161,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
                     $formValues['status'],
                     $dateTransmittedFromBac,
                     $formValues['office'],
-                    $formValues['noa_no'],
+                    $noaDate,
                     $noticeToProceedDate,
+                    $contractDate,
                     $formValues['calendar_days_delivery'],
                     $formValues['deadline'],
                     $formValues['received_by']
@@ -192,6 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
                     office = ?,
                     noa_no = ?,
                     notice_to_proceed_date = ?,
+                    contract_date = ?,
                     calendar_days_delivery = ?,
                     deadline = ?,
                     received_by = ?
@@ -200,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
             ");
             if ($stmt) {
                 $stmt->bind_param(
-                    'ssddsssssssssssi',
+                    'ssddssssssssssssi',
                     $formValues['ib_no'],
                     $formValues['project_name'],
                     $abc,
@@ -211,8 +217,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
                     $formValues['status'],
                     $dateTransmittedFromBac,
                     $formValues['office'],
-                    $formValues['noa_no'],
+                    $noaDate,
                     $noticeToProceedDate,
+                    $contractDate,
                     $formValues['calendar_days_delivery'],
                     $formValues['deadline'],
                     $formValues['received_by'],
@@ -265,9 +272,9 @@ $params = [];
 
 if ($searchTerm !== '') {
     $searchLike = '%' . $searchTerm . '%';
-    $where[] = "(ib_no LIKE ? OR project_name LIKE ? OR bidder LIKE ? OR CAST(abc AS CHAR) LIKE ? OR CAST(final_amount AS CHAR) LIKE ? OR post_qual LIKE ? OR status LIKE ? OR office LIKE ? OR noa_no LIKE ? OR received_by LIKE ?)";
-    $types .= 'ssssssssss';
-    array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
+    $where[] = "(ib_no LIKE ? OR project_name LIKE ? OR bidder LIKE ? OR CAST(abc AS CHAR) LIKE ? OR CAST(final_amount AS CHAR) LIKE ? OR post_qual LIKE ? OR status LIKE ? OR office LIKE ? OR noa_no LIKE ? OR contract_date LIKE ? OR received_by LIKE ?)";
+    $types .= 'sssssssssss';
+    array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
 }
 
 $whereSql = implode(' AND ', $where);
@@ -324,6 +331,7 @@ $bacSql = "
         office,
         noa_no,
         notice_to_proceed_date,
+        contract_date,
         calendar_days_delivery,
         deadline,
         received_by
@@ -419,8 +427,9 @@ if ($bacStmt) {
                     <div>Status</div>
                     <div>Date Transmitted From BAC</div>
                     <div>Office</div>
-                    <div>NOA no.</div>
+                    <div>NOA Date</div>
                     <div>Notice to Proceed Date</div>
+                    <div>Contract Date</div>
                     <div>Calendar Days of Delivery</div>
                     <div>Deadline</div>
                     <div>Received by</div>
@@ -437,8 +446,14 @@ if ($bacStmt) {
                         $hasStatus = $status !== '';
                         $dateTransmittedValue = $row['date_transmitted_from_bac'] ?? '';
                         $displayDateTransmitted = $dateTransmittedValue ? date('M d, Y', strtotime((string)$dateTransmittedValue)) : '-';
+                        $noaDateValue = $row['noa_no'] ?? '';
+                        $noaDateTimestamp = $noaDateValue ? strtotime((string)$noaDateValue) : false;
+                        $displayNoaDate = $noaDateTimestamp ? date('M d, Y', $noaDateTimestamp) : '-';
                         $noticeDateValue = $row['notice_to_proceed_date'] ?? '';
                         $displayNoticeDate = $noticeDateValue ? date('M d, Y', strtotime((string)$noticeDateValue)) : '-';
+                        $contractDateValue = $row['contract_date'] ?? '';
+                        $contractDateTimestamp = $contractDateValue ? strtotime((string)$contractDateValue) : false;
+                        $displayContractDate = $contractDateTimestamp ? date('M d, Y', $contractDateTimestamp) : '-';
                         ?>
                         <div class="bac-monitoring-row" role="row">
                             <div class="bac-ref"><?php echo htmlspecialchars($row['ib_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
@@ -459,8 +474,9 @@ if ($bacStmt) {
                             </div>
                             <div class="bac-date"><?php echo htmlspecialchars($displayDateTransmitted, ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-office"><?php echo htmlspecialchars($row['office'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
-                            <div class="bac-ref"><?php echo htmlspecialchars($row['noa_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="bac-date"><?php echo htmlspecialchars($displayNoaDate, ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-date"><?php echo htmlspecialchars($displayNoticeDate, ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="bac-date"><?php echo htmlspecialchars($displayContractDate, ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-ref"><?php echo htmlspecialchars($row['calendar_days_delivery'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-date"><?php echo htmlspecialchars($row['deadline'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-bidder"><?php echo htmlspecialchars($row['received_by'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
@@ -483,6 +499,7 @@ if ($bacStmt) {
                                     data-office="<?php echo htmlspecialchars($row['office'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     data-noa-no="<?php echo htmlspecialchars($row['noa_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     data-notice-to-proceed-date="<?php echo htmlspecialchars($row['notice_to_proceed_date'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-contract-date="<?php echo htmlspecialchars($row['contract_date'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     data-calendar-days-delivery="<?php echo htmlspecialchars($row['calendar_days_delivery'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     data-deadline="<?php echo htmlspecialchars($row['deadline'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     data-received-by="<?php echo htmlspecialchars($row['received_by'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
@@ -596,12 +613,16 @@ if ($bacStmt) {
                             <input type="text" name="office" value="<?php echo htmlspecialchars($formValues['office'], ENT_QUOTES, 'UTF-8'); ?>">
                         </label>
                         <label>
-                            <span>NOA no.</span>
-                            <input type="text" name="noa_no" value="<?php echo htmlspecialchars($formValues['noa_no'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <span>NOA Date</span>
+                            <input type="date" name="noa_no" value="<?php echo htmlspecialchars($formValues['noa_no'], ENT_QUOTES, 'UTF-8'); ?>">
                         </label>
                         <label>
                             <span>Notice to Proceed Date</span>
                             <input type="date" name="notice_to_proceed_date" value="<?php echo htmlspecialchars($formValues['notice_to_proceed_date'], ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+                        <label>
+                            <span>Contract Date</span>
+                            <input type="date" name="contract_date" value="<?php echo htmlspecialchars($formValues['contract_date'], ENT_QUOTES, 'UTF-8'); ?>">
                         </label>
                         <label>
                             <span>Calendar Days of Delivery</span>
@@ -692,12 +713,16 @@ if ($bacStmt) {
                             <input type="text" name="office" id="editBacOffice" value="<?php echo htmlspecialchars($showEditModal ? $formValues['office'] : '', ENT_QUOTES, 'UTF-8'); ?>">
                         </label>
                         <label>
-                            <span>NOA no.</span>
-                            <input type="text" name="noa_no" id="editBacNoaNo" value="<?php echo htmlspecialchars($showEditModal ? $formValues['noa_no'] : '', ENT_QUOTES, 'UTF-8'); ?>">
+                            <span>NOA Date</span>
+                            <input type="date" name="noa_no" id="editBacNoaNo" value="<?php echo htmlspecialchars($showEditModal ? $formValues['noa_no'] : '', ENT_QUOTES, 'UTF-8'); ?>">
                         </label>
                         <label>
                             <span>Notice to Proceed Date</span>
                             <input type="date" name="notice_to_proceed_date" id="editBacNoticeToProceedDate" value="<?php echo htmlspecialchars($showEditModal ? $formValues['notice_to_proceed_date'] : '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+                        <label>
+                            <span>Contract Date</span>
+                            <input type="date" name="contract_date" id="editBacContractDate" value="<?php echo htmlspecialchars($showEditModal ? $formValues['contract_date'] : '', ENT_QUOTES, 'UTF-8'); ?>">
                         </label>
                         <label>
                             <span>Calendar Days of Delivery</span>
@@ -737,6 +762,7 @@ if ($bacStmt) {
                 document.getElementById("editBacOffice").value = button.dataset.office || "";
                 document.getElementById("editBacNoaNo").value = button.dataset.noaNo || "";
                 document.getElementById("editBacNoticeToProceedDate").value = button.dataset.noticeToProceedDate || "";
+                document.getElementById("editBacContractDate").value = button.dataset.contractDate || "";
                 document.getElementById("editBacCalendarDaysDelivery").value = button.dataset.calendarDaysDelivery || "";
                 document.getElementById("editBacDeadline").value = button.dataset.deadline || "";
                 document.getElementById("editBacReceivedBy").value = button.dataset.receivedBy || "";
