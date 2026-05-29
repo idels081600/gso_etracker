@@ -85,6 +85,46 @@ function fuelTrackerEnsureVehicleFixedLiters(mysqli $conn): void
     $ensured = true;
 }
 
+function fuelTrackerEnsureScopeColumns(mysqli $conn): void
+{
+    static $ensured = false;
+
+    if ($ensured) {
+        return;
+    }
+
+    fuelTrackerEnsureVehicleSchedules($conn);
+
+    $vehicleScope = $conn->query("SHOW COLUMNS FROM vehicles LIKE 'vehicle_scope'");
+    if ($vehicleScope && $vehicleScope->num_rows === 0) {
+        if (!$conn->query("ALTER TABLE vehicles ADD COLUMN vehicle_scope VARCHAR(20) NOT NULL DEFAULT 'government' AFTER schedules")) {
+            throw new RuntimeException('Unable to add vehicles.vehicle_scope: ' . $conn->error);
+        }
+    }
+
+    $issuanceScope = $conn->query("SHOW COLUMNS FROM gas_issuances LIKE 'issuance_scope'");
+    if ($issuanceScope && $issuanceScope->num_rows === 0) {
+        if (!$conn->query("ALTER TABLE gas_issuances ADD COLUMN issuance_scope VARCHAR(20) NOT NULL DEFAULT 'government' AFTER status")) {
+            throw new RuntimeException('Unable to add gas_issuances.issuance_scope: ' . $conn->error);
+        }
+    }
+
+    $conn->query("UPDATE vehicles SET vehicle_scope = 'government' WHERE vehicle_scope IS NULL OR TRIM(vehicle_scope) = ''");
+    $conn->query("UPDATE gas_issuances SET issuance_scope = 'government' WHERE issuance_scope IS NULL OR TRIM(issuance_scope) = ''");
+
+    $vehicleIndex = $conn->query("SHOW INDEX FROM vehicles WHERE Key_name = 'idx_vehicles_scope_status'");
+    if ($vehicleIndex && $vehicleIndex->num_rows === 0) {
+        $conn->query("CREATE INDEX idx_vehicles_scope_status ON vehicles (vehicle_scope, status, id)");
+    }
+
+    $issuanceIndex = $conn->query("SHOW INDEX FROM gas_issuances WHERE Key_name = 'idx_gas_issuances_scope_status_date'");
+    if ($issuanceIndex && $issuanceIndex->num_rows === 0) {
+        $conn->query("CREATE INDEX idx_gas_issuances_scope_status_date ON gas_issuances (issuance_scope, status, issue_date, id)");
+    }
+
+    $ensured = true;
+}
+
 function fuelTrackerNormalizeSchedule(mixed $value): string
 {
     $text = strtolower(trim((string) $value));
@@ -149,6 +189,7 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
     fuelTrackerEnsureVehicleSchedules($conn);
     fuelTrackerEnsureVehicleBalanceTank($conn);
     fuelTrackerEnsureVehicleFixedLiters($conn);
+    fuelTrackerEnsureScopeColumns($conn);
     fuelTrackerEnsureQueryIndexes($conn);
 
     $date ??= new DateTimeImmutable('today');
@@ -167,6 +208,7 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
             schedules
         FROM vehicles
         WHERE LOWER(TRIM(COALESCE(status, ''))) IN ('', 'active')
+            AND LOWER(TRIM(COALESCE(vehicle_scope, 'government'))) <> 'private'
             AND TRIM(COALESCE(schedules, '')) <> ''
     ");
     if (!$result) {
@@ -183,13 +225,14 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
         FROM gas_issuances
         WHERE vehicle_id = ?
             AND issue_date = ?
+            AND LOWER(TRIM(COALESCE(issuance_scope, 'government'))) <> 'private'
         LIMIT 1
     ");
     $insert = $conn->prepare("
         INSERT INTO gas_issuances
-            (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, approved_at)
+            (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, issuance_scope, approved_at)
         VALUES
-            (?, ?, 'TBD', ?, 'OFFICIAL TRAVEL', ?, ?, 'Liters', ?, ?, 'draft', NULL)
+            (?, ?, 'TBD', ?, 'OFFICIAL TRAVEL', ?, ?, 'Liters', ?, ?, 'draft', 'government', NULL)
     ");
 
     $created = 0;
@@ -267,13 +310,22 @@ function fuelTrackerEnsureQueryIndexes(mysqli $conn): void
     $ensured = true;
 }
 
-function fuelTrackerFetchVehicles(mysqli $conn): array
+function fuelTrackerFetchVehicles(mysqli $conn, string $scope = 'government'): array
 {
     fuelTrackerEnsureVehiclePastOdometer($conn);
     fuelTrackerEnsureVehicleSchedules($conn);
     fuelTrackerEnsureVehicleBalanceTank($conn);
     fuelTrackerEnsureVehicleFixedLiters($conn);
+    fuelTrackerEnsureScopeColumns($conn);
     fuelTrackerEnsureQueryIndexes($conn);
+
+    $scope = strtolower(trim($scope));
+    $where = '';
+    if ($scope === 'private') {
+        $where = "WHERE LOWER(TRIM(COALESCE(vehicle_scope, 'government'))) = 'private'";
+    } elseif ($scope !== 'all') {
+        $where = "WHERE LOWER(TRIM(COALESCE(vehicle_scope, 'government'))) <> 'private'";
+    }
 
     $sql = "
         SELECT
@@ -291,8 +343,10 @@ function fuelTrackerFetchVehicles(mysqli $conn): array
             fixed_liters,
             number_of_cylinder AS cylinders,
             normal_km_per_liter,
-            status
+            status,
+            vehicle_scope
         FROM vehicles
+        {$where}
         ORDER BY plate_no ASC, type_of_vehicle ASC
     ";
 
@@ -312,6 +366,7 @@ function fuelTrackerSyncIssuanceOffices(mysqli $conn): void
         return;
     }
 
+    fuelTrackerEnsureScopeColumns($conn);
     fuelTrackerEnsureQueryIndexes($conn);
 
     $sql = "
@@ -351,11 +406,12 @@ function fuelTrackerSyncIssuanceOffices(mysqli $conn): void
     $synced = true;
 }
 
-function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = []): array
+function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = [], string $scope = 'government'): array
 {
+    fuelTrackerEnsureScopeColumns($conn);
     fuelTrackerEnsureQueryIndexes($conn);
 
-    $where = '';
+    $conditions = [];
     if ($statuses !== []) {
         $allowedStatuses = array_values(array_intersect(
             array_map('strtolower', $statuses),
@@ -364,9 +420,18 @@ function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = []): array
 
         if ($allowedStatuses !== []) {
             $quoted = array_map(static fn(string $status): string => "'" . $status . "'", $allowedStatuses);
-            $where = 'WHERE LOWER(gi.status) IN (' . implode(',', $quoted) . ')';
+            $conditions[] = 'LOWER(gi.status) IN (' . implode(',', $quoted) . ')';
         }
     }
+
+    $scope = strtolower(trim($scope));
+    if ($scope === 'private') {
+        $conditions[] = "LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) = 'private'";
+    } elseif ($scope !== 'all') {
+        $conditions[] = "LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) <> 'private'";
+    }
+
+    $where = $conditions !== [] ? 'WHERE ' . implode(' AND ', $conditions) : '';
 
     $sql = "
         SELECT
@@ -383,10 +448,12 @@ function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = []): array
             gi.issue_date,
             gi.expiry_date,
             gi.status,
+            gi.issuance_scope,
             gi.approved_by,
             gi.approved_at,
             v.plate_no,
             v.type_of_vehicle AS vehicle_type,
+            v.vehicle_scope,
             v.current_odometer AS current_odo,
             v.number_of_cylinder AS cylinders,
             v.normal_km_per_liter,
@@ -413,8 +480,9 @@ function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = []): array
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
-function fuelTrackerFetchGasIssuancesByIds(mysqli $conn, array $ids): array
+function fuelTrackerFetchGasIssuancesByIds(mysqli $conn, array $ids, string $scope = 'government'): array
 {
+    fuelTrackerEnsureScopeColumns($conn);
     fuelTrackerEnsureQueryIndexes($conn);
 
     $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn(int $id): bool => $id > 0)));
@@ -423,6 +491,14 @@ function fuelTrackerFetchGasIssuancesByIds(mysqli $conn, array $ids): array
     }
 
     $idList = implode(',', $ids);
+    $scope = strtolower(trim($scope));
+    $scopeCondition = '';
+    if ($scope === 'private') {
+        $scopeCondition = "AND LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) = 'private'";
+    } elseif ($scope !== 'all') {
+        $scopeCondition = "AND LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) <> 'private'";
+    }
+
     $sql = "
         SELECT
             gi.id,
@@ -438,10 +514,12 @@ function fuelTrackerFetchGasIssuancesByIds(mysqli $conn, array $ids): array
             gi.issue_date,
             gi.expiry_date,
             gi.status,
+            gi.issuance_scope,
             gi.approved_by,
             gi.approved_at,
             v.plate_no,
             v.type_of_vehicle AS vehicle_type,
+            v.vehicle_scope,
             v.current_odometer AS current_odo,
             v.number_of_cylinder AS cylinders,
             v.normal_km_per_liter,
@@ -457,6 +535,7 @@ function fuelTrackerFetchGasIssuancesByIds(mysqli $conn, array $ids): array
                 WHERE vol.gas_issuance_id = gi.id
             )
         WHERE gi.id IN ({$idList})
+        {$scopeCondition}
         ORDER BY gi.issue_date ASC, gi.id ASC
     ";
 

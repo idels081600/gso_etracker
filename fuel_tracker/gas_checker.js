@@ -603,6 +603,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('issuanceIdSearch').focus();
     initSignaturePad();
 
+    document.getElementById('searchIssuanceBtn')?.addEventListener('click', searchGasIssuance);
+    document.getElementById('submitCheckBtn')?.addEventListener('click', submitCheck);
+    document.getElementById('clearSignatureBtn')?.addEventListener('click', clearSignaturePad);
+    document.querySelectorAll('.js-reset-all').forEach((button) => {
+        button.addEventListener('click', resetAll);
+    });
+
     const qrModal = document.getElementById('qrScannerModal');
     if (qrModal) {
         qrModal.addEventListener('shown.bs.modal', startQrScanner);

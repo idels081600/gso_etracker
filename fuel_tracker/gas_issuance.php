@@ -320,6 +320,21 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             line-height: 1.25;
             margin-top: 0.65rem;
         }
+        .budget-status-card .budget-estimate-panel {
+            background: #f8fafc;
+            border: 1px solid #e5eaf0;
+            border-radius: 8px;
+            margin-top: 0.9rem;
+            padding: 0.85rem;
+        }
+        .budget-status-card .budget-section-title {
+            color: #334155;
+            font-size: 0.74rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            margin-bottom: 0.65rem;
+            text-transform: uppercase;
+        }
 
         /* ---------- Schedule table ---------- */
         .issuance-schedule-card {
@@ -634,6 +649,11 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                             <i class="fas fa-receipt me-1"></i>Gas Issuance
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="private_gas_issuance.php">
+                            <i class="fas fa-car-side me-1"></i>Private Issuance
+                        </a>
+                    </li>
                 </ul>
 
                 <div class="d-flex align-items-center">
@@ -673,6 +693,9 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#vehicleManagerModal">
                     <i class="fas fa-clipboard-list me-1"></i>Vehicle Details
                 </button>
+                <a href="private_gas_issuance.php" class="btn btn-outline-dark">
+                    <i class="fas fa-car-side me-1"></i>Private Issuance
+                </a>
                 <a href="fuel_dashboard.php" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-1"></i>Dashboard
                 </a>
@@ -866,64 +889,87 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 <div class="card border-0 shadow-sm mb-4 budget-status-card">
                     <div class="card-header bg-white border-bottom">
                         <h5 class="card-title mb-0">
-                            <i class="fas fa-wallet me-2 text-primary"></i>Estimated Budget Status
+                            <i class="fas fa-wallet me-2 text-primary"></i>Budget Status
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="budget-row">
-                            <div class="budget-head">
-                                <span class="budget-label">Diesel</span>
-                                <span class="budget-amount text-warning" id="draftDieselRemaining">&#8369;<?php echo htmlspecialchars(number_format($dieselBudgetRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
-                            </div>
-                            <div class="budget-track" role="progressbar" aria-label="Draft diesel budget remaining" aria-valuenow="<?php echo htmlspecialchars(number_format($dieselBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>" aria-valuemin="0" aria-valuemax="100" id="draftDieselProgress">
-                                <span class="budget-fill budget-fill-diesel" id="draftDieselFill" style="width: <?php echo htmlspecialchars(number_format($dieselBudgetPercent, 2), ENT_QUOTES, 'UTF-8'); ?>%;"></span>
-                            </div>
-                            <div class="budget-meta">
-                                <span id="draftDieselPercent"><?php echo htmlspecialchars(number_format($dieselBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
-                                <span>of &#8369;<?php echo htmlspecialchars(number_format($dieselBudgetTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
-                            </div>
-                        </div>
-
-                        <div class="budget-row">
-                            <div class="budget-head">
-                                <span class="budget-label">Unleaded</span>
-                                <span class="budget-amount text-success" id="draftUnleadedRemaining">&#8369;<?php echo htmlspecialchars(number_format($unleadedBudgetRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
-                            </div>
-                            <div class="budget-track" role="progressbar" aria-label="Draft unleaded budget remaining" aria-valuenow="<?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>" aria-valuemin="0" aria-valuemax="100" id="draftUnleadedProgress">
-                                <span class="budget-fill budget-fill-unleaded" id="draftUnleadedFill" style="width: <?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 2), ENT_QUOTES, 'UTF-8'); ?>%;"></span>
-                            </div>
-                            <div class="budget-meta">
-                                <span id="draftUnleadedPercent"><?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
-                                <span>of &#8369;<?php echo htmlspecialchars(number_format($unleadedBudgetTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
-                            </div>
-                        </div>
-
-                        <div class="budget-price-grid">
+                        <div class="budget-section-title">Actual budget</div>
+                        <div class="budget-total-row mb-3">
                             <div>
-                                <label for="dieselPumpPrice" class="form-label mb-1">Diesel Price</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">&#8369;</span>
-                                    <input type="number" class="form-control" id="dieselPumpPrice" min="0" step="0.01" placeholder="0.00">
-                                </div>
+                                <small>Diesel Left</small>
+                                <span class="text-warning">&#8369;<?php echo htmlspecialchars(number_format($dieselBudgetRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
                             <div>
-                                <label for="unleadedPumpPrice" class="form-label mb-1">Unleaded Price</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">&#8369;</span>
-                                    <input type="number" class="form-control" id="unleadedPumpPrice" min="0" step="0.01" placeholder="0.00">
-                                </div>
+                                <small>Unleaded Left</small>
+                                <span class="text-success">&#8369;<?php echo htmlspecialchars(number_format($unleadedBudgetRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
-                        </div>
-                        <small class="budget-note" id="draftBudgetNote">Estimated reserve uses approved/valid scheduled issuances that are not yet used.</small>
-
-                        <div class="budget-total-row">
                             <div>
                                 <small>Total Budget</small>
                                 <span class="text-primary">&#8369;<?php echo htmlspecialchars(number_format($budgetTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
                             <div>
-                                <small>Estimated Cost</small>
-                                <span class="text-danger" id="draftEstimatedCost">&#8369;0.00</span>
+                                <small>Deducted</small>
+                                <span class="text-danger">&#8369;<?php echo htmlspecialchars(number_format($budgetUsed, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                            </div>
+                        </div>
+
+                        <div class="budget-estimate-panel">
+                            <div class="budget-section-title">Estimated after scheduled approvals</div>
+                            <div class="budget-row">
+                                <div class="budget-head">
+                                    <span class="budget-label">Diesel</span>
+                                    <span class="budget-amount text-warning" id="draftDieselRemaining">&#8369;<?php echo htmlspecialchars(number_format($dieselBudgetRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                </div>
+                                <div class="budget-track" role="progressbar" aria-label="Draft diesel budget remaining" aria-valuenow="<?php echo htmlspecialchars(number_format($dieselBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>" aria-valuemin="0" aria-valuemax="100" id="draftDieselProgress">
+                                    <span class="budget-fill budget-fill-diesel" id="draftDieselFill" style="width: <?php echo htmlspecialchars(number_format($dieselBudgetPercent, 2), ENT_QUOTES, 'UTF-8'); ?>%;"></span>
+                                </div>
+                                <div class="budget-meta">
+                                    <span id="draftDieselPercent"><?php echo htmlspecialchars(number_format($dieselBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
+                                    <span>of &#8369;<?php echo htmlspecialchars(number_format($dieselBudgetTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                </div>
+                            </div>
+
+                            <div class="budget-row">
+                                <div class="budget-head">
+                                    <span class="budget-label">Unleaded</span>
+                                    <span class="budget-amount text-success" id="draftUnleadedRemaining">&#8369;<?php echo htmlspecialchars(number_format($unleadedBudgetRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                </div>
+                                <div class="budget-track" role="progressbar" aria-label="Draft unleaded budget remaining" aria-valuenow="<?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>" aria-valuemin="0" aria-valuemax="100" id="draftUnleadedProgress">
+                                    <span class="budget-fill budget-fill-unleaded" id="draftUnleadedFill" style="width: <?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 2), ENT_QUOTES, 'UTF-8'); ?>%;"></span>
+                                </div>
+                                <div class="budget-meta">
+                                    <span id="draftUnleadedPercent"><?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
+                                    <span>of &#8369;<?php echo htmlspecialchars(number_format($unleadedBudgetTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                </div>
+                            </div>
+
+                            <div class="budget-price-grid">
+                                <div>
+                                    <label for="dieselPumpPrice" class="form-label mb-1">Diesel Price</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">&#8369;</span>
+                                        <input type="number" class="form-control" id="dieselPumpPrice" min="0" step="0.01" placeholder="0.00">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="unleadedPumpPrice" class="form-label mb-1">Unleaded Price</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">&#8369;</span>
+                                        <input type="number" class="form-control" id="unleadedPumpPrice" min="0" step="0.01" placeholder="0.00">
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="budget-note" id="draftBudgetNote">Estimated reserve uses approved/valid scheduled issuances that are not yet used.</small>
+
+                            <div class="budget-total-row mt-3">
+                                <div>
+                                    <small>Estimated Cost</small>
+                                    <span class="text-danger" id="draftEstimatedCost">&#8369;0.00</span>
+                                </div>
+                                <div>
+                                    <small>Estimated Left</small>
+                                    <span class="text-primary" id="draftEstimatedLeft">&#8369;<?php echo htmlspecialchars(number_format((float) ($budgetSummary['remaining_budget'] ?? 0), 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1502,6 +1548,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             document.getElementById('draftDieselProgress').setAttribute('aria-valuenow', String(Math.round(dieselPercent)));
             document.getElementById('draftUnleadedProgress').setAttribute('aria-valuenow', String(Math.round(unleadedPercent)));
             document.getElementById('draftEstimatedCost').textContent = formatPeso(totalEstimated);
+            document.getElementById('draftEstimatedLeft').textContent = formatPeso(dieselDraftRemaining + unleadedDraftRemaining);
             document.getElementById('draftBudgetNote').textContent =
                 'Reserved estimate: ' + liters.diesel.toFixed(2) + ' L diesel and ' + liters.unleaded.toFixed(2) + ' L unleaded from approved/valid issuances.';
 

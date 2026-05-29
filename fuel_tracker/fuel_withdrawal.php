@@ -12,12 +12,15 @@ if (!is_file($tcpdfPath)) {
 
 require_once $tcpdfPath;
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/gas_issuance_data.php';
 require_once __DIR__ . '/gas_issuance_signature.php';
 
 if (!class_exists('TCPDF')) {
     http_response_code(500);
     exit('TCPDF failed to load.');
 }
+
+fuelTrackerEnsureScopeColumns($conn);
 
 function withdrawalParam(string $key, string $default): string
 {
@@ -52,6 +55,7 @@ function withdrawalIssuanceData(mysqli $conn, string $gasIssuanceRef): array
             gi.authorized_liters,
             gi.actual_liters_fueled,
             gi.unit,
+            gi.issuance_scope,
             v.plate_no,
             v.type_of_vehicle,
             v.office AS vehicle_office,
@@ -199,12 +203,16 @@ $approvedBy = strtoupper(withdrawalParam('approved_by', 'CHRIS JOHN RENER G. TOR
 $serialNo = withdrawalParam('serial_no', 'FI-SAMPLE');
 $issuanceData = withdrawalIssuanceData($conn, $serialNo);
 if ($issuanceData !== []) {
+    $isPrivateIssuance = strtolower(trim((string) ($issuanceData['issuance_scope'] ?? 'government'))) === 'private';
     $actualOffice = trim((string) ($issuanceData['vehicle_office'] ?? ''));
     if ($actualOffice === '') {
         $actualOffice = trim((string) ($issuanceData['issuance_office'] ?? ''));
     }
     if ($actualOffice !== '') {
         $withdrawalPurpose = strtoupper($actualOffice);
+    }
+    if ($isPrivateIssuance) {
+        $withdrawalPurpose = 'PRIVATE';
     }
     $withdrawalDate = withdrawalParam('date', (string) ($issuanceData['issue_date'] ?? $withdrawalDate));
     $withdrawalQuantity = withdrawalParam('quantity', (string) ($issuanceData['actual_liters_fueled'] ?? $issuanceData['authorized_liters'] ?? $withdrawalQuantity));

@@ -215,6 +215,7 @@ function getFuelStatistics()
                     MAX(gi.issue_date) as latest_date
                 FROM gas_issuances gi
                 WHERE LOWER(gi.status) = 'used'
+                    AND LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) <> 'private'
                     AND gi.fuel_type IS NOT NULL
                     AND TRIM(gi.fuel_type) != ''
                 GROUP BY gi.fuel_type
@@ -265,6 +266,7 @@ function getFilteredFuelStatistics($filters = [])
                     MAX(gi.issue_date) as period_end
                 FROM gas_issuances gi
                 WHERE LOWER(gi.status) = 'used'
+                    AND LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) <> 'private'
                     AND gi.fuel_type IS NOT NULL
                     AND TRIM(gi.fuel_type) != ''";
 
@@ -458,6 +460,7 @@ function getDraftBudgetIssuances(): array
             FROM gas_issuances gi
             INNER JOIN vehicles v ON v.id = gi.vehicle_id
             WHERE LOWER(COALESCE(gi.status, '')) IN ('approved', 'valid')
+                AND LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) <> 'private'
             GROUP BY fuel_type
         ";
 
@@ -525,6 +528,7 @@ function getFuelConsumptionRankings(): array
             FROM gas_issuances gi
             INNER JOIN vehicles v ON v.id = gi.vehicle_id
             WHERE LOWER(gi.status) = 'used'
+                AND LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) <> 'private'
             GROUP BY label
             HAVING total_liters > 0
             ORDER BY total_liters DESC
@@ -544,6 +548,7 @@ function getFuelConsumptionRankings(): array
             FROM gas_issuances gi
             INNER JOIN vehicles v ON v.id = gi.vehicle_id
             WHERE LOWER(gi.status) = 'used'
+                AND LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) <> 'private'
             GROUP BY label
             HAVING total_liters > 0
             ORDER BY total_liters DESC

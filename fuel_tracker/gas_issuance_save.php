@@ -7,6 +7,7 @@ requireFuelAjaxRequest();
 require_once __DIR__ . '/rate_limiter.php';
 require_rate_limit(30, 60, 'gas_issuance_save', 'json');
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/gas_issuance_data.php';
 
 header('Content-Type: application/json');
 
@@ -40,8 +41,27 @@ function gasIssuanceRequireDate(string $value, string $label): string
 
 function gasIssuanceVehicleId(mysqli $conn, array $data): int
 {
+    fuelTrackerEnsureScopeColumns($conn);
+
     if (!empty($data['vehicle_id']) && ctype_digit((string) $data['vehicle_id'])) {
-        return (int) $data['vehicle_id'];
+        $vehicleId = (int) $data['vehicle_id'];
+        $stmt = $conn->prepare("
+            SELECT id
+            FROM vehicles
+            WHERE id = ?
+                AND LOWER(TRIM(COALESCE(vehicle_scope, 'government'))) <> 'private'
+            LIMIT 1
+        ");
+        $stmt->bind_param('i', $vehicleId);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if ($row) {
+            return $vehicleId;
+        }
+
+        gasIssuanceJson(['success' => false, 'message' => 'Selected vehicle is not available for government gas issuance.'], 422);
     }
 
     $plate = trim((string) ($data['plate_no'] ?? ''));
@@ -49,7 +69,13 @@ function gasIssuanceVehicleId(mysqli $conn, array $data): int
         gasIssuanceJson(['success' => false, 'message' => 'Vehicle is required.'], 422);
     }
 
-    $stmt = $conn->prepare('SELECT id FROM vehicles WHERE plate_no = ? LIMIT 1');
+    $stmt = $conn->prepare("
+        SELECT id
+        FROM vehicles
+        WHERE plate_no = ?
+            AND LOWER(TRIM(COALESCE(vehicle_scope, 'government'))) <> 'private'
+        LIMIT 1
+    ");
     $stmt->bind_param('s', $plate);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
@@ -64,7 +90,15 @@ function gasIssuanceVehicleId(mysqli $conn, array $data): int
 
 function gasIssuanceVehicleOffice(mysqli $conn, int $vehicleId): string
 {
-    $stmt = $conn->prepare('SELECT office FROM vehicles WHERE id = ? LIMIT 1');
+    fuelTrackerEnsureScopeColumns($conn);
+
+    $stmt = $conn->prepare("
+        SELECT office
+        FROM vehicles
+        WHERE id = ?
+            AND LOWER(TRIM(COALESCE(vehicle_scope, 'government'))) <> 'private'
+        LIMIT 1
+    ");
     $stmt->bind_param('i', $vehicleId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
@@ -79,6 +113,8 @@ $allowedStatuses = ['draft', 'approved', 'valid', 'used', 'expired', 'revoked'];
 $transactionStarted = false;
 
 try {
+    fuelTrackerEnsureScopeColumns($conn);
+
     if ($action === 'create') {
         $serialNo = trim((string) ($input['serial_no'] ?? ''));
         $driverName = trim((string) ($input['driver_name'] ?? ''));
@@ -110,9 +146,9 @@ try {
 
         $stmt = $conn->prepare("
             INSERT INTO gas_issuances
-                (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, approved_at)
+                (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, issuance_scope, approved_at)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(? IN ('approved', 'valid'), NOW(), NULL))
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'government', IF(? IN ('approved', 'valid'), NOW(), NULL))
         ");
         $stmt->bind_param('sissssdsssss', $serialNo, $vehicleId, $driverName, $office, $purpose, $fuelType, $authorizedLiters, $unit, $issueDate, $expiryDate, $status, $status);
         $stmt->execute();
@@ -157,6 +193,7 @@ try {
                 status = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
+                AND LOWER(TRIM(COALESCE(issuance_scope, 'government'))) <> 'private'
         ");
         $stmt->bind_param('issdsssi', $vehicleId, $driverName, $office, $authorizedLiters, $issueDate, $expiryDate, $status, $id);
         $stmt->execute();
@@ -180,7 +217,12 @@ try {
         $stmt->execute();
         $stmt->close();
 
-        $stmt = $conn->prepare('DELETE FROM gas_issuances WHERE id = ? LIMIT 1');
+        $stmt = $conn->prepare("
+            DELETE FROM gas_issuances
+            WHERE id = ?
+                AND LOWER(TRIM(COALESCE(issuance_scope, 'government'))) <> 'private'
+            LIMIT 1
+        ");
         $stmt->bind_param('i', $id);
         $stmt->execute();
         $affected = $stmt->affected_rows;
@@ -205,7 +247,13 @@ try {
             gasIssuanceJson(['success' => false, 'message' => 'Issuance ID is required.'], 422);
         }
 
-        $stmt = $conn->prepare('SELECT status FROM gas_issuances WHERE id = ? LIMIT 1');
+        $stmt = $conn->prepare("
+            SELECT status
+            FROM gas_issuances
+            WHERE id = ?
+                AND LOWER(TRIM(COALESCE(issuance_scope, 'government'))) <> 'private'
+            LIMIT 1
+        ");
         $stmt->bind_param('i', $id);
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
@@ -230,6 +278,7 @@ try {
                 approved_at = CASE WHEN ? = 'approved' THEN NOW() ELSE NULL END,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
+                AND LOWER(TRIM(COALESCE(issuance_scope, 'government'))) <> 'private'
         ");
         $stmt->bind_param('ssi', $newStatus, $newStatus, $id);
         $stmt->execute();

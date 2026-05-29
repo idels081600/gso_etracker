@@ -821,16 +821,16 @@ function renderDraftFuelBudget() {
   const dieselPercent = draftBudgetPercent(dieselLeft, dieselTotal);
   const unleadedPercent = draftBudgetPercent(unleadedLeft, unleadedTotal);
 
-  const dieselRemaining = document.getElementById("budgetDieselRemaining");
-  const unleadedRemaining = document.getElementById("budgetUnleadedRemaining");
-  const dieselBar = document.getElementById("budgetDieselBar");
-  const unleadedBar = document.getElementById("budgetUnleadedBar");
-  const dieselPercentText = document.getElementById("budgetDieselPercent");
-  const unleadedPercentText = document.getElementById("budgetUnleadedPercent");
-  const dieselTotalText = document.getElementById("budgetDieselTotal");
-  const unleadedTotalText = document.getElementById("budgetUnleadedTotal");
-  const total = document.getElementById("budgetTotal");
-  const used = document.getElementById("budgetUsed");
+  const dieselRemaining = document.getElementById("estimatedBudgetDieselRemaining");
+  const unleadedRemaining = document.getElementById("estimatedBudgetUnleadedRemaining");
+  const dieselBar = document.getElementById("estimatedBudgetDieselBar");
+  const unleadedBar = document.getElementById("estimatedBudgetUnleadedBar");
+  const dieselPercentText = document.getElementById("estimatedBudgetDieselPercent");
+  const unleadedPercentText = document.getElementById("estimatedBudgetUnleadedPercent");
+  const dieselTotalText = document.getElementById("estimatedBudgetDieselTotal");
+  const unleadedTotalText = document.getElementById("estimatedBudgetUnleadedTotal");
+  const estimatedCost = document.getElementById("estimatedBudgetCost");
+  const estimatedLeft = document.getElementById("estimatedBudgetTotalLeft");
   const note = document.getElementById("budgetDraftNote");
 
   if (dieselRemaining) dieselRemaining.textContent = formatPeso(dieselLeft);
@@ -847,10 +847,10 @@ function renderDraftFuelBudget() {
   if (unleadedPercentText) unleadedPercentText.textContent = `${Math.round(unleadedPercent)}% left`;
   if (dieselTotalText) dieselTotalText.textContent = `of ${formatPeso(dieselTotal)}`;
   if (unleadedTotalText) unleadedTotalText.textContent = `of ${formatPeso(unleadedTotal)}`;
-  if (total) total.textContent = formatPeso(dashboardBudgetSummary.total_budget || 0);
-  if (used) used.textContent = formatPeso(dieselCost + unleadedCost);
+  if (estimatedCost) estimatedCost.textContent = formatPeso(dieselCost + unleadedCost);
+  if (estimatedLeft) estimatedLeft.textContent = formatPeso(dieselLeft + unleadedLeft);
   if (note) {
-    note.textContent = `Reserved estimate: ${dieselLiters.toFixed(2)} L diesel and ${unleadedLiters.toFixed(2)} L unleaded from approved/valid issuances.`;
+    note.textContent = `Reserved: ${dieselLiters.toFixed(2)} L diesel, ${unleadedLiters.toFixed(2)} L unleaded.`;
   }
 
   try {
@@ -884,7 +884,44 @@ function initDraftBudgetInputs() {
 
 function updateFuelBudgetSummary(summary) {
   dashboardBudgetSummary = summary || {};
+  renderActualFuelBudget();
   renderDraftFuelBudget();
+}
+
+function renderActualFuelBudget() {
+  const dieselRemaining = document.getElementById("budgetDieselRemaining");
+  const unleadedRemaining = document.getElementById("budgetUnleadedRemaining");
+  const dieselBar = document.getElementById("budgetDieselBar");
+  const unleadedBar = document.getElementById("budgetUnleadedBar");
+  const dieselPercentText = document.getElementById("budgetDieselPercent");
+  const unleadedPercentText = document.getElementById("budgetUnleadedPercent");
+  const dieselTotalText = document.getElementById("budgetDieselTotal");
+  const unleadedTotalText = document.getElementById("budgetUnleadedTotal");
+  const total = document.getElementById("budgetTotal");
+  const used = document.getElementById("budgetUsed");
+  const dieselTotal = Number(dashboardBudgetSummary.total_diesel_budget || 0) || 0;
+  const dieselLeft = Number(dashboardBudgetSummary.remaining_diesel_budget || 0) || 0;
+  const unleadedTotal = Number(dashboardBudgetSummary.total_unleaded_budget || 0) || 0;
+  const unleadedLeft = Number(dashboardBudgetSummary.remaining_unleaded_budget || 0) || 0;
+  const dieselPercent = draftBudgetPercent(dieselLeft, dieselTotal);
+  const unleadedPercent = draftBudgetPercent(unleadedLeft, unleadedTotal);
+
+  if (dieselRemaining) dieselRemaining.textContent = formatPeso(dieselLeft);
+  if (unleadedRemaining) unleadedRemaining.textContent = formatPeso(unleadedLeft);
+  if (dieselBar) {
+    dieselBar.style.width = `${dieselPercent.toFixed(2)}%`;
+    dieselBar.parentElement?.setAttribute("aria-valuenow", Math.round(dieselPercent).toString());
+  }
+  if (unleadedBar) {
+    unleadedBar.style.width = `${unleadedPercent.toFixed(2)}%`;
+    unleadedBar.parentElement?.setAttribute("aria-valuenow", Math.round(unleadedPercent).toString());
+  }
+  if (dieselPercentText) dieselPercentText.textContent = `${Math.round(dieselPercent)}% left`;
+  if (unleadedPercentText) unleadedPercentText.textContent = `${Math.round(unleadedPercent)}% left`;
+  if (dieselTotalText) dieselTotalText.textContent = `of ${formatPeso(dieselTotal)}`;
+  if (unleadedTotalText) unleadedTotalText.textContent = `of ${formatPeso(unleadedTotal)}`;
+  if (total) total.textContent = formatPeso(dashboardBudgetSummary.total_budget || 0);
+  if (used) used.textContent = formatPeso(dashboardBudgetSummary.used_budget || 0);
 }
 
 let officeConsumptionChart = null;

@@ -168,6 +168,74 @@ body {
   min-width: 0;
 }
 
+.budget-card-metric-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.budget-metric-card {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e5eaf0;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 118px;
+  padding: 1rem;
+}
+
+.budget-metric-card.metric-final {
+  background: #ffffff;
+}
+
+.budget-metric-card.metric-estimated {
+  background: #f8fafc;
+}
+
+.budget-metric-card.metric-diesel {
+  border-left: 4px solid #f5b301;
+}
+
+.budget-metric-card.metric-unleaded {
+  border-left: 4px solid #198754;
+}
+
+.budget-metric-icon {
+  align-items: center;
+  background: #eef2ff;
+  border-radius: 999px;
+  color: #0d6efd;
+  display: inline-flex;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+
+.metric-diesel .budget-metric-icon {
+  background: #fff6db;
+  color: #d99a00;
+}
+
+.metric-unleaded .budget-metric-icon {
+  background: #e8f6ee;
+  color: #198754;
+}
+
+.budget-card-value {
+  font-size: clamp(1.15rem, 1.7vw, 1.45rem);
+  font-weight: 900;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.budget-card-subtle {
+  color: var(--dashboard-muted);
+  font-size: 0.76rem;
+  margin-top: 0.2rem;
+}
+
 .budget-metric-stack,
 .budget-progress-stack {
   display: grid;
@@ -201,6 +269,23 @@ body {
 
 .budget-progress-stack {
   gap: 0.75rem;
+}
+
+.budget-estimate-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fuel-summary-grid .budget-estimate-grid,
+.fuel-summary-grid .budget-price-grid {
+  grid-template-columns: 1fr;
+}
+
+.fuel-summary-grid .budget-card .card-title {
+  font-size: 0.9rem;
+}
+
+.fuel-summary-grid .budget-card .budget-metric-value {
+  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
 }
 
 .budget-progress-item {
@@ -290,8 +375,70 @@ body {
   border-top: 1px solid #edf1f5;
   display: grid;
   gap: 0.65rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   padding-top: 0.9rem;
+}
+
+.budget-card-compact .card-body {
+  gap: 0.65rem;
+  justify-content: flex-start;
+  padding: 1rem 1.35rem;
+}
+
+.budget-compact-header {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.budget-card-compact .budget-estimate-grid {
+  gap: 0.55rem;
+}
+
+.budget-card-compact .budget-progress-item {
+  gap: 0.22rem;
+}
+
+.budget-card-compact .budget-progress-track {
+  height: 8px;
+}
+
+.budget-card-compact .budget-progress-meta {
+  font-size: 0.68rem;
+}
+
+.budget-card-compact .budget-metric-value {
+  font-size: 0.98rem;
+}
+
+.budget-price-grid-compact {
+  border-top: 1px solid #edf1f5;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 0.65rem;
+}
+
+.budget-price-grid-compact .input-group-text,
+.budget-price-grid-compact .form-control {
+  font-size: 0.78rem;
+  min-height: 32px;
+}
+
+.budget-estimate-totals {
+  border-top: 1px solid #edf1f5;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 0.65rem;
+}
+
+.budget-estimate-totals .budget-context-item {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.budget-estimate-totals .budget-context-item span {
+  font-size: 0.98rem;
+  line-height: 1.15;
 }
 
 .budget-price-grid label {
@@ -300,6 +447,11 @@ body {
   font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+}
+
+.budget-price-grid-compact label {
+  font-size: 0.66rem;
+  margin-bottom: 0.25rem !important;
 }
 
 .budget-price-grid .input-group-text,
@@ -314,6 +466,47 @@ body {
   font-size: 0.72rem;
   line-height: 1.25;
   margin-top: 0.65rem;
+}
+
+.budget-card-compact .budget-draft-note {
+  font-size: 0.68rem;
+  margin-top: 0;
+}
+
+.budget-estimate-panel {
+  background: #f8fafc;
+  border: 1px solid #e5eaf0;
+  border-radius: 8px;
+  padding: 0.85rem;
+}
+
+.budget-estimate-title {
+  color: #334155;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1199.98px) {
+  .budget-card-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575.98px) {
+  .budget-card-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-estimate-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-price-grid-compact,
+  .budget-estimate-totals {
+    grid-template-columns: 1fr;
+  }
 }
 
 .budget-context-item {

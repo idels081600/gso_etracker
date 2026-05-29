@@ -81,7 +81,10 @@ function fuelSummaryFetchRows(mysqli $conn, string $office, string $startDate, s
 {
     fuelTrackerSyncIssuanceOffices($conn);
 
-    $conditions = ["LOWER(gi.status) = 'used'"];
+    $conditions = [
+        "LOWER(gi.status) = 'used'",
+        "LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) <> 'private'",
+    ];
     $types = '';
     $params = [];
 

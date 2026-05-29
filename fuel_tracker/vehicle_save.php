@@ -70,6 +70,7 @@ $action = strtolower(trim((string) ($input['action'] ?? 'create')));
 try {
     vehicleSaveEnsureSchedulesColumn($conn);
     fuelTrackerEnsureVehicleFixedLiters($conn);
+    fuelTrackerEnsureScopeColumns($conn);
 
     $id = (int) ($input['id'] ?? 0);
     $vehicleId = strtoupper(trim((string) ($input['vehicle_id'] ?? '')));
@@ -119,8 +120,10 @@ try {
                 fuel_capacity = ?,
                 fixed_liters = ?,
                 status = ?,
+                vehicle_scope = 'government',
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
+                AND LOWER(TRIM(COALESCE(vehicle_scope, 'government'))) <> 'private'
         ");
         $stmt->bind_param(
             'ssssssidddsi',
@@ -161,9 +164,9 @@ try {
 
     $stmt = $conn->prepare("
         INSERT INTO vehicles
-            (vehicle_id, plate_no, type_of_vehicle, office, fuel_type, schedules, number_of_cylinder, normal_km_per_liter, current_odometer, fuel_capacity, fixed_liters, status)
+            (vehicle_id, plate_no, type_of_vehicle, office, fuel_type, schedules, number_of_cylinder, normal_km_per_liter, current_odometer, fuel_capacity, fixed_liters, status, vehicle_scope)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'government')
     ");
     $stmt->bind_param(
         'ssssssidddds',

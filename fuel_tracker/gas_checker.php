@@ -5,6 +5,139 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 
+function gasCheckerEscape($value): string
+{
+    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+}
+
+function renderIconLabel(string $icon, string $label): void
+{
+    ?>
+    <i class="fas <?= gasCheckerEscape($icon) ?> me-1"></i><?= gasCheckerEscape($label) ?>
+    <?php
+}
+
+function renderDetailItem(array $item): void
+{
+    $valueClass = $item['value_class'] ?? 'detail-value';
+    $itemClass = 'detail-item' . (!empty($item['item_class']) ? ' ' . $item['item_class'] : '');
+    ?>
+    <div class="<?= gasCheckerEscape($item['col']) ?>">
+        <div class="<?= gasCheckerEscape($itemClass) ?>">
+            <small class="detail-label d-block">
+                <?php renderIconLabel($item['icon'], $item['label']); ?>
+            </small>
+            <span class="<?= gasCheckerEscape($valueClass) ?>" id="<?= gasCheckerEscape($item['id']) ?>">--</span>
+        </div>
+    </div>
+    <?php
+}
+
+function renderReferenceRow(string $label, string $id): void
+{
+    ?>
+    <div class="gas-item">
+        <span><?= gasCheckerEscape($label) ?></span>
+        <strong id="<?= gasCheckerEscape($id) ?>">--</strong>
+    </div>
+    <?php
+}
+
+function renderActualInput(array $field): void
+{
+    ?>
+    <div class="col-md-4 mb-3">
+        <label for="<?= gasCheckerEscape($field['id']) ?>" class="form-label">
+            <?php renderIconLabel($field['icon'], $field['label']); ?>
+            <span class="text-danger">*</span>
+        </label>
+        <?php if (!empty($field['suffix'])): ?>
+            <div class="input-group">
+                <input type="<?= gasCheckerEscape($field['type']) ?>" class="form-control" id="<?= gasCheckerEscape($field['id']) ?>"
+                    name="<?= gasCheckerEscape($field['name']) ?>" placeholder="<?= gasCheckerEscape($field['placeholder']) ?>"
+                    min="<?= gasCheckerEscape($field['min']) ?>" step="<?= gasCheckerEscape($field['step']) ?>" required>
+                <span class="input-group-text"><?= gasCheckerEscape($field['suffix']) ?></span>
+                <div class="invalid-feedback">
+                    <?= gasCheckerEscape($field['feedback']) ?>
+                </div>
+            </div>
+        <?php else: ?>
+            <input type="<?= gasCheckerEscape($field['type']) ?>" class="form-control" id="<?= gasCheckerEscape($field['id']) ?>"
+                name="<?= gasCheckerEscape($field['name']) ?>" placeholder="<?= gasCheckerEscape($field['placeholder']) ?>" required>
+            <div class="invalid-feedback">
+                <?= gasCheckerEscape($field['feedback']) ?>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
+$steps = [
+    ['id' => 'step1', 'label' => 'Look Up Issuance'],
+    ['id' => 'step2', 'label' => 'Select Vehicle'],
+    ['id' => 'step3', 'label' => 'Input & Sign'],
+];
+
+$issuanceDetailRows = [
+    [
+        ['col' => 'col-sm-6 col-xl-3', 'icon' => 'fa-hashtag', 'label' => 'Issuance ID', 'id' => 'detailIssuanceId'],
+        ['col' => 'col-sm-6 col-xl-3', 'icon' => 'fa-calendar', 'label' => 'Date Issued', 'id' => 'detailDate'],
+        ['col' => 'col-sm-6 col-xl-3', 'icon' => 'fa-building', 'label' => 'Office', 'id' => 'detailOffice'],
+        ['col' => 'col-sm-6 col-xl-3', 'icon' => 'fa-gas-pump', 'label' => 'Fuel Type', 'id' => 'detailFuelType', 'value_class' => 'badge bg-secondary badge-fuel-type'],
+    ],
+    [
+        ['col' => 'col-md-6 col-xl-4', 'icon' => 'fa-car', 'label' => 'Vehicle', 'id' => 'detailVehicle'],
+        ['col' => 'col-md-6 col-xl-4', 'icon' => 'fa-user', 'label' => 'Assigned Driver', 'id' => 'detailDriver'],
+        ['col' => 'col-sm-6 col-xl-2', 'icon' => 'fa-tint', 'label' => 'Liters Issued', 'id' => 'detailLitersIssued', 'value_class' => 'detail-value fw-bold text-primary'],
+        ['col' => 'col-sm-6 col-xl-2', 'icon' => 'fa-check-circle', 'label' => 'Status', 'id' => 'detailStatus', 'value_class' => 'badge bg-success fs-6 px-3 py-2'],
+    ],
+    [
+        ['col' => 'col-12', 'icon' => 'fa-map-marker-alt', 'label' => 'Purpose', 'id' => 'detailPurpose', 'item_class' => 'detail-item-purpose'],
+    ],
+];
+
+$referenceRows = [
+    'Vehicle' => 'checkVehicle',
+    'Fuel Type Issued' => 'checkFuelType',
+    'Liters Issued' => 'checkLitersIssued',
+    'Issuance Reference #' => 'checkIssuanceRef',
+];
+
+$actualFields = [
+    [
+        'id' => 'checkOdometer',
+        'name' => 'odometer',
+        'type' => 'number',
+        'icon' => 'fa-tachometer-alt',
+        'label' => 'Latest Odometer Reading',
+        'placeholder' => 'Enter odometer reading',
+        'min' => '0',
+        'step' => '1',
+        'suffix' => 'km',
+        'feedback' => 'Please enter the latest odometer reading.',
+    ],
+    [
+        'id' => 'checkDriver',
+        'name' => 'driver',
+        'type' => 'text',
+        'icon' => 'fa-user',
+        'label' => 'Driver Name',
+        'placeholder' => 'e.g. Juan Dela Cruz',
+        'feedback' => "Please enter the driver's name.",
+    ],
+    [
+        'id' => 'checkActual',
+        'name' => 'actual_fuel',
+        'type' => 'number',
+        'icon' => 'fa-tint',
+        'label' => 'Actual Fueled Up',
+        'placeholder' => 'Enter actual liters',
+        'min' => '0',
+        'step' => '0.01',
+        'suffix' => 'L',
+        'feedback' => 'Please enter the actual fueled up amount.',
+    ],
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -14,19 +147,13 @@ header('Expires: 0');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gas Checker</title>
 
-    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="fuel_dashboard.css">
     <link rel="stylesheet" href="gas_checker.css">
 </head>
 
 <body>
-    <!-- Main Content -->
     <div class="container-fluid checker-shell mt-4">
         <div class="checker-page-header mb-4">
             <div class="checker-title-wrap">
@@ -39,7 +166,7 @@ header('Expires: 0');
                 </div>
             </div>
             <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-outline-secondary checker-reset-btn" onclick="resetAll()" data-bs-toggle="tooltip" title="Reset all fields">
+                <button class="btn btn-outline-secondary checker-reset-btn js-reset-all" type="button" data-bs-toggle="tooltip" title="Reset all fields">
                     <i class="fas fa-undo me-1"></i>Reset
                 </button>
                 <a href="../logout.php" class="btn btn-outline-danger checker-reset-btn">
@@ -48,30 +175,23 @@ header('Expires: 0');
             </div>
         </div>
 
-        <!-- Step Indicator -->
         <div class="step-indicator">
-            <div class="step-item active" id="step1">
-                <div class="step-number">1</div>
-                <span class="step-label">Look Up Issuance</span>
-            </div>
-            <div class="step-connector"></div>
-            <div class="step-item" id="step2">
-                <div class="step-number">2</div>
-                <span class="step-label">Select Vehicle</span>
-            </div>
-            <div class="step-connector"></div>
-            <div class="step-item" id="step3">
-                <div class="step-number">3</div>
-                <span class="step-label">Input & Sign</span>
-            </div>
+            <?php foreach ($steps as $index => $step): ?>
+                <div class="step-item<?= $index === 0 ? ' active' : '' ?>" id="<?= gasCheckerEscape($step['id']) ?>">
+                    <div class="step-number"><?= $index + 1 ?></div>
+                    <span class="step-label"><?= gasCheckerEscape($step['label']) ?></span>
+                </div>
+                <?php if ($index < count($steps) - 1): ?>
+                    <div class="step-connector"></div>
+                <?php endif; ?>
+            <?php endforeach; ?>
         </div>
 
-        <!-- Step 1: Search Section -->
         <div class="checker-search-section shadow">
             <div class="row align-items-end">
                 <div class="col-12">
                     <label for="issuanceIdSearch" class="form-label">
-                        <i class="fas fa-search me-1"></i>Enter Gas Issuance ID to Verify
+                        <?php renderIconLabel('fa-search', 'Enter Gas Issuance ID to Verify'); ?>
                     </label>
                     <div class="checker-search-control">
                         <div class="input-group input-group-lg checker-id-group">
@@ -82,7 +202,7 @@ header('Expires: 0');
                                 placeholder="e.g. FI-20260515-ABC123" aria-label="Gas Issuance ID">
                         </div>
                         <div class="checker-search-actions">
-                            <button class="btn btn-primary btn-lg" id="searchIssuanceBtn" onclick="searchGasIssuance()">
+                            <button class="btn btn-primary btn-lg" id="searchIssuanceBtn" type="button">
                                 <i class="fas fa-search me-1"></i>Search
                             </button>
                             <button class="btn btn-light btn-lg" type="button" id="scanQrBtn" data-bs-toggle="modal" data-bs-target="#qrScannerModal">
@@ -98,7 +218,6 @@ header('Expires: 0');
             </div>
         </div>
 
-        <!-- Step 1 Result: Issuance Details -->
         <div class="vehicle-details-card" id="issuanceDetails">
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-bottom">
@@ -107,89 +226,17 @@ header('Expires: 0');
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row g-3 issuance-detail-grid">
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="detail-item">
-                                <small class="detail-label d-block">
-                                    <i class="fas fa-hashtag me-1"></i>Issuance ID
-                                </small>
-                                <span class="detail-value" id="detailIssuanceId">--</span>
-                            </div>
+                    <?php foreach ($issuanceDetailRows as $row): ?>
+                        <div class="row g-3 issuance-detail-grid">
+                            <?php foreach ($row as $item): ?>
+                                <?php renderDetailItem($item); ?>
+                            <?php endforeach; ?>
                         </div>
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="detail-item">
-                                <small class="detail-label d-block">
-                                    <i class="fas fa-calendar me-1"></i>Date Issued
-                                </small>
-                                <span class="detail-value" id="detailDate">--</span>
-                            </div>
-                        </div>
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="detail-item">
-                                <small class="detail-label d-block">
-                                    <i class="fas fa-building me-1"></i>Office
-                                </small>
-                                <span class="detail-value" id="detailOffice">--</span>
-                            </div>
-                        </div>
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="detail-item">
-                                <small class="detail-label d-block">
-                                    <i class="fas fa-gas-pump me-1"></i>Fuel Type
-                                </small>
-                                <span id="detailFuelType" class="badge bg-secondary badge-fuel-type">--</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row g-3 issuance-detail-grid">
-                        <div class="col-md-6 col-xl-4">
-                            <div class="detail-item">
-                                <small class="detail-label d-block">
-                                    <i class="fas fa-car me-1"></i>Vehicle
-                                </small>
-                                <span class="detail-value" id="detailVehicle">--</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 col-xl-4">
-                            <div class="detail-item">
-                                <small class="detail-label d-block">
-                                    <i class="fas fa-user me-1"></i>Assigned Driver
-                                </small>
-                                <span class="detail-value" id="detailDriver">--</span>
-                            </div>
-                        </div>
-                        <div class="col-sm-6 col-xl-2">
-                            <div class="detail-item">
-                                <small class="detail-label d-block">
-                                    <i class="fas fa-tint me-1"></i>Liters Issued
-                                </small>
-                                <span class="detail-value fw-bold text-primary" id="detailLitersIssued">--</span>
-                            </div>
-                        </div>
-                        <div class="col-sm-6 col-xl-2">
-                            <div class="detail-item">
-                                <small class="detail-label d-block">
-                                    <i class="fas fa-check-circle me-1"></i>Status
-                                </small>
-                                <span class="badge bg-success fs-6 px-3 py-2" id="detailStatus">--</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row g-3 issuance-detail-grid">
-                        <div class="col-12">
-                            <div class="detail-item detail-item-purpose">
-                                <small class="detail-label d-block">
-                                    <i class="fas fa-map-marker-alt me-1"></i>Purpose
-                                </small>
-                                <span class="detail-value" id="detailPurpose">--</span>
-                            </div>
-                        </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>
 
-        <!-- Step 2: Vehicle Selection -->
         <div class="d-none" id="vehicleListSection">
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-bottom">
@@ -203,14 +250,11 @@ header('Expires: 0');
                     </div>
                 </div>
                 <div class="card-body">
-                    <div id="vehicleList">
-                        <!-- Vehicle items dynamically added -->
-                    </div>
+                    <div id="vehicleList"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Step 3: Checker Form (Input Actual Data & E-Signature) -->
         <div class="checker-form-section" id="checkerFormSection">
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header">
@@ -220,94 +264,34 @@ header('Expires: 0');
                 </div>
                 <div class="card-body">
                     <form id="checkerForm" novalidate>
-                        <!-- Reference Info (Read Only) -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <div class="issued-gas-info">
                                     <h6 class="fw-bold mb-3">
                                         <i class="fas fa-file-invoice me-2"></i>Issued Gas Reference
                                     </h6>
-                                    <div class="gas-item">
-                                        <span>Vehicle</span>
-                                        <strong id="checkVehicle">--</strong>
-                                    </div>
-                                    <div class="gas-item">
-                                        <span>Fuel Type Issued</span>
-                                        <strong id="checkFuelType">--</strong>
-                                    </div>
-                                    <div class="gas-item">
-                                        <span>Liters Issued</span>
-                                        <strong id="checkLitersIssued">--</strong>
-                                    </div>
-                                    <div class="gas-item">
-                                        <span>Issuance Reference #</span>
-                                        <strong id="checkIssuanceRef">--</strong>
-                                    </div>
+                                    <?php foreach ($referenceRows as $label => $id): ?>
+                                        <?php renderReferenceRow($label, $id); ?>
+                                    <?php endforeach; ?>
                                 </div>
                             </div>
                         </div>
 
                         <hr class="my-4">
 
-                        <!-- Actual Input Fields -->
                         <h6 class="fw-bold mb-3 text-primary">
                             <i class="fas fa-pen me-2"></i>Enter Actual Fuel-Up Information
                         </h6>
                         <div class="row">
-                            <!-- Latest Odometer -->
-                            <div class="col-md-4 mb-3">
-                                <label for="checkOdometer" class="form-label">
-                                    <i class="fas fa-tachometer-alt me-1"></i>Latest Odometer Reading
-                                    <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="checkOdometer" 
-                                        name="odometer" placeholder="Enter odometer reading"
-                                        min="0" step="1" required>
-                                    <span class="input-group-text">km</span>
-                                    <div class="invalid-feedback">
-                                        Please enter the latest odometer reading.
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Driver Name -->
-                            <div class="col-md-4 mb-3">
-                                <label for="checkDriver" class="form-label">
-                                    <i class="fas fa-user me-1"></i>Driver Name
-                                    <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" class="form-control" id="checkDriver" 
-                                    name="driver" placeholder="e.g. Juan Dela Cruz"
-                                    required>
-                                <div class="invalid-feedback">
-                                    Please enter the driver's name.
-                                </div>
-                            </div>
-
-                            <!-- Actual Fueled Up -->
-                            <div class="col-md-4 mb-3">
-                                <label for="checkActual" class="form-label">
-                                    <i class="fas fa-tint me-1"></i>Actual Fueled Up
-                                    <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="checkActual" 
-                                        name="actual_fuel" placeholder="Enter actual liters"
-                                        min="0" step="0.01" required>
-                                    <span class="input-group-text">L</span>
-                                    <div class="invalid-feedback">
-                                        Please enter the actual fueled up amount.
-                                    </div>
-                                </div>
-                            </div>
+                            <?php foreach ($actualFields as $field): ?>
+                                <?php renderActualInput($field); ?>
+                            <?php endforeach; ?>
                         </div>
 
-                        <!-- E-Signature -->
                         <div class="row mt-2">
                             <div class="col-12">
                                 <label for="checkSignaturePad" class="form-label">
-                                    <i class="fas fa-signature me-1"></i>Driver E-Signature
+                                    <?php renderIconLabel('fa-signature', 'Driver E-Signature'); ?>
                                     <span class="text-danger">*</span>
                                 </label>
                                 <div class="signature-pad-wrap">
@@ -317,7 +301,7 @@ header('Expires: 0');
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-2">
                                     <small class="text-muted">Use mouse or touch to sign before submitting.</small>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="clearSignatureBtn" onclick="clearSignaturePad()">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="clearSignatureBtn">
                                         <i class="fas fa-eraser me-1"></i>Clear Signature
                                     </button>
                                 </div>
@@ -327,21 +311,19 @@ header('Expires: 0');
                             </div>
                         </div>
 
-                        <!-- Submit Button -->
                         <div class="row mt-3">
                             <div class="col-12">
                                 <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-primary btn-lg px-5" id="submitCheckBtn" onclick="submitCheck()">
+                                    <button type="button" class="btn btn-primary btn-lg px-5" id="submitCheckBtn">
                                         <i class="fas fa-file-signature me-1"></i>Submit E-Signature
                                     </button>
-                                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="resetAll()">
+                                    <button type="button" class="btn btn-outline-secondary btn-lg js-reset-all">
                                         <i class="fas fa-times me-1"></i>Cancel
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Check Result -->
                         <div id="checkResult"></div>
                     </form>
                 </div>
@@ -377,13 +359,7 @@ header('Expires: 0');
         </div>
     </div>
 
-    <!-- Bootstrap 5 JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <!-- Custom JavaScript -->
     <script src="gas_checker.js"></script>
 </body>
 
