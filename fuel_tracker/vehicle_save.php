@@ -69,6 +69,7 @@ $action = strtolower(trim((string) ($input['action'] ?? 'create')));
 
 try {
     vehicleSaveEnsureSchedulesColumn($conn);
+    fuelTrackerEnsureVehicleFixedLiters($conn);
 
     $id = (int) ($input['id'] ?? 0);
     $vehicleId = strtoupper(trim((string) ($input['vehicle_id'] ?? '')));
@@ -102,6 +103,7 @@ try {
     $normalKmPerLiter = vehicleSaveNumber($input['normal_km_per_liter'] ?? 20, 'Normal km/liter');
     $currentOdometer = vehicleSaveNumber($input['current_odometer'] ?? 0, 'Current odometer');
     $fuelCapacity = vehicleSaveNumber($input['fuel_capacity'] ?? 0, 'Fuel capacity');
+    $fixedLiters = vehicleSaveNumber($input['fixed_liters'] ?? 0, 'Fixed liters');
 
     if ($action === 'update') {
         $stmt = $conn->prepare("
@@ -115,12 +117,13 @@ try {
                 number_of_cylinder = ?,
                 normal_km_per_liter = ?,
                 fuel_capacity = ?,
+                fixed_liters = ?,
                 status = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         ");
         $stmt->bind_param(
-            'ssssssiddsi',
+            'ssssssidddsi',
             $vehicleId,
             $plateNo,
             $typeOfVehicle,
@@ -130,6 +133,7 @@ try {
             $cylinders,
             $normalKmPerLiter,
             $fuelCapacity,
+            $fixedLiters,
             $status,
             $id
         );
@@ -147,6 +151,7 @@ try {
             'office' => $office,
             'fuel_type' => $fuelType,
             'schedules' => $schedules,
+            'fixed_liters' => $fixedLiters,
         ]);
     }
 
@@ -156,12 +161,12 @@ try {
 
     $stmt = $conn->prepare("
         INSERT INTO vehicles
-            (vehicle_id, plate_no, type_of_vehicle, office, fuel_type, schedules, number_of_cylinder, normal_km_per_liter, current_odometer, fuel_capacity, status)
+            (vehicle_id, plate_no, type_of_vehicle, office, fuel_type, schedules, number_of_cylinder, normal_km_per_liter, current_odometer, fuel_capacity, fixed_liters, status)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $stmt->bind_param(
-        'ssssssiddds',
+        'ssssssidddds',
         $vehicleId,
         $plateNo,
         $typeOfVehicle,
@@ -172,6 +177,7 @@ try {
         $normalKmPerLiter,
         $currentOdometer,
         $fuelCapacity,
+        $fixedLiters,
         $status
     );
     $stmt->execute();
@@ -187,6 +193,7 @@ try {
         'office' => $office,
         'fuel_type' => $fuelType,
         'schedules' => $schedules,
+        'fixed_liters' => $fixedLiters,
     ]);
 } catch (mysqli_sql_exception $e) {
     error_log('Vehicle save error: ' . $e->getMessage());

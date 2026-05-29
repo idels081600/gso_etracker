@@ -64,6 +64,27 @@ function fuelTrackerEnsureVehicleBalanceTank(mysqli $conn): void
     $ensured = true;
 }
 
+function fuelTrackerEnsureVehicleFixedLiters(mysqli $conn): void
+{
+    static $ensured = false;
+
+    if ($ensured) {
+        return;
+    }
+
+    $result = $conn->query("SHOW COLUMNS FROM vehicles LIKE 'fixed_liters'");
+    if ($result && $result->num_rows > 0) {
+        $ensured = true;
+        return;
+    }
+
+    if (!$conn->query("ALTER TABLE vehicles ADD COLUMN fixed_liters DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER fuel_capacity")) {
+        throw new RuntimeException('Unable to add vehicles.fixed_liters: ' . $conn->error);
+    }
+
+    $ensured = true;
+}
+
 function fuelTrackerNormalizeSchedule(mixed $value): string
 {
     $text = strtolower(trim((string) $value));
@@ -111,6 +132,11 @@ function fuelTrackerScheduleMatchesDate(mixed $schedule, ?DateTimeInterface $dat
 
 function fuelTrackerScheduledIssuanceLiters(array $vehicle): float
 {
+    $fixedLiters = max(0.0, (float) ($vehicle['fixed_liters'] ?? 0));
+    if ($fixedLiters > 0) {
+        return $fixedLiters;
+    }
+
     $capacity = max(0.0, (float) ($vehicle['fuel_capacity'] ?? $vehicle['capacity'] ?? 0));
     $balanceTank = max(0.0, (float) ($vehicle['balance_tank'] ?? 0));
     $liters = $capacity - $balanceTank;
@@ -122,6 +148,7 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
 {
     fuelTrackerEnsureVehicleSchedules($conn);
     fuelTrackerEnsureVehicleBalanceTank($conn);
+    fuelTrackerEnsureVehicleFixedLiters($conn);
     fuelTrackerEnsureQueryIndexes($conn);
 
     $date ??= new DateTimeImmutable('today');
@@ -135,6 +162,7 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
             office,
             fuel_type,
             fuel_capacity,
+            fixed_liters,
             balance_tank,
             schedules
         FROM vehicles
@@ -244,6 +272,7 @@ function fuelTrackerFetchVehicles(mysqli $conn): array
     fuelTrackerEnsureVehiclePastOdometer($conn);
     fuelTrackerEnsureVehicleSchedules($conn);
     fuelTrackerEnsureVehicleBalanceTank($conn);
+    fuelTrackerEnsureVehicleFixedLiters($conn);
     fuelTrackerEnsureQueryIndexes($conn);
 
     $sql = "
@@ -259,6 +288,7 @@ function fuelTrackerFetchVehicles(mysqli $conn): array
             past_odometer,
             current_odometer AS current_odo,
             fuel_capacity AS capacity,
+            fixed_liters,
             number_of_cylinder AS cylinders,
             normal_km_per_liter,
             status

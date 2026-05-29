@@ -847,6 +847,27 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             <!-- ========== RIGHT SIDEBAR ========== -->
             <div class="col-xl-3">
                 <div class="issuance-sidebar">
+                <!-- Mini Calendar -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-calendar-days me-2"></i>Issuance Calendar
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="miniCalendar" class="mini-calendar"></div>
+                        <div class="mt-2 text-muted small">
+                            <i class="fas fa-circle text-danger me-1" style="font-size:0.5rem;"></i> Days with scheduled issuances
+                        </div>
+                        <div class="mt-1 small" id="selectedDateLabel">
+                            <i class="fas fa-filter me-1"></i> Click a date to filter the table below.
+                        </div>
+                        <div class="calendar-schedule-list" id="calendarScheduleList">
+                            <div class="text-muted small">Select a date to see scheduled vehicles.</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Budget Status -->
                 <div class="card border-0 shadow-sm mb-4 budget-status-card">
                     <div class="card-header bg-white border-bottom">
@@ -910,26 +931,6 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                     </div>
                 </div>
 
-                <!-- Mini Calendar -->
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-bottom">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-calendar-days me-2"></i>Issuance Calendar
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="miniCalendar" class="mini-calendar"></div>
-                        <div class="mt-2 text-muted small">
-                            <i class="fas fa-circle text-danger me-1" style="font-size:0.5rem;"></i> Days with scheduled issuances
-                        </div>
-                        <div class="mt-1 small" id="selectedDateLabel">
-                            <i class="fas fa-filter me-1"></i> Click a date to filter the table below.
-                        </div>
-                        <div class="calendar-schedule-list" id="calendarScheduleList">
-                            <div class="text-muted small">Select a date to see scheduled vehicles.</div>
-                        </div>
-                    </div>
-                </div>
                 </div>
             </div>
         </div>
@@ -1172,6 +1173,13 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                             <label for="editVehicleFuelCapacity" class="form-label">Fuel Capacity</label>
                                             <div class="input-group">
                                                 <input type="number" class="form-control" id="editVehicleFuelCapacity" min="0" step="0.01" required disabled>
+                                                <span class="input-group-text">L</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 col-lg-4">
+                                            <label for="editVehicleFixedLiters" class="form-label">Fixed Liters</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="editVehicleFixedLiters" min="0" step="0.01" value="0" disabled>
                                                 <span class="input-group-text">L</span>
                                             </div>
                                         </div>
@@ -1419,6 +1427,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 'past_odometer' => $vehicle['past_odometer'] ?? $vehicle['current_odo'] ?? 0,
                 'current_odometer' => $vehicle['current_odo'] ?? 0,
                 'fuel_capacity' => $vehicle['capacity'] ?? 0,
+                'fixed_liters' => $vehicle['fixed_liters'] ?? 0,
                 'status' => $vehicle['status'] ?? 'active',
             ];
         }, $vehicles), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
@@ -2090,6 +2099,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             });
             document.getElementById('editVehicleCurrentOdo').value = vehicle.current_odometer || 0;
             document.getElementById('editVehicleFuelCapacity').value = vehicle.fuel_capacity || 0;
+            document.getElementById('editVehicleFixedLiters').value = vehicle.fixed_liters || 0;
             document.getElementById('editVehicleStatus').value = vehicle.status || 'active';
             document.getElementById('editVehicleTitle').textContent = vehicle.plate_no || 'Vehicle details';
             document.getElementById('editVehicleSubtitle').textContent = (vehicle.type_of_vehicle || '-') + ' | ' + (vehicle.office || 'No office') + ' | ' + (vehicle.fuel_type || 'unleaded') + ' | ' + (vehicle.schedules || 'No schedule') + ' | ' + (vehicle.vehicle_id || 'No vehicle ID');
@@ -2241,6 +2251,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 normal_km_per_liter: document.getElementById('editVehicleNormalKm').value,
                 current_odometer: document.getElementById('editVehicleCurrentOdo').value,
                 fuel_capacity: document.getElementById('editVehicleFuelCapacity').value,
+                fixed_liters: document.getElementById('editVehicleFixedLiters').value,
                 status: document.getElementById('editVehicleStatus').value
             }, this);
         });
