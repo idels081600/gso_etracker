@@ -151,6 +151,11 @@
     gap: 0.6rem;
     grid-template-columns: minmax(260px, 1fr) auto;
     max-width: 640px;
+    width: 100%;
+}
+
+.checker-id-group {
+    width: 100%;
 }
 
 .checker-id-group .form-control,
@@ -162,6 +167,8 @@
 .checker-id-group .form-control {
     border-bottom-left-radius: 6px;
     border-top-left-radius: 6px;
+    min-width: 0;
+    width: 100%;
 }
 
 .checker-search-section .btn-primary {
@@ -371,11 +378,23 @@
 }
 
 .issued-gas-info .gas-item {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(130px, 0.65fr) minmax(0, 1fr);
     padding: 0.5rem 0;
     border-bottom: 1px solid #e9ecef;
+}
+
+.issued-gas-info .gas-item span {
+    color: #495057;
+    min-width: 0;
+}
+
+.issued-gas-info .gas-item strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-align: right;
 }
 
 .issued-gas-info .gas-item:last-child {
@@ -608,11 +627,14 @@
 
     .checker-search-control {
         grid-template-columns: 1fr;
+        max-width: none;
+        width: 100%;
     }
 
     .checker-id-group {
-        display: grid;
+        display: grid !important;
         grid-template-columns: minmax(0, 1fr) auto;
+        width: 100%;
     }
 
     .checker-id-group .btn,
@@ -625,6 +647,8 @@
     .checker-id-group .form-control,
     .checker-id-group .input-group-text {
         min-height: 46px;
+        min-width: 0;
+        width: 100%;
     }
 
     .checker-current-card {
@@ -723,6 +747,31 @@
 
     .checker-result-list dt {
         font-size: 0.72rem;
+    }
+
+    .issued-gas-info {
+        padding: 1rem;
+    }
+
+    .issued-gas-info .gas-item {
+        gap: 0.35rem;
+        grid-template-columns: 1fr;
+    }
+
+    .issued-gas-info .gas-item strong {
+        text-align: left;
+    }
+}
+
+@media (max-width: 380px) {
+    .checker-id-group {
+        grid-template-columns: 1fr;
+    }
+
+    .checker-id-group .form-control,
+    .checker-id-group .btn {
+        border-radius: 6px;
+        width: 100%;
     }
 }
 
