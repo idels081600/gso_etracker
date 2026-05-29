@@ -208,45 +208,6 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             justify-content: center;
             font-weight: 700;
         }
-        .calendar-schedule-list {
-            border-top: 1px solid #e9ecef;
-            margin-top: 0.75rem;
-            padding-top: 0.75rem;
-        }
-        .calendar-schedule-item {
-            align-items: flex-start;
-            background: #f8fbff;
-            border: 1px solid #dbeafe;
-            border-radius: 8px;
-            display: flex;
-            gap: 0.5rem;
-            padding: 0.5rem 0.6rem;
-        }
-        .calendar-schedule-item + .calendar-schedule-item {
-            margin-top: 0.45rem;
-        }
-        .calendar-schedule-item .schedule-dot {
-            background: #0d6efd;
-            border-radius: 50%;
-            flex: 0 0 8px;
-            height: 8px;
-            margin-top: 0.35rem;
-            width: 8px;
-        }
-        .calendar-schedule-item .schedule-title {
-            color: #173b23;
-            display: block;
-            font-size: 0.82rem;
-            font-weight: 800;
-            line-height: 1.2;
-        }
-        .calendar-schedule-item .schedule-meta {
-            color: #667085;
-            display: block;
-            font-size: 0.75rem;
-            line-height: 1.25;
-        }
-
         /* ---------- Status badges ---------- */
         .summary-stats .stat-card {
             text-align: center;
@@ -331,6 +292,33 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             font-weight: 800;
             overflow-wrap: anywhere;
             text-align: right;
+        }
+        .budget-status-card .budget-price-grid {
+            border-top: 1px solid #edf1f5;
+            display: grid;
+            gap: 0.65rem;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-top: 0.15rem;
+            padding-top: 0.85rem;
+        }
+        .budget-status-card .budget-price-grid label {
+            color: #6c757d;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+        .budget-status-card .budget-price-grid .input-group-text,
+        .budget-status-card .budget-price-grid .form-control {
+            font-size: 0.82rem;
+            min-height: 34px;
+        }
+        .budget-status-card .budget-note {
+            color: #6c757d;
+            display: block;
+            font-size: 0.72rem;
+            line-height: 1.25;
+            margin-top: 0.65rem;
         }
 
         /* ---------- Schedule table ---------- */
@@ -871,9 +859,6 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                         <div class="mt-1 small" id="selectedDateLabel">
                             <i class="fas fa-filter me-1"></i> Click a date to filter the table below.
                         </div>
-                        <div class="calendar-schedule-list" id="calendarScheduleList">
-                            <div class="text-muted small">Select a date to see scheduled vehicles.</div>
-                        </div>
                     </div>
                 </div>
 
@@ -881,20 +866,20 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 <div class="card border-0 shadow-sm mb-4 budget-status-card">
                     <div class="card-header bg-white border-bottom">
                         <h5 class="card-title mb-0">
-                            <i class="fas fa-wallet me-2 text-primary"></i>Budget Status
+                            <i class="fas fa-wallet me-2 text-primary"></i>Estimated Budget Status
                         </h5>
                     </div>
                     <div class="card-body">
                         <div class="budget-row">
                             <div class="budget-head">
                                 <span class="budget-label">Diesel</span>
-                                <span class="budget-amount text-warning">&#8369;<?php echo htmlspecialchars(number_format($dieselBudgetRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                <span class="budget-amount text-warning" id="draftDieselRemaining">&#8369;<?php echo htmlspecialchars(number_format($dieselBudgetRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
-                            <div class="budget-track" role="progressbar" aria-label="Diesel budget remaining" aria-valuenow="<?php echo htmlspecialchars(number_format($dieselBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>" aria-valuemin="0" aria-valuemax="100">
-                                <span class="budget-fill budget-fill-diesel" style="width: <?php echo htmlspecialchars(number_format($dieselBudgetPercent, 2), ENT_QUOTES, 'UTF-8'); ?>%;"></span>
+                            <div class="budget-track" role="progressbar" aria-label="Draft diesel budget remaining" aria-valuenow="<?php echo htmlspecialchars(number_format($dieselBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>" aria-valuemin="0" aria-valuemax="100" id="draftDieselProgress">
+                                <span class="budget-fill budget-fill-diesel" id="draftDieselFill" style="width: <?php echo htmlspecialchars(number_format($dieselBudgetPercent, 2), ENT_QUOTES, 'UTF-8'); ?>%;"></span>
                             </div>
                             <div class="budget-meta">
-                                <span><?php echo htmlspecialchars(number_format($dieselBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
+                                <span id="draftDieselPercent"><?php echo htmlspecialchars(number_format($dieselBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
                                 <span>of &#8369;<?php echo htmlspecialchars(number_format($dieselBudgetTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
                         </div>
@@ -902,16 +887,34 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                         <div class="budget-row">
                             <div class="budget-head">
                                 <span class="budget-label">Unleaded</span>
-                                <span class="budget-amount text-success">&#8369;<?php echo htmlspecialchars(number_format($unleadedBudgetRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                <span class="budget-amount text-success" id="draftUnleadedRemaining">&#8369;<?php echo htmlspecialchars(number_format($unleadedBudgetRemaining, 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
-                            <div class="budget-track" role="progressbar" aria-label="Unleaded budget remaining" aria-valuenow="<?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>" aria-valuemin="0" aria-valuemax="100">
-                                <span class="budget-fill budget-fill-unleaded" style="width: <?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 2), ENT_QUOTES, 'UTF-8'); ?>%;"></span>
+                            <div class="budget-track" role="progressbar" aria-label="Draft unleaded budget remaining" aria-valuenow="<?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>" aria-valuemin="0" aria-valuemax="100" id="draftUnleadedProgress">
+                                <span class="budget-fill budget-fill-unleaded" id="draftUnleadedFill" style="width: <?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 2), ENT_QUOTES, 'UTF-8'); ?>%;"></span>
                             </div>
                             <div class="budget-meta">
-                                <span><?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
+                                <span id="draftUnleadedPercent"><?php echo htmlspecialchars(number_format($unleadedBudgetPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
                                 <span>of &#8369;<?php echo htmlspecialchars(number_format($unleadedBudgetTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
                         </div>
+
+                        <div class="budget-price-grid">
+                            <div>
+                                <label for="dieselPumpPrice" class="form-label mb-1">Diesel Price</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">&#8369;</span>
+                                    <input type="number" class="form-control" id="dieselPumpPrice" min="0" step="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="unleadedPumpPrice" class="form-label mb-1">Unleaded Price</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">&#8369;</span>
+                                    <input type="number" class="form-control" id="unleadedPumpPrice" min="0" step="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                        <small class="budget-note" id="draftBudgetNote">Estimated reserve uses approved/valid scheduled issuances that are not yet used.</small>
 
                         <div class="budget-total-row">
                             <div>
@@ -919,8 +922,8 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                 <span class="text-primary">&#8369;<?php echo htmlspecialchars(number_format($budgetTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
                             <div>
-                                <small>Deducted</small>
-                                <span class="text-danger">&#8369;<?php echo htmlspecialchars(number_format($budgetUsed, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                <small>Estimated Cost</small>
+                                <span class="text-danger" id="draftEstimatedCost">&#8369;0.00</span>
                             </div>
                         </div>
                     </div>
@@ -1412,6 +1415,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 'expiry_date' => $iss['expiry_date'] ?? null,
                 'status' => strtolower($iss['status'] ?? 'valid'),
                 'vehicle_type' => $iss['vehicle_type'] ?? '',
+                'fuel_type' => str_contains(strtolower((string) ($iss['fuel_type'] ?? '')), 'diesel') ? 'diesel' : 'unleaded',
                 'actual_liters_fueled' => $iss['actual_liters_fueled'] ?? null,
                 'unit' => $iss['unit'] ?? 'Liters',
                 'past_odometer' => $pastOdometer,
@@ -1440,6 +1444,93 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 'status' => $vehicle['status'] ?? 'active',
             ];
         }, $vehicles), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+
+        var draftBudgetBase = <?php echo json_encode([
+            'diesel_remaining' => $dieselBudgetRemaining,
+            'diesel_total' => $dieselBudgetTotal,
+            'unleaded_remaining' => $unleadedBudgetRemaining,
+            'unleaded_total' => $unleadedBudgetTotal,
+        ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+
+        function formatPeso(amount) {
+            return '\u20B1' + Number(amount || 0).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function draftBudgetPercent(remaining, total) {
+            if (!total || total <= 0) {
+                return 0;
+            }
+            return Math.max(0, Math.min(100, (remaining / total) * 100));
+        }
+
+        function renderDraftBudgetStatus() {
+            var dieselPriceInput = document.getElementById('dieselPumpPrice');
+            var unleadedPriceInput = document.getElementById('unleadedPumpPrice');
+            var dieselPrice = Number(dieselPriceInput ? dieselPriceInput.value : 0) || 0;
+            var unleadedPrice = Number(unleadedPriceInput ? unleadedPriceInput.value : 0) || 0;
+            var estimated = { diesel: 0, unleaded: 0 };
+            var liters = { diesel: 0, unleaded: 0 };
+
+            issuanceData.forEach(function(item) {
+                var status = String(item.status || '').toLowerCase();
+                if (status !== 'approved' && status !== 'valid') {
+                    return;
+                }
+
+                var fuelType = String(item.fuel_type || '').toLowerCase().indexOf('diesel') !== -1 ? 'diesel' : 'unleaded';
+                var issuedLiters = Number(item.liters || 0) || 0;
+                var price = fuelType === 'diesel' ? dieselPrice : unleadedPrice;
+                liters[fuelType] += issuedLiters;
+                estimated[fuelType] += issuedLiters * price;
+            });
+
+            var dieselDraftRemaining = Number(draftBudgetBase.diesel_remaining || 0) - estimated.diesel;
+            var unleadedDraftRemaining = Number(draftBudgetBase.unleaded_remaining || 0) - estimated.unleaded;
+            var dieselPercent = draftBudgetPercent(dieselDraftRemaining, Number(draftBudgetBase.diesel_total || 0));
+            var unleadedPercent = draftBudgetPercent(unleadedDraftRemaining, Number(draftBudgetBase.unleaded_total || 0));
+            var totalEstimated = estimated.diesel + estimated.unleaded;
+
+            document.getElementById('draftDieselRemaining').textContent = formatPeso(dieselDraftRemaining);
+            document.getElementById('draftUnleadedRemaining').textContent = formatPeso(unleadedDraftRemaining);
+            document.getElementById('draftDieselPercent').textContent = Math.round(dieselPercent) + '% left';
+            document.getElementById('draftUnleadedPercent').textContent = Math.round(unleadedPercent) + '% left';
+            document.getElementById('draftDieselFill').style.width = dieselPercent.toFixed(2) + '%';
+            document.getElementById('draftUnleadedFill').style.width = unleadedPercent.toFixed(2) + '%';
+            document.getElementById('draftDieselProgress').setAttribute('aria-valuenow', String(Math.round(dieselPercent)));
+            document.getElementById('draftUnleadedProgress').setAttribute('aria-valuenow', String(Math.round(unleadedPercent)));
+            document.getElementById('draftEstimatedCost').textContent = formatPeso(totalEstimated);
+            document.getElementById('draftBudgetNote').textContent =
+                'Reserved estimate: ' + liters.diesel.toFixed(2) + ' L diesel and ' + liters.unleaded.toFixed(2) + ' L unleaded from approved/valid issuances.';
+
+            try {
+                localStorage.setItem('fuelTrackerDieselPumpPrice', dieselPriceInput ? dieselPriceInput.value : '');
+                localStorage.setItem('fuelTrackerUnleadedPumpPrice', unleadedPriceInput ? unleadedPriceInput.value : '');
+            } catch (error) {
+                // Local storage is optional; the estimator still works without it.
+            }
+        }
+
+        ['dieselPumpPrice', 'unleadedPumpPrice'].forEach(function(inputId) {
+            var input = document.getElementById(inputId);
+            if (!input) {
+                return;
+            }
+
+            try {
+                var saved = localStorage.getItem(inputId === 'dieselPumpPrice' ? 'fuelTrackerDieselPumpPrice' : 'fuelTrackerUnleadedPumpPrice');
+                if (saved !== null) {
+                    input.value = saved;
+                }
+            } catch (error) {
+                // Ignore local storage restrictions.
+            }
+
+            input.addEventListener('input', renderDraftBudgetStatus);
+        });
+        renderDraftBudgetStatus();
 
         // ========== SUMMARY STATS ==========
         function renderStats() {
@@ -1547,37 +1638,6 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             return map;
         }
 
-        function renderCalendarScheduleList(dateStr, calendarMap) {
-            var list = document.getElementById('calendarScheduleList');
-            if (!list) {
-                return;
-            }
-            if (!dateStr) {
-                list.innerHTML = '<div class="text-muted small">Select a date to see scheduled vehicles.</div>';
-                return;
-            }
-
-            var entry = calendarMap[dateStr] || { issued: [], scheduled: [] };
-            var vehicles = entry.scheduled || [];
-            if (vehicles.length === 0) {
-                list.innerHTML = '<div class="text-muted small">No vehicles scheduled on this date.</div>';
-                return;
-            }
-
-            list.innerHTML = vehicles.slice(0, 8).map(function(vehicle) {
-                var alreadyIssued = (entry.issued || []).some(function(item) {
-                    return String(item.plate_no || '') === String(vehicle.plate_no || '');
-                });
-                return '<div class="calendar-schedule-item">' +
-                    '<span class="schedule-dot"></span>' +
-                    '<span>' +
-                        '<span class="schedule-title">' + calendarEscape(vehicle.plate_no || vehicle.vehicle_id || 'No plate') + '</span>' +
-                        '<span class="schedule-meta">' + calendarEscape(vehicle.type_of_vehicle || 'Vehicle') + ' | ' + calendarEscape(vehicle.office || 'Office') + ' | ' + calendarEscape(scheduleLabel(vehicle.schedules)) + (alreadyIssued ? ' | Issuance created' : '') + '</span>' +
-                    '</span>' +
-                '</div>';
-            }).join('') + (vehicles.length > 8 ? '<div class="text-muted small mt-2">+' + (vehicles.length - 8) + ' more scheduled vehicles</div>' : '');
-        }
-
         function renderMiniCalendar(year, month) {
             var issuanceMap = buildCalendarMap(year, month);
             var firstDay = new Date(year, month, 1);
@@ -1635,7 +1695,6 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
 
             html += '</div>';
             document.getElementById('miniCalendar').innerHTML = html;
-            renderCalendarScheduleList(selectedCalendarDate, issuanceMap);
 
             // Event listeners
             document.querySelectorAll('#miniCalendar .mc-header button').forEach(function(btn) {
@@ -1922,6 +1981,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                     checkbox.checked = status === 'approved' || status === 'valid' || status === 'used';
                     checkbox.disabled = status === 'used' || status === 'expired' || status === 'revoked';
                     renderStats();
+                    renderDraftBudgetStatus();
                     applyFilters();
                     showIssuanceToast(data.message || 'Approval updated.', 'success');
                 })

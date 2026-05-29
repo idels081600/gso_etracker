@@ -499,7 +499,7 @@ try {
                                 </div>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h5 class="card-title text-muted mb-1">FUEL BUDGET LEFT</h5>
+                                <h5 class="card-title text-muted mb-1">ESTIMATED BUDGET STATUS</h5>
                                 <?php
                                 $dieselRemaining = (float) ($budgetSummary['remaining_diesel_budget'] ?? 0);
                                 $dieselTotal = (float) ($budgetSummary['total_diesel_budget'] ?? 0);
@@ -538,14 +538,31 @@ try {
                                 </div>
                             </div>
                         </div>
+                        <div class="budget-price-grid mt-3">
+                            <div>
+                                <label for="dashboardDieselPumpPrice" class="form-label mb-1">Diesel Price</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">&#8369;</span>
+                                    <input type="number" class="form-control" id="dashboardDieselPumpPrice" min="0" step="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="dashboardUnleadedPumpPrice" class="form-label mb-1">Unleaded Price</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">&#8369;</span>
+                                    <input type="number" class="form-control" id="dashboardUnleadedPumpPrice" min="0" step="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                        <small class="budget-draft-note" id="budgetDraftNote">Estimated reserve uses approved/valid scheduled issuances that are not yet used.</small>
                         <div class="budget-context-grid mt-3">
                             <div class="budget-context-item">
                                 <small>Total Budget</small>
                                 <span id="budgetTotal">&#8369;<?php echo htmlspecialchars(number_format((float) $budgetSummary['total_budget'], 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
                             <div class="budget-context-item">
-                                <small>Deducted</small>
-                                <span class="text-danger" id="budgetUsed">&#8369;<?php echo htmlspecialchars(number_format((float) $budgetSummary['used_budget'], 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                <small>Estimated Cost</small>
+                                <span class="text-danger" id="budgetUsed">&#8369;0.00</span>
                             </div>
                         </div>
                         <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-3" data-bs-toggle="modal" data-bs-target="#addBudgetModal">

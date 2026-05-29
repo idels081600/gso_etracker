@@ -136,6 +136,7 @@ async function handleExportRecords() {
 document.addEventListener("DOMContentLoaded", async function () {
   prepareBudgetBarAnimation();
   initializeActionButtons();
+  initDraftBudgetInputs();
 
   // Add event listener for saving fuel records
   const saveFuelRecordBtn = document.getElementById("saveFuelRecord");
@@ -774,7 +775,52 @@ function formatPeso(value) {
   });
 }
 
-function updateFuelBudgetSummary(summary) {
+let dashboardBudgetSummary = {};
+let dashboardDraftIssuances = {
+  diesel_liters: 0,
+  unleaded_liters: 0,
+  diesel_records: 0,
+  unleaded_records: 0,
+};
+
+async function fetchDraftBudgetIssuances() {
+  const response = await fetch("get_fuel_data.php?action=draft_budget_issuances");
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  if (!payload.success) {
+    throw new Error(payload.message || "Unable to load draft budget issuances.");
+  }
+
+  return payload.data || {};
+}
+
+function draftBudgetPercent(remaining, total) {
+  if (!total || total <= 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, (remaining / total) * 100));
+}
+
+function renderDraftFuelBudget() {
+  const dieselPriceInput = document.getElementById("dashboardDieselPumpPrice");
+  const unleadedPriceInput = document.getElementById("dashboardUnleadedPumpPrice");
+  const dieselPrice = Number(dieselPriceInput?.value || 0) || 0;
+  const unleadedPrice = Number(unleadedPriceInput?.value || 0) || 0;
+  const dieselLiters = Number(dashboardDraftIssuances.diesel_liters || 0) || 0;
+  const unleadedLiters = Number(dashboardDraftIssuances.unleaded_liters || 0) || 0;
+  const dieselCost = dieselLiters * dieselPrice;
+  const unleadedCost = unleadedLiters * unleadedPrice;
+  const dieselTotal = Number(dashboardBudgetSummary.total_diesel_budget || 0) || 0;
+  const unleadedTotal = Number(dashboardBudgetSummary.total_unleaded_budget || 0) || 0;
+  const dieselLeft = (Number(dashboardBudgetSummary.remaining_diesel_budget || 0) || 0) - dieselCost;
+  const unleadedLeft = (Number(dashboardBudgetSummary.remaining_unleaded_budget || 0) || 0) - unleadedCost;
+  const dieselPercent = draftBudgetPercent(dieselLeft, dieselTotal);
+  const unleadedPercent = draftBudgetPercent(unleadedLeft, unleadedTotal);
+
   const dieselRemaining = document.getElementById("budgetDieselRemaining");
   const unleadedRemaining = document.getElementById("budgetUnleadedRemaining");
   const dieselBar = document.getElementById("budgetDieselBar");
@@ -785,19 +831,10 @@ function updateFuelBudgetSummary(summary) {
   const unleadedTotalText = document.getElementById("budgetUnleadedTotal");
   const total = document.getElementById("budgetTotal");
   const used = document.getElementById("budgetUsed");
-  const dieselTotal = Number(summary.total_diesel_budget || 0) || 0;
-  const dieselLeft = Number(summary.remaining_diesel_budget || 0) || 0;
-  const unleadedTotal = Number(summary.total_unleaded_budget || 0) || 0;
-  const unleadedLeft = Number(summary.remaining_unleaded_budget || 0) || 0;
-  const dieselPercent = dieselTotal > 0 ? Math.max(0, Math.min(100, (dieselLeft / dieselTotal) * 100)) : 0;
-  const unleadedPercent = unleadedTotal > 0 ? Math.max(0, Math.min(100, (unleadedLeft / unleadedTotal) * 100)) : 0;
+  const note = document.getElementById("budgetDraftNote");
 
-  if (dieselRemaining) {
-    dieselRemaining.textContent = formatPeso(dieselLeft);
-  }
-  if (unleadedRemaining) {
-    unleadedRemaining.textContent = formatPeso(unleadedLeft);
-  }
+  if (dieselRemaining) dieselRemaining.textContent = formatPeso(dieselLeft);
+  if (unleadedRemaining) unleadedRemaining.textContent = formatPeso(unleadedLeft);
   if (dieselBar) {
     dieselBar.style.width = `${dieselPercent.toFixed(2)}%`;
     dieselBar.parentElement?.setAttribute("aria-valuenow", Math.round(dieselPercent).toString());
@@ -810,8 +847,44 @@ function updateFuelBudgetSummary(summary) {
   if (unleadedPercentText) unleadedPercentText.textContent = `${Math.round(unleadedPercent)}% left`;
   if (dieselTotalText) dieselTotalText.textContent = `of ${formatPeso(dieselTotal)}`;
   if (unleadedTotalText) unleadedTotalText.textContent = `of ${formatPeso(unleadedTotal)}`;
-  if (total) total.textContent = formatPeso(summary.total_budget || 0);
-  if (used) used.textContent = formatPeso(summary.used_budget || 0);
+  if (total) total.textContent = formatPeso(dashboardBudgetSummary.total_budget || 0);
+  if (used) used.textContent = formatPeso(dieselCost + unleadedCost);
+  if (note) {
+    note.textContent = `Reserved estimate: ${dieselLiters.toFixed(2)} L diesel and ${unleadedLiters.toFixed(2)} L unleaded from approved/valid issuances.`;
+  }
+
+  try {
+    if (dieselPriceInput) localStorage.setItem("fuelTrackerDieselPumpPrice", dieselPriceInput.value);
+    if (unleadedPriceInput) localStorage.setItem("fuelTrackerUnleadedPumpPrice", unleadedPriceInput.value);
+  } catch (error) {
+    // Local storage is optional; the estimator still works without it.
+  }
+}
+
+function initDraftBudgetInputs() {
+  [
+    ["dashboardDieselPumpPrice", "fuelTrackerDieselPumpPrice"],
+    ["dashboardUnleadedPumpPrice", "fuelTrackerUnleadedPumpPrice"],
+  ].forEach(([inputId, storageKey]) => {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved !== null) {
+        input.value = saved;
+      }
+    } catch (error) {
+      // Ignore local storage restrictions.
+    }
+
+    input.addEventListener("input", renderDraftFuelBudget);
+  });
+}
+
+function updateFuelBudgetSummary(summary) {
+  dashboardBudgetSummary = summary || {};
+  renderDraftFuelBudget();
 }
 
 let officeConsumptionChart = null;
@@ -840,12 +913,19 @@ async function fetchConsumptionRankings() {
 }
 
 async function loadDashboardVisuals() {
-  const [summaryResult, rankingsResult] = await Promise.allSettled([
+  const [summaryResult, draftResult, rankingsResult] = await Promise.allSettled([
     fetchFuelBudgetSummary(),
+    fetchDraftBudgetIssuances(),
     fetchConsumptionRankings(),
   ]);
 
   requestAnimationFrame(() => {
+    if (draftResult.status === "fulfilled") {
+      dashboardDraftIssuances = draftResult.value || {};
+    } else {
+      console.error("Error loading draft budget issuances:", draftResult.reason);
+    }
+
     if (summaryResult.status === "fulfilled") {
       updateFuelBudgetSummary(summaryResult.value);
     } else {

@@ -286,6 +286,36 @@ body {
   padding-top: 0.9rem;
 }
 
+.budget-price-grid {
+  border-top: 1px solid #edf1f5;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 0.9rem;
+}
+
+.budget-price-grid label {
+  color: var(--dashboard-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.budget-price-grid .input-group-text,
+.budget-price-grid .form-control {
+  font-size: 0.82rem;
+  min-height: 34px;
+}
+
+.budget-draft-note {
+  color: var(--dashboard-muted);
+  display: block;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  margin-top: 0.65rem;
+}
+
 .budget-context-item {
   min-width: 0;
 }

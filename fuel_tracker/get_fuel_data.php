@@ -443,6 +443,67 @@ function getFuelBudgetDeductions(array $filters = []): array
     }
 }
 
+function getDraftBudgetIssuances(): array
+{
+    global $conn;
+
+    try {
+        fuelTrackerSyncIssuanceOffices($conn);
+
+        $sql = "
+            SELECT
+                CASE WHEN LOWER(COALESCE(gi.fuel_type, v.fuel_type, '')) LIKE '%diesel%' THEN 'diesel' ELSE 'unleaded' END AS fuel_type,
+                SUM(COALESCE(gi.authorized_liters, 0)) AS total_liters,
+                COUNT(*) AS total_records
+            FROM gas_issuances gi
+            INNER JOIN vehicles v ON v.id = gi.vehicle_id
+            WHERE LOWER(COALESCE(gi.status, '')) IN ('approved', 'valid')
+            GROUP BY fuel_type
+        ";
+
+        $result = mysqli_query($conn, $sql);
+        if (!$result) {
+            throw new Exception('Query failed: ' . mysqli_error($conn));
+        }
+
+        $summary = [
+            'diesel_liters' => 0.0,
+            'unleaded_liters' => 0.0,
+            'diesel_records' => 0,
+            'unleaded_records' => 0,
+        ];
+
+        while ($row = mysqli_fetch_assoc($result)) {
+            $fuelType = (string) ($row['fuel_type'] ?? 'unleaded');
+            if ($fuelType === 'diesel') {
+                $summary['diesel_liters'] = (float) ($row['total_liters'] ?? 0);
+                $summary['diesel_records'] = (int) ($row['total_records'] ?? 0);
+            } else {
+                $summary['unleaded_liters'] = (float) ($row['total_liters'] ?? 0);
+                $summary['unleaded_records'] = (int) ($row['total_records'] ?? 0);
+            }
+        }
+
+        return [
+            'success' => true,
+            'data' => $summary,
+            'message' => 'Draft budget issuances retrieved successfully',
+        ];
+    } catch (Throwable $e) {
+        logError('Error in getDraftBudgetIssuances: ' . $e->getMessage());
+        return [
+            'success' => false,
+            'data' => [
+                'diesel_liters' => 0,
+                'unleaded_liters' => 0,
+                'diesel_records' => 0,
+                'unleaded_records' => 0,
+            ],
+            'message' => 'Error retrieving draft budget issuances',
+        ];
+    }
+}
+
 function getFuelConsumptionRankings(): array
 {
     global $conn;
@@ -577,6 +638,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $response = getFuelBudgetDeductions($filters);
             break;
 
+        case 'draft_budget_issuances':
+            $response = getDraftBudgetIssuances();
+            break;
+
         case 'consumption_rankings':
             $response = getFuelConsumptionRankings();
             break;
@@ -604,7 +669,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         default:
             $response = [
                 'success' => false,
-                'message' => 'Invalid action specified: ' . $action . '. Valid actions: all, filtered, statistics, filtered_statistics, budget_summary, budget_deductions, consumption_rankings, single'
+                'message' => 'Invalid action specified: ' . $action . '. Valid actions: all, filtered, statistics, filtered_statistics, budget_summary, budget_deductions, draft_budget_issuances, consumption_rankings, single'
             ];
     }
 
