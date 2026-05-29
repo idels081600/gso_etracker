@@ -40,6 +40,26 @@ function showNotification(message, type = 'success') {
     }, 5000);
 }
 
+function updateCurrentCheckerVehicle(record = null) {
+    const card = document.querySelector('.checker-current-card');
+    const value = document.getElementById('currentCheckerVehicle');
+    const help = document.getElementById('currentCheckerHelp');
+    if (!card || !value || !help) {
+        return;
+    }
+
+    if (!record) {
+        card.classList.remove('is-loaded');
+        value.textContent = '----';
+        help.textContent = 'Search to load';
+        return;
+    }
+
+    card.classList.add('is-loaded');
+    value.textContent = record.plate_no || record.vehicle || 'Loaded';
+    help.textContent = record.vehicle || 'Voucher loaded';
+}
+
 // ====== SIGNATURE PAD ======
 function initSignaturePad() {
     signatureCanvas = document.getElementById('checkSignaturePad');
@@ -163,7 +183,8 @@ function clearSignaturePad() {
 function validateSignature() {
     updateSignatureValue();
 
-    if (hasSignature && document.getElementById('checkSignature').value) {
+    const signatureValue = String(document.getElementById('checkSignature')?.value || '').trim();
+    if (hasSignature && signatureValue !== '') {
         return true;
     }
 
@@ -310,13 +331,13 @@ function searchGasIssuance() {
         }))
         .then((data) => {
             const record = data.record;
-            showIssuanceDetails(record);
-            showVehicleSelection(record);
+            updateCurrentCheckerVehicle(record);
+            showCheckerForm(record);
             showNotification(`Issuance #${issuanceId} found!`, 'success');
-            updateStepIndicator(2);
         })
         .catch((error) => {
             hideAllSections();
+            updateCurrentCheckerVehicle();
             showNotification(error.message || `No record found for Issuance ID: ${issuanceId}`, 'danger');
         })
         .finally(() => {
@@ -326,72 +347,10 @@ function searchGasIssuance() {
         });
 }
 
-// ====== SHOW ISSUANCE DETAILS ======
-function showIssuanceDetails(record) {
-    const detailsCard = document.getElementById('issuanceDetails');
-    detailsCard.classList.add('show');
-
-    document.getElementById('detailIssuanceId').textContent = record.id;
-    document.getElementById('detailDate').textContent = formatDate(record.date);
-    document.getElementById('detailOffice').textContent = record.office;
-    document.getElementById('detailVehicle').textContent = `${record.vehicle} (${record.plate_no})`;
-    document.getElementById('detailDriver').textContent = record.driver;
-    document.getElementById('detailPurpose').textContent = record.purpose;
-    document.getElementById('detailLitersIssued').textContent = `${Number(record.liters_issued || 0).toFixed(2)} L`;
-
-    const fuelBadge = document.getElementById('detailFuelType');
-    fuelBadge.textContent = record.fuel_type;
-    fuelBadge.className = `badge ${record.fuel_type === 'Unleaded' ? 'bg-success' : 'bg-warning text-dark'} badge-fuel-type`;
-
-    const statusBadge = document.getElementById('detailStatus');
-    statusBadge.textContent = record.status;
-    statusBadge.className = 'badge bg-success fs-6 px-3 py-2';
-}
-
-// ====== SHOW VEHICLE SELECTION ======
-function showVehicleSelection(record) {
-    const vehicleSection = document.getElementById('vehicleListSection');
-    vehicleSection.classList.remove('d-none');
-
-    const vehicleContainer = document.getElementById('vehicleList');
-    vehicleContainer.innerHTML = '';
-
-    const vehicleDiv = document.createElement('div');
-    vehicleDiv.className = 'vehicle-item d-flex align-items-center';
-    vehicleDiv.dataset.id = record.id;
-
-    const iconClass = record.fuel_type === 'Unleaded' ? 'bg-success' : 'bg-warning';
-    const icon = record.fuel_type === 'Unleaded' ? 'fa-gas-pump' : 'fa-truck';
-
-    vehicleDiv.innerHTML = `
-        <div class="vehicle-icon ${iconClass} bg-gradient text-white me-3">
-            <i class="fas ${icon}"></i>
-        </div>
-        <div class="flex-grow-1">
-            <h6 class="mb-1 fw-bold">${escapeHtml(record.vehicle)}</h6>
-            <small class="text-muted">
-                <i class="fas fa-id-card me-1"></i>${escapeHtml(record.plate_no)}
-                <span class="mx-2">|</span>
-                <i class="fas fa-tint me-1"></i>${Number(record.liters_issued || 0).toFixed(2)} L ${escapeHtml(record.fuel_type)}
-            </small>
-        </div>
-        <div class="ms-3">
-            <span class="badge bg-primary"><i class="fas fa-chevron-right me-1"></i>Select</span>
-        </div>
-    `;
-
-    vehicleDiv.addEventListener('click', function() {
-        document.querySelectorAll('.vehicle-item').forEach(el => el.classList.remove('selected'));
-        this.classList.add('selected');
-        showCheckerForm(record);
-    });
-
-    vehicleContainer.appendChild(vehicleDiv);
-}
-
 // ====== SHOW CHECKER FORM ======
 function showCheckerForm(record) {
     const formSection = document.getElementById('checkerFormSection');
+    const form = document.getElementById('checkerForm');
     formSection.classList.add('show');
     requestAnimationFrame(resizeSignaturePad);
 
@@ -401,8 +360,14 @@ function showCheckerForm(record) {
     document.getElementById('checkLitersIssued').textContent = `${Number(record.liters_issued || 0).toFixed(2)} L`;
     document.getElementById('checkIssuanceRef').textContent = record.id;
 
+    const pastOdometer = Number(record.past_odometer || 0);
+    const odometerInput = document.getElementById('checkOdometer');
+
     // Reset input fields
-    document.getElementById('checkOdometer').value = '';
+    odometerInput.value = '';
+    odometerInput.min = String(pastOdometer);
+    odometerInput.placeholder = `Minimum ${pastOdometer.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`;
+    odometerInput.classList.remove('is-invalid');
     document.getElementById('checkDriver').value = '';
     document.getElementById('checkActual').value = '';
     document.getElementById('checkResult').innerHTML = '';
@@ -411,11 +376,12 @@ function showCheckerForm(record) {
     document.getElementById('clearSignatureBtn').disabled = false;
 
     // Reset validation
-    document.getElementById('checkerForm').classList.remove('was-validated');
+    form.classList.remove('was-validated');
 
     // Store data for submission
-    document.getElementById('checkerForm').dataset.recordId = record.id;
-    document.getElementById('checkerForm').dataset.recordDbId = record.db_id || '';
+    form.dataset.recordId = record.id;
+    form.dataset.recordDbId = record.db_id || '';
+    form.dataset.pastOdometer = pastOdometer;
     currentGasRecord = record;
 
     updateStepIndicator(3);
@@ -425,9 +391,8 @@ function showCheckerForm(record) {
 // ====== SUBMIT CHECK ======
 function submitCheck() {
     const form = document.getElementById('checkerForm');
-    const signatureIsValid = validateSignature();
 
-    if (!form.checkValidity() || !signatureIsValid) {
+    if (!form.checkValidity()) {
         form.classList.add('was-validated');
         showNotification('Please fill in all required fields', 'warning');
         return;
@@ -437,7 +402,21 @@ function submitCheck() {
     const driver = document.getElementById('checkDriver').value;
     const actualFuel = document.getElementById('checkActual').value;
     const issuanceRef = document.getElementById('checkIssuanceRef').textContent;
-    const vehicle = document.getElementById('checkVehicle').textContent;
+    const currentOdometer = Number(odometer);
+    const pastOdometer = Number(form.dataset.pastOdometer || 0);
+    const signatureValue = String(document.getElementById('checkSignature')?.value || '').trim();
+
+    if (!validateSignature() || signatureValue === '') {
+        showNotification('Please provide the driver e-signature before submitting.', 'warning');
+        return;
+    }
+
+    if (currentOdometer < pastOdometer) {
+        document.getElementById('checkOdometer').classList.add('is-invalid');
+        showNotification(`Odometer cannot be lower than the past odometer (${pastOdometer.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km).`, 'warning');
+        return;
+    }
+    document.getElementById('checkOdometer').classList.remove('is-invalid');
 
     const submitBtn = document.getElementById('submitCheckBtn');
     const originalHTML = submitBtn.innerHTML;
@@ -456,7 +435,7 @@ function submitCheck() {
             current_odometer: odometer,
             driver_name: driver,
             actual_liters_fueled: actualFuel,
-            signature: document.getElementById('checkSignature').value
+            signature: signatureValue
         })
     })
         .then((response) => response.json().then((data) => {
@@ -466,55 +445,9 @@ function submitCheck() {
             return data;
         }))
         .then(() => {
-        const resultHTML = `
-            <div class="alert alert-success checker-result-card mt-4">
-                <div class="checker-result-heading">
-                    <i class="fas fa-file-signature"></i>
-                    <div class="min-w-0">
-                        <h5 class="mb-0 fw-bold">Fuel-up Record Submitted</h5>
-                        <small>Actual fuel-up data and driver e-signature were captured.</small>
-                    </div>
-                </div>
-                <hr>
-                <dl class="checker-result-list mb-0">
-                    <div>
-                        <dt>Issuance Ref #</dt>
-                        <dd>${escapeHtml(issuanceRef)}</dd>
-                    </div>
-                    <div>
-                        <dt>Vehicle</dt>
-                        <dd>${escapeHtml(vehicle)}</dd>
-                    </div>
-                    <div>
-                        <dt>Driver</dt>
-                        <dd>${escapeHtml(driver)}</dd>
-                    </div>
-                    <div>
-                        <dt>Odometer</dt>
-                        <dd>${parseInt(odometer, 10).toLocaleString()} km</dd>
-                    </div>
-                    <div>
-                        <dt>Actual Fueled Up</dt>
-                        <dd class="fw-bold">${parseFloat(actualFuel).toFixed(2)} L</dd>
-                    </div>
-                    <div>
-                        <dt>E-Signature</dt>
-                        <dd><span class="badge bg-success">Captured</span></dd>
-                    </div>
-                </dl>
-            </div>
-        `;
-
-        document.getElementById('checkResult').innerHTML = resultHTML;
-        showNotification('Fuel-up record submitted!', 'success');
-
-        updateStepIndicator(3, true);
-
-        submitBtn.innerHTML = '<i class="fas fa-check me-1"></i>Done';
-        submitBtn.disabled = true;
-        document.querySelectorAll('#checkerForm input').forEach(input => input.disabled = true);
-        document.getElementById('checkSignaturePad')?.classList.add('is-disabled');
-        document.getElementById('clearSignatureBtn').disabled = true;
+            showNotification('Fuel-up record submitted. Ready for the next search.', 'success');
+            updateStepIndicator(3, true);
+            window.setTimeout(resetAll, 800);
         })
         .catch((error) => {
             showNotification(error.message || 'Unable to submit fuel-up record.', 'danger');
@@ -526,8 +459,6 @@ function submitCheck() {
 // ====== RESET ALL ======
 function resetAll() {
     document.getElementById('issuanceIdSearch').value = '';
-    document.getElementById('issuanceDetails').classList.remove('show');
-    document.getElementById('vehicleListSection').classList.add('d-none');
     document.getElementById('checkerFormSection').classList.remove('show');
     document.getElementById('checkResult').innerHTML = '';
 
@@ -535,6 +466,7 @@ function resetAll() {
     form.classList.remove('was-validated');
     form.reset();
     currentGasRecord = null;
+    updateCurrentCheckerVehicle();
     clearSignaturePad();
     document.querySelectorAll('#checkerForm input').forEach(input => input.disabled = false);
     document.getElementById('checkSignaturePad')?.classList.remove('is-disabled');
@@ -580,10 +512,9 @@ function formatDate(dateString) {
 }
 
 function hideAllSections() {
-    document.getElementById('issuanceDetails').classList.remove('show');
-    document.getElementById('vehicleListSection').classList.add('d-none');
     document.getElementById('checkerFormSection').classList.remove('show');
     document.getElementById('checkResult').innerHTML = '';
+    updateCurrentCheckerVehicle();
     updateStepIndicator(1);
 }
 

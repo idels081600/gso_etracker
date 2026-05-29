@@ -17,22 +17,6 @@ function renderIconLabel(string $icon, string $label): void
     <?php
 }
 
-function renderDetailItem(array $item): void
-{
-    $valueClass = $item['value_class'] ?? 'detail-value';
-    $itemClass = 'detail-item' . (!empty($item['item_class']) ? ' ' . $item['item_class'] : '');
-    ?>
-    <div class="<?= gasCheckerEscape($item['col']) ?>">
-        <div class="<?= gasCheckerEscape($itemClass) ?>">
-            <small class="detail-label d-block">
-                <?php renderIconLabel($item['icon'], $item['label']); ?>
-            </small>
-            <span class="<?= gasCheckerEscape($valueClass) ?>" id="<?= gasCheckerEscape($item['id']) ?>">--</span>
-        </div>
-    </div>
-    <?php
-}
-
 function renderReferenceRow(string $label, string $id): void
 {
     ?>
@@ -71,30 +55,6 @@ function renderActualInput(array $field): void
     </div>
     <?php
 }
-
-$steps = [
-    ['id' => 'step1', 'label' => 'Look Up Issuance'],
-    ['id' => 'step2', 'label' => 'Select Vehicle'],
-    ['id' => 'step3', 'label' => 'Input & Sign'],
-];
-
-$issuanceDetailRows = [
-    [
-        ['col' => 'col-sm-6 col-xl-3', 'icon' => 'fa-hashtag', 'label' => 'Issuance ID', 'id' => 'detailIssuanceId'],
-        ['col' => 'col-sm-6 col-xl-3', 'icon' => 'fa-calendar', 'label' => 'Date Issued', 'id' => 'detailDate'],
-        ['col' => 'col-sm-6 col-xl-3', 'icon' => 'fa-building', 'label' => 'Office', 'id' => 'detailOffice'],
-        ['col' => 'col-sm-6 col-xl-3', 'icon' => 'fa-gas-pump', 'label' => 'Fuel Type', 'id' => 'detailFuelType', 'value_class' => 'badge bg-secondary badge-fuel-type'],
-    ],
-    [
-        ['col' => 'col-md-6 col-xl-4', 'icon' => 'fa-car', 'label' => 'Vehicle', 'id' => 'detailVehicle'],
-        ['col' => 'col-md-6 col-xl-4', 'icon' => 'fa-user', 'label' => 'Assigned Driver', 'id' => 'detailDriver'],
-        ['col' => 'col-sm-6 col-xl-2', 'icon' => 'fa-tint', 'label' => 'Liters Issued', 'id' => 'detailLitersIssued', 'value_class' => 'detail-value fw-bold text-primary'],
-        ['col' => 'col-sm-6 col-xl-2', 'icon' => 'fa-check-circle', 'label' => 'Status', 'id' => 'detailStatus', 'value_class' => 'badge bg-success fs-6 px-3 py-2'],
-    ],
-    [
-        ['col' => 'col-12', 'icon' => 'fa-map-marker-alt', 'label' => 'Purpose', 'id' => 'detailPurpose', 'item_class' => 'detail-item-purpose'],
-    ],
-];
 
 $referenceRows = [
     'Vehicle' => 'checkVehicle',
@@ -154,104 +114,55 @@ $actualFields = [
 </head>
 
 <body>
-    <div class="container-fluid checker-shell mt-4">
-        <div class="checker-page-header mb-4">
-            <div class="checker-title-wrap">
-                <span class="checker-title-icon">
-                    <i class="fas fa-clipboard-check"></i>
+    <nav class="navbar navbar-expand-md checker-navbar shadow-sm" aria-label="Gas checker navigation">
+        <div class="container-fluid checker-navbar-inner">
+            <a class="navbar-brand checker-navbar-brand" href="gas_checker.php">
+                <span class="checker-navbar-icon">
+                    <i class="fas fa-gas-pump"></i>
                 </span>
-                <div>
-                    <h1 class="mb-1">Gas Checker</h1>
-                    <p class="text-muted mb-0">Record actual fuel-up data and driver e-signatures for gas issuance records</p>
+                <span>
+                    <strong>Fuel Tracker</strong>
+                    <small>Gas Checker</small>
+                </span>
+            </a>
+            <button class="navbar-toggler checker-navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#checkerNavbarMenu" aria-controls="checkerNavbarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="checkerNavbarMenu">
+                <div class="navbar-nav ms-auto checker-navbar-actions">
+                    <button type="button" class="btn btn-outline-secondary btn-sm js-reset-all">
+                        <i class="fas fa-rotate-left me-1"></i>Reset
+                    </button>
+                    <a href="../logout.php" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </a>
                 </div>
             </div>
-            <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-outline-secondary checker-reset-btn js-reset-all" type="button" data-bs-toggle="tooltip" title="Reset all fields">
-                    <i class="fas fa-undo me-1"></i>Reset
-                </button>
-                <a href="../logout.php" class="btn btn-outline-danger checker-reset-btn">
-                    <i class="fas fa-sign-out-alt me-1"></i>Logout
-                </a>
-            </div>
         </div>
+    </nav>
 
-        <div class="step-indicator">
-            <?php foreach ($steps as $index => $step): ?>
-                <div class="step-item<?= $index === 0 ? ' active' : '' ?>" id="<?= gasCheckerEscape($step['id']) ?>">
-                    <div class="step-number"><?= $index + 1 ?></div>
-                    <span class="step-label"><?= gasCheckerEscape($step['label']) ?></span>
-                </div>
-                <?php if ($index < count($steps) - 1): ?>
-                    <div class="step-connector"></div>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </div>
-
-        <div class="checker-search-section shadow">
-            <div class="row align-items-end">
-                <div class="col-12">
-                    <label for="issuanceIdSearch" class="form-label">
-                        <?php renderIconLabel('fa-search', 'Enter Gas Issuance ID to Verify'); ?>
-                    </label>
-                    <div class="checker-search-control">
-                        <div class="input-group input-group-lg checker-id-group">
-                            <span class="input-group-text bg-white">
-                                <i class="fas fa-receipt text-primary"></i>
-                            </span>
-                            <input type="text" class="form-control form-control-lg" id="issuanceIdSearch"
-                                placeholder="e.g. FI-20260515-ABC123" aria-label="Gas Issuance ID">
-                        </div>
-                        <div class="checker-search-actions">
-                            <button class="btn btn-primary btn-lg" id="searchIssuanceBtn" type="button">
-                                <i class="fas fa-search me-1"></i>Search
-                            </button>
-                            <button class="btn btn-light btn-lg" type="button" id="scanQrBtn" data-bs-toggle="modal" data-bs-target="#qrScannerModal">
-                                <i class="fas fa-qrcode me-1"></i>Scan QR
-                            </button>
-                        </div>
+    <div class="container-fluid checker-shell mt-4">
+        <div class="checker-search-section shadow-sm">
+            <div class="checker-lookup-copy">
+                <h2>Gas Checker</h2>
+                <p>Search for Issuance ID and confirm issuance release details.</p>
+                <div class="checker-search-control">
+                    <div class="input-group input-group-lg checker-id-group">
+                        <input type="text" class="form-control form-control-lg" id="issuanceIdSearch"
+                            placeholder="Search tricycle number or voucher" aria-label="Gas Issuance ID">
+                        <button class="btn btn-primary btn-lg" id="searchIssuanceBtn" type="button">
+                            <i class="fas fa-search me-1"></i>Search
+                        </button>
                     </div>
-                    <small class="text-white-50 mt-2 d-block">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Use the serial number shown in the Gas Issuance table, for example FI-20260515-ABC123.
-                    </small>
+                    <button class="btn btn-outline-secondary btn-lg checker-qr-btn" type="button" id="scanQrBtn" data-bs-toggle="modal" data-bs-target="#qrScannerModal">
+                        <i class="fas fa-qrcode me-1"></i>Scan QR
+                    </button>
                 </div>
             </div>
-        </div>
-
-        <div class="vehicle-details-card" id="issuanceDetails">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-file-invoice text-primary me-2"></i>Issuance Record Found
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <?php foreach ($issuanceDetailRows as $row): ?>
-                        <div class="row g-3 issuance-detail-grid">
-                            <?php foreach ($row as $item): ?>
-                                <?php renderDetailItem($item); ?>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-
-        <div class="d-none" id="vehicleListSection">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-car text-success me-2"></i>Vehicle to Check
-                        </h5>
-                        <span class="results-count" id="vehicleCount">
-                            <i class="fas fa-chevron-right text-muted me-1"></i>Click vehicle to proceed
-                        </span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div id="vehicleList"></div>
-                </div>
+            <div class="checker-current-card" aria-live="polite">
+                <div class="checker-current-label">Current<br>Vehicle</div>
+                <div class="checker-current-value" id="currentCheckerVehicle">----</div>
+                <div class="checker-current-help" id="currentCheckerHelp">Search to load</div>
             </div>
         </div>
 

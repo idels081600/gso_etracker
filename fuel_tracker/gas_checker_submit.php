@@ -7,6 +7,7 @@ requireFuelAjaxRequest();
 require_once __DIR__ . '/rate_limiter.php';
 require_rate_limit(30, 60, 'gas_checker_submit', 'json');
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/gas_issuance_data.php';
 require_once __DIR__ . '/gas_issuance_signature.php';
 
 header('Content-Type: application/json');
@@ -47,6 +48,8 @@ $input = gasCheckerSubmitInput();
 $transactionStarted = false;
 
 try {
+    fuelTrackerEnsureVehiclePastOdometer($conn);
+
     $id = (int) ($input['db_id'] ?? 0);
     $serialNo = strtoupper(trim((string) ($input['serial_no'] ?? '')));
     $driverName = trim((string) ($input['driver_name'] ?? ''));
@@ -66,7 +69,7 @@ try {
 
     if ($id > 0) {
         $stmt = $conn->prepare("
-            SELECT gi.id, gi.vehicle_id, gi.status, v.current_odometer
+            SELECT gi.id, gi.vehicle_id, gi.status, COALESCE(v.past_odometer, v.current_odometer, 0) AS past_odometer
             FROM gas_issuances gi
             INNER JOIN vehicles v ON v.id = gi.vehicle_id
             WHERE gi.id = ?
@@ -75,7 +78,7 @@ try {
         $stmt->bind_param('i', $id);
     } else {
         $stmt = $conn->prepare("
-            SELECT gi.id, gi.vehicle_id, gi.status, v.current_odometer
+            SELECT gi.id, gi.vehicle_id, gi.status, COALESCE(v.past_odometer, v.current_odometer, 0) AS past_odometer
             FROM gas_issuances gi
             INNER JOIN vehicles v ON v.id = gi.vehicle_id
             WHERE UPPER(gi.serial_no) = ?
@@ -99,7 +102,7 @@ try {
 
     $gasIssuanceId = (int) $issuance['id'];
     $vehicleId = (int) $issuance['vehicle_id'];
-    $pastOdometer = (float) ($issuance['current_odometer'] ?? 0);
+    $pastOdometer = (float) ($issuance['past_odometer'] ?? 0);
 
     if ($currentOdometer < $pastOdometer) {
         gasCheckerSubmitJson([

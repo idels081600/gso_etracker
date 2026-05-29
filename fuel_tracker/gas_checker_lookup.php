@@ -6,6 +6,7 @@ requireFuelRole('gas_checker', 'json');
 require_once __DIR__ . '/rate_limiter.php';
 require_rate_limit(60, 60, 'gas_checker_lookup', 'json');
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/gas_issuance_data.php';
 
 header('Content-Type: application/json');
 
@@ -22,6 +23,8 @@ if ($issuanceId === '') {
 }
 
 try {
+    fuelTrackerEnsureVehiclePastOdometer($conn);
+
     $stmt = $conn->prepare("
         SELECT
             gi.id,
@@ -36,6 +39,7 @@ try {
             gi.expiry_date,
             gi.status,
             v.plate_no,
+            COALESCE(v.past_odometer, v.current_odometer, 0) AS past_odometer,
             v.type_of_vehicle AS vehicle_type
         FROM gas_issuances gi
         INNER JOIN vehicles v ON v.id = gi.vehicle_id
@@ -73,6 +77,7 @@ try {
             'driver' => (string) $record['driver_name'],
             'purpose' => (string) ($record['purpose'] ?: 'Office'),
             'status' => ucfirst($status !== '' ? $status : 'valid'),
+            'past_odometer' => (float) ($record['past_odometer'] ?? 0),
         ],
     ]);
 } catch (mysqli_sql_exception $e) {

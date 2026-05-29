@@ -4,6 +4,65 @@
     max-width: 1480px;
 }
 
+.checker-navbar {
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.checker-navbar-inner {
+    max-width: 1480px;
+}
+
+.checker-navbar-brand {
+    align-items: center;
+    color: #101828;
+    display: inline-flex;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.checker-navbar-brand:hover,
+.checker-navbar-brand:focus {
+    color: #101828;
+}
+
+.checker-navbar-brand span:last-child {
+    display: grid;
+    line-height: 1.15;
+}
+
+.checker-navbar-brand strong {
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.checker-navbar-brand small {
+    color: #667085;
+    font-size: 0.78rem;
+}
+
+.checker-navbar-icon {
+    align-items: center;
+    background: #e7f1ff;
+    border-radius: 8px;
+    color: #0d6efd;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 38px;
+    justify-content: center;
+    width: 38px;
+}
+
+.checker-navbar-actions {
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.checker-navbar-toggler {
+    border-color: #d0d5dd;
+    border-radius: 8px;
+}
+
 .checker-page-header {
     align-items: flex-start;
     display: flex;
@@ -45,86 +104,127 @@
 
 /* Search section styling */
 .checker-search-section {
-    background: #039a00;
-    padding: 2rem;
-    border-radius: 0.5rem;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #edf0f3;
+    border-radius: 8px;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr) 160px;
     margin-bottom: 2rem;
+    padding: 2rem;
 }
 
-.checker-search-section .form-label {
-    color: #fff;
-    font-weight: 500;
+.checker-lookup-copy h2 {
+    color: #0f172a;
+    font-size: clamp(1.55rem, 3vw, 2rem);
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1.15;
+    margin-bottom: 0.45rem;
+}
+
+.checker-lookup-copy p {
+    color: #344054;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin-bottom: 1.35rem;
+    max-width: 420px;
 }
 
 .checker-search-section .form-control,
 .checker-search-section .input-group-text {
-    border: none;
+    border-color: #d9dee7;
 }
 
-.checker-search-section .input-group-text i {
-    color: #039a00 !important;
+.checker-search-section .form-control {
+    color: #182230;
+}
+
+.checker-search-section .form-control::placeholder {
+    color: #667085;
 }
 
 .checker-search-control {
     align-items: stretch;
     display: grid;
-    gap: 0.75rem;
-    grid-template-columns: minmax(240px, 1fr) auto;
+    gap: 0.6rem;
+    grid-template-columns: minmax(260px, 1fr) auto;
+    max-width: 640px;
 }
 
-.checker-search-actions {
-    display: grid;
-    gap: 0.5rem;
-    grid-template-columns: repeat(2, minmax(112px, auto));
+.checker-id-group .form-control,
+.checker-id-group .btn {
+    border-radius: 0;
+    min-height: 46px;
 }
 
-.checker-search-actions .btn {
-    white-space: nowrap;
+.checker-id-group .form-control {
+    border-bottom-left-radius: 6px;
+    border-top-left-radius: 6px;
 }
 
 .checker-search-section .btn-primary {
-    background-color: #ffffff;
-    border-color: #ffffff;
-    color: #027300;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
     font-weight: 700;
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
 }
 
 .checker-search-section .btn-primary:hover,
 .checker-search-section .btn-primary:focus {
-    background-color: #f1fff1;
-    border-color: #f1fff1;
-    color: #025f00;
+    background-color: #0b5ed7;
+    border-color: #0b5ed7;
+    color: #fff;
 }
 
-.checker-search-section .btn-light {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.65);
-    color: #fff;
+.checker-qr-btn {
     font-weight: 700;
+    min-height: 46px;
+    white-space: nowrap;
 }
 
-.checker-search-section .btn-light:hover,
-.checker-search-section .btn-light:focus {
-    background: rgba(255, 255, 255, 0.24);
-    border-color: #fff;
-    color: #fff;
+.checker-current-card {
+    align-items: center;
+    align-self: stretch;
+    border: 1px solid #d9dee7;
+    border-radius: 14px;
+    display: grid;
+    justify-items: center;
+    min-height: 178px;
+    padding: 1.35rem 1rem;
+    text-align: center;
 }
 
-.checker-search-section .stat-box {
-    border-color: #cce9cc;
+.checker-current-label {
+    color: #475467;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+    line-height: 1.5;
+    text-transform: uppercase;
 }
 
-.checker-search-section .search-stat-box {
-    background: #fff;
-    box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.12);
+.checker-current-value {
+    color: #1d2433;
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    line-height: 1.15;
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 
-.checker-search-section .search-stat-box .stat-value {
+.checker-current-help {
+    color: #344054;
+    font-size: 0.85rem;
+}
+
+.checker-current-card.is-loaded .checker-current-value {
     color: #039a00;
-}
-
-.checker-search-section .search-stat-box .stat-label {
-    color: #263238;
+    font-size: 1.15rem;
+    letter-spacing: 0;
 }
 
 .qr-scanner-frame {
@@ -439,9 +539,25 @@
 /* Mobile responsive */
 @media (max-width: 768px) {
     .checker-shell {
-        margin-top: 1.25rem !important;
+        margin-top: 1rem !important;
         padding-left: 0.85rem;
         padding-right: 0.85rem;
+    }
+
+    .checker-navbar-inner {
+        padding-left: 0.85rem;
+        padding-right: 0.85rem;
+    }
+
+    .checker-navbar-actions {
+        align-items: stretch;
+        gap: 0.55rem;
+        padding-top: 0.75rem;
+    }
+
+    .checker-navbar-actions .btn {
+        min-height: 40px;
+        width: 100%;
     }
 
     .checker-page-header {
@@ -476,23 +592,31 @@
 
     .checker-search-section {
         border-radius: 0.45rem;
+        gap: 1rem;
+        grid-template-columns: 1fr;
         padding: 1rem;
     }
 
-    .checker-search-section .form-label {
+    .checker-lookup-copy h2 {
+        font-size: 1.45rem;
+    }
+
+    .checker-lookup-copy p {
         font-size: 0.86rem;
-        margin-bottom: 0.55rem;
+        margin-bottom: 1rem;
     }
 
     .checker-search-control {
         grid-template-columns: 1fr;
     }
 
-    .checker-search-actions {
-        grid-template-columns: 1fr;
+    .checker-id-group {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    .checker-search-actions .btn {
+    .checker-id-group .btn,
+    .checker-qr-btn {
         min-height: 44px;
         padding-left: 0.55rem;
         padding-right: 0.55rem;
@@ -503,9 +627,8 @@
         min-height: 46px;
     }
 
-    .checker-search-section small {
-        font-size: 0.76rem;
-        line-height: 1.35;
+    .checker-current-card {
+        min-height: 132px;
     }
 
     .vehicle-details-card .card-body {
