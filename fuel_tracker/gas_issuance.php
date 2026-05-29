@@ -1029,6 +1029,10 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                 <label for="vehicleType" class="form-label">Vehicle Type</label>
                                 <input type="text" class="form-control" id="vehicleType" placeholder="e.g. Motorcycle, Pickup" required>
                             </div>
+                            <div class="col-md-6">
+                                <label for="vehicleDriver" class="form-label">Driver</label>
+                                <input type="text" class="form-control" id="vehicleDriver" placeholder="Assigned driver">
+                            </div>
                             <div class="col-md-3">
                                 <label for="vehicleFuelType" class="form-label">Fuel Type</label>
                                 <select class="form-select" id="vehicleFuelType" required>
@@ -1110,7 +1114,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                             <label for="vehicleManagerSearch" class="form-label">Search Vehicle</label>
                             <div class="input-group mb-3">
                                 <span class="input-group-text bg-white"><i class="fas fa-search"></i></span>
-                                <input type="search" class="form-control" id="vehicleManagerSearch" placeholder="Plate, type, office, or ID">
+                                <input type="search" class="form-control" id="vehicleManagerSearch" placeholder="Plate, type, driver, office, or ID">
                             </div>
                             <div class="vehicle-manager-list" id="vehicleManagerList" aria-label="Vehicle list">
                                 <?php if (empty($vehicles)): ?>
@@ -1124,6 +1128,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                                 $vehicle['vehicle_id'] ?? '',
                                                 $vehicle['plate_no'] ?? '',
                                                 $vehicle['type_of_vehicle'] ?? '',
+                                                $vehicle['driver_name'] ?? '',
                                                 $vehicle['office'] ?? '',
                                                 $vehicle['fuel_type'] ?? '',
                                                 $vehicle['schedules'] ?? '',
@@ -1132,6 +1137,9 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                             <span class="plate"><?php echo htmlspecialchars((string) ($vehicle['plate_no'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></span>
                                             <span class="meta">
                                                 <?php echo htmlspecialchars((string) ($vehicle['type_of_vehicle'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php if (trim((string) ($vehicle['driver_name'] ?? '')) !== ''): ?>
+                                                    | Driver: <?php echo htmlspecialchars((string) $vehicle['driver_name'], ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php endif; ?>
                                                 | <?php echo htmlspecialchars((string) ($vehicle['office'] ?? 'No office'), ENT_QUOTES, 'UTF-8'); ?>
                                                 | <?php echo htmlspecialchars(ucfirst((string) ($vehicle['fuel_type'] ?? 'unleaded')), ENT_QUOTES, 'UTF-8'); ?>
                                                 <?php if (trim((string) ($vehicle['schedules'] ?? '')) !== ''): ?>
@@ -1179,6 +1187,10 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                         <div class="col-12">
                                             <label for="editVehicleType" class="form-label">Vehicle Type</label>
                                             <input type="text" class="form-control" id="editVehicleType" required disabled>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="editVehicleDriver" class="form-label">Driver</label>
+                                            <input type="text" class="form-control" id="editVehicleDriver" placeholder="Assigned driver" disabled>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="editVehicleFuelType" class="form-label">Fuel Type</label>
@@ -1288,6 +1300,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                     <?php foreach ($vehicles as $vehicle): ?>
                                         <option value="<?php echo htmlspecialchars((string) $vehicle['id']); ?>"
                                             data-office="<?php echo htmlspecialchars((string) ($vehicle['office'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-driver="<?php echo htmlspecialchars((string) ($vehicle['driver_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                             data-fuel-type="<?php echo htmlspecialchars(str_contains(strtolower((string) ($vehicle['fuel_type'] ?? '')), 'diesel') ? 'diesel' : 'unleaded', ENT_QUOTES, 'UTF-8'); ?>">
                                             <?php echo htmlspecialchars($vehicle['plate_no'] . ' - ' . $vehicle['type_of_vehicle']); ?>
                                         </option>
@@ -1478,6 +1491,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 'vehicle_id' => $vehicle['vehicle_id'] ?? '',
                 'plate_no' => $vehicle['plate_no'] ?? '',
                 'type_of_vehicle' => $vehicle['type_of_vehicle'] ?? '',
+                'driver_name' => $vehicle['driver_name'] ?? '',
                 'office' => $vehicle['office'] ?? '',
                 'fuel_type' => str_contains(strtolower((string) ($vehicle['fuel_type'] ?? '')), 'diesel') ? 'diesel' : 'unleaded',
                 'schedules' => $vehicle['schedules'] ?? '',
@@ -2088,6 +2102,10 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             var vehicleSelect = document.getElementById('createVehicle');
             var selectedOption = vehicleSelect.options[vehicleSelect.selectedIndex];
             document.getElementById('createOffice').value = selectedOption ? (selectedOption.dataset.office || '') : '';
+            var createDriver = document.getElementById('createDriver');
+            if (createDriver && !createDriver.value.trim()) {
+                createDriver.value = selectedOption ? (selectedOption.dataset.driver || '') : '';
+            }
         }
 
         function getCreateFuelTypeFromVehicle() {
@@ -2204,6 +2222,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             document.getElementById('editVehiclePlateNo').value = vehicle.plate_no || '';
             document.getElementById('editVehicleOffice').value = vehicle.office || '';
             document.getElementById('editVehicleType').value = vehicle.type_of_vehicle || '';
+            document.getElementById('editVehicleDriver').value = vehicle.driver_name || '';
             document.getElementById('editVehicleFuelType').value = normalizeFuelType(vehicle.fuel_type);
             syncScheduleDropdown('editVehicleSchedules', vehicle.schedules || '');
             document.getElementById('editVehicleCylinders').value = vehicle.number_of_cylinder || 4;
@@ -2218,7 +2237,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             document.getElementById('editVehicleFixedLiters').value = vehicle.fixed_liters || 0;
             document.getElementById('editVehicleStatus').value = vehicle.status || 'active';
             document.getElementById('editVehicleTitle').textContent = vehicle.plate_no || 'Vehicle details';
-            document.getElementById('editVehicleSubtitle').textContent = (vehicle.type_of_vehicle || '-') + ' | ' + (vehicle.office || 'No office') + ' | ' + (vehicle.fuel_type || 'unleaded') + ' | ' + (vehicle.schedules || 'No schedule') + ' | ' + (vehicle.vehicle_id || 'No vehicle ID');
+            document.getElementById('editVehicleSubtitle').textContent = (vehicle.type_of_vehicle || '-') + ' | ' + (vehicle.driver_name || 'No driver') + ' | ' + (vehicle.office || 'No office') + ' | ' + (vehicle.fuel_type || 'unleaded') + ' | ' + (vehicle.schedules || 'No schedule') + ' | ' + (vehicle.vehicle_id || 'No vehicle ID');
 
             var badge = document.getElementById('editVehicleStatusBadge');
             var status = vehicle.status || 'active';
@@ -2326,6 +2345,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 vehicle_id: document.getElementById('vehicleCode').value,
                 plate_no: document.getElementById('vehiclePlateNo').value,
                 type_of_vehicle: document.getElementById('vehicleType').value,
+                driver_name: document.getElementById('vehicleDriver').value,
                 office: document.getElementById('vehicleOffice').value,
                 fuel_type: document.getElementById('vehicleFuelType').value,
                 schedules: document.getElementById('vehicleSchedules').value,
@@ -2367,6 +2387,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 vehicle_id: document.getElementById('editVehicleCode').value,
                 plate_no: document.getElementById('editVehiclePlateNo').value,
                 type_of_vehicle: document.getElementById('editVehicleType').value,
+                driver_name: document.getElementById('editVehicleDriver').value,
                 office: document.getElementById('editVehicleOffice').value,
                 fuel_type: document.getElementById('editVehicleFuelType').value,
                 schedules: document.getElementById('editVehicleSchedules').value,

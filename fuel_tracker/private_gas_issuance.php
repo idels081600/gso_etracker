@@ -445,6 +445,10 @@ function privateGasStatusClass(string $status): string
                                 <input type="text" class="form-control" id="privateVehicleType" placeholder="e.g. Toyota Vios">
                             </div>
                             <div class="col-md-4">
+                                <label for="privateVehicleDriver" class="form-label">Driver <span class="optional-note">(optional)</span></label>
+                                <input type="text" class="form-control" id="privateVehicleDriver" placeholder="Assigned driver">
+                            </div>
+                            <div class="col-md-4">
                                 <label for="privateVehicleFuelType" class="form-label">Fuel Type</label>
                                 <select class="form-select" id="privateVehicleFuelType" required>
                                     <option value="">Select fuel</option>
@@ -521,8 +525,15 @@ function privateGasStatusClass(string $status): string
                                             value="<?php echo privateGasEscape($vehicle['id'] ?? ''); ?>"
                                             data-fuel-type="<?php echo privateGasEscape($vehicle['fuel_type'] ?? ''); ?>"
                                             data-office="<?php echo privateGasEscape($vehicle['office'] ?? 'PRIVATE'); ?>"
+                                            data-driver="<?php echo privateGasEscape($vehicle['driver_name'] ?? ''); ?>"
                                         >
-                                            <?php echo privateGasEscape(trim(($vehicle['plate_no'] ?? '') . ' - ' . ($vehicle['type_of_vehicle'] ?? 'Private Vehicle'))); ?>
+                                            <?php
+                                            $privateVehicleLabel = trim(($vehicle['plate_no'] ?? '') . ' - ' . ($vehicle['type_of_vehicle'] ?? 'Private Vehicle'));
+                                            if (trim((string) ($vehicle['driver_name'] ?? '')) !== '') {
+                                                $privateVehicleLabel .= ' | ' . trim((string) $vehicle['driver_name']);
+                                            }
+                                            echo privateGasEscape($privateVehicleLabel);
+                                            ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -708,6 +719,7 @@ function privateGasStatusClass(string $status): string
                     plate_no: plateNo,
                     type_of_vehicle: typeOfVehicle,
                     fuel_type: fuelType,
+                    driver_name: document.getElementById('privateVehicleDriver').value,
                     office: document.getElementById('privateVehicleOffice').value,
                     status: document.getElementById('privateVehicleStatus').value,
                     fuel_capacity: document.getElementById('privateVehicleCapacity').value,
@@ -728,9 +740,13 @@ function privateGasStatusClass(string $status): string
             const selected = this.options[this.selectedIndex];
             const fuelType = selected?.dataset?.fuelType || '';
             const office = selected?.dataset?.office || '';
+            const driver = selected?.dataset?.driver || '';
             document.getElementById('privateIssuanceFuelType').value = fuelType;
             if (!document.getElementById('privateIssuanceOffice').value.trim()) {
                 document.getElementById('privateIssuanceOffice').value = office;
+            }
+            if (!document.getElementById('privateIssuanceDriver').value.trim()) {
+                document.getElementById('privateIssuanceDriver').value = driver;
             }
         });
 

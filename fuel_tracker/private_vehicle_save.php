@@ -58,10 +58,12 @@ try {
     fuelTrackerEnsureVehicleSchedules($conn);
     fuelTrackerEnsureVehicleBalanceTank($conn);
     fuelTrackerEnsureVehicleFixedLiters($conn);
+    fuelTrackerEnsureVehicleDriverName($conn);
     fuelTrackerEnsureScopeColumns($conn);
 
     $plateNo = strtoupper(trim((string) ($input['plate_no'] ?? '')));
     $typeOfVehicle = trim((string) ($input['type_of_vehicle'] ?? ''));
+    $driverName = trim((string) ($input['driver_name'] ?? ''));
     $fuelTypeRaw = strtolower(trim((string) ($input['fuel_type'] ?? '')));
     $fuelType = str_contains($fuelTypeRaw, 'diesel') ? 'diesel' : (str_contains($fuelTypeRaw, 'unleaded') || str_contains($fuelTypeRaw, 'gas') ? 'unleaded' : '');
 
@@ -100,15 +102,16 @@ try {
 
     $stmt = $conn->prepare("
         INSERT INTO vehicles
-            (vehicle_id, plate_no, type_of_vehicle, number_of_cylinder, normal_km_per_liter, current_odometer, past_odometer, fuel_capacity, status, office, balance_tank, fuel_type, schedules, fixed_liters, vehicle_scope)
+            (vehicle_id, plate_no, type_of_vehicle, driver_name, number_of_cylinder, normal_km_per_liter, current_odometer, past_odometer, fuel_capacity, status, office, balance_tank, fuel_type, schedules, fixed_liters, vehicle_scope)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'private')
+            (?, ?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'private')
     ");
     $stmt->bind_param(
-        'sssiddddssdssd',
+        'ssssiddddssdssd',
         $vehicleId,
         $plateNo,
         $typeOfVehicle,
+        $driverName,
         $cylinders,
         $normalKmPerLiter,
         $currentOdometer,
@@ -132,6 +135,7 @@ try {
         'vehicle_id' => $vehicleId,
         'plate_no' => $plateNo,
         'type_of_vehicle' => $typeOfVehicle,
+        'driver_name' => $driverName,
         'office' => $office,
         'fuel_type' => $fuelType,
     ]);

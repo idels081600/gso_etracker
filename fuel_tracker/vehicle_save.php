@@ -70,12 +70,14 @@ $action = strtolower(trim((string) ($input['action'] ?? 'create')));
 try {
     vehicleSaveEnsureSchedulesColumn($conn);
     fuelTrackerEnsureVehicleFixedLiters($conn);
+    fuelTrackerEnsureVehicleDriverName($conn);
     fuelTrackerEnsureScopeColumns($conn);
 
     $id = (int) ($input['id'] ?? 0);
     $vehicleId = strtoupper(trim((string) ($input['vehicle_id'] ?? '')));
     $plateNo = strtoupper(trim((string) ($input['plate_no'] ?? '')));
     $typeOfVehicle = trim((string) ($input['type_of_vehicle'] ?? ''));
+    $driverName = trim((string) ($input['driver_name'] ?? ''));
     $office = trim((string) ($input['office'] ?? ''));
     $fuelTypeRaw = strtolower(trim((string) ($input['fuel_type'] ?? 'unleaded')));
     $fuelType = str_contains($fuelTypeRaw, 'diesel') ? 'diesel' : 'unleaded';
@@ -112,6 +114,7 @@ try {
             SET vehicle_id = ?,
                 plate_no = ?,
                 type_of_vehicle = ?,
+                driver_name = NULLIF(?, ''),
                 office = ?,
                 fuel_type = ?,
                 schedules = ?,
@@ -126,10 +129,11 @@ try {
                 AND LOWER(TRIM(COALESCE(vehicle_scope, 'government'))) <> 'private'
         ");
         $stmt->bind_param(
-            'ssssssidddsi',
+            'sssssssidddsi',
             $vehicleId,
             $plateNo,
             $typeOfVehicle,
+            $driverName,
             $office,
             $fuelType,
             $schedules,
@@ -151,6 +155,7 @@ try {
             'updated' => $affected,
             'vehicle_id' => $vehicleId,
             'plate_no' => $plateNo,
+            'driver_name' => $driverName,
             'office' => $office,
             'fuel_type' => $fuelType,
             'schedules' => $schedules,
@@ -164,15 +169,16 @@ try {
 
     $stmt = $conn->prepare("
         INSERT INTO vehicles
-            (vehicle_id, plate_no, type_of_vehicle, office, fuel_type, schedules, number_of_cylinder, normal_km_per_liter, current_odometer, fuel_capacity, fixed_liters, status, vehicle_scope)
+            (vehicle_id, plate_no, type_of_vehicle, driver_name, office, fuel_type, schedules, number_of_cylinder, normal_km_per_liter, current_odometer, fuel_capacity, fixed_liters, status, vehicle_scope)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'government')
+            (?, ?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, ?, ?, ?, ?, 'government')
     ");
     $stmt->bind_param(
-        'ssssssidddds',
+        'sssssssidddds',
         $vehicleId,
         $plateNo,
         $typeOfVehicle,
+        $driverName,
         $office,
         $fuelType,
         $schedules,
@@ -193,6 +199,7 @@ try {
         'id' => $newId,
         'vehicle_id' => $vehicleId,
         'plate_no' => $plateNo,
+        'driver_name' => $driverName,
         'office' => $office,
         'fuel_type' => $fuelType,
         'schedules' => $schedules,

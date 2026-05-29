@@ -85,6 +85,27 @@ function fuelTrackerEnsureVehicleFixedLiters(mysqli $conn): void
     $ensured = true;
 }
 
+function fuelTrackerEnsureVehicleDriverName(mysqli $conn): void
+{
+    static $ensured = false;
+
+    if ($ensured) {
+        return;
+    }
+
+    $result = $conn->query("SHOW COLUMNS FROM vehicles LIKE 'driver_name'");
+    if ($result && $result->num_rows > 0) {
+        $ensured = true;
+        return;
+    }
+
+    if (!$conn->query("ALTER TABLE vehicles ADD COLUMN driver_name VARCHAR(150) NULL AFTER type_of_vehicle")) {
+        throw new RuntimeException('Unable to add vehicles.driver_name: ' . $conn->error);
+    }
+
+    $ensured = true;
+}
+
 function fuelTrackerEnsureScopeColumns(mysqli $conn): void
 {
     static $ensured = false;
@@ -189,6 +210,7 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
     fuelTrackerEnsureVehicleSchedules($conn);
     fuelTrackerEnsureVehicleBalanceTank($conn);
     fuelTrackerEnsureVehicleFixedLiters($conn);
+    fuelTrackerEnsureVehicleDriverName($conn);
     fuelTrackerEnsureScopeColumns($conn);
     fuelTrackerEnsureQueryIndexes($conn);
 
@@ -201,6 +223,7 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
         SELECT
             id,
             office,
+            driver_name,
             fuel_type,
             fuel_capacity,
             fixed_liters,
@@ -232,7 +255,7 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
         INSERT INTO gas_issuances
             (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, issuance_scope, approved_at)
         VALUES
-            (?, ?, 'TBD', ?, 'OFFICIAL TRAVEL', ?, ?, 'Liters', ?, ?, 'draft', 'government', NULL)
+            (?, ?, ?, ?, 'OFFICIAL TRAVEL', ?, ?, 'Liters', ?, ?, 'draft', 'government', NULL)
     ");
 
     $created = 0;
@@ -254,6 +277,7 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
 
         $serialNo = 'FI-' . $date->format('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
         $office = trim((string) ($vehicle['office'] ?? 'Office')) ?: 'Office';
+        $driverName = trim((string) ($vehicle['driver_name'] ?? '')) ?: 'TBD';
         $fuelType = trim((string) ($vehicle['fuel_type'] ?? 'unleaded')) ?: 'unleaded';
         $authorizedLiters = fuelTrackerScheduledIssuanceLiters($vehicle);
 
@@ -261,7 +285,7 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
             continue;
         }
 
-        $insert->bind_param('sissdss', $serialNo, $vehicleId, $office, $fuelType, $authorizedLiters, $issueDate, $expiryDate);
+        $insert->bind_param('sisssdss', $serialNo, $vehicleId, $driverName, $office, $fuelType, $authorizedLiters, $issueDate, $expiryDate);
         $insert->execute();
         $created++;
     }
@@ -316,6 +340,7 @@ function fuelTrackerFetchVehicles(mysqli $conn, string $scope = 'government'): a
     fuelTrackerEnsureVehicleSchedules($conn);
     fuelTrackerEnsureVehicleBalanceTank($conn);
     fuelTrackerEnsureVehicleFixedLiters($conn);
+    fuelTrackerEnsureVehicleDriverName($conn);
     fuelTrackerEnsureScopeColumns($conn);
     fuelTrackerEnsureQueryIndexes($conn);
 
@@ -333,6 +358,7 @@ function fuelTrackerFetchVehicles(mysqli $conn, string $scope = 'government'): a
             vehicle_id,
             plate_no,
             type_of_vehicle,
+            driver_name,
             office,
             fuel_type,
             schedules,
