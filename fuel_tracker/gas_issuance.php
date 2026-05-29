@@ -819,6 +819,15 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                     <button type="button"
+                                                        class="btn btn-outline-success btn-sm action-print-gas"
+                                                        data-id="<?php echo htmlspecialchars((string) $iss['id']); ?>"
+                                                        data-serial="<?php echo htmlspecialchars((string) $iss['serial_no']); ?>"
+                                                        data-bs-toggle="tooltip"
+                                                        title="Print gas issuance PDF"
+                                                        aria-label="Print gas issuance <?php echo htmlspecialchars((string) $iss['serial_no']); ?>">
+                                                        <i class="fas fa-print"></i>
+                                                    </button>
+                                                    <button type="button"
                                                         class="btn btn-outline-danger btn-sm action-delete-issuance"
                                                         data-id="<?php echo htmlspecialchars((string) $iss['id']); ?>"
                                                         data-serial="<?php echo htmlspecialchars((string) $iss['serial_no']); ?>"
@@ -2124,8 +2133,9 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
         scheduleTableBody.addEventListener('click', function(event) {
             var viewButton = event.target.closest('.action-view-issuance');
             var editButton = event.target.closest('.action-edit-issuance');
+            var printButton = event.target.closest('.action-print-gas');
             var deleteButton = event.target.closest('.action-delete-issuance');
-            var button = viewButton || editButton || deleteButton;
+            var button = viewButton || editButton || printButton || deleteButton;
 
             if (!button) {
                 return;
@@ -2141,6 +2151,12 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 openViewModal(item);
             } else if (editButton) {
                 openEditModal(item);
+            } else if (printButton) {
+                var params = new URLSearchParams({
+                    serial_no: item.serial_no || printButton.dataset.serial || ''
+                });
+                window.open('fuel_withdrawal.php?' + params.toString(), '_blank', 'noopener');
+                showIssuanceToast('Opening gas issuance PDF for ' + (item.serial_no || 'this record') + '...', 'success');
             } else if (deleteButton) {
                 var serial = item.serial_no || deleteButton.dataset.serial || 'this issuance';
                 if (!window.confirm('Delete gas issuance ' + serial + '? This cannot be undone.')) {

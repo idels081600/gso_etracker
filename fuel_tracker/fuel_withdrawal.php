@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/auth_guard.php';
-requireFuelRole('print_admin', 'text');
+requireFuelRole(['print_admin', 'fuel_admin'], 'text');
 $tcpdfPath = __DIR__ . '/../vendor/tecnickcom/tcpdf/tcpdf.php';
 
 if (!is_file($tcpdfPath)) {
@@ -221,6 +221,10 @@ if ($issuanceData !== []) {
     $withdrawalDriver = strtoupper(withdrawalParam('driver', (string) ($issuanceData['driver_name'] ?? $withdrawalDriver)));
 }
 $driverSignature = fuelTrackerFetchDriverSignature($conn, $serialNo);
+if (strtoupper(trim($withdrawalDriver)) === 'TBD') {
+    $withdrawalDriver = '';
+    $driverSignature = '';
+}
 $outputMode = isset($_GET['download']) && $_GET['download'] === '1' ? 'D' : 'I';
 
 $pdf = new WithdrawalForm('P', 'mm', 'A4', true, 'UTF-8', false);
