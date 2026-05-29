@@ -16,6 +16,7 @@ $nextWeek = date('Y-m-d', strtotime('+7 days'));
 
 $vehicles = fuelTrackerFetchVehicles($conn);
 fuelTrackerSyncIssuanceOffices($conn);
+fuelTrackerCreateUpcomingScheduledIssuances($conn, 14);
 $allIssuances = fuelTrackerFetchGasIssuances($conn);
 $recentIssuances = array_slice($allIssuances, 0, 5);
 $vehicleLookup = fuelTrackerVehicleLookupByPlate($vehicles);
@@ -102,6 +103,19 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             color: inherit;
             line-height: 1;
             padding: 0;
+        }
+        .schedule-dropdown-menu {
+            max-height: 260px;
+            overflow-y: auto;
+            width: 100%;
+        }
+        .schedule-dropdown-menu .dropdown-item {
+            align-items: center;
+            border-radius: 6px;
+            display: flex;
+            font-size: 0.9rem;
+            gap: 0.25rem;
+            margin-bottom: 0.1rem;
         }
 
         /* ---------- Mini Calendar ---------- */
@@ -193,6 +207,44 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             align-items: center;
             justify-content: center;
             font-weight: 700;
+        }
+        .calendar-schedule-list {
+            border-top: 1px solid #e9ecef;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+        }
+        .calendar-schedule-item {
+            align-items: flex-start;
+            background: #f8fbff;
+            border: 1px solid #dbeafe;
+            border-radius: 8px;
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.5rem 0.6rem;
+        }
+        .calendar-schedule-item + .calendar-schedule-item {
+            margin-top: 0.45rem;
+        }
+        .calendar-schedule-item .schedule-dot {
+            background: #0d6efd;
+            border-radius: 50%;
+            flex: 0 0 8px;
+            height: 8px;
+            margin-top: 0.35rem;
+            width: 8px;
+        }
+        .calendar-schedule-item .schedule-title {
+            color: #173b23;
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+        .calendar-schedule-item .schedule-meta {
+            color: #667085;
+            display: block;
+            font-size: 0.75rem;
+            line-height: 1.25;
         }
 
         /* ---------- Status badges ---------- */
@@ -665,6 +717,8 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                             </div>
                             <select class="form-select form-select-sm" id="filterStatus" aria-label="Filter status">
                                 <option value="">All Status</option>
+                                <option value="draft">Draft</option>
+                                <option value="approved">Approved</option>
                                 <option value="valid">Valid</option>
                                 <option value="used">Used</option>
                                 <option value="expired">Expired</option>
@@ -689,6 +743,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                         <th class="text-end">Liters</th>
                                         <th>Issue Date</th>
                                         <th>Expiry</th>
+                                        <th class="text-center">Approved</th>
                                         <th>Status</th>
                                         <th class="actions-column text-center">Actions</th>
                                     </tr>
@@ -696,15 +751,19 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                 <tbody id="scheduleTableBody">
                                     <?php if (empty($allIssuances)): ?>
                                         <tr>
-                                            <td colspan="9" class="text-center text-muted py-4">No issuance records found</td>
+                                            <td colspan="10" class="text-center text-muted py-4">No issuance records found</td>
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach ($allIssuances as $iss): 
                                             $s = strtolower((string) ($iss['status'] ?? 'valid'));
                                             $badge = 'bg-success';
                                             if ($s === 'used') $badge = 'bg-primary';
+                                            elseif ($s === 'approved') $badge = 'bg-success';
+                                            elseif ($s === 'draft') $badge = 'bg-warning text-dark';
                                             elseif ($s === 'expired') $badge = 'bg-secondary';
                                             elseif ($s === 'revoked') $badge = 'bg-danger';
+                                            $isApproved = in_array($s, ['approved', 'valid', 'used'], true);
+                                            $approvalDisabled = in_array($s, ['used', 'expired', 'revoked'], true);
                                             $expiryDate = (string) ($iss['expiry_date'] ?? '');
                                             $expiryNote = '';
                                             if ($s === 'valid' && $expiryDate !== '') {
@@ -730,6 +789,14 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                             <td class="liters-cell"><?php echo htmlspecialchars((string) ($iss['authorized_liters'] ?? '0')) . ' L'; ?></td>
                                             <td><?php echo htmlspecialchars($iss['issue_date'] ?? '-'); ?></td>
                                             <td><?php echo htmlspecialchars($expiryDate !== '' ? $expiryDate : '-'); ?><?php echo $expiryNote; ?></td>
+                                            <td class="text-center">
+                                                <input class="form-check-input issuance-approval-checkbox"
+                                                    type="checkbox"
+                                                    data-id="<?php echo htmlspecialchars((string) $iss['id']); ?>"
+                                                    aria-label="Approve issuance <?php echo htmlspecialchars((string) $iss['serial_no']); ?>"
+                                                    <?php echo $isApproved ? 'checked' : ''; ?>
+                                                    <?php echo $approvalDisabled ? 'disabled' : ''; ?>>
+                                            </td>
                                             <td><span class="badge <?php echo $badge; ?>"><?php echo htmlspecialchars(ucfirst($s)); ?></span></td>
                                             <td class="actions-column text-center">
                                                 <div class="issuance-row-actions" role="group" aria-label="Issuance actions">
@@ -766,7 +833,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                     <tr id="noFilteredIssuancesRow" class="d-none">
-                                        <td colspan="9" class="text-center text-muted py-4">
+                                        <td colspan="10" class="text-center text-muted py-4">
                                             <i class="fas fa-filter me-1"></i>No issuances match the current filters.
                                         </td>
                                     </tr>
@@ -858,6 +925,9 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                         <div class="mt-1 small" id="selectedDateLabel">
                             <i class="fas fa-filter me-1"></i> Click a date to filter the table below.
                         </div>
+                        <div class="calendar-schedule-list" id="calendarScheduleList">
+                            <div class="text-muted small">Select a date to see scheduled vehicles.</div>
+                        </div>
                     </div>
                 </div>
                 </div>
@@ -913,6 +983,26 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                     <option value="active" selected>Active</option>
                                     <option value="inactive">Inactive</option>
                                 </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="vehicleSchedules" class="form-label">Weekly Schedule</label>
+                                <input type="hidden" id="vehicleSchedules">
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="vehicleSchedulesButton" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                        No weekly schedule
+                                    </button>
+                                    <div class="dropdown-menu p-2 schedule-dropdown-menu" aria-labelledby="vehicleSchedulesButton">
+                                        <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="daily" data-schedule-input="vehicleSchedules">Every day</label>
+                                        <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="as_needed" data-schedule-input="vehicleSchedules">As needed</label>
+                                        <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="monday" data-schedule-input="vehicleSchedules">Monday</label>
+                                        <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="tuesday" data-schedule-input="vehicleSchedules">Tuesday</label>
+                                        <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="wednesday" data-schedule-input="vehicleSchedules">Wednesday</label>
+                                        <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="thursday" data-schedule-input="vehicleSchedules">Thursday</label>
+                                        <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="friday" data-schedule-input="vehicleSchedules">Friday</label>
+                                        <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="saturday" data-schedule-input="vehicleSchedules">Saturday</label>
+                                        <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="sunday" data-schedule-input="vehicleSchedules">Sunday</label>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-3">
                                 <label for="vehicleCylinders" class="form-label">Cylinders</label>
@@ -977,6 +1067,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                                 $vehicle['type_of_vehicle'] ?? '',
                                                 $vehicle['office'] ?? '',
                                                 $vehicle['fuel_type'] ?? '',
+                                                $vehicle['schedules'] ?? '',
                                                 $vehicle['status'] ?? '',
                                             ])), ENT_QUOTES, 'UTF-8'); ?>">
                                             <span class="plate"><?php echo htmlspecialchars((string) ($vehicle['plate_no'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></span>
@@ -984,6 +1075,9 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                                 <?php echo htmlspecialchars((string) ($vehicle['type_of_vehicle'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>
                                                 | <?php echo htmlspecialchars((string) ($vehicle['office'] ?? 'No office'), ENT_QUOTES, 'UTF-8'); ?>
                                                 | <?php echo htmlspecialchars(ucfirst((string) ($vehicle['fuel_type'] ?? 'unleaded')), ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php if (trim((string) ($vehicle['schedules'] ?? '')) !== ''): ?>
+                                                    | <?php echo htmlspecialchars((string) $vehicle['schedules'], ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php endif; ?>
                                                 | Last: <?php echo htmlspecialchars(number_format((float) ($vehicle['past_odometer'] ?? $vehicle['current_odo'] ?? 0), 1), ENT_QUOTES, 'UTF-8'); ?> km
                                             </span>
                                         </button>
@@ -1033,6 +1127,26 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                                 <option value="unleaded">Unleaded</option>
                                                 <option value="diesel">Diesel</option>
                                             </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="editVehicleSchedules" class="form-label">Weekly Schedule</label>
+                                            <input type="hidden" id="editVehicleSchedules" disabled>
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="editVehicleSchedulesButton" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" disabled>
+                                                    No weekly schedule
+                                                </button>
+                                                <div class="dropdown-menu p-2 schedule-dropdown-menu" aria-labelledby="editVehicleSchedulesButton">
+                                                    <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="daily" data-schedule-input="editVehicleSchedules">Every day</label>
+                                                    <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="as_needed" data-schedule-input="editVehicleSchedules">As needed</label>
+                                                    <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="monday" data-schedule-input="editVehicleSchedules">Monday</label>
+                                                    <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="tuesday" data-schedule-input="editVehicleSchedules">Tuesday</label>
+                                                    <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="wednesday" data-schedule-input="editVehicleSchedules">Wednesday</label>
+                                                    <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="thursday" data-schedule-input="editVehicleSchedules">Thursday</label>
+                                                    <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="friday" data-schedule-input="editVehicleSchedules">Friday</label>
+                                                    <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="saturday" data-schedule-input="editVehicleSchedules">Saturday</label>
+                                                    <label class="dropdown-item"><input class="form-check-input me-2 schedule-option" type="checkbox" value="sunday" data-schedule-input="editVehicleSchedules">Sunday</label>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1108,7 +1222,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                     <?php foreach ($vehicles as $vehicle): ?>
                                         <option value="<?php echo htmlspecialchars((string) $vehicle['id']); ?>"
                                             data-office="<?php echo htmlspecialchars((string) ($vehicle['office'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-fuel-type="<?php echo htmlspecialchars((string) ($vehicle['fuel_type'] ?? 'unleaded'), ENT_QUOTES, 'UTF-8'); ?>">
+                                            data-fuel-type="<?php echo htmlspecialchars(str_contains(strtolower((string) ($vehicle['fuel_type'] ?? '')), 'diesel') ? 'diesel' : 'unleaded', ENT_QUOTES, 'UTF-8'); ?>">
                                             <?php echo htmlspecialchars($vehicle['plate_no'] . ' - ' . $vehicle['type_of_vehicle']); ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -1229,6 +1343,8 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                             <div class="col-md-6">
                                 <label for="editStatus" class="form-label">Status</label>
                                 <select class="form-select" id="editStatus">
+                                    <option value="draft">Draft</option>
+                                    <option value="approved">Approved</option>
                                     <option value="valid">Valid</option>
                                     <option value="used">Used</option>
                                     <option value="expired">Expired</option>
@@ -1296,7 +1412,8 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 'plate_no' => $vehicle['plate_no'] ?? '',
                 'type_of_vehicle' => $vehicle['type_of_vehicle'] ?? '',
                 'office' => $vehicle['office'] ?? '',
-                'fuel_type' => $vehicle['fuel_type'] ?? 'unleaded',
+                'fuel_type' => str_contains(strtolower((string) ($vehicle['fuel_type'] ?? '')), 'diesel') ? 'diesel' : 'unleaded',
+                'schedules' => $vehicle['schedules'] ?? '',
                 'number_of_cylinder' => $vehicle['cylinders'] ?? 4,
                 'normal_km_per_liter' => $vehicle['normal_km_per_liter'] ?? 20,
                 'past_odometer' => $vehicle['past_odometer'] ?? $vehicle['current_odo'] ?? 0,
@@ -1309,8 +1426,8 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
         // ========== SUMMARY STATS ==========
         function renderStats() {
             var now = new Date();
-            var todayStr = now.toISOString().slice(0, 10);
-            var counts = { valid: 0, used: 0, expired: 0, revoked: 0 };
+            var todayStr = formatLocalDate(now);
+            var counts = { draft: 0, approved: 0, valid: 0, used: 0, expired: 0, revoked: 0 };
             var upcoming = 0, overdue = 0;
             issuanceData.forEach(function(item) {
                 var s = item.status || 'valid';
@@ -1330,24 +1447,121 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
         renderStats();
 
         // ========== MINI CALENDAR ==========
+        var scheduleLabels = {
+            daily: 'Every day',
+            as_needed: 'As needed',
+            monday: 'Monday',
+            tuesday: 'Tuesday',
+            wednesday: 'Wednesday',
+            thursday: 'Thursday',
+            friday: 'Friday',
+            saturday: 'Saturday',
+            sunday: 'Sunday'
+        };
         var calendarDate = new Date();
         calendarDate.setDate(1); // start of current month
-        var selectedCalendarDate = null;
+        var selectedCalendarDate = formatLocalDate(new Date());
+        filterDate.value = selectedCalendarDate;
 
-        function buildIssuanceMap() {
+        function formatLocalDate(date) {
+            var year = date.getFullYear();
+            var month = String(date.getMonth() + 1).padStart(2, '0');
+            var day = String(date.getDate()).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+
+        function calendarEscape(value) {
+            return String(value == null ? '' : value).replace(/[&<>"']/g, function(character) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[character];
+            });
+        }
+
+        function dateFromString(dateStr) {
+            return new Date(dateStr + 'T00:00:00');
+        }
+
+        function scheduleMatchesCalendarDate(schedule, dateStr) {
+            var normalized = normalizeScheduleValue(schedule);
+            if (!normalized) {
+                return false;
+            }
+            if (normalized === 'daily') {
+                return true;
+            }
+            if (normalized === 'as_needed') {
+                return dateStr === formatLocalDate(new Date());
+            }
+
+            var date = dateFromString(dateStr);
+            var dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            return normalized.split(',').indexOf(dayNames[date.getDay()]) !== -1;
+        }
+
+        function buildCalendarMap(year, month) {
             var map = {};
             issuanceData.forEach(function(item) {
                 var d = item.issue_date;
                 if (d) {
-                    if (!map[d]) map[d] = 0;
-                    map[d]++;
+                    if (!map[d]) map[d] = { issued: [], scheduled: [] };
+                    map[d].issued.push(item);
                 }
             });
+
+            var daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (var day = 1; day <= daysInMonth; day++) {
+                var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                vehicleData.forEach(function(vehicle) {
+                    if (!scheduleMatchesCalendarDate(vehicle.schedules, dateStr)) {
+                        return;
+                    }
+
+                    if (!map[dateStr]) map[dateStr] = { issued: [], scheduled: [] };
+                    map[dateStr].scheduled.push(vehicle);
+                });
+            }
+
             return map;
         }
 
+        function renderCalendarScheduleList(dateStr, calendarMap) {
+            var list = document.getElementById('calendarScheduleList');
+            if (!list) {
+                return;
+            }
+            if (!dateStr) {
+                list.innerHTML = '<div class="text-muted small">Select a date to see scheduled vehicles.</div>';
+                return;
+            }
+
+            var entry = calendarMap[dateStr] || { issued: [], scheduled: [] };
+            var vehicles = entry.scheduled || [];
+            if (vehicles.length === 0) {
+                list.innerHTML = '<div class="text-muted small">No vehicles scheduled on this date.</div>';
+                return;
+            }
+
+            list.innerHTML = vehicles.slice(0, 8).map(function(vehicle) {
+                var alreadyIssued = (entry.issued || []).some(function(item) {
+                    return String(item.plate_no || '') === String(vehicle.plate_no || '');
+                });
+                return '<div class="calendar-schedule-item">' +
+                    '<span class="schedule-dot"></span>' +
+                    '<span>' +
+                        '<span class="schedule-title">' + calendarEscape(vehicle.plate_no || vehicle.vehicle_id || 'No plate') + '</span>' +
+                        '<span class="schedule-meta">' + calendarEscape(vehicle.type_of_vehicle || 'Vehicle') + ' | ' + calendarEscape(vehicle.office || 'Office') + ' | ' + calendarEscape(scheduleLabel(vehicle.schedules)) + (alreadyIssued ? ' | Issuance created' : '') + '</span>' +
+                    '</span>' +
+                '</div>';
+            }).join('') + (vehicles.length > 8 ? '<div class="text-muted small mt-2">+' + (vehicles.length - 8) + ' more scheduled vehicles</div>' : '');
+        }
+
         function renderMiniCalendar(year, month) {
-            var issuanceMap = buildIssuanceMap();
+            var issuanceMap = buildCalendarMap(year, month);
             var firstDay = new Date(year, month, 1);
             var lastDay = new Date(year, month + 1, 0);
             var startDay = firstDay.getDay(); // 0=Sun
@@ -1356,7 +1570,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
             var dayLabels = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
-            var todayStr = new Date().toISOString().slice(0, 10);
+            var todayStr = formatLocalDate(new Date());
 
             var html = '<div class="mc-header">';
             html += '<button type="button" data-action="prev"><i class="fas fa-chevron-left"></i></button>';
@@ -1375,7 +1589,8 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
                 var isToday = dateStr === todayStr;
                 var isSelected = dateStr === selectedCalendarDate;
-                var count = issuanceMap[dateStr] || 0;
+                var entry = issuanceMap[dateStr] || { issued: [], scheduled: [] };
+                var count = entry.issued.length;
                 var hasIss = count > 0;
 
                 var cls = 'day-cell';
@@ -1402,6 +1617,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
 
             html += '</div>';
             document.getElementById('miniCalendar').innerHTML = html;
+            renderCalendarScheduleList(selectedCalendarDate, issuanceMap);
 
             // Event listeners
             document.querySelectorAll('#miniCalendar .mc-header button').forEach(function(btn) {
@@ -1503,6 +1719,10 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
         filterStatus.addEventListener('change', applyFilters);
         filterDate.addEventListener('change', applyFilters);
 
+        document.getElementById('selectedDateLabel').innerHTML =
+            '<i class="fas fa-filter me-1"></i> Filtered: <strong>' + selectedCalendarDate + '</strong>';
+        applyFilters();
+
         clearFiltersBtn.addEventListener('click', function() {
             filterSearch.value = '';
             filterStatus.value = '';
@@ -1551,12 +1771,19 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             applyFilters();
         });
 
-        function statusBadge(status) {
+        function getStatusBadgeClass(status) {
             var statusClass = 'bg-success';
             if (status === 'used') statusClass = 'bg-primary';
+            else if (status === 'approved') statusClass = 'bg-success';
+            else if (status === 'draft') statusClass = 'bg-warning text-dark';
             else if (status === 'expired') statusClass = 'bg-secondary';
             else if (status === 'revoked') statusClass = 'bg-danger';
 
+            return statusClass;
+        }
+
+        function statusBadge(status) {
+            var statusClass = getStatusBadgeClass(status);
             return '<span class="badge ' + statusClass + '">' + status.charAt(0).toUpperCase() + status.slice(1) + '</span>';
         }
 
@@ -1632,6 +1859,64 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 });
         }
 
+        function saveIssuanceApproval(checkbox) {
+            checkbox.disabled = true;
+            var row = checkbox.closest('tr');
+            var previousChecked = !checkbox.checked;
+            var previousStatus = row ? (row.dataset.status || '') : '';
+
+            fetch('gas_issuance_save.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    action: 'approval',
+                    id: checkbox.dataset.id,
+                    approved: checkbox.checked
+                })
+            })
+                .then(function(response) {
+                    return response.json().then(function(data) {
+                        if (!response.ok || !data.success) {
+                            throw new Error(data.message || 'Unable to update approval.');
+                        }
+                        return data;
+                    });
+                })
+                .then(function(data) {
+                    var status = data.status || (checkbox.checked ? 'approved' : 'draft');
+                    if (row) {
+                        row.dataset.status = status;
+                        var badge = row.querySelector('td:nth-child(9) .badge');
+                        if (badge) {
+                            badge.className = 'badge ' + getStatusBadgeClass(status);
+                            badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                        }
+                    }
+
+                    var issuance = getIssuanceById(checkbox.dataset.id);
+                    if (issuance) {
+                        issuance.status = status;
+                    }
+
+                    checkbox.checked = status === 'approved' || status === 'valid' || status === 'used';
+                    checkbox.disabled = status === 'used' || status === 'expired' || status === 'revoked';
+                    renderStats();
+                    applyFilters();
+                    showIssuanceToast(data.message || 'Approval updated.', 'success');
+                })
+                .catch(function(error) {
+                    checkbox.checked = previousChecked;
+                    checkbox.disabled = false;
+                    if (row && previousStatus) {
+                        row.dataset.status = previousStatus;
+                    }
+                    showIssuanceToast(error.message, 'danger');
+                });
+        }
+
         function saveVehicle(payload, button) {
             var originalHtml = button.innerHTML;
             button.disabled = true;
@@ -1683,8 +1968,93 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
         function getCreateFuelTypeFromVehicle() {
             var vehicleSelect = document.getElementById('createVehicle');
             var selectedOption = vehicleSelect.options[vehicleSelect.selectedIndex];
-            var fuelType = selectedOption ? (selectedOption.dataset.fuelType || 'unleaded') : 'unleaded';
+            var fuelType = normalizeFuelType(selectedOption ? (selectedOption.dataset.fuelType || 'unleaded') : 'unleaded');
             return fuelType.charAt(0).toUpperCase() + fuelType.slice(1).toLowerCase();
+        }
+
+        function normalizeFuelType(value) {
+            var fuelType = String(value || '').trim().toLowerCase();
+            if (fuelType.indexOf('diesel') !== -1) {
+                return 'diesel';
+            }
+            if (fuelType.indexOf('gasoline') !== -1 || fuelType.indexOf('unleaded') !== -1) {
+                return 'unleaded';
+            }
+            return 'unleaded';
+        }
+
+        function normalizeScheduleValue(value) {
+            var text = String(value || '').toLowerCase();
+            if (text.indexOf('daily') !== -1 || text.indexOf('everyday') !== -1 || text.indexOf('every day') !== -1) {
+                return 'daily';
+            }
+            if (text.indexOf('as_needed') !== -1 || text.indexOf('as needed') !== -1 || text.indexOf('as-needed') !== -1) {
+                return 'as_needed';
+            }
+
+            return Object.keys(scheduleLabels).filter(function(day) {
+                return day !== 'daily' && day !== 'as_needed' && text.indexOf(day) !== -1;
+            }).join(',');
+        }
+
+        function scheduleLabel(value) {
+            var normalized = normalizeScheduleValue(value);
+            if (!normalized) {
+                return 'No weekly schedule';
+            }
+            if (normalized === 'daily') {
+                return 'Every day';
+            }
+            if (normalized === 'as_needed') {
+                return 'As needed';
+            }
+
+            return normalized.split(',').filter(Boolean).map(function(day) {
+                return scheduleLabels[day] || day;
+            }).join(', ');
+        }
+
+        function syncScheduleDropdown(inputId, value) {
+            var normalized = normalizeScheduleValue(value);
+            var input = document.getElementById(inputId);
+            var button = document.getElementById(inputId + 'Button');
+            var selected = normalized ? normalized.split(',') : [];
+
+            if (input) {
+                input.value = normalized;
+            }
+            if (button) {
+                button.textContent = scheduleLabel(normalized);
+            }
+
+            document.querySelectorAll('.schedule-option[data-schedule-input="' + inputId + '"]').forEach(function(option) {
+                option.checked = selected.indexOf(option.value) !== -1;
+            });
+        }
+
+        function handleScheduleOptionChange(option) {
+            var inputId = option.dataset.scheduleInput;
+            var options = Array.from(document.querySelectorAll('.schedule-option[data-schedule-input="' + inputId + '"]'));
+
+            if ((option.value === 'daily' || option.value === 'as_needed') && option.checked) {
+                options.forEach(function(item) {
+                    item.checked = item.value === option.value;
+                });
+            } else if (option.value !== 'daily' && option.value !== 'as_needed' && option.checked) {
+                options.forEach(function(item) {
+                    if (item.value === 'daily' || item.value === 'as_needed') {
+                        item.checked = false;
+                    }
+                });
+            }
+
+            var values = options.filter(function(item) {
+                return item.checked;
+            }).map(function(item) {
+                return item.value;
+            });
+
+            syncScheduleDropdown(inputId, values.join(','));
         }
 
         function setVehicleFormEnabled(enabled) {
@@ -1694,6 +2064,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 }
             });
             document.getElementById('editVehicleCurrentOdo').disabled = true;
+            document.getElementById('editVehicleSchedulesButton').disabled = !enabled;
             document.getElementById('saveEditVehicleBtn').disabled = !enabled;
         }
 
@@ -1708,7 +2079,8 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             document.getElementById('editVehiclePlateNo').value = vehicle.plate_no || '';
             document.getElementById('editVehicleOffice').value = vehicle.office || '';
             document.getElementById('editVehicleType').value = vehicle.type_of_vehicle || '';
-            document.getElementById('editVehicleFuelType').value = vehicle.fuel_type || 'unleaded';
+            document.getElementById('editVehicleFuelType').value = normalizeFuelType(vehicle.fuel_type);
+            syncScheduleDropdown('editVehicleSchedules', vehicle.schedules || '');
             document.getElementById('editVehicleCylinders').value = vehicle.number_of_cylinder || 4;
             document.getElementById('editVehicleNormalKm').value = vehicle.normal_km_per_liter || 0;
             document.getElementById('editVehicleLastOdo').value = vehicle.past_odometer || 0;
@@ -1720,7 +2092,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             document.getElementById('editVehicleFuelCapacity').value = vehicle.fuel_capacity || 0;
             document.getElementById('editVehicleStatus').value = vehicle.status || 'active';
             document.getElementById('editVehicleTitle').textContent = vehicle.plate_no || 'Vehicle details';
-            document.getElementById('editVehicleSubtitle').textContent = (vehicle.type_of_vehicle || '-') + ' | ' + (vehicle.office || 'No office') + ' | ' + (vehicle.fuel_type || 'unleaded') + ' | ' + (vehicle.vehicle_id || 'No vehicle ID');
+            document.getElementById('editVehicleSubtitle').textContent = (vehicle.type_of_vehicle || '-') + ' | ' + (vehicle.office || 'No office') + ' | ' + (vehicle.fuel_type || 'unleaded') + ' | ' + (vehicle.schedules || 'No schedule') + ' | ' + (vehicle.vehicle_id || 'No vehicle ID');
 
             var badge = document.getElementById('editVehicleStatusBadge');
             var status = vehicle.status || 'active';
@@ -1772,6 +2144,12 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             }
         });
 
+        scheduleTableBody.addEventListener('change', function(event) {
+            if (event.target.classList.contains('issuance-approval-checkbox')) {
+                saveIssuanceApproval(event.target);
+            }
+        });
+
         document.getElementById('createIssuanceBtn').addEventListener('click', function() {
             var form = document.getElementById('createIssuanceForm');
             if (!form.checkValidity()) {
@@ -1787,7 +2165,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 authorized_liters: document.getElementById('createLiters').value,
                 issue_date: document.getElementById('createIssueDate').value,
                 expiry_date: document.getElementById('createExpiryDate').value,
-                status: 'valid',
+                status: 'draft',
                 office: document.getElementById('createOffice').value,
                 purpose: 'OFFICIAL TRAVEL',
                 fuel_type: getCreateFuelTypeFromVehicle(),
@@ -1797,6 +2175,12 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
 
         document.getElementById('createVehicle').addEventListener('change', updateCreateOfficeFromVehicle);
         document.getElementById('createIssuanceModal').addEventListener('shown.bs.modal', updateCreateOfficeFromVehicle);
+        document.querySelectorAll('.schedule-option').forEach(function(option) {
+            option.addEventListener('change', function() {
+                handleScheduleOptionChange(option);
+            });
+        });
+        syncScheduleDropdown('vehicleSchedules', '');
 
         document.getElementById('saveVehicleBtn').addEventListener('click', function() {
             var form = document.getElementById('addVehicleForm');
@@ -1811,6 +2195,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 type_of_vehicle: document.getElementById('vehicleType').value,
                 office: document.getElementById('vehicleOffice').value,
                 fuel_type: document.getElementById('vehicleFuelType').value,
+                schedules: document.getElementById('vehicleSchedules').value,
                 number_of_cylinder: document.getElementById('vehicleCylinders').value,
                 normal_km_per_liter: document.getElementById('vehicleNormalKm').value,
                 current_odometer: document.getElementById('vehicleCurrentOdo').value,
@@ -1851,6 +2236,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 type_of_vehicle: document.getElementById('editVehicleType').value,
                 office: document.getElementById('editVehicleOffice').value,
                 fuel_type: document.getElementById('editVehicleFuelType').value,
+                schedules: document.getElementById('editVehicleSchedules').value,
                 number_of_cylinder: document.getElementById('editVehicleCylinders').value,
                 normal_km_per_liter: document.getElementById('editVehicleNormalKm').value,
                 current_odometer: document.getElementById('editVehicleCurrentOdo').value,

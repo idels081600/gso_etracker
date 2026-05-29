@@ -93,8 +93,8 @@ try {
     }
 
     $status = strtolower((string) ($issuance['status'] ?? ''));
-    if ($status === 'revoked') {
-        gasCheckerSubmitJson(['success' => false, 'message' => 'This gas issuance is ' . $status . ' and cannot be submitted.'], 409);
+    if (!in_array($status, ['approved', 'valid'], true)) {
+        gasCheckerSubmitJson(['success' => false, 'message' => 'This gas issuance is ' . ($status !== '' ? $status : 'not approved') . ' and cannot be submitted until approved.'], 409);
     }
 
     $gasIssuanceId = (int) $issuance['id'];

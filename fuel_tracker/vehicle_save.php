@@ -7,6 +7,7 @@ requireFuelAjaxRequest();
 require_once __DIR__ . '/rate_limiter.php';
 require_rate_limit(30, 60, 'vehicle_save', 'json');
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/gas_issuance_data.php';
 
 header('Content-Type: application/json');
 
@@ -42,16 +43,41 @@ function vehicleSaveNumber(mixed $value, string $label, float $minimum = 0): flo
     return $number;
 }
 
+function vehicleSaveEnsureSchedulesColumn(mysqli $conn): void
+{
+    static $ensured = false;
+
+    if ($ensured) {
+        return;
+    }
+
+    $result = $conn->query("SHOW COLUMNS FROM vehicles LIKE 'schedules'");
+    if ($result && $result->num_rows > 0) {
+        $ensured = true;
+        return;
+    }
+
+    if (!$conn->query("ALTER TABLE vehicles ADD COLUMN schedules VARCHAR(120) NULL AFTER fuel_type")) {
+        throw new RuntimeException('Unable to add vehicle schedule field: ' . $conn->error);
+    }
+
+    $ensured = true;
+}
+
 $input = vehicleSaveInput();
 $action = strtolower(trim((string) ($input['action'] ?? 'create')));
 
 try {
+    vehicleSaveEnsureSchedulesColumn($conn);
+
     $id = (int) ($input['id'] ?? 0);
     $vehicleId = strtoupper(trim((string) ($input['vehicle_id'] ?? '')));
     $plateNo = strtoupper(trim((string) ($input['plate_no'] ?? '')));
     $typeOfVehicle = trim((string) ($input['type_of_vehicle'] ?? ''));
     $office = trim((string) ($input['office'] ?? ''));
-    $fuelType = strtolower(trim((string) ($input['fuel_type'] ?? 'unleaded')));
+    $fuelTypeRaw = strtolower(trim((string) ($input['fuel_type'] ?? 'unleaded')));
+    $fuelType = str_contains($fuelTypeRaw, 'diesel') ? 'diesel' : 'unleaded';
+    $schedules = fuelTrackerNormalizeSchedule($input['schedules'] ?? '');
     $status = strtolower(trim((string) ($input['status'] ?? 'active')));
 
     if ($action === 'update' && $id <= 0) {
@@ -72,10 +98,6 @@ try {
     if (!in_array($status, ['active', 'inactive'], true)) {
         $status = 'active';
     }
-    if (!in_array($fuelType, ['unleaded', 'diesel'], true)) {
-        $fuelType = 'unleaded';
-    }
-
     $cylinders = (int) vehicleSaveNumber($input['number_of_cylinder'] ?? 4, 'Number of cylinders', 1);
     $normalKmPerLiter = vehicleSaveNumber($input['normal_km_per_liter'] ?? 20, 'Normal km/liter');
     $currentOdometer = vehicleSaveNumber($input['current_odometer'] ?? 0, 'Current odometer');
@@ -89,6 +111,7 @@ try {
                 type_of_vehicle = ?,
                 office = ?,
                 fuel_type = ?,
+                schedules = ?,
                 number_of_cylinder = ?,
                 normal_km_per_liter = ?,
                 fuel_capacity = ?,
@@ -97,12 +120,13 @@ try {
             WHERE id = ?
         ");
         $stmt->bind_param(
-            'sssssiddsi',
+            'ssssssiddsi',
             $vehicleId,
             $plateNo,
             $typeOfVehicle,
             $office,
             $fuelType,
+            $schedules,
             $cylinders,
             $normalKmPerLiter,
             $fuelCapacity,
@@ -122,6 +146,7 @@ try {
             'plate_no' => $plateNo,
             'office' => $office,
             'fuel_type' => $fuelType,
+            'schedules' => $schedules,
         ]);
     }
 
@@ -131,17 +156,18 @@ try {
 
     $stmt = $conn->prepare("
         INSERT INTO vehicles
-            (vehicle_id, plate_no, type_of_vehicle, office, fuel_type, number_of_cylinder, normal_km_per_liter, current_odometer, fuel_capacity, status)
+            (vehicle_id, plate_no, type_of_vehicle, office, fuel_type, schedules, number_of_cylinder, normal_km_per_liter, current_odometer, fuel_capacity, status)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $stmt->bind_param(
-        'sssssiddds',
+        'ssssssiddds',
         $vehicleId,
         $plateNo,
         $typeOfVehicle,
         $office,
         $fuelType,
+        $schedules,
         $cylinders,
         $normalKmPerLiter,
         $currentOdometer,
@@ -160,6 +186,7 @@ try {
         'plate_no' => $plateNo,
         'office' => $office,
         'fuel_type' => $fuelType,
+        'schedules' => $schedules,
     ]);
 } catch (mysqli_sql_exception $e) {
     error_log('Vehicle save error: ' . $e->getMessage());

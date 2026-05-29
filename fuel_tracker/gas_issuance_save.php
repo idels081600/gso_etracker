@@ -103,18 +103,18 @@ try {
         $purpose = trim((string) ($input['purpose'] ?? 'OFFICIAL TRAVEL'));
         $fuelType = trim((string) ($input['fuel_type'] ?? 'Unleaded'));
         $unit = trim((string) ($input['unit'] ?? 'Liters'));
-        $status = strtolower(trim((string) ($input['status'] ?? 'valid')));
+        $status = strtolower(trim((string) ($input['status'] ?? 'draft')));
         if (!in_array($status, $allowedStatuses, true)) {
-            $status = 'valid';
+            $status = 'draft';
         }
 
         $stmt = $conn->prepare("
             INSERT INTO gas_issuances
                 (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, approved_at)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(? IN ('approved', 'valid'), NOW(), NULL))
         ");
-        $stmt->bind_param('sissssdssss', $serialNo, $vehicleId, $driverName, $office, $purpose, $fuelType, $authorizedLiters, $unit, $issueDate, $expiryDate, $status);
+        $stmt->bind_param('sissssdsssss', $serialNo, $vehicleId, $driverName, $office, $purpose, $fuelType, $authorizedLiters, $unit, $issueDate, $expiryDate, $status, $status);
         $stmt->execute();
         $newId = $stmt->insert_id;
         $stmt->close();
@@ -196,6 +196,52 @@ try {
         $transactionStarted = false;
 
         gasIssuanceJson(['success' => true, 'message' => 'Gas issuance deleted.', 'deleted' => $affected]);
+    }
+
+    if ($action === 'approval') {
+        $id = (int) ($input['id'] ?? 0);
+        $approved = filter_var($input['approved'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($id <= 0) {
+            gasIssuanceJson(['success' => false, 'message' => 'Issuance ID is required.'], 422);
+        }
+
+        $stmt = $conn->prepare('SELECT status FROM gas_issuances WHERE id = ? LIMIT 1');
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$row) {
+            gasIssuanceJson(['success' => false, 'message' => 'Gas issuance record was not found.'], 404);
+        }
+
+        $currentStatus = strtolower((string) ($row['status'] ?? ''));
+        if ($currentStatus === 'used') {
+            gasIssuanceJson(['success' => false, 'message' => 'Used issuances can no longer be changed.'], 409);
+        }
+        if (in_array($currentStatus, ['expired', 'revoked'], true) && $approved) {
+            gasIssuanceJson(['success' => false, 'message' => 'Expired or revoked issuances cannot be approved.'], 409);
+        }
+
+        $newStatus = $approved ? 'approved' : 'draft';
+        $stmt = $conn->prepare("
+            UPDATE gas_issuances
+            SET status = ?,
+                approved_at = CASE WHEN ? = 'approved' THEN NOW() ELSE NULL END,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ");
+        $stmt->bind_param('ssi', $newStatus, $newStatus, $id);
+        $stmt->execute();
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+
+        gasIssuanceJson([
+            'success' => true,
+            'message' => $approved ? 'Gas issuance approved.' : 'Gas issuance moved back to draft.',
+            'status' => $newStatus,
+            'updated' => $affected,
+        ]);
     }
 
     gasIssuanceJson(['success' => false, 'message' => 'Unsupported action.'], 400);

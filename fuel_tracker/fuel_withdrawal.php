@@ -98,7 +98,7 @@ function drawWithdrawalCopy(
 ): void {
     $tableX = 16;
     $tableY = $topY + 20;
-    $widths = [10, 17, 12, 53, 35, 29, 16];
+    $widths = [10, 17, 12, 53, 39, 25, 16];
     $headers = ['ITEM', 'QUANTITY', 'UNIT', 'DESCRIPTION', 'VEHICLE', 'PLATE #', 'OFFICE'];
 
     $pdf->SetDrawColor(0, 0, 0);
@@ -135,25 +135,26 @@ function drawWithdrawalCopy(
     }
     $pdf->Ln();
 
-    $pdf->SetFont('helvetica', 'B', 8.5);
-    $pdf->SetX($tableX);
-    $pdf->Cell($widths[0], 10, '1', 1, 0, 'C');
-    $pdf->Cell($widths[1], 10, $quantity, 1, 0, 'C');
-    $pdf->Cell($widths[2], 10, $unit, 1, 0, 'C');
-    $pdf->Cell($widths[3], 10, $description, 1, 0, 'C');
-    $pdf->Cell($widths[4], 10, $vehicle, 1, 0, 'C');
-    $pdf->Cell($widths[5], 10, $plateNo, 1, 0, 'C');
-    $pdf->Cell($widths[6], 10, $purpose, 1, 1, 'C');
+    $pdf->SetFont('helvetica', 'B', 7.4);
+    $rowY = $pdf->GetY();
+    $rowHeight = 14;
+    $rowValues = ['1', $quantity, $unit, $description, $vehicle, $plateNo, $purpose];
+    $cellX = $tableX;
+    foreach ($rowValues as $index => $value) {
+        $pdf->MultiCell($widths[$index], $rowHeight, $value, 1, 'C', false, 0, $cellX, $rowY, true, 0, false, true, $rowHeight, 'M');
+        $cellX += $widths[$index];
+    }
+    $pdf->SetXY($tableX, $rowY + $rowHeight);
 
     for ($row = 0; $row < 2; $row++) {
         $pdf->SetX($tableX);
         foreach ($widths as $width) {
-            $pdf->Cell($width, 9, '', 1, 0, 'C');
+            $pdf->Cell($width, 8, '', 1, 0, 'C');
         }
         $pdf->Ln();
     }
 
-    $requestY = $tableY + 37;
+    $requestY = $pdf->GetY() + 2;
     $pdf->SetFont('helvetica', '', 7);
     $pdf->SetXY($tableX, $requestY);
     $pdf->Cell(50, 5, 'Requested by:', 0, 1, 'L');

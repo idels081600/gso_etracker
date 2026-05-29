@@ -53,8 +53,8 @@ try {
     }
 
     $status = strtolower((string) ($record['status'] ?? ''));
-    if ($status === 'revoked') {
-        gasCheckerLookupJson(['success' => false, 'message' => 'This gas issuance is ' . $status . ' and cannot be checked.'], 409);
+    if (!in_array($status, ['approved', 'valid', 'used'], true)) {
+        gasCheckerLookupJson(['success' => false, 'message' => 'This gas issuance is ' . ($status !== '' ? $status : 'not approved') . ' and cannot be checked until approved.'], 409);
     }
 
     gasCheckerLookupJson([
