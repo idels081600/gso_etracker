@@ -17,6 +17,20 @@ $nextWeek = date('Y-m-d', strtotime('+7 days'));
 $privateVehicles = fuelTrackerFetchVehicles($conn, 'private');
 $privateIssuances = fuelTrackerFetchGasIssuances($conn, [], 'private');
 $serialNo = 'PFI-' . date('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+$privateDieselLiters = 0.0;
+$privateUnleadedLiters = 0.0;
+
+foreach ($privateIssuances as $privateIssuance) {
+    $liters = (float) ($privateIssuance['authorized_liters'] ?? 0);
+    $fuelType = strtolower((string) ($privateIssuance['fuel_type'] ?? ''));
+    if (str_contains($fuelType, 'diesel')) {
+        $privateDieselLiters += $liters;
+    } else {
+        $privateUnleadedLiters += $liters;
+    }
+}
+
+$totalLiters = $privateDieselLiters + $privateUnleadedLiters;
 
 function privateGasEscape(mixed $value): string
 {
@@ -86,6 +100,54 @@ function privateGasStatusClass(string $status): string
             font-weight: 900;
             line-height: 1.15;
         }
+        .estimate-card {
+            background: #fff;
+            border: 1px solid #e5e9ef;
+            border-radius: 8px;
+        }
+        .estimate-card .card-header {
+            padding: 0.7rem 0.9rem;
+        }
+        .estimate-card .card-body {
+            padding: 0.9rem;
+        }
+        .estimate-grid {
+            display: grid;
+            gap: 0.6rem;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .estimate-fuel-box {
+            border: 1px solid #e5e9ef;
+            border-radius: 8px;
+            padding: 0.75rem;
+        }
+        .estimate-head {
+            align-items: flex-start;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: space-between;
+        }
+        .estimate-liters {
+            font-size: 1.05rem;
+            font-weight: 900;
+            line-height: 1.15;
+        }
+        .estimate-amount {
+            font-size: 0.98rem;
+            font-weight: 900;
+        }
+        .estimate-total {
+            align-items: center;
+            border-top: 1px solid #e5e9ef;
+            display: flex;
+            gap: 0.75rem;
+            justify-content: space-between;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+        }
+        .estimate-total .metric-value {
+            font-size: 1.25rem;
+        }
         .private-table th {
             background: #f0f4f8;
             color: #344054;
@@ -154,6 +216,13 @@ function privateGasStatusClass(string $status): string
             .metric-strip {
                 grid-template-columns: 1fr;
             }
+            .estimate-grid {
+                grid-template-columns: 1fr;
+            }
+            .estimate-total {
+                align-items: flex-start;
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -214,10 +283,64 @@ function privateGasStatusClass(string $status): string
             <div class="metric-box">
                 <div class="metric-label">Total Liters</div>
                 <div class="metric-value">
-                    <?php
-                    $totalLiters = array_reduce($privateIssuances, static fn(float $sum, array $row): float => $sum + (float) ($row['authorized_liters'] ?? 0), 0.0);
-                    echo privateGasEscape(number_format($totalLiters, 2));
-                    ?> L
+                    <?php echo privateGasEscape(number_format($totalLiters, 2)); ?> L
+                </div>
+            </div>
+        </section>
+
+        <section class="estimate-card shadow-sm mb-3">
+            <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                    <h2 class="h6 mb-0 fw-bold"><i class="fas fa-calculator me-2 text-primary"></i>Estimated Fuel Budget</h2>
+                    <small class="text-muted">Private liters x pump price.</small>
+                </div>
+                <span class="badge text-bg-light border">Private only</span>
+            </div>
+            <div class="card-body">
+                <div class="estimate-grid">
+                    <div class="estimate-fuel-box">
+                        <div class="estimate-head mb-3">
+                            <div>
+                                <div class="metric-label">Diesel Liters</div>
+                                <div class="estimate-liters text-warning" id="privateDieselLiters"><?php echo privateGasEscape(number_format($privateDieselLiters, 2)); ?> L</div>
+                            </div>
+                            <i class="fas fa-truck text-warning fs-5"></i>
+                        </div>
+                        <label for="privateDieselPumpPrice" class="form-label metric-label mb-1">Diesel Pump Price</label>
+                        <div class="input-group input-group-sm mb-3">
+                            <span class="input-group-text">&#8369;</span>
+                            <input type="number" class="form-control private-pump-price" id="privateDieselPumpPrice" min="0" step="0.01" value="0" data-fuel="diesel">
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small fw-semibold">Estimated Amount</span>
+                            <span class="estimate-amount text-warning" id="privateDieselAmount">&#8369;0.00</span>
+                        </div>
+                    </div>
+                    <div class="estimate-fuel-box">
+                        <div class="estimate-head mb-3">
+                            <div>
+                                <div class="metric-label">Unleaded Liters</div>
+                                <div class="estimate-liters text-success" id="privateUnleadedLiters"><?php echo privateGasEscape(number_format($privateUnleadedLiters, 2)); ?> L</div>
+                            </div>
+                            <i class="fas fa-gas-pump text-success fs-5"></i>
+                        </div>
+                        <label for="privateUnleadedPumpPrice" class="form-label metric-label mb-1">Unleaded Pump Price</label>
+                        <div class="input-group input-group-sm mb-3">
+                            <span class="input-group-text">&#8369;</span>
+                            <input type="number" class="form-control private-pump-price" id="privateUnleadedPumpPrice" min="0" step="0.01" value="0" data-fuel="unleaded">
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small fw-semibold">Estimated Amount</span>
+                            <span class="estimate-amount text-success" id="privateUnleadedAmount">&#8369;0.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="estimate-total">
+                    <div>
+                        <div class="metric-label">Total Estimated Private Fuel Amount</div>
+                        <small class="text-muted">Based on the current private issuance liters and pump prices above.</small>
+                    </div>
+                    <div class="metric-value text-primary" id="privateEstimatedTotal">&#8369;0.00</div>
                 </div>
             </div>
         </section>
@@ -289,8 +412,8 @@ function privateGasStatusClass(string $status): string
                                 <td><span class="badge <?php echo privateGasEscape(privateGasStatusClass($status)); ?>" data-status-badge="<?php echo privateGasEscape($issuance['id'] ?? ''); ?>"><?php echo privateGasEscape(ucfirst($status)); ?></span></td>
                                 <td>
                                     <div class="action-buttons">
-                                        <a class="btn btn-sm btn-outline-primary" href="fuel_withdrawal.php?serial_no=<?php echo urlencode($serial); ?>" target="_blank" title="Print gas issuance">
-                                            <i class="fas fa-print"></i>
+                                        <a class="btn btn-sm btn-outline-primary" href="private_gas_coupon.php?serial_no=<?php echo urlencode($serial); ?>" target="_blank" title="Export private gas coupon with QR code">
+                                            <i class="fas fa-ticket-alt"></i>
                                         </a>
                                     </div>
                                 </td>
@@ -463,6 +586,10 @@ function privateGasStatusClass(string $status): string
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const privateVehicles = <?php echo json_encode($privateVehicles, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+        const privateFuelEstimate = {
+            dieselLiters: <?php echo json_encode($privateDieselLiters); ?>,
+            unleadedLiters: <?php echo json_encode($privateUnleadedLiters); ?>,
+        };
 
         function showPrivateAlert(message, type = 'success') {
             const alert = document.getElementById('privateAlert');
@@ -506,6 +633,33 @@ function privateGasStatusClass(string $status): string
             if (normalized === 'expired' || normalized === 'revoked') return 'text-bg-danger';
             return 'text-bg-secondary';
         }
+
+        function formatPeso(value) {
+            return new Intl.NumberFormat('en-PH', {
+                style: 'currency',
+                currency: 'PHP',
+                minimumFractionDigits: 2,
+            }).format(Number.isFinite(value) ? value : 0).replace('PHP', '₱');
+        }
+
+        function updatePrivateFuelEstimate() {
+            const dieselPrice = Number(document.getElementById('privateDieselPumpPrice')?.value || 0);
+            const unleadedPrice = Number(document.getElementById('privateUnleadedPumpPrice')?.value || 0);
+            const dieselAmount = privateFuelEstimate.dieselLiters * Math.max(0, dieselPrice);
+            const unleadedAmount = privateFuelEstimate.unleadedLiters * Math.max(0, unleadedPrice);
+
+            const dieselAmountEl = document.getElementById('privateDieselAmount');
+            const unleadedAmountEl = document.getElementById('privateUnleadedAmount');
+            const totalEl = document.getElementById('privateEstimatedTotal');
+            if (dieselAmountEl) dieselAmountEl.textContent = formatPeso(dieselAmount);
+            if (unleadedAmountEl) unleadedAmountEl.textContent = formatPeso(unleadedAmount);
+            if (totalEl) totalEl.textContent = formatPeso(dieselAmount + unleadedAmount);
+        }
+
+        document.querySelectorAll('.private-pump-price').forEach((input) => {
+            input.addEventListener('input', updatePrivateFuelEstimate);
+        });
+        updatePrivateFuelEstimate();
 
         document.querySelectorAll('.private-approval-checkbox').forEach((checkbox) => {
             checkbox.addEventListener('change', async function () {
