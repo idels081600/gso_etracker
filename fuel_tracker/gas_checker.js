@@ -362,13 +362,15 @@ function showCheckerForm(record) {
 
     const pastOdometer = Number(record.past_odometer || 0);
     const odometerInput = document.getElementById('checkOdometer');
+    const driverInput = document.getElementById('checkDriver');
+    const issuedDriver = String(record.driver || '').trim();
 
     // Reset input fields
     odometerInput.value = '';
     odometerInput.min = String(pastOdometer);
     odometerInput.placeholder = `Minimum ${pastOdometer.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`;
     odometerInput.classList.remove('is-invalid');
-    document.getElementById('checkDriver').value = '';
+    driverInput.value = issuedDriver;
     document.getElementById('checkActual').value = '';
     document.getElementById('checkResult').innerHTML = '';
     clearSignaturePad();
