@@ -397,6 +397,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
         }
         .schedule-table {
             min-width: 100%;
+            table-layout: fixed;
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
@@ -422,6 +423,45 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             font-size: 0.88rem;
             padding: 0.85rem 0.75rem;
             vertical-align: middle;
+            white-space: nowrap;
+        }
+        .schedule-table th:nth-child(1),
+        .schedule-table td:nth-child(1) {
+            width: 9%;
+        }
+        .schedule-table th:nth-child(2),
+        .schedule-table td:nth-child(2) {
+            width: 14%;
+        }
+        .schedule-table th:nth-child(3),
+        .schedule-table td:nth-child(3) {
+            width: 7%;
+        }
+        .schedule-table th:nth-child(4),
+        .schedule-table td:nth-child(4) {
+            width: 18%;
+        }
+        .schedule-table th:nth-child(5),
+        .schedule-table td:nth-child(5) {
+            width: 6%;
+        }
+        .schedule-table th:nth-child(6),
+        .schedule-table td:nth-child(6),
+        .schedule-table th:nth-child(7),
+        .schedule-table td:nth-child(7) {
+            width: 9%;
+        }
+        .schedule-table th:nth-child(8),
+        .schedule-table td:nth-child(8) {
+            width: 7%;
+        }
+        .schedule-table th:nth-child(9),
+        .schedule-table td:nth-child(9) {
+            width: 8%;
+        }
+        .schedule-table th:nth-child(10),
+        .schedule-table td:nth-child(10) {
+            width: 13%;
         }
         .schedule-table tbody tr {
             transition: background-color 0.16s ease, box-shadow 0.16s ease;
@@ -432,9 +472,10 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
         .schedule-table .serial-cell {
             color: #6c757d;
             font-size: 0.8rem;
-            max-width: 145px;
-            overflow-wrap: anywhere;
-            white-space: normal;
+            overflow: hidden;
+            overflow-wrap: normal;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .schedule-table .plate-cell {
             min-width: 132px;
@@ -448,6 +489,13 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             display: block;
             font-size: 0.78rem;
             margin-top: 0.1rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .schedule-table .driver-cell {
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .schedule-table .liters-cell {
             font-variant-numeric: tabular-nums;
@@ -460,18 +508,14 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             margin-top: 0.15rem;
         }
         .schedule-table .actions-column {
-            position: sticky;
-            right: 0;
             z-index: 2;
         }
         .schedule-table td.actions-column {
-            background: inherit;
-            box-shadow: -6px 0 12px rgba(0, 0, 0, 0.04);
+            background: #fff;
         }
         .schedule-table thead th.actions-column {
             background: #f8fafc;
             z-index: 11;
-            box-shadow: -6px 0 12px rgba(0, 0, 0, 0.04);
         }
         .schedule-table .badge {
             border-radius: 999px;
@@ -480,11 +524,12 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             padding: 0.4rem 0.55rem;
         }
         .schedule-table .actions-column {
-            width: 126px;
+            width: 168px;
         }
         .issuance-row-actions {
             display: inline-flex;
             gap: 0.35rem;
+            justify-content: center;
             white-space: nowrap;
         }
         .issuance-row-actions .btn {
@@ -609,7 +654,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 width: 100%;
             }
             .schedule-table {
-                min-width: 820px;
+                min-width: 100%;
             }
             .schedule-card-header {
                 padding: 1rem;
@@ -796,7 +841,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                                 <span class="vehicle-type"><?php echo htmlspecialchars((string) ($iss['vehicle_type'] ?? '-')); ?></span>
                                             </td>
                                             <td><?php echo htmlspecialchars((string) ($iss['office'] ?? '-')); ?></td>
-                                            <td><?php echo htmlspecialchars((string) ($iss['driver_name'] ?? '-')); ?></td>
+                                            <td class="driver-cell" title="<?php echo htmlspecialchars((string) ($iss['driver_name'] ?? '-')); ?>"><?php echo htmlspecialchars((string) ($iss['driver_name'] ?? '-')); ?></td>
                                             <td class="liters-cell"><?php echo htmlspecialchars((string) ($iss['authorized_liters'] ?? '0')) . ' L'; ?></td>
                                             <td><?php echo htmlspecialchars($iss['issue_date'] ?? '-'); ?></td>
                                             <td><?php echo htmlspecialchars($expiryDate !== '' ? $expiryDate : '-'); ?><?php echo $expiryNote; ?></td>
