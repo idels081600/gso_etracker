@@ -57,7 +57,10 @@ try {
     }
 
     $status = strtolower((string) ($record['status'] ?? ''));
-    if (!in_array($status, ['approved', 'valid', 'used'], true)) {
+    if ($status === 'used') {
+        gasCheckerLookupJson(['success' => false, 'message' => 'This gas issuance has already been used and cannot be checked again.'], 409);
+    }
+    if (!in_array($status, ['approved', 'valid'], true)) {
         gasCheckerLookupJson(['success' => false, 'message' => 'This gas issuance is ' . ($status !== '' ? $status : 'not approved') . ' and cannot be checked until approved.'], 409);
     }
 

@@ -96,6 +96,9 @@ try {
     }
 
     $status = strtolower((string) ($issuance['status'] ?? ''));
+    if ($status === 'used') {
+        gasCheckerSubmitJson(['success' => false, 'message' => 'This gas issuance has already been used and cannot be submitted again.'], 409);
+    }
     if (!in_array($status, ['approved', 'valid'], true)) {
         gasCheckerSubmitJson(['success' => false, 'message' => 'This gas issuance is ' . ($status !== '' ? $status : 'not approved') . ' and cannot be submitted until approved.'], 409);
     }
