@@ -643,6 +643,64 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             .issuance-sidebar {
                 position: static;
             }
+            .schedule-table th,
+            .schedule-table td {
+                font-size: 0.78rem;
+                padding: 0.65rem 0.45rem;
+            }
+            .schedule-table th:nth-child(1),
+            .schedule-table td:nth-child(1) {
+                display: none;
+            }
+            .schedule-table th:nth-child(2),
+            .schedule-table td:nth-child(2) {
+                width: 17%;
+            }
+            .schedule-table th:nth-child(3),
+            .schedule-table td:nth-child(3) {
+                width: 8%;
+            }
+            .schedule-table th:nth-child(4),
+            .schedule-table td:nth-child(4) {
+                width: 22%;
+            }
+            .schedule-table th:nth-child(5),
+            .schedule-table td:nth-child(5) {
+                width: 8%;
+            }
+            .schedule-table th:nth-child(6),
+            .schedule-table td:nth-child(6),
+            .schedule-table th:nth-child(7),
+            .schedule-table td:nth-child(7) {
+                width: 10%;
+            }
+            .schedule-table th:nth-child(8),
+            .schedule-table td:nth-child(8) {
+                display: none;
+            }
+            .schedule-table th:nth-child(9),
+            .schedule-table td:nth-child(9) {
+                width: 9%;
+            }
+            .schedule-table th:nth-child(10),
+            .schedule-table td:nth-child(10) {
+                width: 118px;
+            }
+            .schedule-table .badge {
+                font-size: 0.66rem;
+                min-width: 58px;
+                padding: 0.32rem 0.42rem;
+            }
+            .issuance-row-actions {
+                gap: 0.16rem;
+            }
+            .issuance-row-actions .btn {
+                height: 24px;
+                width: 24px;
+            }
+            .schedule-table .vehicle-type {
+                font-size: 0.68rem;
+            }
         }
         @media (max-width: 767.98px) {
             .issuance-page-header {
@@ -655,6 +713,69 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             }
             .schedule-table {
                 min-width: 100%;
+            }
+            .schedule-table-wrap {
+                max-height: 58vh;
+                overflow-x: hidden;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .schedule-table th,
+            .schedule-table td {
+                font-size: 0.72rem;
+                padding: 0.6rem 0.35rem;
+            }
+            .schedule-table th:nth-child(3),
+            .schedule-table td:nth-child(3),
+            .schedule-table th:nth-child(6),
+            .schedule-table td:nth-child(6),
+            .schedule-table th:nth-child(7),
+            .schedule-table td:nth-child(7) {
+                display: none;
+            }
+            .schedule-table th:nth-child(2),
+            .schedule-table td:nth-child(2) {
+                width: 25%;
+            }
+            .schedule-table th:nth-child(4),
+            .schedule-table td:nth-child(4) {
+                width: 27%;
+            }
+            .schedule-table th:nth-child(5),
+            .schedule-table td:nth-child(5) {
+                width: 13%;
+            }
+            .schedule-table th:nth-child(9),
+            .schedule-table td:nth-child(9) {
+                width: 14%;
+            }
+            .schedule-table th:nth-child(10),
+            .schedule-table td:nth-child(10) {
+                width: 96px;
+            }
+            .schedule-table .plate-cell {
+                min-width: 0;
+            }
+            .schedule-table .plate-value {
+                display: block;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .schedule-table .badge {
+                font-size: 0.58rem;
+                min-width: 46px;
+                padding: 0.28rem 0.34rem;
+            }
+            .issuance-row-actions {
+                gap: 0.1rem;
+            }
+            .issuance-row-actions .btn {
+                height: 22px;
+                width: 22px;
+            }
+            .issuance-row-actions .btn i {
+                font-size: 0.72rem;
             }
             .schedule-card-header {
                 padding: 1rem;
