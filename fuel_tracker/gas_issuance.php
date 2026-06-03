@@ -13,12 +13,29 @@ require_once __DIR__ . '/fuel_budget_data.php';
 
 $today = date('Y-m-d');
 $nextWeek = date('Y-m-d', strtotime('+7 days'));
+$todayDate = new DateTimeImmutable('today');
+$currentWeekStart = $todayDate->modify('monday this week')->format('Y-m-d');
+$nextWeekEndDate = $todayDate->modify('sunday next week');
+$nextWeekEnd = $nextWeekEndDate->format('Y-m-d');
+$scheduledDaysAhead = max(0, (int) $todayDate->diff($nextWeekEndDate)->format('%a'));
+$initialIssuanceWindowLabel = $currentWeekStart . ' to ' . $nextWeekEnd;
+$gasIssuanceCacheKey = implode('|', ['government', $currentWeekStart, $nextWeekEnd]);
+$gasIssuancePageCache = fuelTrackerCacheGet('gas_issuance_page', $gasIssuanceCacheKey, 90);
 
-$vehicles = fuelTrackerFetchVehicles($conn);
-fuelTrackerSyncIssuanceOffices($conn);
-fuelTrackerCreateUpcomingScheduledIssuances($conn, 14);
-$initialIssuanceLimit = 200;
-$allIssuances = fuelTrackerFetchGasIssuances($conn, [], 'government', $initialIssuanceLimit);
+if ($gasIssuancePageCache !== null) {
+    $vehicles = $gasIssuancePageCache['vehicles'] ?? [];
+    $allIssuances = $gasIssuancePageCache['issuances'] ?? [];
+} else {
+    $vehicles = fuelTrackerFetchVehicles($conn);
+    fuelTrackerSyncIssuanceOffices($conn);
+    fuelTrackerCreateUpcomingScheduledIssuances($conn, $scheduledDaysAhead);
+    $allIssuances = fuelTrackerFetchGasIssuances($conn, [], 'government', 0, 'schedule_window', $currentWeekStart, $nextWeekEnd);
+    fuelTrackerCacheSet('gas_issuance_page', $gasIssuanceCacheKey, [
+        'vehicles' => $vehicles,
+        'issuances' => $allIssuances,
+    ]);
+}
+
 $recentIssuances = array_slice($allIssuances, 0, 5);
 $vehicleLookup = fuelTrackerVehicleLookupByPlate($vehicles);
 $serialNo = 'FI-' . date('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
@@ -909,7 +926,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                         </div>
                         <div class="active-filter-chips w-100 mt-2" id="activeFilterChips" aria-live="polite"></div>
                         <div class="small text-muted mt-2">
-                            Showing the latest <?php echo htmlspecialchars((string) $initialIssuanceLimit, ENT_QUOTES, 'UTF-8'); ?> issuance records for faster loading.
+                            Showing current week and next week issuances: <?php echo htmlspecialchars($initialIssuanceWindowLabel, ENT_QUOTES, 'UTF-8'); ?>.
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -1800,8 +1817,8 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
         };
         var calendarDate = new Date();
         calendarDate.setDate(1); // start of current month
-        var selectedCalendarDate = formatLocalDate(new Date());
-        filterDate.value = selectedCalendarDate;
+        var selectedCalendarDate = null;
+        filterDate.value = '';
 
         function formatLocalDate(date) {
             var year = date.getFullYear();
@@ -2028,7 +2045,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
         filterDate.addEventListener('change', applyFilters);
 
         document.getElementById('selectedDateLabel').innerHTML =
-            '<i class="fas fa-filter me-1"></i> Filtered: <strong>' + selectedCalendarDate + '</strong>';
+            '<i class="fas fa-filter me-1"></i> Showing all generated scheduled issuances.';
         applyFilters();
 
         clearFiltersBtn.addEventListener('click', function() {

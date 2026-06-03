@@ -144,6 +144,7 @@ try {
     $conn->commit();
     $transactionStarted = false;
 
+    fuelTrackerClearGasIssuanceCache();
     gasCheckerSubmitJson([
         'success' => true,
         'message' => 'Fuel-up record submitted.',

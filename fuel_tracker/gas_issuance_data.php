@@ -146,6 +146,54 @@ function fuelTrackerEnsureScopeColumns(mysqli $conn): void
     $ensured = true;
 }
 
+function fuelTrackerCacheDirectory(): string
+{
+    $directory = __DIR__ . DIRECTORY_SEPARATOR . '.cache';
+    if (!is_dir($directory)) {
+        mkdir($directory, 0775, true);
+    }
+
+    return $directory;
+}
+
+function fuelTrackerCachePath(string $prefix, string $key): string
+{
+    $safePrefix = preg_replace('/[^a-z0-9_-]+/i', '_', $prefix) ?: 'cache';
+    return fuelTrackerCacheDirectory() . DIRECTORY_SEPARATOR . $safePrefix . '_' . sha1($key) . '.json';
+}
+
+function fuelTrackerCacheGet(string $prefix, string $key, int $ttlSeconds): ?array
+{
+    $path = fuelTrackerCachePath($prefix, $key);
+    if (!is_file($path) || time() - filemtime($path) > $ttlSeconds) {
+        return null;
+    }
+
+    $payload = json_decode((string) file_get_contents($path), true);
+    return is_array($payload) ? $payload : null;
+}
+
+function fuelTrackerCacheSet(string $prefix, string $key, array $payload): void
+{
+    $path = fuelTrackerCachePath($prefix, $key);
+    file_put_contents($path, json_encode($payload, JSON_UNESCAPED_UNICODE), LOCK_EX);
+}
+
+function fuelTrackerCacheClear(string $prefix): void
+{
+    $safePrefix = preg_replace('/[^a-z0-9_-]+/i', '_', $prefix) ?: 'cache';
+    foreach (glob(fuelTrackerCacheDirectory() . DIRECTORY_SEPARATOR . $safePrefix . '_*.json') ?: [] as $path) {
+        if (is_file($path)) {
+            unlink($path);
+        }
+    }
+}
+
+function fuelTrackerClearGasIssuanceCache(): void
+{
+    fuelTrackerCacheClear('gas_issuance_page');
+}
+
 function fuelTrackerNormalizeSchedule(mixed $value): string
 {
     $text = strtolower(trim((string) $value));
@@ -161,11 +209,42 @@ function fuelTrackerNormalizeSchedule(mixed $value): string
         return 'daily';
     }
 
-    $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    $aliases = [
+        'm' => 'monday',
+        'mon' => 'monday',
+        'monday' => 'monday',
+        't' => 'tuesday',
+        'tu' => 'tuesday',
+        'tue' => 'tuesday',
+        'tues' => 'tuesday',
+        'tuesday' => 'tuesday',
+        'w' => 'wednesday',
+        'wed' => 'wednesday',
+        'weds' => 'wednesday',
+        'wednesday' => 'wednesday',
+        'th' => 'thursday',
+        'thu' => 'thursday',
+        'thur' => 'thursday',
+        'thurs' => 'thursday',
+        'thursday' => 'thursday',
+        'f' => 'friday',
+        'fri' => 'friday',
+        'friday' => 'friday',
+        'sat' => 'saturday',
+        'saturday' => 'saturday',
+        'sun' => 'sunday',
+        'sunday' => 'sunday',
+    ];
+
     $selected = [];
-    foreach ($days as $day) {
-        if (preg_match('/\b' . preg_quote($day, '/') . '\b/', $text) === 1) {
-            $selected[] = $day;
+    $tokens = preg_split('/[^a-z]+/', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    if (count($tokens) === 1 && preg_match('/^[mtwf]+$/', $tokens[0]) === 1) {
+        $tokens = str_split($tokens[0]);
+    }
+
+    foreach ($tokens as $token) {
+        if (isset($aliases[$token])) {
+            $selected[] = $aliases[$token];
         }
     }
 
@@ -432,8 +511,15 @@ function fuelTrackerSyncIssuanceOffices(mysqli $conn): void
     $synced = true;
 }
 
-function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = [], string $scope = 'government', int $limit = 0): array
-{
+function fuelTrackerFetchGasIssuances(
+    mysqli $conn,
+    array $statuses = [],
+    string $scope = 'government',
+    int $limit = 0,
+    string $orderMode = 'latest',
+    ?string $dateFrom = null,
+    ?string $dateTo = null
+): array {
     fuelTrackerEnsureScopeColumns($conn);
     fuelTrackerEnsureQueryIndexes($conn);
 
@@ -457,9 +543,22 @@ function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = [], string
         $conditions[] = "LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) <> 'private'";
     }
 
+    if (is_string($dateFrom) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom) === 1) {
+        $conditions[] = "gi.issue_date >= '" . $conn->real_escape_string($dateFrom) . "'";
+    }
+
+    if (is_string($dateTo) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) === 1) {
+        $conditions[] = "gi.issue_date <= '" . $conn->real_escape_string($dateTo) . "'";
+    }
+
     $where = $conditions !== [] ? 'WHERE ' . implode(' AND ', $conditions) : '';
 
     $limitClause = $limit > 0 ? ' LIMIT ' . min($limit, 1000) : '';
+
+    $orderMode = strtolower(trim($orderMode));
+    $orderBy = $orderMode === 'schedule_window'
+        ? 'CASE WHEN gi.issue_date >= CURDATE() THEN 0 ELSE 1 END, gi.issue_date ASC, gi.id DESC'
+        : 'gi.id DESC';
 
     $sql = "
         SELECT
@@ -497,7 +596,7 @@ function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = [], string
                 WHERE vol.gas_issuance_id = gi.id
             )
         {$where}
-        ORDER BY gi.id DESC
+        ORDER BY {$orderBy}
         {$limitClause}
     ";
 

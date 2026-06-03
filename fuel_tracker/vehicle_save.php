@@ -148,6 +148,7 @@ try {
         $affected = $stmt->affected_rows;
         $stmt->close();
 
+        fuelTrackerClearGasIssuanceCache();
         vehicleSaveJson([
             'success' => true,
             'message' => 'Vehicle updated.',
@@ -193,6 +194,7 @@ try {
     $newId = $stmt->insert_id;
     $stmt->close();
 
+    fuelTrackerClearGasIssuanceCache();
     vehicleSaveJson([
         'success' => true,
         'message' => 'Vehicle added.',

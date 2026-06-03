@@ -29,7 +29,7 @@ function fuelTrackerNormalizeSignature(string $signature): string
         return '';
     }
 
-    if (!preg_match('/^data:image\/png;base64,[A-Za-z0-9+\/=]+$/', $signature)) {
+    if (!preg_match('/^data:image\/(png|jpeg|jpg);base64,[A-Za-z0-9+\/=]+$/i', $signature)) {
         return '';
     }
 
@@ -92,6 +92,26 @@ function fuelTrackerSignatureBinary(string $signature): string
         return '';
     }
 
-    $binary = base64_decode(substr($signature, strlen('data:image/png;base64,')), true);
+    $commaPosition = strpos($signature, ',');
+    if ($commaPosition === false) {
+        return '';
+    }
+
+    $binary = base64_decode(substr($signature, $commaPosition + 1), true);
     return is_string($binary) ? $binary : '';
+}
+
+function fuelTrackerSignatureImageType(string $signature): string
+{
+    $signature = fuelTrackerNormalizeSignature($signature);
+    if ($signature === '') {
+        return '';
+    }
+
+    if (preg_match('/^data:image\/(png|jpeg|jpg);base64,/i', $signature, $matches) !== 1) {
+        return '';
+    }
+
+    $type = strtolower($matches[1]);
+    return $type === 'png' ? 'PNG' : 'JPEG';
 }

@@ -256,7 +256,12 @@ $pdf->SetXY(39, 282);
 $pdf->Cell(132, 4.5, 'I hereby certify to the correctness of the above statement of record of travel.', 0, 0, 'C');
 $driverSignatureBinary = fuelTrackerSignatureBinary($driverSignature);
 if ($driverSignatureBinary !== '') {
-    $pdf->Image('@' . $driverSignatureBinary, 135, 279, 34, 11, 'PNG');
+    $signatureType = fuelTrackerSignatureImageType($driverSignature);
+    if ($signatureType === 'JPEG') {
+        $pdf->Image('@' . $driverSignatureBinary, 135, 279, 34, 11, 'JPEG');
+    } elseif (extension_loaded('gd') || extension_loaded('imagick')) {
+        $pdf->Image('@' . $driverSignatureBinary, 135, 279, 34, 11, 'PNG');
+    }
 }
 $pdf->SetFont('times', 'B', 8);
 $pdf->SetXY(123, 287.5);

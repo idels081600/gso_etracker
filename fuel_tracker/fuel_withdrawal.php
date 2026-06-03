@@ -166,7 +166,12 @@ function drawWithdrawalCopy(
     $driverLineY = $requestY + 17;
     $signatureBinary = fuelTrackerSignatureBinary($driverSignature);
     if ($signatureBinary !== '') {
-        $pdf->Image('@' . $signatureBinary, $tableX + 22, $driverLineY - 16, 42, 12, 'PNG');
+        $signatureType = fuelTrackerSignatureImageType($driverSignature);
+        if ($signatureType === 'JPEG') {
+            $pdf->Image('@' . $signatureBinary, $tableX + 22, $driverLineY - 16, 42, 12, 'JPEG');
+        } elseif (extension_loaded('gd') || extension_loaded('imagick')) {
+            $pdf->Image('@' . $signatureBinary, $tableX + 22, $driverLineY - 16, 42, 12, 'PNG');
+        }
     }
     $pdf->SetFont('helvetica', 'B', 8.5);
     $pdf->SetXY($tableX + 15, $driverLineY - 5);

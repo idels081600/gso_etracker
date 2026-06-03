@@ -155,6 +155,7 @@ try {
         $newId = $stmt->insert_id;
         $stmt->close();
 
+        fuelTrackerClearGasIssuanceCache();
         gasIssuanceJson(['success' => true, 'message' => 'Gas issuance saved.', 'id' => $newId, 'serial_no' => $serialNo]);
     }
 
@@ -200,6 +201,7 @@ try {
         $affected = $stmt->affected_rows;
         $stmt->close();
 
+        fuelTrackerClearGasIssuanceCache();
         gasIssuanceJson(['success' => true, 'message' => 'Gas issuance updated.', 'updated' => $affected]);
     }
 
@@ -237,6 +239,7 @@ try {
         $conn->commit();
         $transactionStarted = false;
 
+        fuelTrackerClearGasIssuanceCache();
         gasIssuanceJson(['success' => true, 'message' => 'Gas issuance deleted.', 'deleted' => $affected]);
     }
 
@@ -285,6 +288,7 @@ try {
         $affected = $stmt->affected_rows;
         $stmt->close();
 
+        fuelTrackerClearGasIssuanceCache();
         gasIssuanceJson([
             'success' => true,
             'message' => $approved ? 'Gas issuance approved.' : 'Gas issuance moved back to draft.',
