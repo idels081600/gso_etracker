@@ -5,6 +5,11 @@
   --dashboard-surface: #fff;
   --dashboard-border: #dee2e6;
   --dashboard-muted: #6c757d;
+  --dashboard-ink: #0f172a;
+  --dashboard-soft: #f4f7fb;
+  --fuel-diesel: #f5b301;
+  --fuel-unleaded: #198754;
+  --fuel-danger: #dc3545;
 }
 
 /* Navbar customization */
@@ -81,9 +86,9 @@ body {
 }
 
 .dashboard-shell {
-  max-width: 1560px;
-  padding-left: 2rem;
-  padding-right: 2rem;
+  max-width: 1680px;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
 }
 
 .dashboard-page-header {
@@ -101,16 +106,16 @@ body {
 
 /* Fuel Tally Cards */
 .card {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 0.25rem 0.75rem rgba(15, 23, 42, 0.08) !important;
 }
 
 .card-body {
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 .card-title {
@@ -120,8 +125,8 @@ body {
 }
 
 .chart-panel {
-  height: 320px;
-  min-height: 320px;
+  height: 260px;
+  min-height: 260px;
   position: relative;
 }
 
@@ -133,7 +138,7 @@ body {
   display: flex;
   gap: 0.6rem;
   justify-content: center;
-  min-height: 320px;
+  min-height: 260px;
   text-align: center;
 }
 
@@ -142,8 +147,74 @@ body {
 }
 
 .card-text {
-  font-size: 2.5rem;
+  font-size: 2.1rem;
   line-height: 1;
+}
+
+.fuel-summary-grid {
+  align-items: stretch;
+}
+
+.summary-card {
+  border-left: 4px solid transparent !important;
+}
+
+.summary-card-unleaded {
+  border-left-color: var(--fuel-unleaded) !important;
+}
+
+.summary-card-diesel {
+  border-left-color: var(--fuel-diesel) !important;
+}
+
+.summary-card-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.budget-card-head {
+  align-items: stretch;
+}
+
+.summary-icon {
+  align-items: center;
+  border-radius: 8px;
+  display: inline-flex;
+  flex: 0 0 40px;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.summary-icon i {
+  font-size: 1rem;
+}
+
+.summary-icon-unleaded {
+  background: #e8f6ee;
+  color: var(--fuel-unleaded);
+}
+
+.summary-icon-diesel {
+  background: #fff6db;
+  color: #b77900;
+}
+
+.summary-icon-budget {
+  background: #eef4ff;
+  color: var(--dashboard-primary);
+}
+
+.summary-card-foot {
+  border-top: 1px solid #edf1f5;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+}
+
+.summary-card-foot span {
+  font-size: 0.98rem;
 }
 
 .fuel-summary-grid .card-body > .d-flex {
@@ -162,6 +233,10 @@ body {
 .budget-card .card-body {
   display: flex;
   flex-direction: column;
+}
+
+.budget-card-current {
+  border-left: 4px solid var(--dashboard-primary) !important;
 }
 
 .budget-card .flex-grow-1 {
@@ -315,25 +390,15 @@ body {
   display: block;
   height: 100%;
   min-width: 2px;
-  position: relative;
   transition: width 0.85s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.budget-progress-fill::after {
-  animation: budgetBarShine 1.8s ease-in-out infinite;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
-  content: "";
-  inset: 0;
-  position: absolute;
-  transform: translateX(-100%);
-}
-
 .budget-progress-diesel {
-  background: #f5b301;
+  background: var(--fuel-diesel);
 }
 
 .budget-progress-unleaded {
-  background: #198754;
+  background: var(--fuel-unleaded);
 }
 
 .budget-progress-meta {
@@ -342,47 +407,30 @@ body {
   line-height: 1.2;
 }
 
-@keyframes budgetBarShine {
-  0% {
-    transform: translateX(-100%);
-  }
-  55%,
-  100% {
-    transform: translateX(100%);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .budget-progress-fill {
     transition: none;
-  }
-
-  .budget-progress-fill::after {
-    animation: none;
-    display: none;
   }
 }
 
 .budget-context-grid {
   border-top: 1px solid #edf1f5;
   display: grid;
-  gap: 0.75rem;
+  gap: 0.65rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding-top: 0.9rem;
 }
 
 .budget-price-grid {
-  border-top: 1px solid #edf1f5;
   display: grid;
   gap: 0.65rem;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  padding-top: 0.9rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .budget-card-compact .card-body {
   gap: 0.65rem;
   justify-content: flex-start;
-  padding: 1rem 1.35rem;
+  padding: 1rem;
 }
 
 .budget-compact-header {
@@ -417,6 +465,11 @@ body {
   padding-top: 0.65rem;
 }
 
+.budget-price-grid-compact .budget-week-item,
+.budget-price-grid-compact .budget-price-action {
+  grid-column: 1 / -1;
+}
+
 .budget-price-grid-compact .input-group-text,
 .budget-price-grid-compact .form-control {
   font-size: 0.78rem;
@@ -439,6 +492,32 @@ body {
 .budget-estimate-totals .budget-context-item span {
   font-size: 0.98rem;
   line-height: 1.15;
+}
+
+.budget-section-mini-title {
+  color: var(--dashboard-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.fuel-price-trend-panel {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.fuel-price-chart-wrap {
+  height: 170px;
+  min-height: 170px;
+  position: relative;
+}
+
+.fuel-price-chart-empty {
+  font-size: 0.78rem;
+  inset: 0;
+  min-height: 0;
+  position: absolute;
 }
 
 .budget-price-grid label {
@@ -473,6 +552,27 @@ body {
   margin-top: 0;
 }
 
+.weekly-price-card {
+  border-left: 4px solid var(--dashboard-primary) !important;
+}
+
+.weekly-price-layout {
+  align-items: stretch;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(320px, 0.78fr) minmax(360px, 1.22fr);
+}
+
+.weekly-price-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.weekly-price-save {
+  justify-self: start;
+  min-width: 180px;
+}
+
 .budget-estimate-panel {
   background: #f8fafc;
   border: 1px solid #e5eaf0;
@@ -492,6 +592,10 @@ body {
   .budget-card-metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .weekly-price-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 575.98px) {
@@ -504,8 +608,15 @@ body {
   }
 
   .budget-price-grid-compact,
+  .budget-price-grid,
   .budget-estimate-totals {
     grid-template-columns: 1fr;
+  }
+
+  .weekly-price-save {
+    justify-self: stretch;
+    min-width: 0;
+    width: 100%;
   }
 }
 
@@ -575,8 +686,8 @@ body {
 
 @media (max-width: 768px) {
   .dashboard-shell {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
 
   .dashboard-page-header {
@@ -588,7 +699,17 @@ body {
   }
 
   .card-text {
-    font-size: 2rem;
+    font-size: 1.85rem;
+  }
+
+  .summary-card-head {
+    gap: 0.7rem;
+  }
+
+  .summary-icon {
+    flex-basis: 36px;
+    height: 36px;
+    width: 36px;
   }
 
   .bg-success.rounded-circle,
@@ -607,7 +728,7 @@ body {
 
 /* Scrollable Table Styles */
 .table-container-scrollable {
-  max-height: min(600px, 62vh);
+  max-height: min(640px, 64vh);
   overflow-y: auto;
   overflow-x: auto;
   position: relative;
@@ -680,7 +801,8 @@ body {
 
 /* Table styling */
 .table {
-  min-width: 1120px;
+  min-width: 980px;
+  table-layout: fixed;
 }
 
 .table th {
@@ -699,12 +821,36 @@ body {
 
 .table th:first-child,
 .table td:first-child {
-  width: 44px;
+  width: 78px;
 }
 
 .table th:last-child,
 .table td:last-child {
-  min-width: 116px;
+  width: 120px;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2) {
+  width: 130px;
+}
+
+.table th:nth-child(3),
+.table td:nth-child(3) {
+  width: 210px;
+}
+
+.table th:nth-child(4),
+.table td:nth-child(4),
+.table th:nth-child(5),
+.table td:nth-child(5),
+.table th:nth-child(6),
+.table td:nth-child(6) {
+  width: 115px;
+}
+
+.table th:nth-child(7),
+.table td:nth-child(7) {
+  width: 140px;
 }
 
 .table td:nth-child(7) .text-truncate {
@@ -789,7 +935,7 @@ body {
 /* Mobile responsiveness for table */
 @media (max-width: 768px) {
   .table-container-scrollable {
-    max-height: 58vh;
+    max-height: 62vh;
     font-size: 0.875rem;
   }
 
@@ -817,8 +963,12 @@ body {
 
   .table th,
   .table td {
-    padding: 0.5rem 0.25rem;
+    padding: 0.55rem 0.4rem;
     font-size: 0.8rem;
+  }
+
+  .table {
+    min-width: 820px;
   }
 
   .text-truncate-table {
@@ -848,13 +998,17 @@ body {
   }
 
   .table-container-scrollable {
-    max-height: 55vh;
+    max-height: 64vh;
   }
 
   .table th,
   .table td {
-    padding: 0.375rem 0.125rem;
-    font-size: 0.75rem;
+    padding: 0.5rem 0.35rem;
+    font-size: 0.74rem;
+  }
+
+  .table {
+    min-width: 760px;
   }
 
   .text-truncate-table {

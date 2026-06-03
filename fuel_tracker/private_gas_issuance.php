@@ -197,6 +197,28 @@ function privateGasStatusClass(string $status): string
             color: #6c757d;
             font-size: 0.78rem;
         }
+        .open-date-panel {
+            background: #f8fafc;
+            border: 1px solid #e5e9ef;
+            border-radius: 8px;
+            padding: 0.85rem;
+        }
+        .open-date-panel.is-disabled {
+            display: none;
+        }
+        .open-date-toggle {
+            align-items: flex-start;
+            background: #fff;
+            border: 1px solid #e5e9ef;
+            border-radius: 8px;
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.85rem;
+        }
+        .open-date-toggle .form-check-input {
+            cursor: pointer;
+            margin-top: 0.2rem;
+        }
         .empty-state {
             color: #667085;
             padding: 3rem 1rem;
@@ -539,18 +561,33 @@ function privateGasStatusClass(string $status): string
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label for="privateIssuanceDate" class="form-label">Issue Date</label>
-                                <input type="date" class="form-control" id="privateIssuanceDate" value="<?php echo privateGasEscape($today); ?>" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="privateIssuanceExpiry" class="form-label">Expiry Date <span class="optional-note">(optional)</span></label>
-                                <input type="date" class="form-control" id="privateIssuanceExpiry" value="<?php echo privateGasEscape($nextWeek); ?>">
-                            </div>
-                            <div class="col-md-4">
                                 <label for="privateIssuanceLiters" class="form-label">Authorized Liters</label>
                                 <div class="input-group">
                                     <input type="number" class="form-control" id="privateIssuanceLiters" min="0.01" step="0.01" required>
                                     <span class="input-group-text">L</span>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="open-date-toggle" for="privateIssuanceOpenDate">
+                                    <input class="form-check-input" type="checkbox" id="privateIssuanceOpenDate">
+                                    <span>
+                                        <span class="fw-bold d-block">Open date</span>
+                                        <span class="optional-note">Turn on to choose a custom start date and expiry date for this issuance.</span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="col-12">
+                                <div class="open-date-panel is-disabled" id="privateIssuanceDatePanel">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="privateIssuanceDate" class="form-label">Start Date</label>
+                                            <input type="date" class="form-control" id="privateIssuanceDate" value="<?php echo privateGasEscape($today); ?>" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="privateIssuanceExpiry" class="form-label">Expiry Date</label>
+                                            <input type="date" class="form-control" id="privateIssuanceExpiry" value="<?php echo privateGasEscape($nextWeek); ?>">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -672,6 +709,27 @@ function privateGasStatusClass(string $status): string
         });
         updatePrivateFuelEstimate();
 
+        function setPrivateIssuanceOpenDate(enabled) {
+            const panel = document.getElementById('privateIssuanceDatePanel');
+            const startInput = document.getElementById('privateIssuanceDate');
+            const expiryInput = document.getElementById('privateIssuanceExpiry');
+
+            panel?.classList.toggle('is-disabled', !enabled);
+            if (expiryInput) {
+                expiryInput.required = enabled;
+                expiryInput.disabled = !enabled;
+            }
+            if (startInput) {
+                startInput.required = true;
+                startInput.disabled = false;
+            }
+        }
+
+        document.getElementById('privateIssuanceOpenDate')?.addEventListener('change', function () {
+            setPrivateIssuanceOpenDate(this.checked);
+        });
+        setPrivateIssuanceOpenDate(false);
+
         document.querySelectorAll('.private-approval-checkbox').forEach((checkbox) => {
             checkbox.addEventListener('change', async function () {
                 const previousValue = !this.checked;
@@ -753,9 +811,19 @@ function privateGasStatusClass(string $status): string
         document.getElementById('savePrivateIssuanceBtn')?.addEventListener('click', async function () {
             const vehicleId = document.getElementById('privateIssuanceVehicle').value;
             const issueDate = document.getElementById('privateIssuanceDate').value;
+            const expiryDate = document.getElementById('privateIssuanceExpiry').value;
+            const openDate = document.getElementById('privateIssuanceOpenDate')?.checked || false;
             const liters = document.getElementById('privateIssuanceLiters').value;
             if (!vehicleId || !issueDate || !liters || Number(liters) <= 0) {
                 showPrivateAlert('Private vehicle, issue date, and liters are required.', 'warning');
+                return;
+            }
+            if (openDate && !expiryDate) {
+                showPrivateAlert('Expiry date is required when Open date is enabled.', 'warning');
+                return;
+            }
+            if (openDate && expiryDate < issueDate) {
+                showPrivateAlert('Expiry date cannot be earlier than the start date.', 'warning');
                 return;
             }
 
@@ -766,7 +834,7 @@ function privateGasStatusClass(string $status): string
                     serial_no: document.getElementById('privateIssuanceSerial').value,
                     vehicle_id: vehicleId,
                     issue_date: issueDate,
-                    expiry_date: document.getElementById('privateIssuanceExpiry').value,
+                    expiry_date: openDate ? expiryDate : '',
                     authorized_liters: liters,
                     fuel_type: document.getElementById('privateIssuanceFuelType').value,
                     status: document.getElementById('privateIssuanceStatus').value,

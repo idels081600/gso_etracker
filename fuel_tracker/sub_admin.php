@@ -15,7 +15,8 @@ $vehicles = fuelTrackerFetchVehicles($conn);
 $vehicleLookup = fuelTrackerVehicleLookupByPlate($vehicles);
 fuelTrackerSyncIssuanceOffices($conn);
 $fuelBudgetPool = fuelBudgetSummary($conn);
-$printableIssuances = fuelTrackerFetchGasIssuances($conn, ['approved', 'valid', 'used']);
+$initialPrintableLimit = 200;
+$printableIssuances = fuelTrackerFetchGasIssuances($conn, ['used'], 'government', $initialPrintableLimit);
 
 $approvedVehicles = [];
 $approvedOffices = [];
@@ -111,8 +112,14 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             overflow: hidden;
         }
 
+        .sub-table {
+            min-width: 1180px;
+            table-layout: fixed;
+        }
+
         .sub-table thead th {
             background: #eff7ef;
+            border-bottom: 1px solid #d7e2d8;
             color: #244327;
             font-size: 0.76rem;
             padding: 0.85rem 0.9rem;
@@ -120,23 +127,93 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             white-space: nowrap;
         }
 
+        .sub-table tbody tr {
+            border-bottom: 1px solid #dfe7e1;
+            min-height: 64px;
+        }
+
         .sub-table tbody td {
-            padding: 0.9rem;
+            border-bottom: 0;
+            min-width: 0;
+            overflow: hidden;
+            padding: 0.75rem 0.8rem;
+            text-overflow: ellipsis;
             vertical-align: middle;
+        }
+
+        .sub-table th:nth-child(1),
+        .sub-table td:nth-child(1) {
+            width: 46px;
+        }
+
+        .sub-table th:nth-child(2),
+        .sub-table td:nth-child(2) {
+            width: 150px;
+        }
+
+        .sub-table th:nth-child(3),
+        .sub-table td:nth-child(3) {
+            width: 112px;
+        }
+
+        .sub-table th:nth-child(4),
+        .sub-table td:nth-child(4) {
+            width: 190px;
+        }
+
+        .sub-table th:nth-child(5),
+        .sub-table td:nth-child(5) {
+            width: 180px;
+        }
+
+        .sub-table th:nth-child(6),
+        .sub-table td:nth-child(6),
+        .sub-table th:nth-child(7),
+        .sub-table td:nth-child(7) {
+            width: 118px;
+        }
+
+        .sub-table th:nth-child(8),
+        .sub-table td:nth-child(8) {
+            width: 130px;
+        }
+
+        .sub-table th:nth-child(9),
+        .sub-table td:nth-child(9) {
+            width: 96px;
+        }
+
+        .sub-table th:nth-child(10),
+        .sub-table td:nth-child(10) {
+            width: 170px;
         }
 
         .serial-cell {
             color: #143a17;
             font-weight: 800;
+            overflow-wrap: anywhere;
         }
 
         .vehicle-stack {
             display: grid;
             gap: 0.12rem;
+            min-width: 0;
+            width: 100%;
         }
 
         .vehicle-stack .plate {
             font-weight: 800;
+        }
+
+        .vehicle-stack .plate,
+        .vehicle-stack .vehicle,
+        .driver-cell,
+        .office-cell {
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .vehicle-stack .vehicle {
@@ -146,17 +223,20 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
 
         .print-actions {
             display: flex;
-            gap: 0.45rem;
+            gap: 0.35rem;
             justify-content: flex-end;
-            min-width: 190px;
+            min-width: 0;
+            white-space: nowrap;
         }
 
         .print-actions .btn {
             align-items: center;
             display: inline-flex;
-            gap: 0.35rem;
+            gap: 0.3rem;
             justify-content: center;
             min-height: 34px;
+            padding-left: 0.55rem;
+            padding-right: 0.55rem;
             white-space: nowrap;
         }
 
@@ -183,6 +263,23 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             color: #4f5f52;
             font-size: 0.82rem;
             font-weight: 700;
+        }
+
+        .coa-odometer-table th {
+            background: #f8fafc;
+            color: #475467;
+            font-size: 0.76rem;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .coa-odometer-table td {
+            vertical-align: middle;
+        }
+
+        .coa-odometer-table input[type="number"] {
+            min-width: 140px;
         }
 
         .empty-state {
@@ -271,8 +368,8 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             }
 
             .print-actions {
-                flex-direction: column;
-                min-width: 150px;
+                flex-direction: row;
+                min-width: 0;
             }
         }
     </style>
@@ -285,11 +382,11 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                 <div>
                     <p class="mb-1 text-white-50 fw-semibold">Sub Admin Print Desk</p>
                     <h1 class="mb-1 fw-bold">Trip Ticket and COA Printing</h1>
-                    <p class="mb-0 text-white-50">Approved, valid, and fueled-up gas issuances. Print driver trip tickets and COA reports from one list.</p>
+                    <p class="mb-0 text-white-50">Used gas issuances only. Print driver trip tickets and COA reports from one list.</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2 align-items-center">
                     <span class="badge bg-white text-success px-3 py-2">
-                        <i class="fas fa-check-circle me-1"></i>Printable Records
+                        <i class="fas fa-check-circle me-1"></i>Used Records
                     </span>
                     <a href="../logout.php" class="btn btn-light text-danger fw-semibold">
                         <i class="fas fa-sign-out-alt me-1"></i>Logout
@@ -298,13 +395,13 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             </div>
         </section>
 
-        <section class="summary-grid mb-4" aria-label="Printable issuance summary">
+        <section class="summary-grid mb-4" aria-label="Used issuance summary">
             <div class="summary-tile shadow-sm">
-                <div class="summary-label">Printable Records</div>
+                <div class="summary-label">Used Records</div>
                 <div class="summary-value"><?php echo count($printableIssuances); ?></div>
             </div>
             <div class="summary-tile shadow-sm">
-                <div class="summary-label">Printable Today</div>
+                <div class="summary-label">Used Today</div>
                 <div class="summary-value"><?php echo $todayPrintable; ?></div>
             </div>
             <div class="summary-tile shadow-sm">
@@ -318,9 +415,9 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
                     <div>
                         <h2 class="h5 mb-1 fw-bold">
-                            <i class="fas fa-print me-2 text-success"></i>Printable Issuances
+                            <i class="fas fa-print me-2 text-success"></i>Used Gas Issuances
                         </h2>
-                        <p class="text-muted mb-0 small">Search approved, valid, or used records, then print the required document.</p>
+                        <p class="text-muted mb-0 small">Search the latest loaded used records, then print the required document.</p>
                     </div>
                 </div>
                 <div class="print-toolbar">
@@ -328,7 +425,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                         <label for="subAdminSearch" class="form-label small fw-bold text-muted">Search issuance, plate, driver, vehicle, or office</label>
                         <div class="input-group">
                             <span class="input-group-text bg-white"><i class="fas fa-search text-success"></i></span>
-                            <input type="search" class="form-control" id="subAdminSearch" placeholder="Search printable records...">
+                            <input type="search" class="form-control" id="subAdminSearch" placeholder="Search used records...">
                         </div>
                     </div>
                     <div>
@@ -364,6 +461,9 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                     </button>
                 </div>
                 <div class="selected-summary mt-2" id="selectedSummary">Select one or more gas issuances. Monthly Form B will be grouped per vehicle.</div>
+                <div class="small text-muted mt-1">
+                    Showing the latest <?php echo htmlspecialchars((string) $initialPrintableLimit, ENT_QUOTES, 'UTF-8'); ?> used records for faster loading.
+                </div>
             </div>
 
             <div class="table-responsive">
@@ -389,7 +489,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                             <tr>
                                 <td colspan="10" class="empty-state text-muted">
                                     <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                                    No printable gas issuance records available.
+                                    No used gas issuance records available.
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -427,10 +527,10 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                                             <span class="vehicle"><?php echo htmlspecialchars((string) ($issuance['vehicle_type'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></span>
                                         </span>
                                     </td>
-                                    <td class="fw-semibold"><?php echo htmlspecialchars((string) ($issuance['driver_name'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                                    <td class="fw-semibold driver-cell" title="<?php echo htmlspecialchars((string) ($issuance['driver_name'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) ($issuance['driver_name'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
                                     <td class="text-end fw-bold text-success"><?php echo htmlspecialchars(number_format((float) ($issuance['authorized_liters'] ?? 0), 2), ENT_QUOTES, 'UTF-8'); ?> L</td>
                                     <td class="text-end fw-bold"><?php echo htmlspecialchars(number_format((float) ($issuance['actual_liters_fueled'] ?? $issuance['authorized_liters'] ?? 0), 2), ENT_QUOTES, 'UTF-8'); ?> L</td>
-                                    <td><?php echo htmlspecialchars((string) ($issuance['office'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
+                                    <td class="office-cell" title="<?php echo htmlspecialchars((string) ($issuance['office'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) ($issuance['office'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></td>
                                     <td><span class="badge <?php echo $statusClass; ?> px-3 py-2"><?php echo htmlspecialchars(ucfirst($status), ENT_QUOTES, 'UTF-8'); ?></span></td>
                                     <td>
                                         <div class="print-actions">
@@ -453,7 +553,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                             <tr id="noFilterResults" class="d-none">
                                 <td colspan="10" class="empty-state text-muted">
                                     <i class="fas fa-search fa-2x mb-2 d-block"></i>
-                                    No printable records match your filters.
+                                    No used records match your filters.
                                 </td>
                             </tr>
                         <?php endif; ?>
@@ -538,6 +638,44 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
         </div>
     </div>
 
+    <div class="modal fade" id="coaOdometerModal" tabindex="-1" aria-labelledby="coaOdometerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="coaOdometerModalLabel">
+                        <i class="fas fa-gauge-high me-2"></i>Manual COA Odometer Readings
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info small mb-3">
+                        Enter the Beginning odometer for each selected vehicle. The Ending odometer is computed from fuel used and normal km/liter so COA excess becomes zero.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm coa-odometer-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Vehicle</th>
+                                    <th>Plate</th>
+                                    <th class="text-end">Fuel Used</th>
+                                    <th>Beginning Odometer</th>
+                                    <th>Ending Odometer <span class="text-muted">(Auto)</span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="coaOdometerRows"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-dark" id="confirmSelectedCoaBtn">
+                        <i class="fas fa-print me-1"></i>Print COA
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
         <div id="subAdminToast" class="toast align-items-center border-0 text-bg-success" role="status" aria-live="polite" aria-atomic="true">
             <div class="d-flex">
@@ -586,6 +724,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
         var lastFuelSummaryAmount = 0;
         var lastFuelSummaryDieselAmount = 0;
         var lastFuelSummaryUnleadedAmount = 0;
+        var pendingSelectedCoaItems = [];
 
         function getIssuance(id) {
             return approvedIssuances.find(function(item) {
@@ -850,6 +989,156 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             });
         }
 
+        function groupSelectedCoaItems(items) {
+            var groups = {};
+
+            items.forEach(function(item) {
+                var key = item.plate_no || item.vehicle_type || String(item.id);
+                var normalKmPerLiter = Number(item.normal_km_per_liter || 0);
+                if (!Number.isFinite(normalKmPerLiter) || normalKmPerLiter <= 0) {
+                    normalKmPerLiter = 20;
+                }
+                if (!groups[key]) {
+                    groups[key] = {
+                        vehicle_type: item.vehicle_type || '',
+                        plate_number: item.plate_no || '',
+                        cylinders: item.cylinders || 4,
+                        fuel_used: 0,
+                        normal_km_per_liter: normalKmPerLiter,
+                        remarks: item.office || '',
+                        items: []
+                    };
+                }
+
+                groups[key].fuel_used += Number(item.issued_liters || item.liters || 0) || 0;
+                groups[key].items.push(item);
+            });
+
+            return Object.keys(groups).map(function(key) {
+                return groups[key];
+            });
+        }
+
+        function calculateZeroExcessEnding(beginning, fuelUsed, normalKmPerLiter) {
+            var start = Number(beginning);
+            var liters = Number(fuelUsed);
+            var normal = Number(normalKmPerLiter);
+            if (!Number.isFinite(start) || !Number.isFinite(liters) || !Number.isFinite(normal) || start < 0 || liters < 0 || normal <= 0) {
+                return '';
+            }
+
+            return String(Math.round(start + ((liters * normal) / 1.10)));
+        }
+
+        function updateCoaAutoEnding(row) {
+            var beginningInput = row.querySelector('.coa-beginning');
+            var endingInput = row.querySelector('.coa-ending');
+            if (!beginningInput || !endingInput) {
+                return;
+            }
+
+            endingInput.value = calculateZeroExcessEnding(
+                beginningInput.value,
+                row.dataset.fuelUsed,
+                row.dataset.normalKmPerLiter
+            );
+        }
+
+        function renderCoaOdometerRows(items) {
+            var tbody = document.getElementById('coaOdometerRows');
+            var groups = groupSelectedCoaItems(items);
+
+            tbody.innerHTML = groups.map(function(group, index) {
+                var suggestedBeginning = Math.max.apply(null, group.items.map(function(item) {
+                    return Number(item.current_odometer || item.past_odometer || 0) || 0;
+                }).filter(function(value) {
+                    return value > 0;
+                }));
+                if (!Number.isFinite(suggestedBeginning)) suggestedBeginning = '';
+                var suggestedEnding = suggestedBeginning === '' ? '' : calculateZeroExcessEnding(suggestedBeginning, group.fuel_used, group.normal_km_per_liter);
+
+                return '<tr data-coa-row="' + index + '" data-fuel-used="' + escapeHtml(group.fuel_used) + '" data-normal-km-per-liter="' + escapeHtml(group.normal_km_per_liter) + '">' +
+                    '<td>' +
+                        '<div class="fw-bold">' + escapeHtml(group.vehicle_type || '-') + '</div>' +
+                        '<div class="small text-muted">' + group.items.length + ' selected issuance' + (group.items.length === 1 ? '' : 's') + '</div>' +
+                    '</td>' +
+                    '<td class="fw-semibold">' + escapeHtml(group.plate_number || '-') + '</td>' +
+                    '<td class="text-end fw-bold">' + group.fuel_used.toFixed(2) + ' L</td>' +
+                    '<td><input type="number" class="form-control form-control-sm coa-beginning" min="0" step="1" value="' + escapeHtml(suggestedBeginning) + '" required></td>' +
+                    '<td><input type="number" class="form-control form-control-sm coa-ending bg-light" min="0" step="1" value="' + escapeHtml(suggestedEnding) + '" readonly tabindex="-1"></td>' +
+                    '</tr>';
+            }).join('');
+
+            tbody.querySelectorAll('.coa-beginning').forEach(function(input) {
+                input.addEventListener('input', function() {
+                    updateCoaAutoEnding(this.closest('tr'));
+                });
+            });
+        }
+
+        function buildManualSelectedCoaParams(items) {
+            var dates = items.map(function(item) {
+                return item.date || '';
+            }).filter(Boolean).sort();
+            var groups = groupSelectedCoaItems(items);
+            var rows = Array.from(document.querySelectorAll('#coaOdometerRows tr[data-coa-row]')).map(function(row, index) {
+                var group = groups[index];
+                var beginning = Math.round(Number(row.querySelector('.coa-beginning').value));
+                var ending = Math.round(Number(row.querySelector('.coa-ending').value));
+
+                return {
+                    type_of_vehicle: group.vehicle_type,
+                    plate_number: group.plate_number,
+                    cylinders: group.cylinders,
+                    beginning_odometer: beginning,
+                    ending_odometer: ending,
+                    fuel_used: group.fuel_used,
+                    normal_km_per_liter: group.normal_km_per_liter,
+                    remarks: group.remarks
+                };
+            });
+
+            return new URLSearchParams({
+                start_date: dates[0] || '',
+                end_date: dates[dates.length - 1] || '',
+                manual_odometer: '1',
+                records: JSON.stringify(rows)
+            });
+        }
+
+        function validateManualCoaOdometers() {
+            var rows = Array.from(document.querySelectorAll('#coaOdometerRows tr[data-coa-row]'));
+            for (var index = 0; index < rows.length; index++) {
+                var row = rows[index];
+                var beginningInput = row.querySelector('.coa-beginning');
+                var endingInput = row.querySelector('.coa-ending');
+                var beginning = Number(beginningInput.value);
+                updateCoaAutoEnding(row);
+                var ending = Number(endingInput.value);
+
+                beginningInput.classList.remove('is-invalid');
+                endingInput.classList.remove('is-invalid');
+
+                if (!Number.isFinite(beginning) || beginning < 0) {
+                    beginningInput.classList.add('is-invalid');
+                    showToast('Enter a valid beginning odometer reading.');
+                    return false;
+                }
+                if (!Number.isFinite(ending) || ending < 0) {
+                    endingInput.classList.add('is-invalid');
+                    showToast('Ending odometer could not be computed. Check fuel used and normal km/liter.');
+                    return false;
+                }
+                if (ending < beginning) {
+                    endingInput.classList.add('is-invalid');
+                    showToast('Ending odometer cannot be lower than beginning odometer.');
+                    return false;
+                }
+            }
+
+            return rows.length > 0;
+        }
+
         function getSelectedIssuances() {
             return Array.from(document.querySelectorAll('.monthly-select:checked'))
                 .map(function(checkbox) {
@@ -1083,8 +1372,26 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                 return;
             }
 
-            window.open('coa_report.php?' + buildSelectedCoaParams(selected).toString(), '_blank', 'noopener');
-            showToast('Opening selected COA report. Vehicle odometers will update after the report opens.');
+            pendingSelectedCoaItems = selected;
+            renderCoaOdometerRows(selected);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('coaOdometerModal')).show();
+        });
+
+        document.getElementById('confirmSelectedCoaBtn').addEventListener('click', function() {
+            if (pendingSelectedCoaItems.length === 0) {
+                showToast('Select at least one issuance for the COA report.');
+                return;
+            }
+            if (!validateManualCoaOdometers()) {
+                return;
+            }
+
+            window.open('coa_report.php?' + buildManualSelectedCoaParams(pendingSelectedCoaItems).toString(), '_blank', 'noopener');
+            var odometerModal = bootstrap.Modal.getInstance(document.getElementById('coaOdometerModal'));
+            if (odometerModal) {
+                odometerModal.hide();
+            }
+            showToast('Opening selected COA report with manual odometer readings.');
         });
 
         document.getElementById('subAdminTableBody').addEventListener('click', function(event) {
@@ -1109,7 +1416,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
 
             if (coaButton) {
                 window.open('coa_report.php?' + buildCoaParams(item).toString(), '_blank', 'noopener');
-                showToast('Opening COA report for ' + item.serial_no + '. Vehicle odometer will update after the report opens.');
+                showToast('Opening COA report for ' + item.serial_no + '...');
                 return;
             }
         });

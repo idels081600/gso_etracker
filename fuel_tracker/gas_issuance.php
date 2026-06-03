@@ -17,7 +17,8 @@ $nextWeek = date('Y-m-d', strtotime('+7 days'));
 $vehicles = fuelTrackerFetchVehicles($conn);
 fuelTrackerSyncIssuanceOffices($conn);
 fuelTrackerCreateUpcomingScheduledIssuances($conn, 14);
-$allIssuances = fuelTrackerFetchGasIssuances($conn);
+$initialIssuanceLimit = 200;
+$allIssuances = fuelTrackerFetchGasIssuances($conn, [], 'government', $initialIssuanceLimit);
 $recentIssuances = array_slice($allIssuances, 0, 5);
 $vehicleLookup = fuelTrackerVehicleLookupByPlate($vehicles);
 $serialNo = 'FI-' . date('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
@@ -907,6 +908,9 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                             </button>
                         </div>
                         <div class="active-filter-chips w-100 mt-2" id="activeFilterChips" aria-live="polite"></div>
+                        <div class="small text-muted mt-2">
+                            Showing the latest <?php echo htmlspecialchars((string) $initialIssuanceLimit, ENT_QUOTES, 'UTF-8'); ?> issuance records for faster loading.
+                        </div>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive schedule-table-wrap">

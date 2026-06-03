@@ -139,6 +139,9 @@ try {
     if ($expiryDate === '') {
         $expiryDate = (new DateTimeImmutable($issueDate))->modify('+7 days')->format('Y-m-d');
     }
+    if ($expiryDate < $issueDate) {
+        privateIssuanceJson(['success' => false, 'message' => 'Expiry date cannot be earlier than the issue date.'], 422);
+    }
 
     $authorizedLiters = $input['authorized_liters'] ?? null;
     if ($authorizedLiters === null || $authorizedLiters === '' || !is_numeric($authorizedLiters) || (float) $authorizedLiters <= 0) {

@@ -12,9 +12,13 @@ $budgetSummary = [
     'used_budget' => 0,
     'remaining_budget' => 0,
 ];
+$latestWeeklyFuelPrice = null;
+$currentFuelPriceTuesday = date('Y-m-d');
 
 try {
     $budgetSummary = fuelBudgetSummary($conn);
+    $latestWeeklyFuelPrice = fuelBudgetLatestWeeklyFuelPrice($conn);
+    $currentFuelPriceTuesday = fuelBudgetTuesdayForDate(date('Y-m-d'));
 } catch (Throwable $e) {
     error_log('Dashboard budget summary error: ' . $e->getMessage());
 }
@@ -426,76 +430,55 @@ try {
             </div>
         </div>
 
-        <!-- Fuel Tally Cards -->
-        <div class="row g-3 mb-4 fuel-summary-grid">
+        <!-- Operations Overview -->
+        <div class="row g-3 mb-3 fuel-summary-grid">
             <!-- Unleaded Card -->
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100">
+            <div class="col-md-6 col-xl-2">
+                <div class="card border-0 shadow-sm h-100 summary-card summary-card-unleaded">
                     <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="bg-success bg-gradient rounded-circle p-3">
-                                    <i class="fas fa-gas-pump text-white fa-2x"></i>
-                                </div>
+                        <div class="summary-card-head">
+                            <div class="summary-icon summary-icon-unleaded">
+                                <i class="fas fa-gas-pump"></i>
                             </div>
-                            <div class="flex-grow-1 ms-3">
-                                <div class="row">
-                                    <div class="col">
-                                        <h5 class="card-title text-muted mb-1">UNLEADED</h5>
-                                        <h2 class="card-text fw-bold text-success mb-0" id="unleadedCount">0</h2>
-                                        <small class="text-muted">Records Issued</small>
-                                    </div>
-                                </div>
+                            <div>
+                                <h5 class="card-title text-muted mb-1">UNLEADED</h5>
+                                <h2 class="card-text fw-bold text-success mb-0" id="unleadedCount">0</h2>
+                                <small class="text-muted">Records Issued</small>
                             </div>
                         </div>
-                        <div class="mt-3">
-                            <div class="row text-center">
-                                <div class="col-6">
-                                    <small class="text-muted d-block">Total Liters</small>
-                                    <span class="fw-bold text-success" id="unleadedLiters">0.00 L</span>
-                                </div>
-
-                            </div>
+                        <div class="summary-card-foot">
+                            <small class="text-muted d-block">Total Liters</small>
+                            <span class="fw-bold text-success" id="unleadedLiters">0.00 L</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Diesel Card -->
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100">
+            <div class="col-md-6 col-xl-2">
+                <div class="card border-0 shadow-sm h-100 summary-card summary-card-diesel">
                     <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="bg-warning bg-gradient rounded-circle p-3">
-                                    <i class="fas fa-truck text-white fa-2x"></i>
-                                </div>
+                        <div class="summary-card-head">
+                            <div class="summary-icon summary-icon-diesel">
+                                <i class="fas fa-truck"></i>
                             </div>
-                            <div class="flex-grow-1 ms-3">
-                                <div class="row">
-                                    <div class="col">
-                                        <h5 class="card-title text-muted mb-1">DIESEL</h5>
-                                        <h2 class="card-text fw-bold text-warning mb-0" id="dieselCount">0</h2>
-                                        <small class="text-muted">Records Issued</small>
-                                    </div>
-                                </div>
+                            <div>
+                                <h5 class="card-title text-muted mb-1">DIESEL</h5>
+                                <h2 class="card-text fw-bold text-warning mb-0" id="dieselCount">0</h2>
+                                <small class="text-muted">Records Issued</small>
                             </div>
                         </div>
-                        <div class="mt-3">
-                            <div class="row text-center">
-                                <div class="col-6">
-                                    <small class="text-muted d-block">Total Liters</small>
-                                    <span class="fw-bold text-warning" id="dieselLiters">0.00 L</span>
-                                </div>
-                            </div>
+                        <div class="summary-card-foot">
+                            <small class="text-muted d-block">Total Liters</small>
+                            <span class="fw-bold text-warning" id="dieselLiters">0.00 L</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Fuel Budget Card -->
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 budget-card">
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm h-100 budget-card budget-card-current">
                     <div class="card-body">
                         <?php
                         $dieselRemaining = (float) ($budgetSummary['remaining_diesel_budget'] ?? 0);
@@ -505,13 +488,11 @@ try {
                         $unleadedTotal = (float) ($budgetSummary['total_unleaded_budget'] ?? 0);
                         $unleadedPercent = $unleadedTotal > 0 ? max(0, min(100, ($unleadedRemaining / $unleadedTotal) * 100)) : 0;
                         ?>
-                        <div class="d-flex align-items-start">
-                            <div class="flex-shrink-0">
-                                <div class="bg-primary bg-gradient rounded-circle p-3">
-                                    <i class="fas fa-wallet text-white fa-2x"></i>
-                                </div>
+                        <div class="summary-card-head budget-card-head">
+                            <div class="summary-icon summary-icon-budget">
+                                <i class="fas fa-wallet"></i>
                             </div>
-                            <div class="flex-grow-1 ms-3">
+                            <div class="flex-grow-1">
                                 <h5 class="card-title text-muted mb-1">FUEL BUDGET LEFT</h5>
                                 <div class="budget-progress-stack mt-2">
                                     <div class="budget-progress-item">
@@ -561,7 +542,7 @@ try {
             </div>
 
             <!-- Estimated Budget Card -->
-            <div class="col-md-6 col-xl-3">
+            <div class="col-md-6 col-xl-4">
                 <div class="card border-0 shadow-sm h-100 budget-card budget-card-compact">
                     <div class="card-body">
                         <div class="budget-compact-header">
@@ -600,23 +581,6 @@ try {
                             </div>
                         </div>
 
-                        <div class="budget-price-grid budget-price-grid-compact">
-                            <div class="budget-context-item">
-                                <label for="dashboardDieselPumpPrice" class="form-label mb-1">Diesel Price</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">&#8369;</span>
-                                    <input type="number" class="form-control" id="dashboardDieselPumpPrice" min="0" step="0.01" placeholder="0.00">
-                                </div>
-                            </div>
-                            <div class="budget-context-item">
-                                <label for="dashboardUnleadedPumpPrice" class="form-label mb-1">Unleaded Price</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">&#8369;</span>
-                                    <input type="number" class="form-control" id="dashboardUnleadedPumpPrice" min="0" step="0.01" placeholder="0.00">
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="budget-estimate-totals">
                             <div class="budget-context-item">
                                 <small>Estimated Cost</small>
@@ -629,6 +593,62 @@ try {
                         </div>
 
                         <small class="budget-draft-note" id="budgetDraftNote">Reserved estimate uses approved/valid scheduled issuances.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm weekly-price-card">
+                    <div class="card-body">
+                        <div class="weekly-price-layout">
+                            <div class="weekly-price-form">
+                                <div class="budget-compact-header">
+                                    <h5 class="card-title text-muted mb-0">
+                                        <i class="fas fa-chart-line text-primary me-2"></i>Weekly Pump Prices
+                                    </h5>
+                                    <small class="text-muted">Update Tuesday pump prices used by the estimated budget.</small>
+                                </div>
+                                <div class="budget-price-grid">
+                                    <div class="budget-context-item budget-week-item">
+                                        <label for="dashboardFuelPriceWeek" class="form-label mb-1">Tuesday Week</label>
+                                        <input type="date" class="form-control form-control-sm" id="dashboardFuelPriceWeek" value="<?php echo htmlspecialchars((string) ($latestWeeklyFuelPrice['week_start'] ?? $currentFuelPriceTuesday), ENT_QUOTES, 'UTF-8'); ?>">
+                                    </div>
+                                    <div class="budget-context-item">
+                                        <label for="dashboardDieselPumpPrice" class="form-label mb-1">Diesel Price</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">&#8369;</span>
+                                            <input type="number" class="form-control" id="dashboardDieselPumpPrice" min="0" step="0.01" placeholder="0.00" value="<?php echo htmlspecialchars(number_format((float) ($latestWeeklyFuelPrice['diesel_price'] ?? 0), 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>">
+                                        </div>
+                                    </div>
+                                    <div class="budget-context-item">
+                                        <label for="dashboardUnleadedPumpPrice" class="form-label mb-1">Unleaded Price</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">&#8369;</span>
+                                            <input type="number" class="form-control" id="dashboardUnleadedPumpPrice" min="0" step="0.01" placeholder="0.00" value="<?php echo htmlspecialchars(number_format((float) ($latestWeeklyFuelPrice['unleaded_price'] ?? 0), 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>">
+                                        </div>
+                                    </div>
+                                    <div class="budget-context-item budget-price-action">
+                                        <label for="dashboardFuelPriceSource" class="form-label mb-1">Source Note</label>
+                                        <input type="text" class="form-control form-control-sm" id="dashboardFuelPriceSource" placeholder="DOE / pump price" value="<?php echo htmlspecialchars((string) ($latestWeeklyFuelPrice['source_note'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-primary btn-sm weekly-price-save" id="saveWeeklyFuelPriceBtn">
+                                    <i class="fas fa-save me-1"></i>Save Weekly Prices
+                                </button>
+                            </div>
+                            <div class="fuel-price-trend-panel">
+                                <div class="budget-section-mini-title">Weekly Price Trend</div>
+                                <div class="fuel-price-chart-wrap">
+                                    <canvas id="fuelPriceTrendChart" height="120" aria-label="Weekly diesel and unleaded price trend"></canvas>
+                                    <div class="chart-empty-state fuel-price-chart-empty d-none" id="fuelPriceTrendEmpty">
+                                        <i class="fas fa-chart-line"></i>
+                                        <span>No weekly fuel prices saved yet.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

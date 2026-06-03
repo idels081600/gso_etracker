@@ -432,7 +432,7 @@ function fuelTrackerSyncIssuanceOffices(mysqli $conn): void
     $synced = true;
 }
 
-function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = [], string $scope = 'government'): array
+function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = [], string $scope = 'government', int $limit = 0): array
 {
     fuelTrackerEnsureScopeColumns($conn);
     fuelTrackerEnsureQueryIndexes($conn);
@@ -458,6 +458,8 @@ function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = [], string
     }
 
     $where = $conditions !== [] ? 'WHERE ' . implode(' AND ', $conditions) : '';
+
+    $limitClause = $limit > 0 ? ' LIMIT ' . min($limit, 1000) : '';
 
     $sql = "
         SELECT
@@ -496,6 +498,7 @@ function fuelTrackerFetchGasIssuances(mysqli $conn, array $statuses = [], string
             )
         {$where}
         ORDER BY gi.id DESC
+        {$limitClause}
     ";
 
     $result = $conn->query($sql);

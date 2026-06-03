@@ -113,6 +113,9 @@ function coaSummaryRowFromIssuances(array $issuances): array
     }
 
     $normal = coaFloat($first['normal_km_per_liter'] ?? 20, 20);
+    if ($normal <= 0) {
+        $normal = 20;
+    }
     $ending = $currentOdometers !== [] ? max($currentOdometers) : 0;
     $beginning = $pastOdometers !== [] ? min($pastOdometers) : max(0, $ending - ($totalFuel * $normal));
 
@@ -195,14 +198,17 @@ function coaUpdateVehicleOdometersAfterReport(mysqli $conn, array $issuances): v
 
 function coaBuildRow(array $row): array
 {
-    $beginning = coaFloat($row['beginning_odometer'] ?? $row['past_odometer'] ?? $row['previous_odometer'] ?? $row['last_odometer'] ?? $row['beginning'] ?? 0);
-    $ending = coaFloat($row['ending_odometer'] ?? $row['current_odometer'] ?? $row['odometer'] ?? $row['ending'] ?? 0);
+    $beginning = round(coaFloat($row['beginning_odometer'] ?? $row['past_odometer'] ?? $row['previous_odometer'] ?? $row['last_odometer'] ?? $row['beginning'] ?? 0));
+    $ending = round(coaFloat($row['ending_odometer'] ?? $row['current_odometer'] ?? $row['odometer'] ?? $row['ending'] ?? 0));
     $fuelUsed = coaFloat($row['fuel_used'] ?? $row['total_fuel_used'] ?? $row['liters_issued'] ?? 0);
     $normalKmPerLiter = coaFloat($row['normal_km_per_liter'] ?? $row['normal_travel'] ?? 20, 20);
+    if ($normalKmPerLiter <= 0) {
+        $normalKmPerLiter = 20;
+    }
     $distance = max(0, $ending - $beginning);
     $distancePerLiter = $fuelUsed > 0 ? $distance / $fuelUsed : 0;
     $allowable = $normalKmPerLiter > 0 ? ($distance / $normalKmPerLiter) * 1.10 : 0;
-    $excess = max(0, $fuelUsed - $allowable);
+    $excess = round(max(0, $fuelUsed - $allowable));
 
     return [
         'type_of_vehicle' => coaText($row['type_of_vehicle'] ?? $row['vehicle_type'] ?? $row['vehicle'] ?? '', 'Motorcycle'),
@@ -247,7 +253,6 @@ if ($selectedIssuanceIds !== []) {
     require_once __DIR__ . '/db.php';
     require_once __DIR__ . '/gas_issuance_data.php';
     $selectedIssuances = fuelTrackerFetchGasIssuancesByIds($conn, $selectedIssuanceIds);
-    coaUpdateVehicleOdometersAfterReport($conn, $selectedIssuances);
 }
 
 $selectedDates = array_values(array_filter(array_map(static fn(array $row): string => (string) ($row['issue_date'] ?? ''), $selectedIssuances)));
@@ -372,14 +377,14 @@ foreach ($rows as $row) {
         $row['type_of_vehicle'],
         $row['plate_number'],
         $row['cylinders'],
-        coaNumber($row['beginning_odometer'], 1, false),
-        coaNumber($row['ending_odometer'], 1, false),
+        coaNumber(round($row['beginning_odometer']), 0),
+        coaNumber(round($row['ending_odometer']), 0),
         coaNumber($row['total_distance'], 0),
         coaNumber($row['total_fuel_used'], 2),
         coaNumber($row['distance_per_liter'], 2),
         coaNumber($row['normal_km_per_liter'], 2),
         coaNumber($row['allowable_liters'], 2),
-        coaNumber($row['excess'], 2),
+        coaNumber($row['excess'], 0),
         $row['remarks'],
     ];
 
@@ -404,7 +409,7 @@ if (count($rows) > 1) {
         coaNumber($totalDistancePerLiter, 2),
         '',
         coaNumber($reportTotals['allowance'], 2),
-        coaNumber($reportTotals['excess'], 2),
+        coaNumber($reportTotals['excess'], 0),
         '',
     ];
 

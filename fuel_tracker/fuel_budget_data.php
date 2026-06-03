@@ -85,6 +85,24 @@ function fuelBudgetEnsureTables(mysqli $conn): void
         throw new RuntimeException('Unable to prepare fuel_budget_deduction_issuances table: ' . $conn->error);
     }
 
+    $weeklyFuelPriceSql = "
+        CREATE TABLE IF NOT EXISTS weekly_fuel_prices (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            week_start DATE NOT NULL UNIQUE,
+            diesel_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+            unleaded_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+            source_note VARCHAR(255) NULL,
+            updated_by VARCHAR(150) NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_weekly_fuel_prices_week_start (week_start)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ";
+
+    if (!$conn->query($weeklyFuelPriceSql)) {
+        throw new RuntimeException('Unable to prepare weekly_fuel_prices table: ' . $conn->error);
+    }
+
     $columnCheck = $conn->query("SHOW COLUMNS FROM fuel_budget_deductions LIKE 'summary_group_hash'");
     if ($columnCheck && $columnCheck->num_rows === 0) {
         if (!$conn->query("ALTER TABLE fuel_budget_deductions ADD COLUMN summary_group_hash CHAR(64) NULL AFTER summary_hash")) {
@@ -109,6 +127,103 @@ function fuelBudgetEnsureTables(mysqli $conn): void
     }
 
     $ensured = true;
+}
+
+function fuelBudgetTuesdayForDate(string $date): string
+{
+    $date = trim($date);
+    if ($date === '') {
+        $base = new DateTimeImmutable('today');
+    } else {
+        $base = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+        if (!$base) {
+            throw new InvalidArgumentException('Enter a valid weekly price date.');
+        }
+    }
+
+    $dayOfWeek = (int) $base->format('N');
+    return $base->modify((2 - $dayOfWeek) . ' days')->format('Y-m-d');
+}
+
+function fuelBudgetSaveWeeklyFuelPrice(
+    mysqli $conn,
+    string $weekStart,
+    float $dieselPrice,
+    float $unleadedPrice,
+    string $sourceNote = '',
+    string $updatedBy = ''
+): array {
+    fuelBudgetEnsureTables($conn);
+    $weekStart = fuelBudgetTuesdayForDate($weekStart);
+
+    if ($dieselPrice < 0 || $unleadedPrice < 0) {
+        throw new InvalidArgumentException('Weekly fuel prices must be zero or greater.');
+    }
+    if ($dieselPrice <= 0 && $unleadedPrice <= 0) {
+        throw new InvalidArgumentException('Enter a diesel price, unleaded price, or both.');
+    }
+
+    $stmt = $conn->prepare("
+        INSERT INTO weekly_fuel_prices
+            (week_start, diesel_price, unleaded_price, source_note, updated_by)
+        VALUES
+            (?, ?, ?, NULLIF(?, ''), NULLIF(?, ''))
+        ON DUPLICATE KEY UPDATE
+            diesel_price = VALUES(diesel_price),
+            unleaded_price = VALUES(unleaded_price),
+            source_note = VALUES(source_note),
+            updated_by = VALUES(updated_by),
+            updated_at = CURRENT_TIMESTAMP
+    ");
+    $stmt->bind_param('sddss', $weekStart, $dieselPrice, $unleadedPrice, $sourceNote, $updatedBy);
+    $stmt->execute();
+    $stmt->close();
+
+    return fuelBudgetLatestWeeklyFuelPrice($conn) ?? [
+        'week_start' => $weekStart,
+        'diesel_price' => $dieselPrice,
+        'unleaded_price' => $unleadedPrice,
+        'source_note' => $sourceNote,
+    ];
+}
+
+function fuelBudgetLatestWeeklyFuelPrice(mysqli $conn): ?array
+{
+    fuelBudgetEnsureTables($conn);
+    $result = $conn->query("
+        SELECT week_start, diesel_price, unleaded_price, source_note, updated_by, updated_at
+        FROM weekly_fuel_prices
+        ORDER BY week_start DESC
+        LIMIT 1
+    ");
+    if (!$result) {
+        throw new RuntimeException('Unable to load latest weekly fuel price: ' . $conn->error);
+    }
+
+    $row = $result->fetch_assoc();
+    return $row ?: null;
+}
+
+function fuelBudgetWeeklyFuelPriceHistory(mysqli $conn, int $limit = 12): array
+{
+    fuelBudgetEnsureTables($conn);
+    $limit = max(1, min(52, $limit));
+
+    $result = $conn->query("
+        SELECT week_start, diesel_price, unleaded_price, source_note, updated_by, updated_at
+        FROM (
+            SELECT week_start, diesel_price, unleaded_price, source_note, updated_by, updated_at
+            FROM weekly_fuel_prices
+            ORDER BY week_start DESC
+            LIMIT {$limit}
+        ) recent_prices
+        ORDER BY week_start ASC
+    ");
+    if (!$result) {
+        throw new RuntimeException('Unable to load weekly fuel price history: ' . $conn->error);
+    }
+
+    return $result->fetch_all(MYSQLI_ASSOC);
 }
 
 function fuelBudgetNormalizeIssuanceIds(array $sourceIssuanceIds): array

@@ -136,7 +136,7 @@ async function handleExportRecords() {
 document.addEventListener("DOMContentLoaded", async function () {
   prepareBudgetBarAnimation();
   initializeActionButtons();
-  initDraftBudgetInputs();
+  initWeeklyFuelPriceControls();
 
   // Add event listener for saving fuel records
   const saveFuelRecordBtn = document.getElementById("saveFuelRecord");
@@ -782,6 +782,8 @@ let dashboardDraftIssuances = {
   diesel_records: 0,
   unleaded_records: 0,
 };
+let dashboardFuelPriceHistory = [];
+let fuelPriceTrendChart = null;
 
 async function fetchDraftBudgetIssuances() {
   const response = await fetch("get_fuel_data.php?action=draft_budget_issuances");
@@ -795,6 +797,20 @@ async function fetchDraftBudgetIssuances() {
   }
 
   return payload.data || {};
+}
+
+async function fetchWeeklyFuelPrices() {
+  const response = await fetch("get_fuel_data.php?action=weekly_fuel_prices");
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  if (!payload.success) {
+    throw new Error(payload.message || "Unable to load weekly fuel prices.");
+  }
+
+  return payload.data || { latest: null, history: [] };
 }
 
 function draftBudgetPercent(remaining, total) {
@@ -853,33 +869,101 @@ function renderDraftFuelBudget() {
     note.textContent = `Reserved: ${dieselLiters.toFixed(2)} L diesel, ${unleadedLiters.toFixed(2)} L unleaded.`;
   }
 
-  try {
-    if (dieselPriceInput) localStorage.setItem("fuelTrackerDieselPumpPrice", dieselPriceInput.value);
-    if (unleadedPriceInput) localStorage.setItem("fuelTrackerUnleadedPumpPrice", unleadedPriceInput.value);
-  } catch (error) {
-    // Local storage is optional; the estimator still works without it.
+}
+
+function initWeeklyFuelPriceControls() {
+  ["dashboardFuelPriceWeek", "dashboardDieselPumpPrice", "dashboardUnleadedPumpPrice"].forEach((inputId) => {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.addEventListener("input", renderDraftFuelBudget);
+  });
+
+  const saveButton = document.getElementById("saveWeeklyFuelPriceBtn");
+  if (saveButton) {
+    saveButton.addEventListener("click", saveWeeklyFuelPrices);
   }
 }
 
-function initDraftBudgetInputs() {
-  [
-    ["dashboardDieselPumpPrice", "fuelTrackerDieselPumpPrice"],
-    ["dashboardUnleadedPumpPrice", "fuelTrackerUnleadedPumpPrice"],
-  ].forEach(([inputId, storageKey]) => {
-    const input = document.getElementById(inputId);
-    if (!input) return;
+function setWeeklyFuelPriceInputs(latest) {
+  const weekInput = document.getElementById("dashboardFuelPriceWeek");
+  const dieselInput = document.getElementById("dashboardDieselPumpPrice");
+  const unleadedInput = document.getElementById("dashboardUnleadedPumpPrice");
+  const sourceInput = document.getElementById("dashboardFuelPriceSource");
 
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved !== null) {
-        input.value = saved;
-      }
-    } catch (error) {
-      // Ignore local storage restrictions.
+  if (!latest) {
+    if (weekInput && !weekInput.value) weekInput.value = currentTuesdayDate();
+    renderDraftFuelBudget();
+    return;
+  }
+
+  if (weekInput) weekInput.value = latest.week_start || currentTuesdayDate();
+  if (dieselInput) dieselInput.value = Number(latest.diesel_price || 0).toFixed(2);
+  if (unleadedInput) unleadedInput.value = Number(latest.unleaded_price || 0).toFixed(2);
+  if (sourceInput) sourceInput.value = latest.source_note || "";
+  renderDraftFuelBudget();
+}
+
+function currentTuesdayDate() {
+  const date = new Date();
+  const day = date.getDay() === 0 ? 7 : date.getDay();
+  date.setDate(date.getDate() + (2 - day));
+  return date.toISOString().slice(0, 10);
+}
+
+function formatShortDate(dateString) {
+  if (!dateString) return "";
+  return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+async function saveWeeklyFuelPrices() {
+  const button = document.getElementById("saveWeeklyFuelPriceBtn");
+  const weekInput = document.getElementById("dashboardFuelPriceWeek");
+  const dieselInput = document.getElementById("dashboardDieselPumpPrice");
+  const unleadedInput = document.getElementById("dashboardUnleadedPumpPrice");
+  const sourceInput = document.getElementById("dashboardFuelPriceSource");
+
+  const originalHtml = button?.innerHTML || "";
+  if (button) {
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+  }
+
+  try {
+    const response = await fetch("fuel_price_save.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: JSON.stringify({
+        week_start: weekInput?.value || currentTuesdayDate(),
+        diesel_price: dieselInput?.value || 0,
+        unleaded_price: unleadedInput?.value || 0,
+        source_note: sourceInput?.value || "",
+      }),
+    });
+
+    const payload = await response.json();
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.message || "Unable to save weekly fuel prices.");
     }
 
-    input.addEventListener("input", renderDraftFuelBudget);
-  });
+    renderWeeklyFuelPrices({
+      latest: payload.latest || null,
+      history: payload.history || [],
+    });
+    showNotification(payload.message || "Weekly fuel prices saved.", "success");
+  } catch (error) {
+    showNotification(error.message || "Unable to save weekly fuel prices.", "danger");
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = originalHtml;
+    }
+  }
 }
 
 function updateFuelBudgetSummary(summary) {
@@ -950,13 +1034,22 @@ async function fetchConsumptionRankings() {
 }
 
 async function loadDashboardVisuals() {
-  const [summaryResult, draftResult, rankingsResult] = await Promise.allSettled([
+  const [summaryResult, draftResult, rankingsResult, fuelPriceResult] = await Promise.allSettled([
     fetchFuelBudgetSummary(),
     fetchDraftBudgetIssuances(),
     fetchConsumptionRankings(),
+    fetchWeeklyFuelPrices(),
   ]);
 
   requestAnimationFrame(() => {
+    if (fuelPriceResult.status === "fulfilled") {
+      renderWeeklyFuelPrices(fuelPriceResult.value);
+    } else {
+      console.error("Error loading weekly fuel prices:", fuelPriceResult.reason);
+      setWeeklyFuelPriceInputs(null);
+      renderFuelPriceTrend([]);
+    }
+
     if (draftResult.status === "fulfilled") {
       dashboardDraftIssuances = draftResult.value || {};
     } else {
@@ -974,6 +1067,116 @@ async function loadDashboardVisuals() {
     } else {
       console.error("Error loading consumption rankings:", rankingsResult.reason);
     }
+  });
+}
+
+function renderWeeklyFuelPrices(priceData) {
+  const latest = priceData?.latest || null;
+  dashboardFuelPriceHistory = Array.isArray(priceData?.history) ? priceData.history : [];
+  setWeeklyFuelPriceInputs(latest);
+  renderFuelPriceTrend(dashboardFuelPriceHistory);
+}
+
+function renderFuelPriceTrend(history) {
+  const canvas = document.getElementById("fuelPriceTrendChart");
+  const empty = document.getElementById("fuelPriceTrendEmpty");
+  if (!canvas || typeof Chart === "undefined") {
+    return;
+  }
+
+  const rows = (history || [])
+    .map((row) => ({
+      week_start: row.week_start || "",
+      diesel_price: Number(row.diesel_price || 0),
+      unleaded_price: Number(row.unleaded_price || 0),
+    }))
+    .filter((row) => row.week_start && (row.diesel_price > 0 || row.unleaded_price > 0));
+
+  canvas.classList.toggle("d-none", rows.length === 0);
+  if (empty) empty.classList.toggle("d-none", rows.length > 0);
+
+  if (fuelPriceTrendChart) {
+    fuelPriceTrendChart.destroy();
+    fuelPriceTrendChart = null;
+  }
+
+  if (rows.length === 0) {
+    return;
+  }
+
+  fuelPriceTrendChart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels: rows.map((row) => formatShortDate(row.week_start)),
+      datasets: [
+        {
+          label: "Diesel",
+          data: rows.map((row) => row.diesel_price),
+          borderColor: "#f5b301",
+          backgroundColor: "rgba(245, 179, 1, 0.12)",
+          borderWidth: 2,
+          pointRadius: 2.5,
+          pointHoverRadius: 4,
+          tension: 0.25,
+        },
+        {
+          label: "Unleaded",
+          data: rows.map((row) => row.unleaded_price),
+          borderColor: "#198754",
+          backgroundColor: "rgba(25, 135, 84, 0.12)",
+          borderWidth: 2,
+          pointRadius: 2.5,
+          pointHoverRadius: 4,
+          tension: 0.25,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 650,
+        easing: "easeOutQuart",
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: "bottom",
+          labels: {
+            boxWidth: 10,
+            boxHeight: 10,
+            usePointStyle: true,
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.dataset.label}: ${formatPeso(context.raw)}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: {
+            display: false,
+          },
+          ticks: {
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 5,
+          },
+        },
+        y: {
+          beginAtZero: false,
+          ticks: {
+            callback: (value) => `\u20b1${Number(value).toFixed(0)}`,
+            maxTicksLimit: 5,
+          },
+          grid: {
+            color: "rgba(15, 23, 42, 0.06)",
+          },
+        },
+      },
+    },
   });
 }
 
@@ -1055,7 +1258,8 @@ function renderRankingChart(canvasId, emptyId, rows, chartType) {
           borderColor: "#d99a00",
           borderWidth: 1,
           borderRadius: 5,
-          barThickness: 16,
+          barThickness: 12,
+          maxBarThickness: 12,
         },
         {
           label: "Unleaded",
@@ -1064,7 +1268,8 @@ function renderRankingChart(canvasId, emptyId, rows, chartType) {
           borderColor: "#146c43",
           borderWidth: 1,
           borderRadius: 5,
-          barThickness: 16,
+          barThickness: 12,
+          maxBarThickness: 12,
         },
       ],
     },

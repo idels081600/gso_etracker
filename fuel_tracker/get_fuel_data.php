@@ -574,6 +574,29 @@ function getFuelConsumptionRankings(): array
     }
 }
 
+function getWeeklyFuelPrices(): array
+{
+    global $conn;
+
+    try {
+        return [
+            'success' => true,
+            'data' => [
+                'latest' => fuelBudgetLatestWeeklyFuelPrice($conn),
+                'history' => fuelBudgetWeeklyFuelPriceHistory($conn, 12),
+            ],
+            'message' => 'Weekly fuel prices retrieved successfully',
+        ];
+    } catch (Throwable $e) {
+        logError('Error in getWeeklyFuelPrices: ' . $e->getMessage());
+        return [
+            'success' => false,
+            'data' => ['latest' => null, 'history' => []],
+            'message' => 'Error retrieving weekly fuel prices',
+        ];
+    }
+}
+
 // Handle different request types
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = isset($_GET['action']) ? $_GET['action'] : 'all';
@@ -651,6 +674,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $response = getFuelConsumptionRankings();
             break;
 
+        case 'weekly_fuel_prices':
+            $response = getWeeklyFuelPrices();
+            break;
+
         case 'single':
             if (isset($_GET['id'])) {
                 $id = intval($_GET['id']);
@@ -674,7 +701,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         default:
             $response = [
                 'success' => false,
-                'message' => 'Invalid action specified: ' . $action . '. Valid actions: all, filtered, statistics, filtered_statistics, budget_summary, budget_deductions, draft_budget_issuances, consumption_rankings, single'
+                'message' => 'Invalid action specified: ' . $action . '. Valid actions: all, filtered, statistics, filtered_statistics, budget_summary, budget_deductions, draft_budget_issuances, consumption_rankings, weekly_fuel_prices, single'
             ];
     }
 
