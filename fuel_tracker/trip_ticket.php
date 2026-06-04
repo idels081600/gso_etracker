@@ -47,6 +47,32 @@ function tripFormatNumber(float $value): string
     return rtrim(rtrim($formatted, '0'), '.') ?: '0';
 }
 
+function tripIssuanceOfficeBySerial(mysqli $conn, string $serialNo): string
+{
+    $serialNo = trim($serialNo);
+    if ($serialNo === '') {
+        return '';
+    }
+
+    $stmt = $conn->prepare("
+        SELECT COALESCE(NULLIF(TRIM(gi.office), ''), NULLIF(TRIM(v.office), ''), '') AS office
+        FROM gas_issuances gi
+        LEFT JOIN vehicles v ON v.id = gi.vehicle_id
+        WHERE gi.serial_no = ?
+        LIMIT 1
+    ");
+    if (!$stmt) {
+        return '';
+    }
+
+    $stmt->bind_param('s', $serialNo);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return trim((string) ($row['office'] ?? ''));
+}
+
 class TripTicketPdf extends TCPDF
 {
     public function Header(): void
@@ -101,7 +127,9 @@ function drawFuelLine(
     $pdf->Cell(20, 4.5, $unit, 0, 0, 'L');
 }
 
-$officeName = tripParam('office', '(Name of Office)');
+$serialNo = tripParam('serial_no', 'TT-SAMPLE');
+$issuanceOfficeName = tripIssuanceOfficeBySerial($conn, $serialNo);
+$officeName = tripParam('office', $issuanceOfficeName !== '' ? $issuanceOfficeName : '(Name of Office)');
 $dateLabel = tripDateLabel(tripParam('date', date('Y-m-d')));
 $driver = strtoupper(tripParam('driver', 'ROLLY PILOT'));
 $plateNo = strtoupper(tripParam('plate_no', 'MULTI 16 GAE 9098'));
@@ -111,7 +139,6 @@ $purpose = tripParam('purpose', '');
 $approvedBy = strtoupper(tripParam('approved_by', 'CHRIS JOHN RENER G. TORRALBA'));
 $approverTitle = tripParam('approver_title', 'Chief of Bureau or Office or his Duly Authorized Representative');
 $vehicle = strtoupper(tripParam('vehicle', ''));
-$serialNo = tripParam('serial_no', 'TT-SAMPLE');
 $driverSignature = fuelTrackerFetchDriverSignature($conn, $serialNo);
 $outputMode = isset($_GET['download']) && $_GET['download'] === '1' ? 'D' : 'I';
 
@@ -158,16 +185,24 @@ $pdf->SetDrawColor(0, 0, 0);
 $pdf->SetLineWidth(0.18);
 $pdf->SetTextColor(0, 0, 0);
 
+$pdf->SetFont('times', '', 8);
+$pdf->SetXY(0, 14);
+$pdf->Cell(216, 4, 'Republic of the Philippines', 0, 1, 'C');
+$pdf->SetXY(0, 19);
+$pdf->Cell(216, 4, 'Department of Interior & Local Government', 0, 1, 'C');
+$pdf->SetXY(0, 24);
+$pdf->Cell(216, 4, 'City Government of Tagbilaran', 0, 1, 'C');
+
 $pdf->SetFont('times', '', 9);
-drawValueLine($pdf, 82, 25, 44, $officeName);
-$pdf->SetXY(82, 26);
+drawValueLine($pdf, 82, 34, 44, $officeName);
+$pdf->SetXY(82, 35);
 $pdf->Cell(44, 4, '(Name of Office)', 0, 0, 'C');
 drawValueLine($pdf, 150, 34, 34, $dateLabel);
 $pdf->SetXY(151, 35);
 $pdf->Cell(32, 4, '(Date)', 0, 0, 'C');
 
 $pdf->SetFont('times', 'B', 11);
-$pdf->SetXY(0, 44);
+$pdf->SetXY(0, 48);
 $pdf->Cell(210, 6, "DRIVER'S TRIP TICKET", 0, 1, 'C');
 
 $pdf->SetFont('times', '', 8.7);
