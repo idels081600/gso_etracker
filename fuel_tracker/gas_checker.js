@@ -163,7 +163,7 @@ function markSignatureSigned() {
 function updateSignatureValue() {
     const signatureInput = document.getElementById('checkSignature');
     if (signatureInput && signatureCanvas && hasSignature) {
-        signatureInput.value = signatureCanvas.toDataURL('image/jpeg', 0.92);
+        signatureInput.value = signatureCanvas.toDataURL('image/png');
     }
 }
 
