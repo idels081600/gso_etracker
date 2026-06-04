@@ -26,9 +26,10 @@ $params = [$user_id];
 $param_types = "i";
 
 if ($date_filter) {
-    $where_conditions[] = "DATE(date_requested) = ?";
-    $params[] = $date_filter;
-    $param_types .= "s";
+    $where_conditions[] = "date_requested >= ? AND date_requested < ?";
+    $params[] = $date_filter . ' 00:00:00';
+    $params[] = date('Y-m-d', strtotime($date_filter . ' +1 day')) . ' 00:00:00';
+    $param_types .= "ss";
 }
 
 if ($status_filter !== 'all') {
@@ -76,9 +77,10 @@ $stats_param_types = "i";
 
 // Add date filter to stats if date is selected
 if ($date_filter) {
-    $stats_where_conditions[] = "DATE(date_requested) = ?";
-    $stats_params[] = $date_filter;
-    $stats_param_types .= "s";
+    $stats_where_conditions[] = "date_requested >= ? AND date_requested < ?";
+    $stats_params[] = $date_filter . ' 00:00:00';
+    $stats_params[] = date('Y-m-d', strtotime($date_filter . ' +1 day')) . ' 00:00:00';
+    $stats_param_types .= "ss";
 }
 
 $stats_where_clause = implode(" AND ", $stats_where_conditions);

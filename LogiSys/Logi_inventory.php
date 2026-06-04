@@ -8,7 +8,7 @@ require_once 'logi_db.php';
 // }
 $username = $_SESSION['username'];
 $user_role = $_SESSION['role'];
-$logi_all_data = display_inventory_items(); // Fetch inventory items from the database 
+$logi_all_data = display_inventory_items(25); // Fetch the first page quickly; pagination loads the rest.
 function getStatusBadge($status)
 {
     switch ($status) {
@@ -34,7 +34,6 @@ function getStatusBadge($status)
     <title>Inventory management</title>
     <link rel="stylesheet" href="logi_inventory.css">
     <link rel="stylesheet" href="Logi_req.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
 </head>
@@ -109,7 +108,7 @@ function getStatusBadge($status)
                         <!-- Action buttons row -->
                         <div class="row mb-3">
                             <div class="col-12">
-                                <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                                     <!-- Action Buttons - on the left -->
                                     <div class="btn-group" role="group">
                                         <button type="button" class="btn btn-success btn-sm" id="addItemBtn" data-bs-toggle="modal" data-bs-target="#addItemModal">
@@ -133,11 +132,44 @@ function getStatusBadge($status)
                                     </div>
 
                                     <!-- Search Bar - justified to the right -->
-                                    <div class="input-group" style="width: 300px;">
-                                        <input type="text" class="form-control" id="searchInput" placeholder="Search items...">
+                                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                                        <select class="form-select form-select-sm" id="inventoryStatusFilter" style="width: 160px;">
+                                            <option value="">All Status</option>
+                                            <option value="available">Available</option>
+                                            <option value="low">Low Stock</option>
+                                            <option value="out">Out of Stock</option>
+                                            <option value="expiring">Expiring Soon</option>
+                                        </select>
+                                        <select class="form-select form-select-sm" id="inventoryPerPage" style="width: 90px;">
+                                            <option value="25" selected>25 rows</option>
+                                            <option value="50">50 rows</option>
+                                            <option value="100">100 rows</option>
+                                        </select>
+                                        <div class="input-group" style="width: 300px;">
+                                            <input type="text" class="form-control" id="searchInput" placeholder="Search items...">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="inventory-summary-strip mb-3" aria-label="Inventory summary">
+                            <button type="button" class="inventory-summary-item" data-inventory-filter="">
+                                <span class="summary-label">Total</span>
+                                <strong id="inventoryTotalItems">--</strong>
+                            </button>
+                            <button type="button" class="inventory-summary-item" data-inventory-filter="low">
+                                <span class="summary-label">Low Stock</span>
+                                <strong id="inventoryLowItems">--</strong>
+                            </button>
+                            <button type="button" class="inventory-summary-item" data-inventory-filter="out">
+                                <span class="summary-label">Out</span>
+                                <strong id="inventoryOutItems">--</strong>
+                            </button>
+                            <button type="button" class="inventory-summary-item" data-inventory-filter="expiring">
+                                <span class="summary-label">Expiring</span>
+                                <strong id="inventoryExpiringItems">--</strong>
+                            </button>
                         </div>
 
                         <!-- Inventory Table -->
@@ -159,7 +191,7 @@ function getStatusBadge($status)
                                             <th>Status</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody id="inventoryTableBody">
                                         <?php
                                         // Check if there are any results
                                         if (mysqli_num_rows($logi_all_data) > 0) {
@@ -251,6 +283,17 @@ function getStatusBadge($status)
                                 </table>
                             </div>
                         </div>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" id="inventoryPaginationBar">
+                            <div class="small text-muted" id="inventoryPageInfo">Loading inventory...</div>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Inventory pagination">
+                                <button type="button" class="btn btn-outline-secondary" id="inventoryPrevPage">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="inventoryNextPage">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -300,6 +343,12 @@ function getStatusBadge($status)
                             <label for="balance" class="form-label">Current Balance</label>
                             <input type="number" class="form-control" id="balance" name="balance" min="0" placeholder="0" required>
                             <div class="form-text">Current available quantity</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="lowStockThreshold" class="form-label">Low Stock Alert</label>
+                            <input type="number" class="form-control" id="lowStockThreshold" name="lowStockThreshold" min="1" value="10">
+                            <div class="form-text">Item is flagged as low stock at or below this quantity</div>
                         </div>
 
                         <div class="row">
@@ -462,6 +511,12 @@ function getStatusBadge($status)
                             <label for="updateBalance" class="form-label">Current Balance</label>
                             <input type="number" class="form-control" id="updateBalance" name="balance" min="0" required>
                             <div class="form-text">Current available quantity</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="updateLowStockThreshold" class="form-label">Low Stock Alert</label>
+                            <input type="number" class="form-control" id="updateLowStockThreshold" name="lowStockThreshold" min="1" value="10">
+                            <div class="form-text">Item is flagged as low stock at or below this quantity</div>
                         </div>
 
                         <div class="mb-3">

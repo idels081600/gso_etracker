@@ -46,9 +46,10 @@ $params = [];
 $param_types = "";
 
 if ($date_filter) {
-    $where_conditions[] = "DATE(date_requested) = ?";
-    $params[] = $date_filter;
-    $param_types .= "s";
+    $where_conditions[] = "date_requested >= ? AND date_requested < ?";
+    $params[] = $date_filter . ' 00:00:00';
+    $params[] = date('Y-m-d', strtotime($date_filter . ' +1 day')) . ' 00:00:00';
+    $param_types .= "ss";
 }
 
 if ($status_filter !== 'all') {
@@ -220,12 +221,12 @@ if (isset($requests_stmt)) {
 
                                         // Apply date filter - show requests BEFORE the selected date
                                         if ($date_filter) {
-                                            $recent_where_conditions[] = "DATE(date_requested) < ?";
-                                            $recent_params[] = $date_filter;
+                                            $recent_where_conditions[] = "date_requested < ?";
+                                            $recent_params[] = $date_filter . ' 00:00:00';
                                             $recent_param_types .= "s";
                                         } else {
                                             // Show requests before today if no date filter
-                                            $recent_where_conditions[] = "DATE(date_requested) < CURDATE()";
+                                            $recent_where_conditions[] = "date_requested < CURDATE()";
                                         }
 
                                         // Apply status filter

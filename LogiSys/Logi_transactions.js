@@ -617,9 +617,13 @@ if (submitStockInBtn) {
         if (typeof clearSelection === 'function') clearSelection();
         if (typeof resetSummary === 'function') resetSummary();
 
-        // Reload page after 1.5 seconds to show updated data
+        // Refresh the paginated table after the user sees the success feedback.
         setTimeout(() => {
-          location.reload();
+          if (typeof window.refreshTransactionsTable === 'function') {
+            window.refreshTransactionsTable();
+          } else {
+            location.reload();
+          }
         }, 1500);
       } else {
         // Show error message using Bootstrap modal
@@ -734,9 +738,13 @@ if (stockOutForm) {
           stockOutModal.hide();
         }
 
-        // Reload page after 1.5 seconds to show updated data
+        // Refresh the paginated table after the user sees the success feedback.
         setTimeout(() => {
-          location.reload();
+          if (typeof window.refreshTransactionsTable === 'function') {
+            window.refreshTransactionsTable();
+          } else {
+            location.reload();
+          }
         }, 1500);
       } else {
         // Show error message using Bootstrap modal
@@ -760,56 +768,257 @@ if (stockOutForm) {
   });
 }
 
-// Transaction search bar filter
-
+// Transaction table pagination and server-side filtering
 document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('transactionSearchInput');
-    const tableBody = document.getElementById('transactionsTableBody');
-    if (searchInput && tableBody) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const rows = tableBody.querySelectorAll('tr');
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                let rowText = row.textContent.toLowerCase();
-                // Also specifically check cell 0 (date)
-                let dateText = '';
-                if (cells.length > 0) {
-                    dateText = cells[0].textContent.toLowerCase();
-                }
-                if (rowText.includes(searchTerm) || dateText.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-    }
-});
+  const tableBody = document.getElementById('transactionsTableBody');
+  const searchInput = document.getElementById('transactionSearchInput');
+  const typeSelect = document.getElementById('transactionType');
+  const dateFromInput = document.getElementById('dateFrom');
+  const dateToInput = document.getElementById('dateTo');
+  const perPageSelect = document.getElementById('transactionsPerPage');
+  const pageInfo = document.getElementById('transactionsPageInfo');
+  const prevButton = document.getElementById('transactionsPrevPage');
+  const nextButton = document.getElementById('transactionsNextPage');
+  const exportButton = document.getElementById('exportBtn');
 
-// Transaction type filter
+  if (!tableBody) return;
 
-document.addEventListener('DOMContentLoaded', function() {
-    const typeSelect = document.getElementById('transactionType');
-    const tableBody = document.getElementById('transactionsTableBody');
-    if (typeSelect && tableBody) {
-        typeSelect.addEventListener('change', function() {
-            const selectedType = this.value.toLowerCase();
-            const rows = tableBody.querySelectorAll('tr');
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                let typeText = '';
-                if (cells.length >= 7) {
-                    typeText = cells[7].textContent.trim().toLowerCase();
-                }
-                if (!selectedType || typeText.includes(selectedType)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
+  let currentPage = 1;
+  let totalPages = 1;
+  let totalRows = 0;
+  let searchTimer = null;
+  let lastRows = [];
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function getFilters() {
+    return {
+      search: searchInput?.value.trim() || '',
+      type: typeSelect?.value || '',
+      date_from: dateFromInput?.value || '',
+      date_to: dateToInput?.value || '',
+      per_page: perPageSelect?.value || '25',
+    };
+  }
+
+  function setLoadingState() {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="9" class="text-center py-4 text-muted">
+          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+          Loading transactions...
+        </td>
+      </tr>
+    `;
+    if (pageInfo) pageInfo.textContent = 'Loading transactions...';
+    if (prevButton) prevButton.disabled = true;
+    if (nextButton) nextButton.disabled = true;
+  }
+
+  function getSignedQuantity(row) {
+    const quantity = Math.abs(parseInt(row.quantity, 10) || 0);
+    const previousBalance = parseInt(row.previous_balance, 10) || 0;
+    const newBalance = parseInt(row.new_balance, 10) || 0;
+    return newBalance > previousBalance ? `+${quantity}` : `-${quantity}`;
+  }
+
+  function getTransactionBadge(row) {
+    const previousBalance = parseInt(row.previous_balance, 10) || 0;
+    const newBalance = parseInt(row.new_balance, 10) || 0;
+    const isAddition = newBalance > previousBalance;
+    return {
+      className: isAddition ? 'bg-success' : 'bg-danger',
+      icon: isAddition ? 'fas fa-plus' : 'fas fa-minus',
+    };
+  }
+
+  function renderRows(rows) {
+    lastRows = rows;
+    if (!rows.length) {
+      tableBody.innerHTML = `
+        <tr id="noTransactionsRow">
+          <td colspan="9" class="text-center">
+            <div class="py-4">
+              <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">No transactions found</h5>
+              <p class="text-muted mb-0">Try adjusting the search, date range, or transaction type.</p>
+            </div>
+          </td>
+        </tr>
+      `;
+      return;
     }
+
+    tableBody.innerHTML = rows.map((row) => {
+      const badge = getTransactionBadge(row);
+      return `
+        <tr>
+          <td>${escapeHtml(row.created_at)}</td>
+          <td>${escapeHtml(row.item_name)}</td>
+          <td>${escapeHtml(getSignedQuantity(row))}</td>
+          <td>${escapeHtml(row.previous_balance)}</td>
+          <td>${escapeHtml(row.new_balance)}</td>
+          <td>${escapeHtml(row.reason)}</td>
+          <td>${escapeHtml(row.requestor)}</td>
+          <td>
+            <span class="badge ${badge.className}">
+              <i class="${badge.icon}"></i> ${escapeHtml(row.transaction_type)}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-warning btn-sm undo-transaction-btn" data-transaction-id="${escapeHtml(row.id)}">
+              <i class="fas fa-undo"></i> Undo
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function updatePagination(data) {
+    currentPage = data.page;
+    totalPages = data.total_pages;
+    totalRows = data.total;
+
+    if (pageInfo) {
+      const perPage = parseInt(data.per_page, 10) || 25;
+      const start = totalRows === 0 ? 0 : ((currentPage - 1) * perPage) + 1;
+      const end = Math.min(currentPage * perPage, totalRows);
+      pageInfo.textContent = `${start}-${end} of ${totalRows} transactions | Page ${currentPage} of ${totalPages}`;
+    }
+
+    if (prevButton) prevButton.disabled = currentPage <= 1;
+    if (nextButton) nextButton.disabled = currentPage >= totalPages;
+  }
+
+  function fetchTransactions(page = 1) {
+    currentPage = page;
+    const filters = getFilters();
+    const params = new URLSearchParams({
+      page: String(currentPage),
+      per_page: filters.per_page,
+      search: filters.search,
+      type: filters.type,
+      date_from: filters.date_from,
+      date_to: filters.date_to,
+    });
+
+    setLoadingState();
+
+    fetch(`Logi_fetch_transactions.php?${params.toString()}`)
+      .then((response) => {
+        if (!response.ok) throw new Error('Failed to load transactions');
+        return response.json();
+      })
+      .then((data) => {
+        if (!data.success) throw new Error(data.message || 'Failed to load transactions');
+        renderRows(data.rows || []);
+        updatePagination(data);
+      })
+      .catch((error) => {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="text-center py-4 text-danger">
+              <i class="fas fa-exclamation-triangle me-1"></i>
+              ${escapeHtml(error.message)}
+            </td>
+          </tr>
+        `;
+        if (pageInfo) pageInfo.textContent = 'Unable to load transactions.';
+      });
+  }
+
+  function resetAndFetch() {
+    fetchTransactions(1);
+  }
+
+  window.refreshTransactionsTable = function() {
+    fetchTransactions(currentPage);
+  };
+
+  searchInput?.addEventListener('input', function() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(resetAndFetch, 300);
+  });
+  typeSelect?.addEventListener('change', resetAndFetch);
+  dateFromInput?.addEventListener('change', resetAndFetch);
+  dateToInput?.addEventListener('change', resetAndFetch);
+  perPageSelect?.addEventListener('change', resetAndFetch);
+
+  prevButton?.addEventListener('click', function() {
+    if (currentPage > 1) fetchTransactions(currentPage - 1);
+  });
+
+  nextButton?.addEventListener('click', function() {
+    if (currentPage < totalPages) fetchTransactions(currentPage + 1);
+  });
+
+  tableBody.addEventListener('click', function(event) {
+    const button = event.target.closest('.undo-transaction-btn');
+    if (!button) return;
+
+    const transactionId = button.getAttribute('data-transaction-id');
+    if (!transactionId || !confirm('Are you sure you want to undo this transaction?')) return;
+
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Undoing...';
+
+    fetch('Logi_undo_transaction.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'transaction_id=' + encodeURIComponent(transactionId)
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          alert('Transaction undone successfully!');
+          fetchTransactions(currentPage);
+        } else {
+          alert('Failed to undo transaction: ' + (data.message || 'Unknown error'));
+          fetchTransactions(currentPage);
+        }
+      })
+      .catch((error) => {
+        alert('Error: ' + error.message);
+        fetchTransactions(currentPage);
+      });
+  });
+
+  exportButton?.addEventListener('click', function() {
+    if (!lastRows.length) {
+      alert('No transactions to export on this page.');
+      return;
+    }
+
+    const headers = ['Date & Time', 'Item Name', 'Quantity', 'Previous Balance', 'New Balance', 'Reason', 'Requestor', 'Transaction Type'];
+    const csvRows = [headers].concat(lastRows.map((row) => [
+      row.created_at,
+      row.item_name,
+      getSignedQuantity(row),
+      row.previous_balance,
+      row.new_balance,
+      row.reason,
+      row.requestor,
+      row.transaction_type,
+    ]));
+    const csv = csvRows.map((row) => row.map((value) => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'transactions-page.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+
+  fetchTransactions(1);
 });
 
 // Edit Quantity Modal functionality

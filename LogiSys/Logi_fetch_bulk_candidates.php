@@ -44,9 +44,10 @@ try {
         $params[] = $office;
     }
     if ($date !== '') {
-        $conditions[] = 'DATE(ir.date_requested) = ?';
-        $types .= 's';
-        $params[] = $date;
+        $conditions[] = 'ir.date_requested >= ? AND ir.date_requested < ?';
+        $types .= 'ss';
+        $params[] = $date . ' 00:00:00';
+        $params[] = date('Y-m-d', strtotime($date . ' +1 day')) . ' 00:00:00';
     }
 
     if (!empty($conditions)) {

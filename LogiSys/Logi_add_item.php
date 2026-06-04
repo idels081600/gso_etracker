@@ -33,6 +33,17 @@ function handleError($message, $error = null) {
 
 require_once 'logi_db.php';
 
+function hasInventoryColumn($conn, $column) {
+    $stmt = $conn->prepare("SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_items' AND COLUMN_NAME = ?");
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param("s", $column);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return ((int)($result->fetch_assoc()['count'] ?? 0)) > 0;
+}
+
 // Log the start of the script
 error_log("=== STARTING ITEM ADDITION PROCESS ===");
 error_log("Request Method: " . $_SERVER["REQUEST_METHOD"]);
@@ -47,6 +58,7 @@ $create_table_query = "CREATE TABLE IF NOT EXISTS inventory_items (
     rack_no INT NOT NULL,
     unit VARCHAR(50) NOT NULL,
     current_balance INT NOT NULL DEFAULT 0,
+    low_stock_threshold INT NOT NULL DEFAULT 10,
     description TEXT,
     status VARCHAR(50) DEFAULT 'Available',
     expiry_date DATE NULL,
@@ -84,7 +96,9 @@ try {
     $rack_no = (int)$_POST['rackNo'];
     $unit = mysqli_real_escape_string($conn, $_POST['unit']);
     $current_balance = (int)$_POST['balance'];
+    $low_stock_threshold = max(1, (int)($_POST['lowStockThreshold'] ?? 10));
     $description = mysqli_real_escape_string($conn, $_POST['description'] ?? '');
+    $has_low_stock_threshold = hasInventoryColumn($conn, 'low_stock_threshold');
 
     // Log sanitized data
     error_log("=== SANITIZED DATA ===");
@@ -113,7 +127,7 @@ try {
 
     if ($current_balance == 0) {
         $status = 'Out of Stock';
-    } elseif ($current_balance <= 10) {
+    } elseif ($current_balance <= $low_stock_threshold) {
         $status = 'Low Stock';
     }
 
@@ -162,7 +176,11 @@ try {
     }
 
     // Prepare and bind - Updated to include expiry fields
-    $insert_query = "INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    if ($has_low_stock_threshold) {
+        $insert_query = "INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, low_stock_threshold, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    } else {
+        $insert_query = "INSERT INTO inventory_items (item_no, item_name, rack_no, unit, current_balance, description, status, expiry_date, expiry_alert_days, expiry_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    }
     error_log("Insert query: " . $insert_query);
 
     $stmt = $conn->prepare($insert_query);
@@ -170,7 +188,11 @@ try {
         handleError("Prepare insert failed", $conn->error);
     }
 
-    $stmt->bind_param("ssisisssis", $item_no, $item_name, $rack_no, $unit, $current_balance, $description, $status, $expiry_date, $expiry_alert_days, $expiry_status);
+    if ($has_low_stock_threshold) {
+        $stmt->bind_param("ssisiisssis", $item_no, $item_name, $rack_no, $unit, $current_balance, $low_stock_threshold, $description, $status, $expiry_date, $expiry_alert_days, $expiry_status);
+    } else {
+        $stmt->bind_param("ssisisssis", $item_no, $item_name, $rack_no, $unit, $current_balance, $description, $status, $expiry_date, $expiry_alert_days, $expiry_status);
+    }
 
     // Execute the statement
     if (!$stmt->execute()) {
@@ -189,6 +211,7 @@ try {
             'rack_no' => $rack_no,
             'unit' => $unit,
             'current_balance' => $current_balance,
+            'low_stock_threshold' => $low_stock_threshold,
             'status' => $status,
             'expiry_date' => $expiry_date,
             'expiry_alert_days' => $expiry_alert_days,

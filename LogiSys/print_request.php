@@ -5,6 +5,7 @@ require_once('logi_db.php');
 class PDF extends FPDF
 {
     private $officeHeadNames = [];
+    private $compactMode = false;
 
     function setOfficeHeadName($name)
     {
@@ -69,76 +70,57 @@ class PDF extends FPDF
     {
         $logoLeft = 'tagbi_seal.png';
         $logoRight = 'logo.png';
+        $logoSize = $this->compactMode ? 15 : 20;
+        $headerFont = $this->compactMode ? 9 : 12;
+        $lineHeight = $this->compactMode ? 4 : 5;
+        $textOffsetX = $this->compactMode ? 20 : 25;
+        $rightLogoOffset = $this->compactMode ? 148 : 145;
 
         // Position logos relative to table position
-        $this->Image($logoLeft, $x, $y, 20);
-        $this->Image($logoRight, $x + 145, $y, 20);
+        $this->Image($logoLeft, $x, $y, $logoSize);
+        $this->Image($logoRight, $x + $rightLogoOffset, $y, $logoSize);
 
-        $this->SetFont('Arial', 'B', 12);
-        $this->SetXY($x + 25, $y + 2);
-        $this->Cell(115, 5, 'Republic of the Philippines', 0, 1, 'C');
-        $this->SetXY($x + 25, $y + 7);
-        $this->Cell(115, 5, 'City Government of Tagbilaran', 0, 1, 'C');
-        $this->SetXY($x + 25, $y + 12);
-        $this->Cell(115, 5, 'General Services Office', 0, 1, 'C');
+        $this->SetFont('Arial', 'B', $headerFont);
+        $this->SetXY($x + $textOffsetX, $y + 1);
+        $this->Cell(120, $lineHeight, 'Republic of the Philippines', 0, 1, 'C');
+        $this->SetXY($x + $textOffsetX, $y + 1 + $lineHeight);
+        $this->Cell(120, $lineHeight, 'City Government of Tagbilaran', 0, 1, 'C');
+        $this->SetXY($x + $textOffsetX, $y + 1 + (2 * $lineHeight));
+        $this->Cell(120, $lineHeight, 'General Services Office', 0, 1, 'C');
 
-        return $y + 28; // Return Y position after header
+        return $y + ($this->compactMode ? 18 : 28); // Return Y position after header
     }
 
     // Calculate dynamic layout based on total rows
     function getDynamicLayout($totalRows)
     {
-        $layout = [];
+        // Keep table text readable like an office document. When there are many
+        // rows, paginate instead of shrinking below 12pt.
         if ($totalRows <= 20) {
-            $layout = [
+            return [
                 'titleFont' => 14,
-                'infoFont' => 10,
-                'headerFont' => 10,
-                'rowFont' => 9,
-                'rowHeight' => 6,
-                'headerRowHeight' => 8,
+                'infoFont' => 12,
+                'headerFont' => 12,
+                'rowFont' => 12,
+                'rowHeight' => 9,
+                'headerRowHeight' => 9,
                 'titleCellHeight' => 8,
-                'infoLineHeight' => 6,
+                'infoLineHeight' => 7,
                 'afterInfoGap' => 5,
             ];
-        } elseif ($totalRows <= 40) {
-            $layout = [
-                'titleFont' => 12,
-                'infoFont' => 9,
-                'headerFont' => 9,
-                'rowFont' => 8,
-                'rowHeight' => 5.5,
-                'headerRowHeight' => 7,
-                'titleCellHeight' => 7,
-                'infoLineHeight' => 5,
-                'afterInfoGap' => 4,
-            ];
-        } elseif ($totalRows <= 70) {
-            $layout = [
-                'titleFont' => 11,
-                'infoFont' => 8,
-                'headerFont' => 8,
-                'rowFont' => 7,
-                'rowHeight' => 5,
-                'headerRowHeight' => 6,
-                'titleCellHeight' => 6,
-                'infoLineHeight' => 5,
-                'afterInfoGap' => 3,
-            ];
-        } else {
-            $layout = [
-                'titleFont' => 10,
-                'infoFont' => 7,
-                'headerFont' => 7,
-                'rowFont' => 6,
-                'rowHeight' => 4.5,
-                'headerRowHeight' => 5.5,
-                'titleCellHeight' => 5.5,
-                'infoLineHeight' => 4.5,
-                'afterInfoGap' => 2.5,
-            ];
         }
-        return $layout;
+
+        return [
+            'titleFont' => 13,
+            'infoFont' => 12,
+            'headerFont' => 12,
+            'rowFont' => 12,
+            'rowHeight' => 8,
+            'headerRowHeight' => 9,
+            'titleCellHeight' => 8,
+            'infoLineHeight' => 7,
+            'afterInfoGap' => 4,
+        ];
     }
 
     // Render one table (with header, title, info, header row, and a segment of rows)
@@ -177,11 +159,15 @@ class PDF extends FPDF
         // Rows calculation
         $currentY = $this->GetY();
         $pageHeight = method_exists($this, 'GetPageHeight') ? $this->GetPageHeight() : $this->h;
-        $availableHeight = $pageHeight - 40 - $currentY; // keep 40mm for footer/signatures
-        $possibleRows = (int)floor(max(0, $availableHeight) / $layout['rowHeight']);
+        $availableHeight = $pageHeight - 35 - $currentY; // keep space for footer/signatures
+        $possibleRows = max(1, (int)floor(max(0, $availableHeight) / $layout['rowHeight']));
         $totalRows = count($data);
         $remaining = max(0, $totalRows - $startIndex);
-        $rowsToRender = ($maxRows === null) ? min($possibleRows, $remaining) : min($possibleRows, $remaining, $maxRows);
+        if (!empty($layout['forceRows'])) {
+            $rowsToRender = ($maxRows === null) ? $remaining : min($remaining, $maxRows);
+        } else {
+            $rowsToRender = ($maxRows === null) ? min($possibleRows, $remaining) : min($possibleRows, $remaining, $maxRows);
+        }
 
         // Data rows
         $this->SetFont('Arial', '', $layout['rowFont']);
@@ -227,15 +213,14 @@ class PDF extends FPDF
         $totalRows = count($data);
         $pageHeight = method_exists($this, 'GetPageHeight') ? $this->GetPageHeight() : $this->h;
 
-        // Reserve space for footer/signatures; keep consistent with Footer() content
-        $bottomReserve = 40; // mm
-        $headerEndY = $startY + 28; // from renderTableHeader()
+        // Reserve space for footer/signatures; compact mode keeps everything on one page.
+        $bottomReserve = 34; // mm
+        $headerEndY = $startY + 18; // compact renderTableHeader()
 
-        // Base layout (will be scaled down aggressively)
-        $baseTitleCellH = 6.0;
+        $baseTitleCellH = 5.0;
         $baseInfoLineH  = 4.0;
         $baseHeaderRowH = 5.0;
-        $afterInfoGap   = 2.0;
+        $afterInfoGap   = 1.0;
 
         // Compute available height for rows given the fixed parts above
         $tableY    = $headerEndY + 2 + $baseTitleCellH + 1 + (2 * $baseInfoLineH) + $afterInfoGap;
@@ -243,19 +228,15 @@ class PDF extends FPDF
         $availH    = $pageHeight - $bottomReserve - $currentY;
         if ($availH < 5) { $availH = 5; }
 
-        // Exact row height to make all rows fit on one page
-        $rowHeight = ($totalRows > 0) ? ($availH / $totalRows) : 4.0;
+        $rowHeight = ($totalRows > 0) ? max(1.8, $availH / $totalRows) : 6.0;
+        $rowFont = max(4.5, min(10.0, $rowHeight * 1.3));
+        $headerFont = max(6.5, min(9.0, $rowFont + 0.5));
+        $infoFont = max(7.0, min(9.0, $rowFont + 0.5));
+        $titleFont = max(9.0, min(11.0, $rowFont + 2.0));
 
-        // Derive minimal but readable font sizes from the computed row height
-        $rowFont        = max(3.0, min(8.0, $rowHeight + 2.0));
-        $headerFont     = max(5.0, min(9.0, $rowFont));
-        $infoFont       = max(5.0, min(9.0, $rowFont - 1.0));
-        $titleFont      = max(7.0, min(12.0, $rowFont + 2.0));
-
-        // Scale non-row heights down slightly if rows are tiny
-        $titleCellH     = max(3.0, min($baseTitleCellH, $rowHeight + 2.0));
-        $infoLineH      = max(3.0, min($baseInfoLineH, $rowHeight + 1.5));
-        $headerRowH     = max(3.0, min($baseHeaderRowH, $rowHeight + 1.5));
+        $titleCellH = $baseTitleCellH;
+        $infoLineH = $baseInfoLineH;
+        $headerRowH = $baseHeaderRowH;
 
         $layoutFinal = [
             'titleFont'       => $titleFont,
@@ -267,13 +248,16 @@ class PDF extends FPDF
             'headerRowHeight' => $headerRowH,
             'rowHeight'       => $rowHeight,
             'afterInfoGap'    => $afterInfoGap,
+            'forceRows'       => true,
         ];
 
         // Render once on a single page (both left and right sides)
         $this->setOfficeHeadName($officeHeadName);
         $this->AddPage();
+        $this->compactMode = true;
         $renderedLeft = $this->renderSingleTablePage($leftX, $startY, $title, $requestInfo, $header, $data, 0, $layoutFinal, $totalRows);
         $this->renderSingleTablePage($rightX, $startY, $title, $approvedInfo, $header, $data, 0, $layoutFinal, $renderedLeft);
+        $this->compactMode = false;
     }
 }
 
@@ -366,9 +350,10 @@ ORDER BY date_requested DESC;"; // Get only the latest request
             $rightTableX = $leftTableX + $tableWidth + $gapWidth; // 185
 
             // Starting Y position for both tables
-            $startY = 10;
+            $startY = 5;
 
-            // Render both tables on a single page by scaling down to fit
+            // Compact one-page print: reduce spacing and font as needed so the
+            // office/request copy pair stays on one page.
             $pdf->renderBothTablesSinglePage(
                 $leftTableX,
                 $rightTableX,

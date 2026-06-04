@@ -54,9 +54,10 @@ $params = [];
 $param_types = "";
 
 if ($date_filter) {
-    $where_conditions[] = "DATE(date_requested) = ?";
-    $params[] = $date_filter;
-    $param_types .= "s";
+    $where_conditions[] = "date_requested >= ? AND date_requested < ?";
+    $params[] = $date_filter . ' 00:00:00';
+    $params[] = date('Y-m-d', strtotime($date_filter . ' +1 day')) . ' 00:00:00';
+    $param_types .= "ss";
 }
 
 if ($status_filter !== 'all') {

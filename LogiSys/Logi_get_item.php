@@ -9,9 +9,21 @@ header('Content-Type: application/json');
 
 require_once 'logi_db.php';
 
+function hasInventoryColumn($conn, $column) {
+    $stmt = $conn->prepare("SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_items' AND COLUMN_NAME = ?");
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param("s", $column);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return ((int)($result->fetch_assoc()['count'] ?? 0)) > 0;
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['item_no'])) {
     try {
         $item_no = mysqli_real_escape_string($conn, $_POST['item_no']);
+        $has_low_stock_threshold = hasInventoryColumn($conn, 'low_stock_threshold');
 
         // Get item details from database
         $query = "SELECT * FROM inventory_items WHERE item_no = ?";
@@ -37,6 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['item_no'])) {
                     'rack_no' => $item['rack_no'],
                     'unit' => $item['unit'] ?? '', // Added unit field
                     'current_balance' => $item['current_balance'],
+                    'low_stock_threshold' => $has_low_stock_threshold ? ($item['low_stock_threshold'] ?? 10) : 10,
                     'status' => $item['status'],
                     'description' => $item['description'] ?? '',
                     'updated_at' => $item['updated_at'] ?? null // Added updated_at for last modified info

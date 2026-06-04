@@ -51,7 +51,6 @@ function getTransactionTypeBadge($type)
     <title>Logi_Sys_Dashboard</title>
     <link rel="stylesheet" href="Logi_transactions.css">
     <link rel="stylesheet" href="Logi_req.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <style>
@@ -178,8 +177,16 @@ function getTransactionTypeBadge($type)
                                 <label for="transactionType" class="form-label">Transaction Type</label>
                                 <select class="form-select form-select-sm" id="transactionType">
                                     <option value="">All Types</option>
-                                    <option value="Addition">Addition</option>
-                                    <option value="Deduction">Deduction</option>
+                                    <option value="ADDITION">Addition</option>
+                                    <option value="DEDUCTION">Deduction</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="transactionsPerPage" class="form-label">Rows</label>
+                                <select class="form-select form-select-sm" id="transactionsPerPage">
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
                                 </select>
                             </div>
 
@@ -261,7 +268,7 @@ function getTransactionTypeBadge($type)
                                             // No data found
                                             ?>
                                             <tr id="noTransactionsRow">
-                                                <td colspan="8" class="text-center">
+                                                <td colspan="9" class="text-center">
                                                     <div class="py-4">
                                                         <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                                                         <h5 class="text-muted">No transactions found</h5>
@@ -275,6 +282,17 @@ function getTransactionTypeBadge($type)
                                     </tbody>
 
                                 </table>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" id="transactionsPaginationBar">
+                            <div class="small text-muted" id="transactionsPageInfo">Loading transactions...</div>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Transaction pagination">
+                                <button type="button" class="btn btn-outline-secondary" id="transactionsPrevPage">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="transactionsNextPage">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </button>
                             </div>
                         </div>
 

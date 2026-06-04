@@ -9,6 +9,17 @@ header('Content-Type: application/json');
 
 require_once 'logi_db.php'; // Include the database connection file
 
+function hasInventoryColumn($conn, $column) {
+    $stmt = $conn->prepare("SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_items' AND COLUMN_NAME = ?");
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param("s", $column);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return ((int)($result->fetch_assoc()['count'] ?? 0)) > 0;
+}
+
 // Check if form is submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
@@ -18,8 +29,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $rack_no = (int)$_POST['rackNo'];
         $unit = mysqli_real_escape_string($conn, $_POST['unit']); // Added unit field
         $current_balance = (int)$_POST['balance'];
+        $low_stock_threshold = max(1, (int)($_POST['lowStockThreshold'] ?? 10));
         $status = mysqli_real_escape_string($conn, $_POST['status']);
         $description = mysqli_real_escape_string($conn, $_POST['description']);
+        $has_low_stock_threshold = hasInventoryColumn($conn, 'low_stock_threshold');
 
         // Validate required fields
         if (empty($item_id) || empty($item_name) || empty($unit) || empty($status)) {
@@ -33,9 +46,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Auto-determine status based on current balance if not manually set
         if ($current_balance == 0 && $status !== 'Discontinued') {
             $status = 'Out of Stock';
-        } elseif ($current_balance <= 10 && $current_balance > 0 && $status !== 'Discontinued') {
+        } elseif ($current_balance <= $low_stock_threshold && $current_balance > 0 && $status !== 'Discontinued') {
             $status = 'Low Stock';
-        } elseif ($current_balance > 10 && $status !== 'Discontinued') {
+        } elseif ($current_balance > $low_stock_threshold && $status !== 'Discontinued') {
             $status = 'Available';
         }
 
@@ -64,7 +77,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $db_id = $row['id'];
 
         // Prepare update statement (with unit field)
-        $update_query = "UPDATE inventory_items SET 
+        if ($has_low_stock_threshold) {
+            $update_query = "UPDATE inventory_items SET 
+                        item_name = ?, 
+                        rack_no = ?, 
+                        unit = ?, 
+                        current_balance = ?, 
+                        low_stock_threshold = ?,
+                        status = ?, 
+                        description = ?, 
+                        updated_at = NOW() 
+                        WHERE id = ?";
+        } else {
+            $update_query = "UPDATE inventory_items SET 
                         item_name = ?, 
                         rack_no = ?, 
                         unit = ?, 
@@ -73,6 +98,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         description = ?, 
                         updated_at = NOW() 
                         WHERE id = ?";
+        }
 
         $update_stmt = $conn->prepare($update_query);
 
@@ -81,7 +107,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         // Updated bind_param (with unit parameter)
-        $update_stmt->bind_param("sissisi", $item_name, $rack_no, $unit, $current_balance, $status, $description, $db_id);
+        if ($has_low_stock_threshold) {
+            $update_stmt->bind_param("sisiissi", $item_name, $rack_no, $unit, $current_balance, $low_stock_threshold, $status, $description, $db_id);
+        } else {
+            $update_stmt->bind_param("sissisi", $item_name, $rack_no, $unit, $current_balance, $status, $description, $db_id);
+        }
 
         // Execute the update
         if ($update_stmt->execute()) {
@@ -96,6 +126,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         'rack_no' => $rack_no,
                         'unit' => $unit, // Added unit to response
                         'current_balance' => $current_balance,
+                        'low_stock_threshold' => $low_stock_threshold,
                         'status' => $status,
                         'description' => $description
                     ]

@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const searchInput = document.getElementById("searchInput");
 
   selectAllCheckbox.addEventListener("change", function () {
-    rowCheckboxes.forEach((checkbox) => {
+    document.querySelectorAll(".row-checkbox").forEach((checkbox) => {
       checkbox.checked = this.checked;
     });
     toggleActionButtons();
@@ -45,44 +45,16 @@ document.addEventListener("DOMContentLoaded", function () {
     updateBtn.disabled = checkedBoxes.length !== 1; // Enable only when exactly one item is selected
   }
 
-  // Search functionality
+  // Search is handled by the paginated inventory loader below.
   searchInput.addEventListener("input", function () {
-    const searchTerm = this.value.toLowerCase();
-    const tableRows = document.querySelectorAll("tbody tr");
-
-    tableRows.forEach((row) => {
-      // Skip the "no data" row if it exists
-      if (row.cells.length < 9) {
-        return;
-      }
-
-      let found = false;
-
-      // Loop through all cells (starting from index 1 to skip checkbox)
-      for (let i = 1; i < row.cells.length; i++) {
-        const cellText = row.cells[i].textContent.toLowerCase();
-        if (cellText.includes(searchTerm)) {
-          found = true;
-          break;
-        }
-      }
-
-      if (found) {
-        row.style.display = "";
-      } else {
-        row.style.display = "none";
-      }
-    });
+    return;
   });
 
   // Clear search when input is cleared
   searchInput.addEventListener("keyup", function (e) {
     if (e.key === "Escape") {
       this.value = "";
-      const tableRows = document.querySelectorAll("tbody tr");
-      tableRows.forEach((row) => {
-        row.style.display = "";
-      });
+      this.dispatchEvent(new Event("input", { bubbles: true }));
       this.focus();
     }
   });
@@ -254,12 +226,11 @@ document.addEventListener("DOMContentLoaded", function () {
               );
               modal.hide();
 
-              // Add item to table dynamically
-              console.log(
-                "Adding item to table with form data:",
-                formDataObject
-              );
-              addItemToTable(formData);
+              if (typeof window.refreshInventoryTable === "function") {
+                window.refreshInventoryTable();
+              } else {
+                addItemToTable(formData);
+              }
 
               // Reset form
               this.reset();
@@ -565,6 +536,9 @@ document.addEventListener("DOMContentLoaded", function () {
           }
 
           console.log("Table updated successfully");
+          if (typeof window.refreshInventoryTable === "function") {
+            window.refreshInventoryTable();
+          }
         } else {
           console.error("❌ Failed to delete items:", data.message);
           alert("Failed to delete items: " + (data.message || "Unknown error"));
@@ -701,6 +675,7 @@ function populateUpdateForm(row) {
             "updateRackNo",
             "updateUnit",
             "updateBalance",
+            "updateLowStockThreshold",
             "updateStatus",
             "updateDescription",
           ];
@@ -735,6 +710,8 @@ function populateUpdateForm(row) {
           if (elements.updateUnit) elements.updateUnit.value = item.unit || "";
           if (elements.updateBalance)
             elements.updateBalance.value = item.current_balance || "";
+          if (elements.updateLowStockThreshold)
+            elements.updateLowStockThreshold.value = item.low_stock_threshold || 10;
           if (elements.updateStatus)
             elements.updateStatus.value = item.status || "";
           if (elements.updateDescription)
@@ -811,7 +788,11 @@ document
 
           if (data.success) {
             alert(data.message);
-            location.reload(); // Simple reload
+            if (typeof window.refreshInventoryTable === "function") {
+              window.refreshInventoryTable();
+            } else {
+              location.reload();
+            }
           } else {
             alert("Error: " + data.message);
             // Reset button state
@@ -938,6 +919,207 @@ document.querySelectorAll(".update-btn").forEach(function (btn) {
     );
     editModal.show();
   });
+});
+
+// Paginated inventory table loader
+document.addEventListener("DOMContentLoaded", function () {
+  const tableBody = document.getElementById("inventoryTableBody");
+  const searchInput = document.getElementById("searchInput");
+  const statusFilter = document.getElementById("inventoryStatusFilter");
+  const perPageSelect = document.getElementById("inventoryPerPage");
+  const pageInfo = document.getElementById("inventoryPageInfo");
+  const prevButton = document.getElementById("inventoryPrevPage");
+  const nextButton = document.getElementById("inventoryNextPage");
+  const selectAllCheckbox = document.getElementById("selectAll");
+  const deleteBtn = document.getElementById("deleteItemBtn");
+  const updateBtn = document.getElementById("updateItemBtn");
+
+  if (!tableBody) return;
+
+  let currentPage = 1;
+  let totalPages = 1;
+  let searchTimer = null;
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function updateActionButtons() {
+    const checkedBoxes = document.querySelectorAll(".row-checkbox:checked");
+    if (deleteBtn) deleteBtn.disabled = checkedBoxes.length === 0;
+    if (updateBtn) updateBtn.disabled = checkedBoxes.length !== 1;
+
+    const allBoxes = document.querySelectorAll(".row-checkbox");
+    if (selectAllCheckbox) {
+      selectAllCheckbox.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < allBoxes.length;
+      selectAllCheckbox.checked = allBoxes.length > 0 && checkedBoxes.length === allBoxes.length;
+    }
+  }
+
+  function setLoadingState() {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="9" class="text-center py-4 text-muted">
+          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+          Loading inventory...
+        </td>
+      </tr>
+    `;
+    if (pageInfo) pageInfo.textContent = "Loading inventory...";
+    if (prevButton) prevButton.disabled = true;
+    if (nextButton) nextButton.disabled = true;
+  }
+
+  function renderRows(rows) {
+    if (!rows.length) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="9" class="text-center">
+            <div class="py-4">
+              <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">No inventory items found</h5>
+              <p class="text-muted mb-0">Try adjusting the search or status filter.</p>
+            </div>
+          </td>
+        </tr>
+      `;
+      updateActionButtons();
+      return;
+    }
+
+    tableBody.innerHTML = rows.map((item) => `
+      <tr>
+        <td>
+          <input type="checkbox" class="form-check-input row-checkbox" value="${escapeHtml(item.item_no)}">
+        </td>
+        <td>${escapeHtml(item.item_no)}</td>
+        <td>#${escapeHtml(item.rack_no)}</td>
+        <td>${escapeHtml(item.item_name)}</td>
+        <td>${escapeHtml(item.unit)}</td>
+        <td>${escapeHtml(item.current_balance)}</td>
+        <td>${escapeHtml(item.expiry_date || "")}</td>
+        <td><span class="badge ${escapeHtml(item.expiry_class)}">${escapeHtml(item.expiry_label)}</span></td>
+        <td><span class="badge ${escapeHtml(item.status_class)}">${escapeHtml(item.status_label)}</span></td>
+      </tr>
+    `).join("");
+
+    updateActionButtons();
+  }
+
+  function updateSummary(summary) {
+    const total = document.getElementById("inventoryTotalItems");
+    const low = document.getElementById("inventoryLowItems");
+    const out = document.getElementById("inventoryOutItems");
+    const expiring = document.getElementById("inventoryExpiringItems");
+    if (total) total.textContent = summary?.total_items ?? 0;
+    if (low) low.textContent = summary?.low_items ?? 0;
+    if (out) out.textContent = summary?.out_items ?? 0;
+    if (expiring) expiring.textContent = summary?.expiring_items ?? 0;
+
+    document.querySelectorAll("[data-inventory-filter]").forEach((button) => {
+      button.classList.toggle("active", (button.dataset.inventoryFilter || "") === (statusFilter?.value || ""));
+    });
+  }
+
+  function updatePagination(data) {
+    currentPage = data.page;
+    totalPages = data.total_pages;
+    const perPage = parseInt(data.per_page, 10) || 25;
+    const total = parseInt(data.total, 10) || 0;
+    const start = total === 0 ? 0 : ((currentPage - 1) * perPage) + 1;
+    const end = Math.min(currentPage * perPage, total);
+
+    if (pageInfo) pageInfo.textContent = `${start}-${end} of ${total} inventory items | Page ${currentPage} of ${totalPages}`;
+    if (prevButton) prevButton.disabled = currentPage <= 1;
+    if (nextButton) nextButton.disabled = currentPage >= totalPages;
+  }
+
+  function fetchInventory(page = 1) {
+    currentPage = page;
+    const params = new URLSearchParams({
+      page: String(currentPage),
+      per_page: perPageSelect?.value || "25",
+      search: searchInput?.value.trim() || "",
+      status: statusFilter?.value || "",
+    });
+
+    setLoadingState();
+
+    fetch(`Logi_fetch_inventory.php?${params.toString()}`)
+      .then((response) => {
+        if (!response.ok) throw new Error("Failed to load inventory");
+        return response.json();
+      })
+      .then((data) => {
+        if (!data.success) throw new Error(data.message || "Failed to load inventory");
+        renderRows(data.rows || []);
+        updateSummary(data.summary || {});
+        updatePagination(data);
+      })
+      .catch((error) => {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="text-center py-4 text-danger">
+              <i class="fas fa-exclamation-triangle me-1"></i>
+              ${escapeHtml(error.message)}
+            </td>
+          </tr>
+        `;
+        if (pageInfo) pageInfo.textContent = "Unable to load inventory.";
+      });
+  }
+
+  window.refreshInventoryTable = function () {
+    fetchInventory(currentPage);
+  };
+
+  searchInput?.addEventListener("input", function () {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => fetchInventory(1), 300);
+  });
+
+  statusFilter?.addEventListener("change", function () {
+    fetchInventory(1);
+  });
+
+  perPageSelect?.addEventListener("change", function () {
+    fetchInventory(1);
+  });
+
+  prevButton?.addEventListener("click", function () {
+    if (currentPage > 1) fetchInventory(currentPage - 1);
+  });
+
+  nextButton?.addEventListener("click", function () {
+    if (currentPage < totalPages) fetchInventory(currentPage + 1);
+  });
+
+  document.querySelectorAll("[data-inventory-filter]").forEach((button) => {
+    button.addEventListener("click", function () {
+      if (statusFilter) statusFilter.value = this.dataset.inventoryFilter || "";
+      fetchInventory(1);
+    });
+  });
+
+  tableBody.addEventListener("change", function (event) {
+    if (event.target.classList.contains("row-checkbox")) {
+      updateActionButtons();
+    }
+  });
+
+  selectAllCheckbox?.addEventListener("change", function () {
+    document.querySelectorAll(".row-checkbox").forEach((checkbox) => {
+      checkbox.checked = this.checked;
+    });
+    updateActionButtons();
+  });
+
+  fetchInventory(1);
 });
 
 // update modal submit
