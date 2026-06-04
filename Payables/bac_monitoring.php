@@ -27,7 +27,6 @@ $formValues = [
 ];
 $showAddModal = false;
 $showEditModal = false;
-$statusOptions = ['Pending', 'Transmitted to GSO'];
 
 $validateBacForm = function (array $values): array {
     $errors = [];
@@ -58,8 +57,8 @@ $validateBacForm = function (array $values): array {
             }
         }
     }
-    if (!in_array($values['status'], ['Pending', 'Transmitted to GSO'], true)) {
-        $errors[] = 'Status must be Pending or Transmitted to GSO.';
+    if (!in_array($values['status'], ['Transmitted to GSO', 'Not Yet Received'], true)) {
+        $errors[] = 'Status must be Not Yet Received or Transmitted to GSO.';
     }
 
     return $errors;
@@ -86,9 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
         'deadline' => trim($_POST['deadline'] ?? ''),
         'received_by' => trim($_POST['received_by'] ?? ''),
     ];
-    if ($formValues['status'] === '') {
-        $formValues['status'] = 'Pending';
-    }
+    $formValues['status'] = $formValues['received_by'] === '' ? 'Not Yet Received' : 'Transmitted to GSO';
     $token = $_POST['csrf_token'] ?? '';
     $sessionToken = $_SESSION['_payables_csrf_token'] ?? '';
 
@@ -444,6 +441,11 @@ if ($bacStmt) {
                         $hasPostQual = $postQual !== '';
                         $status = trim((string)($row['status'] ?? ''));
                         $hasStatus = $status !== '';
+                        $receivedBy = trim((string)($row['received_by'] ?? ''));
+                        $displayStatus = $hasStatus ? $status : 'Pending';
+                        if (strcasecmp($displayStatus, 'Pending') === 0 && $receivedBy === '') {
+                            $displayStatus = 'Not Yet Received';
+                        }
                         $dateTransmittedValue = $row['date_transmitted_from_bac'] ?? '';
                         $displayDateTransmitted = $dateTransmittedValue ? date('M d, Y', strtotime((string)$dateTransmittedValue)) : '-';
                         $noaDateValue = $row['noa_no'] ?? '';
@@ -464,12 +466,12 @@ if ($bacStmt) {
                             <div class="bac-date"><?php echo htmlspecialchars($displayDate, ENT_QUOTES, 'UTF-8'); ?></div>
                             <div>
                                 <span class="post-qual-badge <?php echo $hasPostQual ? 'is-done' : 'is-pending'; ?>">
-                                    <?php echo htmlspecialchars($hasPostQual ? $postQual : 'Pending', ENT_QUOTES, 'UTF-8'); ?>
+                                    <?php echo htmlspecialchars($hasPostQual ? $postQual : '', ENT_QUOTES, 'UTF-8'); ?>
                                 </span>
                             </div>
                             <div>
                                 <span class="bac-status-badge <?php echo $status === 'Transmitted to GSO' ? 'is-transmitted' : 'is-pending'; ?>">
-                                    <?php echo htmlspecialchars($hasStatus ? $status : 'Pending', ENT_QUOTES, 'UTF-8'); ?>
+                                    <?php echo htmlspecialchars($displayStatus, ENT_QUOTES, 'UTF-8'); ?>
                                 </span>
                             </div>
                             <div class="bac-date"><?php echo htmlspecialchars($displayDateTransmitted, ENT_QUOTES, 'UTF-8'); ?></div>
@@ -479,7 +481,7 @@ if ($bacStmt) {
                             <div class="bac-date"><?php echo htmlspecialchars($displayContractDate, ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-ref"><?php echo htmlspecialchars($row['calendar_days_delivery'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-date"><?php echo htmlspecialchars($row['deadline'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
-                            <div class="bac-bidder"><?php echo htmlspecialchars($row['received_by'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="bac-bidder"><?php echo htmlspecialchars($receivedBy, ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-row-actions">
                                 <button
                                     type="button"
@@ -593,17 +595,6 @@ if ($bacStmt) {
                             <span>Post Qual.</span>
                             <input type="text" name="post_qual" value="<?php echo htmlspecialchars($formValues['post_qual'], ENT_QUOTES, 'UTF-8'); ?>" placeholder="Pending, date, or remarks">
                         </label>
-                        <label class="is-wide">
-                            <span>Status</span>
-                            <select name="status">
-                                <?php foreach ($statusOptions as $statusOption): ?>
-                                    <?php $selectedStatus = ($formValues['status'] !== '' ? $formValues['status'] : 'Pending') === $statusOption; ?>
-                                    <option value="<?php echo htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $selectedStatus ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8'); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </label>
                         <label>
                             <span>Date Transmitted From BAC</span>
                             <input type="date" name="date_transmitted_from_bac" value="<?php echo htmlspecialchars($formValues['date_transmitted_from_bac'], ENT_QUOTES, 'UTF-8'); ?>">
@@ -659,6 +650,7 @@ if ($bacStmt) {
                     <?php echo payables_csrf_input(); ?>
                     <input type="hidden" name="action" value="edit_bac_monitoring">
                     <input type="hidden" name="id" id="editBacId" value="<?php echo htmlspecialchars($formValues['id'], ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="status" id="editBacStatus" value="<?php echo htmlspecialchars($showEditModal ? $formValues['status'] : '', ENT_QUOTES, 'UTF-8'); ?>">
                     <?php if ($formErrors && $showEditModal): ?>
                         <div class="bac-monitoring-alert is-error" role="alert">
                             <?php echo htmlspecialchars(implode(' ', $formErrors), ENT_QUOTES, 'UTF-8'); ?>
@@ -692,17 +684,6 @@ if ($bacStmt) {
                         <label>
                             <span>Post Qual.</span>
                             <input type="text" name="post_qual" id="editBacPostQual" value="<?php echo htmlspecialchars($showEditModal ? $formValues['post_qual'] : '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Pending, date, or remarks">
-                        </label>
-                        <label class="is-wide">
-                            <span>Status</span>
-                            <select name="status" id="editBacStatus">
-                                <?php foreach ($statusOptions as $statusOption): ?>
-                                    <?php $selectedStatus = ($showEditModal ? $formValues['status'] : 'Pending') === $statusOption; ?>
-                                    <option value="<?php echo htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $selectedStatus ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8'); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
                         </label>
                         <label>
                             <span>Date Transmitted From BAC</span>
