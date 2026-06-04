@@ -32,7 +32,7 @@ while($row = mysqli_fetch_assoc($result))
                   <td><?php echo $row["destination"]; ?></td>
                   <td><?php echo $row["typeofbusiness"]; ?></td>
                   <td><?php echo $row["Status"]; ?></td>
-                  <td><a href="view.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a></td>
+                  <td><button type="button" class="btn btn-info btn-sm" data-super-view="<?= $row['id']; ?>">View</button></td>
 </tr>
 
   <?php

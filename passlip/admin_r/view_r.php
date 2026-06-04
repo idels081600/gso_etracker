@@ -81,6 +81,9 @@ if (!isset($_SESSION['username'])) {
             margin-left: 10px;
         }
     </style>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 
 <body>
@@ -104,9 +107,6 @@ if (!isset($_SESSION['username'])) {
                 <!-- <li class="nav-item">
                     <a class="nav-link" href="approved_tcws.php">Approved</a>
                 </li> -->
-                <li class="nav-item">
-                    <a class="nav-link" href="declined_r.php">Declined Request</a>
-                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="track_emp_r.php">Track Employees</a>
                 </li>
@@ -203,7 +203,7 @@ if (!isset($_SESSION['username'])) {
                                         <div class="form-group">
                                             <label>Fixed Time for Pass Slip:</label><br>
                                             <label for="fix_hours">Hours:</label>
-                                            <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="2" placeholder="0">
+                                            <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="4" placeholder="0">
                                             <label for="fix_minutes">Minutes:</label>
                                             <input type="number" class="form" id="fix_minutes" name="fix_minutes" min="0" max="59" placeholder="0">
                                         </div>

@@ -68,11 +68,11 @@ if (isset($_POST['approve_req'])) {
 
     if ($query_run) {
         $_SESSION['message'] = "Request Updated Successfully";
-        header("Location: index.php");
+        header("Location: super_admin/index.php");
         exit(0);
     } else {
         $_SESSION['message'] = "Request Not Updated. Error: " . mysqli_error($conn);
-        header("Location: index.php");
+        header("Location: super_admin/index.php");
         exit(0);
     }
 }
@@ -146,7 +146,7 @@ if (isset($_POST['approve_req_r'])) {
 
     if ($query_run) {
         $_SESSION['message'] = "Request Updated Successfully";
-        header("Location:  admin_r/index_r.php");
+        header("Location: admin_r/index_r.php");
         exit(0);
     } else {
         $_SESSION['message'] = "Request Not Updated. Error: " . mysqli_error($conn);
@@ -216,11 +216,11 @@ if (isset($_POST['decline_req'])) {
 
     if ($query_run) {
         $_SESSION['message'] = "Request Updated Successfully";
-        header("Location: index.php");
+        header("Location: super_admin/index.php");
         exit(0);
     } else {
         $_SESSION['message'] = "Request Not Updated. Error: " . mysqli_error($conn); // Capture and display the error message
-        header("Location: index.php");
+        header("Location: super_admin/index.php");
         exit(0);
     }
 }
@@ -237,11 +237,11 @@ if (isset($_POST['decline_req_desk'])) {
 
     if ($query_run) {
         $_SESSION['message'] = "Request Updated Successfully";
-        header("Location: index_desk.php");
+        header("Location: admin_approver/index_desk.php");
         exit(0);
     } else {
         $_SESSION['message'] = "Request Not Updated. Error: " . mysqli_error($conn); // Capture and display the error message
-        header("Location: index_desk.php");
+        header("Location: admin_approver/index_desk.php");
         exit(0);
     }
 }
@@ -258,11 +258,11 @@ if (isset($_POST['decline_req_r'])) {
 
     if ($query_run) {
         $_SESSION['message'] = "Request Updated Successfully";
-        header("Location: index_r.php");
+        header("Location: admin_r/index_r.php");
         exit(0);
     } else {
         $_SESSION['message'] = "Request Not Updated. Error: " . mysqli_error($conn); // Capture and display the error message
-        header("Location: index_r.php");
+        header("Location: admin_r/index_r.php");
         exit(0);
     }
 }
@@ -329,17 +329,19 @@ if (isset($_POST['returned_emp'])) {
     }
 }
 if (isset($_POST['delete'])) {
-    $id = $_POST['id'];
+    $id = (int) $_POST['id'];
 
-    $query = "DELETE FROM logindb WHERE Id='$id'";
-    $query_run = mysqli_query($conn, $query);
+    $query = "DELETE FROM logindb WHERE Id = ?";
+    $stmt = mysqli_prepare($conn, $query);
+    mysqli_stmt_bind_param($stmt, "i", $id);
+    $query_run = mysqli_stmt_execute($stmt);
     if ($query_run) {
         $_SESSION['message'] = "Successfully Deleted";
-        header("Location: register.php");
+        header("Location: super_admin/register.php");
         exit(0);
     } else {
         $_SESSION['message'] = "Not Delete";
-        header("Location: register.php");
+        header("Location: super_admin/register.php");
         exit(0);
     }
 }

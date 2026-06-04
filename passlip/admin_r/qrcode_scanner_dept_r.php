@@ -113,6 +113,9 @@
             }
         }
     </style>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 
 <body>
@@ -130,7 +133,6 @@
             <ul class="navbar-nav" role="menu">
                 <li class="nav-item" role="none"><a class="nav-link" href="index_r.php" role="menuitem">Home</a></li>
                 <li class="nav-item" role="none"><a class="nav-link" href="add_req_r.php" role="menuitem">Add Request</a></li>
-                <li class="nav-item" role="none"><a class="nav-link" href="declined_r.php" role="menuitem">Declined Request</a></li>
                 <li class="nav-item" role="none"><a class="nav-link" href="track_emp_r.php" role="menuitem">Track Employees</a></li>
                 <li class="nav-item" role="none"><a class="nav-link" href="qrcode_scanner_desk_r.php" role="menuitem">Scanner</a></li>
                 <li class="nav-item" role="none"><a class="nav-link" href="../../logout.php" role="menuitem">Logout</a></li>

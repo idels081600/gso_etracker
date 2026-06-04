@@ -88,6 +88,9 @@ if (!isset($_SESSION['username'])) {
       }
     }
   </style>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 
 <body>
@@ -146,22 +149,22 @@ if (!isset($_SESSION['username'])) {
   </style>
   <script type="text/javascript">
     function loadDoc() {
-
-
-      setInterval(function () {
-
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function () {
-          if (this.readyState == 4 && this.status == 200) {
-            document.getElementById("table").innerHTML = this.responseText;
-          }
-        };
-        xhttp.open("GET", "../data_app.php", true);
-        xhttp.send();
-
-      }, 1000);
-
-
+      function poll() {
+        if (!document.hidden) {
+          var xhttp = new XMLHttpRequest();
+          xhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+              document.getElementById("table").innerHTML = this.responseText;
+            }
+          };
+          xhttp.open("GET", "../data_app.php", true);
+          xhttp.send();
+        }
+      }
+      setInterval(poll, 30000);
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) poll();
+      });
     }
     loadDoc();
   </script>

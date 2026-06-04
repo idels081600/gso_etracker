@@ -12,12 +12,7 @@ session_start();
 
 $range = isset($_GET['range']) ? $_GET['range'] : 'today';
 
-// Handle custom date range
-if ($range == 'custom' && isset($_GET['from']) && isset($_GET['to'])) {
-    $from_date = mysqli_real_escape_string($conn, $_GET['from']);
-    $to_date = mysqli_real_escape_string($conn, $_GET['to']);
-    $date_condition = "AND DATE(date) BETWEEN '$from_date' AND '$to_date'";
-} elseif ($range == 'today') {
+if ($range == 'today') {
     $date_condition = "AND DATE(date) = CURDATE()";
 } elseif ($range == 'first15') {
     $date_condition = "AND DAY(date) BETWEEN 1 AND 15 AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())";
@@ -28,11 +23,11 @@ if ($range == 'custom' && isset($_GET['from']) && isset($_GET['to'])) {
 }
  
 // Query for Official Business
-$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role IN ('Employee', 'TCWS Employee') $date_condition ORDER BY id";
+$result_official = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role = 'Employee' $date_condition ORDER BY id";
 $sql_official = $conn->query($result_official);
 
 // Query for Personal Business
-$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role IN ('Employee', 'TCWS Employee') $date_condition ORDER BY id";
+$result_personal = "SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND (confirmed_by = 'CAGULADA RENE ART' OR confirmed_by = 'Pahang Dave') AND role = 'Employee' $date_condition ORDER BY id";
 $sql_personal = $conn->query($result_personal);
 
 class PDF extends FPDF

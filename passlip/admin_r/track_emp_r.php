@@ -16,10 +16,10 @@ if (!isset($_SESSION['username'])) {
 if (isset($_POST['delete_all'])) {
   if ($_POST['confirm'] == 'yes') {
     // First backup the data
-    $backup_sql = "INSERT INTO request_backup SELECT * FROM request WHERE DATE(date) = CURDATE() AND Role IN ('Employee', 'TCWS Employee')";
+    $backup_sql = "INSERT INTO request_backup SELECT * FROM request WHERE DATE(date) = CURDATE() AND Role = 'Employee'";
     mysqli_query($conn, $backup_sql);
 
-    $sql = "DELETE FROM request WHERE role IN ('Employee', 'TCWS Employee')";
+    $sql = "DELETE FROM request WHERE role = 'Employee'";
     if (mysqli_query($conn, $sql)) {
       $_SESSION['show_undo'] = true;
       header("Location: track_emp_r.php");
@@ -33,7 +33,7 @@ if (isset($_POST['undo_delete'])) {
   $restore_sql = "INSERT INTO request 
   SELECT * FROM request_backup 
   WHERE DATE(date) = CURDATE() 
-  AND Role IN ('Employee', 'TCWS Employee') 
+  AND Role = 'Employee' 
   ORDER BY id DESC";
   mysqli_query($conn, $restore_sql);
   mysqli_query($conn, "TRUNCATE TABLE request_backup");
@@ -174,6 +174,9 @@ if (isset($_POST['undo_delete'])) {
       box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
     }
   </style>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 
 <body>
@@ -192,9 +195,6 @@ if (isset($_POST['undo_delete'])) {
         </li>
         <li class="nav-item">
           <a class="nav-link" href="add_req_r.php">Add Request</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="declined_r.php">Declined Request</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="track_emp_r.php">Track Employees</a>
@@ -414,7 +414,9 @@ if (isset($_POST['undo_delete'])) {
     }
 
     function loadDoc() {
-      setInterval(function() {
+      function poll() {
+        if (document.hidden) return;
+
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
           if (this.readyState == 4 && this.status == 200) {
@@ -423,7 +425,13 @@ if (isset($_POST['undo_delete'])) {
         };
         xhttp.open("GET", "live_track_r.php", true);
         xhttp.send();
-      }, 1000);
+      }
+
+      poll();
+      setInterval(poll, 30000);
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) poll();
+      });
     }
 
     // Add event listeners for live filtering

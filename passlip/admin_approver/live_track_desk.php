@@ -12,6 +12,6 @@ while ($row = mysqli_fetch_assoc($result)) {
   echo '<td>' . $row["status1"] . '</td>';
   echo '<td>' . $row["typeofbusiness"] . '</td>';
   echo '<td>' . $row["remarks"] . '</td>';
-  echo '<td><a href="view_track_emp_desk.php?id=' . $row['id'] . '" class="btn btn-info btn-sm">View</a></td>';
+  echo '<td><button type="button" class="btn btn-info btn-sm" data-track-view="' . $row['id'] . '">View</button></td>';
   echo '</tr>';
 }

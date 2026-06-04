@@ -173,7 +173,45 @@ if (isset($_POST['undo_delete'])) {
       z-index: 1;
       box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
     }
+
+    .track-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .track-detail-item {
+      padding: 12px;
+      border: 1px solid var(--passlip-line, #dfe7e0);
+      border-radius: 8px;
+      background: var(--passlip-panel-soft, #f8faf8);
+    }
+
+    .track-detail-item.wide {
+      grid-column: 1 / -1;
+    }
+
+    .track-detail-item span,
+    .track-detail-item strong {
+      display: block;
+    }
+
+    .track-detail-item span {
+      margin-bottom: 4px;
+      color: var(--passlip-muted, #66746b);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    @media screen and (max-width: 640px) {
+      .track-detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 
 <body>
@@ -256,7 +294,7 @@ if (isset($_POST['undo_delete'])) {
               echo '<td>' . $row["status1"] . '</td>';
               echo '<td>' . $row["typeofbusiness"] . '</td>';
               echo '<td>' . $row["remarks"] . '</td>';
-              echo '<td><a href="view_track_emp_desk.php?id=' . $row['id'] . '" class="btn btn-info btn-sm">View</a></td>';
+              echo '<td><button type="button" class="btn btn-info btn-sm" data-track-view="' . $row['id'] . '">View</button></td>';
               echo '</tr>';
             }
             ?>
@@ -265,6 +303,26 @@ if (isset($_POST['undo_delete'])) {
       </div>
     </div>
 
+  </div>
+
+  <!-- Track Details Modal -->
+  <div class="modal fade" id="trackDetailsModal" tabindex="-1" role="dialog" aria-labelledby="trackDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="trackDetailsModalLabel">Employee Pass Slip Details</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" id="trackDetailsBody">
+          <div class="text-center text-muted py-4">Loading employee details...</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Filter Modal -->
@@ -554,6 +612,27 @@ if (isset($_POST['undo_delete'])) {
         if (!document.hidden) poll();
       });
     }
+
+    function openTrackDetails(id) {
+      const body = document.getElementById('trackDetailsBody');
+      body.innerHTML = '<div class="text-center text-muted py-4">Loading employee details...</div>';
+      $('#trackDetailsModal').modal('show');
+
+      fetch(`track_details_modal.php?id=${encodeURIComponent(id)}`, { cache: 'no-store' })
+        .then(response => response.text().then(html => ({ ok: response.ok, html })))
+        .then(result => {
+          body.innerHTML = result.html || '<div class="text-center text-danger py-4">Unable to load employee details.</div>';
+        })
+        .catch(() => {
+          body.innerHTML = '<div class="text-center text-danger py-4">Unable to load employee details.</div>';
+        });
+    }
+
+    document.getElementById('showdata').addEventListener('click', function(event) {
+      const button = event.target.closest('[data-track-view]');
+      if (!button) return;
+      openTrackDetails(button.dataset.trackView);
+    });
 
     // Add event listeners for live filtering
     document.getElementById('searchBar').addEventListener('input', applyFilters);

@@ -1,766 +1,964 @@
 <?php
 require_once '../dbh.php';
 require_once '../functions.php';
-$result = display_data_r();
+
+$result = display_request();
+
 if (!isset($_SESSION['username'])) {
     header("location: ../../login_v2.php");
-    exit(); // Ensure that the script stops execution after the redirect
+    exit();
 }
 
-// Check the user role and perform additional redirection if needed
-if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SESSION['role'] == 'TCWS Employee') {
+if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Department Head' || $_SESSION['role'] == 'TCWS Employee') {
     header("location: ../../login_v2.php");
-    exit(); // Ensure that the script stops execution after the redirect
+    exit();
 }
 
+$stats = [
+    'pending' => 0,
+    'personal' => 0,
+    'official' => 0,
+    'outside' => 0,
+];
+
+$pendingRows = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $pendingRows[] = $row;
+    $stats['pending']++;
+    if (($row['typeofbusiness'] ?? '') === 'Personal') {
+        $stats['personal']++;
+    } else {
+        $stats['official']++;
+    }
+}
+
+$outsideResult = mysqli_query($conn, "SELECT COUNT(*) AS total FROM `request` WHERE Status = 'Approved' AND DATE(`date`) = CURDATE()");
+if ($outsideResult && $outsideRow = mysqli_fetch_assoc($outsideResult)) {
+    $stats['outside'] = (int) $outsideRow['total'];
+}
+
+$approverName = $_SESSION['pay_name'] ?? $_SESSION['username'];
 ?>
 <!doctype html>
 <html lang="en">
-
 <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-        integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.14.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.4.0/firebase-messaging-compat.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-    <title>Home</title>
-</head>
-<style>
-    @media screen and (max-width: 767px) {
-        #getName {
-            margin-left: 160px;
-        }
-
-        #pen_label {
-            font-size: 25px;
-            font-size: 25px;
-            margin-left: 97px;
-            margin-left: 80px !important;
-        }
-
-        .container {
-            height: 70%;
-            width: 95%;
-        }
-    }
-
-    body {
-        background-color: #f0f0f0;
-    }
-
-    .navbar-brand {
-        display: flex;
-        align-items: center;
-    }
-
-    .logo-img {
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        object-fit: cover;
-    }
-
-    .logo-text {
-        color: white;
-        font-weight: bold;
-        font-size: 20px;
-        margin-left: 10px;
-    }
-
-    .container {
-        background-color: #fff;
-        padding: 20px;
-        border-radius: 5px;
-        margin-top: 20px;
-        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-    }
-
-    /* Sticky header CSS */
-    .table-responsive {
-        overflow-y: auto;
-    }
-
-    .table thead th {
-        position: sticky;
-        top: 0;
-        background-color: #f8f9fa;
-        z-index: 1;
-        box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
-    }
-</style>
-
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <a class="navbar-brand" href="index_desk.php">
-            <img src="../logo.png" alt="Logo" class="logo-img">
-            <span class="logo-text">E-Pass Slip </span>
-        </a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="nav navbar-nav navbar-right">
-                <li class="nav-item">
-                    <a class="nav-link" href="index_desk.php">Home <span class="sr-only">(current)</span></a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="track_emp_desk.php">Track Employees</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="qrcode_scanner_desk.php">Scanner</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="../../logout.php">Logout</a>
-                </li>
-            </ul>
-        </div>
-    </nav>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>E-Pass Slip Approver</title>
     <style>
-        .navbar-nav .nav-link {
-            background-color: transparent !important;
+        :root {
+            --bg: #f4f7f4;
+            --panel: #ffffff;
+            --panel-soft: #f8faf8;
+            --text: #17211b;
+            --muted: #66746b;
+            --line: #dfe7e0;
+            --primary: #167344;
+            --primary-dark: #0e5c35;
+            --primary-soft: #e5f4ea;
+            --info: #246b95;
+            --warning: #946b13;
+            --danger: #b42318;
+            --danger-soft: #fee4e2;
+            --shadow: 0 12px 28px rgba(21, 43, 30, .08);
+            --radius: 8px;
+            font-family: Arial, Helvetica, sans-serif;
         }
 
-        .navbar-nav .nav-link:hover {
-            background-color: transparent !important;
-            color: #fff !important;
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        a { color: inherit; text-decoration: none; }
+        button, input, select { font: inherit; }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 18px;
+            align-items: center;
+            min-height: 68px;
+            padding: 10px 22px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, .96);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 190px;
+        }
+
+        .brand img {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .brand strong,
+        .brand span,
+        .user-chip strong,
+        .user-chip span {
+            display: block;
+        }
+
+        .brand span,
+        .user-chip span,
+        .muted,
+        .panel-head p,
+        .empty {
+            color: var(--muted);
+        }
+
+        .nav {
+            display: flex;
+            justify-content: flex-end;
+            gap: 4px;
+            overflow-x: auto;
+        }
+
+        .nav a {
+            padding: 9px 12px;
+            border-radius: var(--radius);
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .nav a:hover,
+        .nav a.active {
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+        }
+
+        .user-chip {
+            padding: 8px 12px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--panel-soft);
+            text-align: right;
+        }
+
+        .nav-toggle { display: none; }
+
+        .page {
+            width: min(1440px, calc(100% - 32px));
+            margin: 22px auto 42px;
+        }
+
+        .page-header,
+        .panel-head,
+        .batch-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 16px;
+        }
+
+        .page-header { margin-bottom: 16px; }
+        .page-header h1, .panel h2 { margin: 0; line-height: 1.1; }
+        .page-header h1 { font-size: 28px; }
+
+        .eyebrow {
+            margin: 0 0 6px;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        label span {
+            display: block;
+            margin-bottom: 5px;
+            color: #3f4b43;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        input, select {
+            width: 100%;
+            min-height: 40px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #fff;
+            color: var(--text);
+            padding: 9px 11px;
+        }
+
+        input:focus, select:focus, button:focus, a:focus {
+            outline: 3px solid rgba(22, 115, 68, .18);
+            outline-offset: 1px;
+        }
+
+        .btn,
+        .btn-sm {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 8px 12px;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .btn-sm {
+            min-height: 32px;
+            padding: 7px 10px;
+            font-size: 12px;
+        }
+
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: .52;
+        }
+
+        .btn-primary,
+        .btn-success {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover,
+        .btn-success:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            border-color: var(--line);
+            background: #fff;
+            color: var(--text);
+        }
+
+        .btn-info {
+            background: #e8f2f7;
+            color: var(--info);
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .metric,
+        .panel {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .metric { padding: 16px; }
+        .metric span, .metric strong { display: block; }
+        .metric span { color: var(--muted); }
+        .metric strong { margin-top: 8px; font-size: 30px; }
+
+        .panel { padding: 16px; }
+
+        .panel-head {
+            margin-bottom: 14px;
+        }
+
+        .batch-bar {
+            min-height: 56px;
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--panel-soft);
+        }
+
+        .table-wrap {
+            max-height: 68vh;
+            overflow: auto;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #fff;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #f7faf7;
+            color: #405046;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        tbody tr:hover {
+            background: #fbfdfb;
+        }
+
+        td:nth-child(5) {
+            font-weight: 700;
+            color: var(--warning);
+        }
+
+        td:last-child {
+            white-space: nowrap;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            min-height: 18px;
+            vertical-align: middle;
+        }
+
+        .select-all-control {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge-info { background: #e8f2f7; color: var(--info); }
+        .badge-warning { background: #fff6dd; color: var(--warning); }
+
+        .empty {
+            padding: 16px;
+            text-align: center;
+        }
+
+        dialog {
+            width: min(680px, calc(100% - 24px));
+            border: 0;
+            padding: 0;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        dialog::backdrop {
+            background: rgba(13, 25, 17, .45);
+        }
+
+        .modal-card {
+            padding: 18px;
+        }
+
+        .modal-card header,
+        .modal-card footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin: 16px 0;
+        }
+
+        .form-grid .wide {
+            grid-column: 1 / -1;
+        }
+
+        .selection-summary {
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--panel-soft);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        .detail-item {
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--panel-soft);
+        }
+
+        .detail-item.wide {
+            grid-column: 1 / -1;
+        }
+
+        .detail-item span,
+        .detail-item strong {
+            display: block;
+        }
+
+        .detail-item span {
+            margin-bottom: 4px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .toast-stack {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 30;
+            display: grid;
+            gap: 10px;
+        }
+
+        .toast {
+            width: min(360px, calc(100vw - 36px));
+            padding: 12px 14px;
+            border-radius: var(--radius);
+            background: #122119;
+            color: #fff;
+            box-shadow: var(--shadow);
+        }
+
+        @media (max-width: 960px) {
+            .topbar {
+                grid-template-columns: 1fr auto;
+            }
+
+            .nav-toggle {
+                display: inline-flex;
+                justify-content: center;
+                padding: 8px 10px;
+                border: 1px solid var(--line);
+                border-radius: var(--radius);
+                background: #fff;
+            }
+
+            .nav {
+                grid-column: 1 / -1;
+                display: none;
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            .nav.open {
+                display: flex;
+            }
+
+            .user-chip {
+                display: none;
+            }
+
+            .metric-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            .page {
+                width: min(100% - 20px, 1440px);
+                margin-top: 14px;
+            }
+
+            .page-header,
+            .panel-head,
+            .batch-bar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .toolbar,
+            .toolbar label,
+            .toolbar button,
+            .batch-bar button {
+                width: 100%;
+            }
+
+            .metric-grid,
+            .form-grid,
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-actions {
+                flex-direction: column;
+            }
+
+            .modal-actions .btn {
+                width: 100%;
+            }
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .btn, .nav a, .toast {
+                transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+            }
+
+            .btn:active {
+                transform: translateY(1px);
+            }
         }
     </style>
-    <script type="text/javascript">
-        // Store checkbox states
-        let checkboxStates = {};
 
-        function saveCheckboxStates() {
-            // Clear previous states first to handle removed checkboxes
-            checkboxStates = {};
-
-            const checkboxes = document.querySelectorAll('input[name="selected[]"]');
-            checkboxes.forEach(checkbox => {
-                // Save the current state (checked or unchecked)
-                checkboxStates[checkbox.value] = checkbox.checked;
-            });
-
-            // For debugging
-            console.log("Saved states:", checkboxStates);
-        }
-
-        function restoreCheckboxStates() {
-            const checkboxes = document.querySelectorAll('input[name="selected[]"]');
-            checkboxes.forEach(checkbox => {
-                if (checkboxStates[checkbox.value] !== undefined) {
-                    checkbox.checked = checkboxStates[checkbox.value];
-                }
-            });
-
-            // For debugging
-            console.log("Restored states:", checkboxStates);
-        }
-
-        // Add event listeners to checkboxes to save state when they change
-        document.addEventListener('change', function(e) {
-            if (e.target && e.target.name === 'selected[]') {
-                saveCheckboxStates();
-            }
-        }, true);
-
-        function loadDoc() {
-            function poll() {
-                if (document.hidden) return;
-
-                // Save current checkbox states before AJAX call
-                saveCheckboxStates();
-
-                var xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function() {
-                    if (this.readyState == 4 && this.status == 200) {
-                        document.getElementById("table-body").innerHTML = this.responseText;
-                        // Restore checkbox states after content is updated
-                        setTimeout(restoreCheckboxStates, 10); // Small delay to ensure DOM is updated
-                    }
-                };
-                xhttp.open("GET", "data_desk.php", true);
-                xhttp.send();
-            }
-
-            poll();
-            setInterval(poll, 30000);
-            document.addEventListener('visibilitychange', function() {
-                if (!document.hidden) poll();
-            });
-        }
-
-        loadDoc();
-    </script>
-
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 id="pen_label">Pending Request</h2>
-            <button id="acceptAllBtn" class="btn btn-success" data-toggle="modal" data-target="#acceptModal">Accept All Selected</button>
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="index_desk.php">
+            <img src="../logo.png" alt="GSO logo">
+            <strong>E-Pass Slip</strong>
+            <span>Approver workspace</span>
+        </a>
+        <button class="nav-toggle" type="button" id="navToggle">Menu</button>
+        <nav class="nav" id="mainNav" aria-label="Primary navigation">
+            <a class="active" href="index_desk.php">Approvals</a>
+            <a href="track_emp_desk.php">Track Employees</a>
+            <a href="qrcode_scanner_desk.php">Scanner</a>
+            <a href="../../logout.php">Logout</a>
+        </nav>
+        <div class="user-chip">
+            <strong><?php echo htmlspecialchars($approverName); ?></strong>
+            <span><?php echo htmlspecialchars($_SESSION['role'] ?? 'Approver'); ?></span>
         </div>
+    </header>
 
-        <div class="p-5 rounded shadow">
-            <div class="table-responsive">
-                <table class="table .table-hover" id="table">
+    <main class="page">
+        <section class="page-header">
+            <div>
+                <p class="eyebrow">Live approval queue</p>
+                <h1>Pending Requests</h1>
+                <p class="muted">Review, select, and process pass-slip requests without leaving the queue.</p>
+            </div>
+            <form class="toolbar" id="filterForm">
+                <label>
+                    <span>Search</span>
+                    <input type="search" id="searchInput" placeholder="Name, position, destination">
+                </label>
+                <label>
+                    <span>Type</span>
+                    <select id="typeFilter">
+                        <option value="">All types</option>
+                        <option value="Official Business">Official Business</option>
+                        <option value="Personal">Personal</option>
+                    </select>
+                </label>
+                <button class="btn btn-secondary" type="button" id="refreshBtn">Refresh</button>
+            </form>
+        </section>
+
+        <section class="metric-grid" aria-label="Request summary">
+            <div class="metric"><span>Pending</span><strong id="pendingCount"><?php echo $stats['pending']; ?></strong></div>
+            <div class="metric"><span>Official Business</span><strong><?php echo $stats['official']; ?></strong></div>
+            <div class="metric"><span>Personal</span><strong><?php echo $stats['personal']; ?></strong></div>
+            <div class="metric"><span>Currently Outside</span><strong><?php echo $stats['outside']; ?></strong></div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div>
+                    <h2>Approval Queue</h2>
+                    <p id="queueMeta"><?php echo count($pendingRows); ?> request(s) loaded</p>
+                </div>
+            </div>
+
+            <div class="batch-bar">
+                <div>
+                    <strong id="selectionCount">No requests selected</strong>
+                    <div class="muted">Selected rows stay checked when the queue refreshes.</div>
+                </div>
+                <button id="acceptAllBtn" class="btn btn-primary" type="button" disabled>Process Selected</button>
+            </div>
+
+            <div class="table-wrap">
+                <table id="approvalTable">
                     <thead>
                         <tr>
-                            <th scope="col">Name</th>
-                            <th scope="col">Position</th>
-                            <th scope="col">Destination</th>
-                            <th scope="col">Type of Request</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Action</th>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Destination</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>
+                                <label class="select-all-control">
+                                    <input type="checkbox" id="selectAllRequests">
+                                    <span>Select all</span>
+                                </label>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="table-body">
-                        <tr>
-                            <?php
-                            while ($row = mysqli_fetch_assoc($result)) {
-                            ?>
+                        <?php foreach ($pendingRows as $row): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($row["name"]); ?></td>
+                                <td><?php echo htmlspecialchars($row["position"]); ?></td>
+                                <td><?php echo htmlspecialchars($row["destination"]); ?></td>
+                                <td><?php echo htmlspecialchars($row["typeofbusiness"]); ?></td>
+                                <td><?php echo htmlspecialchars($row["Status"]); ?></td>
                                 <td>
-                                    <?php echo $row["name"]; ?>
+                                    <button type="button" class="btn btn-info btn-sm" data-view-request="<?php echo (int) $row['id']; ?>">View</button>
+                                    <input type="checkbox" name="selected[]" value="<?php echo (int) $row['id']; ?>" aria-label="Select request for <?php echo htmlspecialchars($row["name"]); ?>">
                                 </td>
-                                <td>
-                                    <?php echo $row["position"]; ?>
-                                </td>
-                                <td>
-                                    <?php echo $row["destination"]; ?>
-                                </td>
-                                <td>
-                                    <?php echo $row["typeofbusiness"]; ?>
-                                </td>
-                                <td>
-                                    <?php echo $row["Status"]; ?>
-                                </td>
-                                <td>
-                                    <a href="view_desk.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a>
-                                    <input type="checkbox" name="selected[]" value="<?= $row['id']; ?>" class="form-check-input ml-2">
-                                </td>
-                        </tr>
-                    <?php
-                            }
-                    ?>
+                            </tr>
+                        <?php endforeach; ?>
+                        <?php if (!$pendingRows): ?>
+                            <tr><td colspan="6" class="empty">No pending requests right now.</td></tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
-    <div class="modal fade" id="acceptModal" tabindex="-1" role="dialog" aria-labelledby="acceptModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="acceptModalLabel">Accept Selected Requests</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+        </section>
+    </main>
+
+    <dialog id="acceptModal">
+        <form id="batchApprovalForm" class="modal-card" method="post">
+            <header>
+                <div>
+                    <p class="eyebrow">Batch action</p>
+                    <h2>Process selected requests</h2>
                 </div>
-                <div class="modal-body">
-                    <p>You are about to accept the following requests:</p>
-                    <div id="selectedRequestsList" class="mb-4">
-                        <!-- Selected requests will be listed here -->
-                    </div>
+                <button type="button" class="icon-btn" id="closeModal" aria-label="Close">x</button>
+            </header>
 
-                    <form id="batchApprovalForm" action="" method="POST">
-                        <input type="hidden" name="selected_ids" id="selected_ids_input">
+            <input type="hidden" name="selected_ids" id="selected_ids_input">
 
-                        <div class="card">
-                            <div class="card-header">
-                                <h4>Batch Approval Details</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="form-group mb-3">
-                                    <label for="esttime">Estimated Time</label>
-                                    <input type="time" class="form-control" id="esttime" name="esttime" min="08:00" max="18:00">
-                                </div>
+            <div class="selection-summary" id="selectedRequestsList">No selected requests.</div>
 
-                                <div class="form-group mb-3">
-                                    <label>Fixed Time for Pass Slip:</label><br>
-                                    <label for="fix_hours">Hours:</label>
-                                    <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="8" placeholder="0">
-                                    <label for="fix_minutes">Minutes:</label>
-                                    <input type="number" class="form" id="fix_minutes" name="fix_minutes" min="0" max="59" placeholder="0">
-                                </div>
-                                <div class="form-group mb-3">
-                                    <label for="sel1">Status:</label>
-                                    <select class="form-control" id="sel1" name="status" required>
-                                        <option value="Partially Approved">Partially Approved</option>
-                                        <option value="Declined">Declined</option>
-                                    </select>
-                                </div>
+            <div class="form-grid">
+                <label>
+                    <span>Status</span>
+                    <select id="sel1" name="status" required>
+                        <option value="Partially Approved">Partially Approved</option>
+                        <option value="Declined">Declined</option>
+                    </select>
+                </label>
+                <label>
+                    <span>Confirmed By</span>
+                    <input id="sel2" name="confirmed_by" value="<?php echo htmlspecialchars($approverName); ?>" required>
+                </label>
+                <label class="time-field">
+                    <span>Hours</span>
+                    <input type="number" id="fix_hours" name="fix_hours" min="0" max="8" value="1">
+                </label>
+                <label class="time-field">
+                    <span>Minutes</span>
+                    <input type="number" id="fix_minutes" name="fix_minutes" min="0" max="59" value="0">
+                </label>
+            </div>
 
-                                <div class="form-group mb-3">
-                                    <label for="sel2">Confirmed By:</label>
-                                    <select class="form-control" id="sel2" name="confirmed_by" required>
-                                        <?php if (isset($_SESSION['pay_name']) && !empty($_SESSION['pay_name'])): ?>
-                                            <option><?php echo htmlspecialchars($_SESSION['pay_name']); ?></option>
-                                        <?php endif; ?>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+            <footer>
+                <button type="button" class="btn btn-secondary" id="cancelModal">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="approveAllBtn">
+                    <span id="approveButtonText">Confirm Action</span>
+                </button>
+            </footer>
+        </form>
+    </dialog>
 
-                        <div class="card mt-4">
-                            <div class="card-header">
-                                <h4>Selected Requests Details</h4>
-                            </div>
-                            <div class="card-body">
-                                <div id="detailedRequestsList">
-                                    <!-- Detailed request information will be loaded here -->
-                                    <div class="text-center">
-                                        <div class="spinner-border" role="status">
-                                            <span class="sr-only">Loading...</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
+    <dialog id="requestDetailModal">
+        <div class="modal-card">
+            <header>
+                <div>
+                    <p class="eyebrow">Request details</p>
+                    <h2>Review Request</h2>
                 </div>
-                <!-- Update the button to submit the form directly -->
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" form="batchApprovalForm" name="approve_multiple_req" id="approveAllBtn" class="btn btn-success">
-                        <span id="approveButtonText">Approve All</span>
-                        <span id="loadingSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                    </button>
-                </div>
-
-
+                <button type="button" class="icon-btn" id="closeDetailModal" aria-label="Close">x</button>
+            </header>
+            <div id="requestDetailBody" class="detail-modal-body">
+                <div class="empty">Loading request details...</div>
             </div>
         </div>
-    </div>
-    <script>
-        document.getElementById('acceptAllBtn').addEventListener('click', function(e) {
-            // Get all checked checkboxes
-            const selectedCheckboxes = document.querySelectorAll('input[name="selected[]"]:checked');
+    </dialog>
 
-            if (selectedCheckboxes.length === 0) {
-                e.preventDefault(); // Prevent modal from opening
-                alert('Please select at least one request to accept.');
+    <div class="toast-stack" id="toastStack"></div>
+
+    <script>
+        const selectedStates = {};
+        const tableBody = document.getElementById('table-body');
+        const acceptAllBtn = document.getElementById('acceptAllBtn');
+        const selectionCount = document.getElementById('selectionCount');
+        const selectedIdsInput = document.getElementById('selected_ids_input');
+        const selectedRequestsList = document.getElementById('selectedRequestsList');
+        const selectAllRequests = document.getElementById('selectAllRequests');
+        const modal = document.getElementById('acceptModal');
+        const detailModal = document.getElementById('requestDetailModal');
+        const detailBody = document.getElementById('requestDetailBody');
+        const searchInput = document.getElementById('searchInput');
+        const typeFilter = document.getElementById('typeFilter');
+
+        document.getElementById('navToggle').addEventListener('click', () => {
+            document.getElementById('mainNav').classList.toggle('open');
+        });
+
+        function toast(message) {
+            const item = document.createElement('div');
+            item.className = 'toast';
+            item.textContent = message;
+            document.getElementById('toastStack').appendChild(item);
+            setTimeout(() => item.remove(), 4200);
+        }
+
+        function getCheckboxes() {
+            return Array.from(document.querySelectorAll('input[name="selected[]"]'));
+        }
+
+        function getSelectedCheckboxes() {
+            return getCheckboxes().filter(checkbox => checkbox.checked);
+        }
+
+        function saveSelection() {
+            getCheckboxes().forEach(checkbox => {
+                selectedStates[checkbox.value] = checkbox.checked;
+            });
+        }
+
+        function restoreSelection() {
+            getCheckboxes().forEach(checkbox => {
+                checkbox.checked = Boolean(selectedStates[checkbox.value]);
+            });
+            updateSelectionUi();
+        }
+
+        function updateSelectionUi() {
+            const selected = getSelectedCheckboxes();
+            const checkboxes = getCheckboxes();
+            acceptAllBtn.disabled = selected.length === 0;
+            selectionCount.textContent = selected.length ? `${selected.length} request(s) selected` : 'No requests selected';
+            selectedIdsInput.value = JSON.stringify(selected.map(checkbox => checkbox.value));
+            if (selectAllRequests) {
+                selectAllRequests.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
+                selectAllRequests.indeterminate = selected.length > 0 && selected.length < checkboxes.length;
+            }
+        }
+
+        function applyFilters() {
+            const query = searchInput.value.trim().toLowerCase();
+            const type = typeFilter.value;
+            let visibleCount = 0;
+
+            Array.from(tableBody.querySelectorAll('tr')).forEach(row => {
+                if (row.querySelector('.empty')) return;
+                const cells = Array.from(row.cells).map(cell => cell.textContent.trim());
+                const matchesQuery = !query || cells.slice(0, 3).join(' ').toLowerCase().includes(query);
+                const matchesType = !type || cells[3] === type;
+                const visible = matchesQuery && matchesType;
+                row.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
+            });
+
+            document.getElementById('queueMeta').textContent = `${visibleCount} visible request(s)`;
+        }
+
+        function renderSelectedSummary() {
+            const selected = getSelectedCheckboxes();
+            if (!selected.length) {
+                selectedRequestsList.textContent = 'No selected requests.';
                 return;
             }
 
-            // Collect all selected IDs and names
-            const selectedIds = [];
-            const selectedNames = [];
-
-            selectedCheckboxes.forEach(checkbox => {
+            selectedRequestsList.innerHTML = selected.map(checkbox => {
                 const row = checkbox.closest('tr');
                 const name = row.cells[0].textContent.trim();
-                selectedIds.push(checkbox.value);
-                selectedNames.push(name);
-            });
-
-            // Display selected requests in the modal
-            const listContainer = document.getElementById('selectedRequestsList');
-            listContainer.innerHTML = '<ul class="list-group">';
-
-            selectedNames.forEach((name, index) => {
-                listContainer.innerHTML += `<li class="list-group-item">${name} (ID: ${selectedIds[index]})</li>`;
-            });
-
-            listContainer.innerHTML += '</ul>';
-
-            // Store selected IDs in the hidden input
-            document.getElementById('selected_ids_input').value = JSON.stringify(selectedIds);
-
-            // Load detailed information for each selected request
-            loadDetailedRequestInfo(selectedIds);
-        });
-
-        function loadDetailedRequestInfo(ids) {
-            const detailedListContainer = document.getElementById('detailedRequestsList');
-
-            // Create a request to fetch detailed information
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '../get_request_details.php', true);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-
-            xhr.onreadystatechange = function() {
-                if (this.readyState === 4 && this.status === 200) {
-                    detailedListContainer.innerHTML = this.responseText;
-
-                    // Check Type of Business and adjust inputs
-                    const hasOfficial = detailedListContainer.textContent.includes('Official Business');
-                    const hasPersonal = detailedListContainer.textContent.includes('Personal');
-                    const hoursInput = document.getElementById('fix_hours');
-                    const minutesInput = document.getElementById('fix_minutes');
-
-                    if (hasOfficial) {
-                        hoursInput.max = 4;
-                        hoursInput.disabled = false;
-                    } else if (hasPersonal) {
-                        hoursInput.disabled = true;
-                        hoursInput.value = '';
-                        minutesInput.max = 30;
-                    }
-                }
-            };
-
-            xhr.send('ids=' + JSON.stringify(ids));
+                const destination = row.cells[2].textContent.trim();
+                return `<div><strong>${name}</strong><span class="muted"> · ${destination} · ID ${checkbox.value}</span></div>`;
+            }).join('');
         }
 
-        document.getElementById('confirmAcceptBtn').addEventListener('click', function() {
-            // Validate form
-            const status = document.getElementById('sel1').value;
-            const confirmedBy = document.getElementById('sel2').value;
+        async function loadQueue() {
+            if (document.hidden) return;
+            saveSelection();
+            try {
+                const response = await fetch('data_desk.php', { cache: 'no-store' });
+                const html = await response.text();
+                tableBody.innerHTML = html || '<tr><td colspan="6" class="empty">No pending requests right now.</td></tr>';
+                restoreSelection();
+                applyFilters();
+                document.getElementById('pendingCount').textContent = getCheckboxes().length;
+            } catch (error) {
+                toast('Unable to refresh queue. Please try again.');
+            }
+        }
 
-            if (!status || !confirmedBy) {
-                alert('Please fill in all required fields.');
+        tableBody.addEventListener('change', event => {
+            if (event.target.name === 'selected[]') {
+                selectedStates[event.target.value] = event.target.checked;
+                updateSelectionUi();
+            }
+        });
+
+        selectAllRequests?.addEventListener('change', event => {
+            getCheckboxes().forEach(checkbox => {
+                checkbox.checked = event.target.checked;
+                selectedStates[checkbox.value] = event.target.checked;
+            });
+            updateSelectionUi();
+        });
+
+        searchInput.addEventListener('input', applyFilters);
+        typeFilter.addEventListener('change', applyFilters);
+        document.getElementById('refreshBtn').addEventListener('click', loadQueue);
+
+        acceptAllBtn.addEventListener('click', () => {
+            const selected = getSelectedCheckboxes();
+            if (!selected.length) {
+                toast('Select at least one request first.');
+                return;
+            }
+            renderSelectedSummary();
+            updateSelectionUi();
+            modal.showModal();
+        });
+
+        document.getElementById('closeModal').addEventListener('click', () => modal.close());
+        document.getElementById('cancelModal').addEventListener('click', () => modal.close());
+        document.getElementById('closeDetailModal').addEventListener('click', () => detailModal.close());
+
+        document.getElementById('sel1').addEventListener('change', event => {
+            const declined = event.target.value === 'Declined';
+            document.querySelectorAll('.time-field').forEach(field => {
+                field.style.display = declined ? 'none' : '';
+            });
+        });
+
+        document.getElementById('batchApprovalForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            updateSelectionUi();
+
+            if (!selectedIdsInput.value || selectedIdsInput.value === '[]') {
+                toast('No requests selected.');
                 return;
             }
 
-            // Submit the form
-            document.getElementById('batchApprovalForm').submit();
-        });
-    </script>
-    <!-- Add JavaScript for form validation and submission -->
-    <!-- Add JavaScript for form validation and submission -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Get references to form elements
-            const batchApprovalForm = document.getElementById('batchApprovalForm');
-            const approveAllBtn = document.getElementById('approveAllBtn');
-            const selectedIdsInput = document.getElementById('selected_ids_input');
+            const approveBtn = document.getElementById('approveAllBtn');
+            const approveText = document.getElementById('approveButtonText');
+            approveBtn.disabled = true;
+            approveText.textContent = 'Processing...';
 
-            // Function to toggle estimated time requirement based on status
-            function toggleEstTimeRequirement() {
-                const status = document.getElementById('sel1').value;
-                const esttimeField = document.getElementById('esttime');
-                const esttimeContainer = esttimeField.closest('.form-group');
-
-                if (status === 'Declined') {
-                    // Hide estimated time field for declined status
-                    if (esttimeContainer) {
-                        esttimeContainer.style.display = 'none';
-                    }
-                    // Clear the value when hiding
-                    esttimeField.value = '';
-                } else {
-                    // Show estimated time field for other statuses
-                    if (esttimeContainer) {
-                        esttimeContainer.style.display = 'block';
-                    }
-                }
-            }
-
-            // Add event listener to status dropdown
-            const statusSelect = document.getElementById('sel1');
-            if (statusSelect) {
-                statusSelect.addEventListener('change', toggleEstTimeRequirement);
-                // Initialize on page load
-                toggleEstTimeRequirement();
-            }
-
-            // Only add event listeners if elements exist
-            if (batchApprovalForm) {
-                batchApprovalForm.addEventListener('submit', function(e) {
-                    e.preventDefault(); // Prevent default form submission
-
-                    // Get form fields
-                    const esttime = document.getElementById('esttime').value;
-                    const status = document.getElementById('sel1').value;
-                    const confirmedBy = document.getElementById('sel2').value;
-                    const selectedIds = selectedIdsInput ? selectedIdsInput.value : '[]';
-
-                    console.log("Form submission - Selected IDs:", selectedIds);
-                    console.log("Form submission - Status:", status);
-                    console.log("Form submission - Confirmed By:", confirmedBy);
-                    console.log("Form submission - Est Time:", esttime);
-
-                    // Validate form fields - estimated time only required if not declined
-
-                    if (!status) {
-                        alert('Please select a status.');
-                        return false;
-                    }
-
-                    if (!confirmedBy) {
-                        alert('Please select who confirmed this request.');
-                        return false;
-                    }
-
-                    if (!selectedIds || selectedIds === '[]') {
-                        alert('No requests selected for approval.');
-                        return false;
-                    }
-
-                    // Show loading state
-                    if (approveAllBtn) {
-                        const buttonText = document.getElementById('approveButtonText');
-                        const spinner = document.getElementById('loadingSpinner');
-
-                        approveAllBtn.disabled = true;
-                        if (buttonText) buttonText.textContent = 'Processing...';
-                        if (spinner) spinner.classList.remove('d-none');
-                    }
-
-                    // Submit the form using AJAX
-                    const formData = new FormData(this);
-
-                    // Log the form data being sent
-                    console.log("FormData entries:");
-                    for (let pair of formData.entries()) {
-                        console.log(pair[0] + ': ' + pair[1]);
-                    }
-
-                    fetch('bulk_accept.php', {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(response => {
-                            console.log("Response status:", response.status);
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok');
-                            }
-                            return response.text();
-                        })
-                        .then(data => {
-                            // Log the response
-                            console.log("Response data:", data);
-
-                            // Success - show message and redirect
-                            alert('Requests processed successfully!');
-                            window.location.href = 'index_desk.php';
-                        })
-                        .catch(error => {
-                            // Error handling
-                            console.error('Error:', error);
-                            alert('There was an error processing your request. Please try again.');
-
-                            // Reset button state
-                            if (approveAllBtn) {
-                                approveAllBtn.disabled = false;
-                                const buttonText = document.getElementById('approveButtonText');
-                                const spinner = document.getElementById('loadingSpinner');
-                                if (buttonText) buttonText.textContent = 'Approve All';
-                                if (spinner) spinner.classList.add('d-none');
-                            }
-                        });
+            try {
+                const response = await fetch('bulk_accept.php', {
+                    method: 'POST',
+                    body: new FormData(event.target)
                 });
-            }
-
-            // Additional validation when the Approve All button is clicked directly
-            if (approveAllBtn) {
-                approveAllBtn.addEventListener('click', function() {
-                    // This is a backup validation in case the form submission event doesn't trigger
-                    const esttime = document.getElementById('esttime');
-                    const status = document.getElementById('sel1');
-                    const confirmedBy = document.getElementById('sel2');
-
-                    // Only require estimated time if status is not declined
-                    if (!status || !status.value) {
-                        alert('Please select a status.');
-                        return false;
-                    }
-
-                    if (!confirmedBy || !confirmedBy.value) {
-                        alert('Please select who confirmed this request.');
-                        return false;
-                    }
-                });
-            }
-
-            // Function to update the selected IDs input
-            function updateSelectedIds() {
-                if (selectedIdsInput) {
-                    const checkboxes = document.querySelectorAll('input[name="selected[]"]:checked');
-                    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-                    console.log("Updated selected IDs:", selectedIds);
-                    selectedIdsInput.value = JSON.stringify(selectedIds);
+                const data = await response.json();
+                toast(data.message || 'Requests processed.');
+                if (data.success) {
+                    Object.keys(selectedStates).forEach(id => selectedStates[id] = false);
+                    modal.close();
+                    await loadQueue();
                 }
-            }
-
-            // Add event listeners to all checkboxes
-            document.addEventListener('change', function(e) {
-                if (e.target && e.target.name === 'selected[]') {
-                    updateSelectedIds();
-                }
-            });
-
-            // Initialize selected IDs on page load
-            updateSelectedIds();
-
-            // Add event listener to the Accept All button that opens the modal
-            const acceptAllBtn = document.getElementById('acceptAllBtn');
-            if (acceptAllBtn) {
-                acceptAllBtn.addEventListener('click', function(e) {
-                    // Get all checked checkboxes
-                    const selectedCheckboxes = document.querySelectorAll('input[name="selected[]"]:checked');
-                    console.log("Accept All clicked - Selected checkboxes:", selectedCheckboxes.length);
-
-                    if (selectedCheckboxes.length === 0) {
-                        e.preventDefault(); // Prevent modal from opening
-                        alert('Please select at least one request to accept.');
-                        return;
-                    }
-
-                    // Collect all selected IDs and names
-                    const selectedIds = [];
-                    const selectedNames = [];
-
-                    selectedCheckboxes.forEach(checkbox => {
-                        const row = checkbox.closest('tr');
-                        if (row && row.cells && row.cells[0]) {
-                            const name = row.cells[0].textContent.trim();
-                            selectedIds.push(checkbox.value);
-                            selectedNames.push(name);
-                        }
-                    });
-
-                    console.log("Selected IDs:", selectedIds);
-                    console.log("Selected Names:", selectedNames);
-
-                    // Display selected requests in the modal
-                    const listContainer = document.getElementById('selectedRequestsList');
-                    if (listContainer) {
-                        listContainer.innerHTML = '<ul class="list-group">';
-
-                        selectedNames.forEach((name, index) => {
-                            listContainer.innerHTML += `<li class="list-group-item">${name} (ID: ${selectedIds[index]})</li>`;
-                        });
-
-                        listContainer.innerHTML += '</ul>';
-                    }
-
-                    // Store selected IDs in the hidden input
-                    if (selectedIdsInput) {
-                        selectedIdsInput.value = JSON.stringify(selectedIds);
-                        console.log("Set selected_ids_input value:", selectedIdsInput.value);
-                    }
-
-                    // Load detailed information for each selected request
-                    if (typeof loadDetailedRequestInfo === 'function') {
-                        loadDetailedRequestInfo(selectedIds);
-                    }
-                });
+            } catch (error) {
+                toast('There was an error processing the selected requests.');
+            } finally {
+                approveBtn.disabled = false;
+                approveText.textContent = 'Confirm Action';
             }
         });
 
-        // Function to load detailed request info (defined outside to be accessible)
-        function loadDetailedRequestInfo(ids) {
-            console.log("Loading detailed info for IDs:", ids);
-            const detailedListContainer = document.getElementById('detailedRequestsList');
-            if (!detailedListContainer) return;
+        async function openRequestDetails(id) {
+            detailBody.innerHTML = '<div class="empty">Loading request details...</div>';
+            detailModal.showModal();
 
-            // Create a request to fetch detailed information
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', 'get_request_details.php', true);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-
-            xhr.onreadystatechange = function() {
-                if (this.readyState === 4) {
-                    console.log("XHR status:", this.status);
-                    if (this.status === 200) {
-                        detailedListContainer.innerHTML = this.responseText;
-
-                        // Check Type of Business and adjust inputs
-                        const hasOfficial = detailedListContainer.textContent.includes('Official Business');
-                        const hasPersonal = detailedListContainer.textContent.includes('Personal');
-                        const hoursInput = document.getElementById('fix_hours');
-                        const minutesInput = document.getElementById('fix_minutes');
-
-                        if (hasOfficial) {
-                            hoursInput.max = 4;
-                            hoursInput.disabled = false;
-                        } else if (hasPersonal) {
-                            hoursInput.disabled = true;
-                            hoursInput.value = '';
-                            minutesInput.max = 30;
-                        }
-                    } else {
-                        console.error("Error loading request details:", this.statusText);
-                        detailedListContainer.innerHTML = '<div class="alert alert-danger">Error loading request details</div>';
-                    }
+            try {
+                const response = await fetch(`request_details_modal.php?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
+                const html = await response.text();
+                detailBody.innerHTML = html || '<div class="empty">Unable to load request details.</div>';
+                if (response.ok) {
+                    bindSingleRequestForm();
                 }
-            };
-
-            xhr.send('ids=' + JSON.stringify(ids));
+            } catch (error) {
+                detailBody.innerHTML = '<div class="empty">Unable to load request details.</div>';
+            }
         }
-    </script>
 
-    <script>
-        // More aggressive approach for Bootstrap modal
-        document.addEventListener('DOMContentLoaded', function() {
-            // Function to focus on the esttime input
-            function focusOnEsttime() {
-                const esttimeInput = document.getElementById('esttime');
-                if (esttimeInput) {
-                    console.log('Focusing on esttime input');
-                    setTimeout(() => {
-                        esttimeInput.focus();
-                    }, 500); // Delay to ensure modal is fully rendered
-                }
+        function bindSingleRequestForm() {
+            const status = detailBody.querySelector('[data-single-status]');
+            const reason = detailBody.querySelector('[data-single-decline-reason]');
+            const approve = detailBody.querySelector('[data-single-approve]');
+            const decline = detailBody.querySelector('[data-single-decline]');
+
+            function syncSingleAction() {
+                const isDeclined = status && status.value === 'Declined';
+                if (reason) reason.hidden = !isDeclined;
+                if (approve) approve.hidden = isDeclined;
+                if (decline) decline.hidden = !isDeclined;
             }
 
-            // Multiple ways to detect when the modal is shown
-
-            // 1. Bootstrap event
-            $('#acceptModal').on('shown.bs.modal', focusOnEsttime);
-
-            // 2. Click event on the button that opens the modal
-            document.getElementById('acceptAllBtn')?.addEventListener('click', function() {
-                console.log('Accept All button clicked');
-                setTimeout(focusOnEsttime, 700); // Delay to ensure modal is shown
+            status?.addEventListener('change', syncSingleAction);
+            detailBody.querySelectorAll('[data-close-detail]').forEach(button => {
+                button.addEventListener('click', () => detailModal.close());
             });
+            syncSingleAction();
+        }
 
-            // 3. Mutation observer to detect when modal becomes visible
-            const modalElement = document.getElementById('acceptModal');
-            if (modalElement) {
-                const observer = new MutationObserver(function(mutations) {
-                    mutations.forEach(function(mutation) {
-                        if (mutation.attributeName === 'class' &&
-                            modalElement.classList.contains('show')) {
-                            console.log('Modal shown detected by observer');
-                            focusOnEsttime();
-                        }
-                    });
-                });
+        tableBody.addEventListener('click', event => {
+            const button = event.target.closest('[data-view-request]');
+            if (!button) return;
+            openRequestDetails(button.dataset.viewRequest);
+        });
 
-                observer.observe(modalElement, {
-                    attributes: true
-                });
-            }
-
-            // Global key handler for Enter key when modal is visible
-            document.addEventListener('keydown', function(event) {
-                const modal = document.getElementById('acceptModal');
-                if (modal &&
-                    (modal.classList.contains('show') || modal.style.display === 'block') &&
-                    event.key === 'Enter') {
-
-                    // Don't trigger for textareas
-                    if (event.target.tagName.toLowerCase() === 'textarea') {
-                        return;
-                    }
-
-                    console.log('Global Enter key handler triggered');
-                    event.preventDefault();
-
-                    // Get the approve button and click it
-                    const approveBtn = document.getElementById('approveAllBtn');
-                    if (approveBtn) {
-                        approveBtn.click();
-                    }
-                }
-            });
-
-            console.log('Enhanced Bootstrap modal handlers initialized');
+        applyFilters();
+        updateSelectionUi();
+        setInterval(loadQueue, 30000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) loadQueue();
         });
     </script>
-
-
 </body>
-
 </html>

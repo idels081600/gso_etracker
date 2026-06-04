@@ -245,6 +245,9 @@ if (!isset($_SESSION['username'])) {
             /* Change the color to your desired hover color */
         }
     </style>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 
 <body>
@@ -314,9 +317,17 @@ if (!isset($_SESSION['username'])) {
     loadStatus();
     updateImage();
 
-    // Set intervals for periodic updates
-    setInterval(loadStatus, 1000); // Status update every 5 seconds
-    setInterval(updateImage, 10000); // Image update every 10 seconds
+    // Helper: only poll when tab is visible
+    function startPolling(name, fn, ms) {
+        function poll() { if (!document.hidden) fn(); }
+        setInterval(poll, ms);
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) fn(); // Refresh immediately when tab becomes visible
+        });
+    }
+    // Set intervals for periodic updates (reduced from 1s/10s to 30s)
+    startPolling('status', loadStatus, 30000);
+    startPolling('image', updateImage, 30000);
   </script>
   <div id="icons">
     <img id="icon" src="../pending.png" alt="Logo" class="check-img">

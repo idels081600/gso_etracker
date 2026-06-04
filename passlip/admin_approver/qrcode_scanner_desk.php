@@ -121,6 +121,9 @@ if (!isset($_SESSION['username'])) {
             }
         }
     </style>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 
 <body>

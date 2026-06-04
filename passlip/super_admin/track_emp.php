@@ -55,6 +55,9 @@ if (isset($_POST['undo_delete'])) {
   <script src="https://www.gstatic.com/firebasejs/7.14.6/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/7.14.6/firebase-messaging.js"></script>
   <title>Employees</title>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 <style>
   @media screen and (max-width: 767px) {

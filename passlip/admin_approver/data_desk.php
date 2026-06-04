@@ -12,7 +12,7 @@ while ($row = mysqli_fetch_assoc($result)) {
   echo '<td>' . $row["typeofbusiness"] . '</td>';
   echo '<td>' . $row["Status"] . '</td>';
   echo '<td>
-          <a href="view_desk.php?id=' . $row['id'] . '" class="btn btn-info btn-sm">View</a>
+          <button type="button" class="btn btn-info btn-sm" data-view-request="' . $row['id'] . '">View</button>
           <input type="checkbox" name="selected[]" value="' . $row['id'] . '" class="form-check-input ml-2">
         </td>';
   echo '</tr>';

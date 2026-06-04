@@ -79,6 +79,9 @@ if (!isset($_SESSION['username'])) {
             margin-left: 10px;
         }
     </style>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 
 <body>
@@ -102,9 +105,6 @@ if (!isset($_SESSION['username'])) {
                 <!-- <li class="nav-item">
                     <a class="nav-link" href="approved_tcws.php">Approved</a>
                 </li> -->
-                <li class="nav-item">
-                    <a class="nav-link" href="declined_r.php">Declined Request</a>
-                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="track_emp_r.php">Track Employees</a>
                 </li>

@@ -77,6 +77,9 @@ if (!isset($_SESSION['username'])) {
             /* Add some spacing between the logo and text */
         }
     </style>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 
 <body>

@@ -65,6 +65,9 @@ if (!isset($_SESSION['username'])) {
             margin-left: 10px;
         }
     </style>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 
 <body>

@@ -33,6 +33,9 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
     <script src="https://www.gstatic.com/firebasejs/9.4.0/firebase-messaging-compat.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <title>Home</title>
+
+    <link rel="stylesheet" href="../assets/passlip-modern.css?v=20260603">
+    <script defer src="../assets/passlip-modern.js?v=20260603"></script>
 </head>
 <style>
     @media screen and (max-width: 767px) {
@@ -96,6 +99,66 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
         z-index: 1;
         box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
     }
+
+    .request-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .request-detail-grid > div {
+        padding: 12px;
+        border: 1px solid #dde7df;
+        border-radius: 6px;
+        background: #f8fbf8;
+    }
+
+    .request-detail-grid .wide {
+        grid-column: 1 / -1;
+    }
+
+    .request-detail-grid span,
+    .request-detail-grid strong {
+        display: block;
+    }
+
+    .request-detail-grid span,
+    .request-modal-fields span {
+        margin-bottom: 4px;
+        color: #647068;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .request-modal-fields {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .request-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 18px;
+    }
+
+    @media screen and (max-width: 767px) {
+        .request-detail-grid,
+        .request-modal-fields {
+            grid-template-columns: 1fr;
+        }
+
+        .request-modal-actions {
+            flex-direction: column;
+        }
+
+        .request-modal-actions .btn {
+            width: 100%;
+        }
+    }
 </style>
 
 <body>
@@ -116,9 +179,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="add_req_r.php">Add Request</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="declined_r.php">Declined Request</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="track_emp_r.php">Track Employees</a>
@@ -225,14 +285,17 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                             <th scope="col">Destination</th>
                             <th scope="col">Type of Request</th>
                             <th scope="col">Status</th>
-                            <th scope="col">Action</th>
+                            <th scope="col">
+                                <label class="mb-0">
+                                    <input type="checkbox" id="selectAllRequests">
+                                    Select all
+                                </label>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="table-body">
-                        <tr>
-                            <?php
-                            while ($row = mysqli_fetch_assoc($result)) {
-                            ?>
+                        <?php while ($row = mysqli_fetch_assoc($result)) { ?>
+                            <tr>
                                 <td>
                                     <?php echo $row["name"]; ?>
                                 </td>
@@ -249,13 +312,11 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                     <?php echo $row["Status"]; ?>
                                 </td>
                                 <td>
-                                    <a href="view_r.php?id=<?= $row['id']; ?>" class="btn btn-info btn-sm">View</a>
+                                    <button type="button" class="btn btn-info btn-sm" data-view-request="<?= (int) $row['id']; ?>">View</button>
                                     <input type="checkbox" name="selected[]" value="<?= $row['id']; ?>" class="form-check-input ml-2">
                                 </td>
-                        </tr>
-                    <?php
-                            }
-                    ?>
+                            </tr>
+                        <?php } ?>
                     </tbody>
                 </table>
             </div>
@@ -287,7 +348,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                 <div class="form-group mb-3" id="timeInputs">
                                     <label>Fixed Time for Pass Slip:</label><br>
                                     <label for="fix_hours">Hours:</label>
-                                    <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="2" placeholder="0">
+                                    <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="4" placeholder="0">
                                     <label for="fix_minutes">Minutes:</label>
                                     <input type="number" class="form" id="fix_minutes" name="fix_minutes" min="0" max="59" placeholder="0">
                                 </div>
@@ -295,7 +356,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                     <label for="sel1">Status:</label>
                                     <select class="form-control" id="sel1" name="status" required>
                                         <option value="Partially Approved">Partially Approved</option>
-                                        <option value="Declined">Declined</option>
                                     </select>
                                 </div>
 
@@ -336,6 +396,21 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                 </div>
 
 
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="requestDetailModal" tabindex="-1" role="dialog" aria-labelledby="requestDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="requestDetailModalLabel">Review Request</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="requestDetailBody">
+                    <div class="text-center py-4">Loading request details...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -433,24 +508,12 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             const approveAllBtn = document.getElementById('approveAllBtn');
             const selectedIdsInput = document.getElementById('selected_ids_input');
 
-            // Function to toggle estimated time requirement based on status
+            // Keep fixed-time inputs visible for approval-only bulk processing.
             function toggleEstTimeRequirement() {
-                const status = document.getElementById('sel1').value;
                 const timeContainer = document.getElementById('timeInputs');
 
-                if (status === 'Declined') {
-                    // Hide time inputs for declined status
-                    if (timeContainer) {
-                        timeContainer.style.display = 'none';
-                    }
-                    // Clear the values when hiding
-                    document.getElementById('fix_hours').value = '';
-                    document.getElementById('fix_minutes').value = '';
-                } else {
-                    // Show time inputs for other statuses
-                    if (timeContainer) {
-                        timeContainer.style.display = 'block';
-                    }
+                if (timeContainer) {
+                    timeContainer.style.display = 'block';
                 }
             }
 
@@ -476,7 +539,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     console.log("Form submission - Status:", status);
                     console.log("Form submission - Confirmed By:", confirmedBy);
 
-                    // Validate form fields - estimated time only required if not declined
                     if (!status) {
                         alert('Please select a status.');
                         return false;
@@ -553,8 +615,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     // This is a backup validation in case the form submission event doesn't trigger
                     const status = document.getElementById('sel1');
                     const confirmedBy = document.getElementById('sel2');
-
-                    // Only require estimated time if status is not declined
 
                     if (!status || !status.value) {
                         alert('Please select a status.');
@@ -738,6 +798,81 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             });
 
             console.log('Enhanced Bootstrap modal handlers initialized');
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAll = document.getElementById('selectAllRequests');
+            const tableBody = document.getElementById('table-body');
+            const selectedIdsInput = document.getElementById('selected_ids_input');
+
+            function getRequestCheckboxes() {
+                return Array.from(document.querySelectorAll('input[name="selected[]"]'));
+            }
+
+            function updateBulkSelectionState() {
+                const checkboxes = getRequestCheckboxes();
+                const selected = checkboxes.filter(checkbox => checkbox.checked);
+
+                if (selectedIdsInput) {
+                    selectedIdsInput.value = JSON.stringify(selected.map(checkbox => checkbox.value));
+                }
+
+                if (selectAll) {
+                    selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
+                    selectAll.indeterminate = selected.length > 0 && selected.length < checkboxes.length;
+                }
+            }
+
+            selectAll?.addEventListener('change', function() {
+                getRequestCheckboxes().forEach(checkbox => {
+                    checkbox.checked = selectAll.checked;
+                    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+                updateBulkSelectionState();
+            });
+
+            document.addEventListener('change', function(event) {
+                if (event.target && event.target.name === 'selected[]') {
+                    updateBulkSelectionState();
+                }
+            });
+
+            if (tableBody) {
+                new MutationObserver(updateBulkSelectionState).observe(tableBody, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+
+            updateBulkSelectionState();
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const detailBody = document.getElementById('requestDetailBody');
+
+            document.addEventListener('click', function(event) {
+                const button = event.target.closest('[data-view-request]');
+                if (!button) return;
+
+                event.preventDefault();
+                detailBody.innerHTML = '<div class="text-center py-4">Loading request details...</div>';
+                $('#requestDetailModal').modal('show');
+
+                fetch('request_details_modal.php?id=' + encodeURIComponent(button.dataset.viewRequest), {
+                        cache: 'no-store'
+                    })
+                    .then(response => response.text().then(html => ({ ok: response.ok, html })))
+                    .then(result => {
+                        detailBody.innerHTML = result.html || '<div class="alert alert-warning mb-0">Unable to load request details.</div>';
+                    })
+                    .catch(() => {
+                        detailBody.innerHTML = '<div class="alert alert-danger mb-0">Unable to load request details.</div>';
+                    });
+            });
         });
     </script>
 
