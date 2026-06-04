@@ -22,7 +22,7 @@ function display_data_tcws()
 function display_data_r()
 {
     global $conn, $username; // Add $username as a global variable
-    $query = "SELECT * FROM `request` WHERE `Status` = 'Pending' AND `Role` = 'Employee' AND DATE(date) = CURDATE() ORDER BY `id` DESC";
+    $query = "SELECT * FROM `request` WHERE `Status` = 'Pending' AND (`Role` = 'Employee' OR `Role` = 'TCWS Employee') AND DATE(date) = CURDATE() ORDER BY `id` DESC";
     $result = mysqli_query($conn, $query);
     return $result;
 }
@@ -66,7 +66,7 @@ function display_data_declined()
 function display_data_declined_r()
 {
     global $conn, $username; // Add $username as a global variable
-    $query = "SELECT * FROM `request` WHERE `Status` LIKE 'Declined' AND `Role` = 'Employee' ORDER BY `id` DESC";
+    $query = "SELECT * FROM `request` WHERE `Status` LIKE 'Declined' AND (`Role` = 'Employee' OR `Role` = 'TCWS Employee') ORDER BY `id` DESC";
     $result = mysqli_query($conn, $query);
     return $result;
 }
@@ -101,7 +101,7 @@ function display_emp_status_tcws()
 function display_emp_status_r()
 {
     global $conn, $username; // Add $username as a global variable
-    $query = "SELECT * FROM `request` WHERE `Role` = 'Employee' AND DATE(date) = CURDATE() ORDER BY `id` DESC";
+    $query = "SELECT * FROM `request` WHERE (`Role` = 'Employee' OR `Role` = 'TCWS Employee') AND DATE(date) = CURDATE() ORDER BY `id` DESC";
     $result = mysqli_query($conn, $query);
     return $result;
 }
@@ -124,7 +124,7 @@ function display_users()
 function display_request()
 {
     global $conn, $username; // Add $username as a global variable
-    $query = "SELECT * FROM `request` WHERE `Status` = 'Pending' AND `Role` = 'Employee' ORDER BY `id` DESC";
+    $query = "SELECT * FROM `request` WHERE `Status` = 'Pending' AND (`Role` = 'Employee' OR `Role` = 'TCWS Employee') ORDER BY `id` DESC";
     $result = mysqli_query($conn, $query);
     return $result;
 }
@@ -132,8 +132,8 @@ function display_total_pass_slip()
 {
     global $conn, $username; // Add $username as a global variable
 
-    // Query to get the rows where Status is either 'Done' or 'Approved' and Role is 'Employee'
-    $query = "SELECT * FROM `request` WHERE `Status` IN ('Done', 'Approved') AND `Role` = 'Employee' ORDER BY `id` DESC";
+    // Query to get the rows where Status is either 'Done' or 'Approved' and Role is 'Employee' or 'TCWS Employee'
+    $query = "SELECT * FROM `request` WHERE `Status` IN ('Done', 'Approved') AND (`Role` = 'Employee' OR `Role` = 'TCWS Employee') ORDER BY `id` DESC";
     $result = mysqli_query($conn, $query);
 
     // Count the number of rows returned

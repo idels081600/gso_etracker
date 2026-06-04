@@ -18,9 +18,9 @@ if ($range == 'today') {
         : "AND DAY(date) BETWEEN 16 AND 31 AND MONTH(date) = $month AND YEAR(date) = $year";
 }
 
-// Query for Regular Employees ONLY
-$sql_official = $conn->query("SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND role = 'Employee' $date_condition $duration_condition ORDER BY name");
-$sql_personal = $conn->query("SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND role = 'Employee' $date_condition $duration_condition ORDER BY name");
+// Query for Regular Employees and TCWS Employees
+$sql_official = $conn->query("SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND (role = 'Employee' OR role = 'TCWS Employee') $date_condition $duration_condition ORDER BY name");
+$sql_personal = $conn->query("SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND (role = 'Employee' OR role = 'TCWS Employee') $date_condition $duration_condition ORDER BY name");
 
 class PDF extends FPDF {
     var $headerTitle;

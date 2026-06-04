@@ -21,7 +21,7 @@ if (!$id) {
     exit();
 }
 
-$stmt = $conn->prepare("SELECT * FROM `request` WHERE `id` = ? AND `Role` = 'Employee' LIMIT 1");
+$stmt = $conn->prepare("SELECT * FROM `request` WHERE `id` = ? AND (`Role` = 'Employee' OR `Role` = 'TCWS Employee') LIMIT 1");
 $stmt->bind_param('i', $id);
 $stmt->execute();
 $result = $stmt->get_result();
