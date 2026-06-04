@@ -583,7 +583,7 @@ function getWeeklyFuelPrices(): array
             'success' => true,
             'data' => [
                 'latest' => fuelBudgetLatestWeeklyFuelPrice($conn),
-                'history' => fuelBudgetWeeklyFuelPriceHistory($conn, 12),
+                'history' => fuelBudgetWeeklyFuelPriceHistory($conn, 52),
             ],
             'message' => 'Weekly fuel prices retrieved successfully',
         ];

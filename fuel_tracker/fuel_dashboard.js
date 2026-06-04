@@ -918,6 +918,31 @@ function formatShortDate(dateString) {
   });
 }
 
+function formatFullDate(dateString) {
+  if (!dateString) return "-";
+  return new Date(`${dateString}T00:00:00`).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatDateTime(dateTimeString) {
+  if (!dateTimeString) return "-";
+  const normalized = dateTimeString.includes("T")
+    ? dateTimeString
+    : dateTimeString.replace(" ", "T");
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 async function saveWeeklyFuelPrices() {
   const button = document.getElementById("saveWeeklyFuelPriceBtn");
   const weekInput = document.getElementById("dashboardFuelPriceWeek");
@@ -1075,6 +1100,63 @@ function renderWeeklyFuelPrices(priceData) {
   dashboardFuelPriceHistory = Array.isArray(priceData?.history) ? priceData.history : [];
   setWeeklyFuelPriceInputs(latest);
   renderFuelPriceTrend(dashboardFuelPriceHistory);
+  renderWeeklyFuelPriceHistoryModal(dashboardFuelPriceHistory);
+}
+
+function renderWeeklyFuelPriceHistoryModal(history) {
+  const tbody = document.getElementById("weeklyFuelPriceHistoryBody");
+  const summary = document.getElementById("weeklyFuelPriceHistorySummary");
+  if (!tbody) return;
+
+  const rows = (history || [])
+    .map((row) => ({
+      week_start: row.week_start || "",
+      diesel_price: Number(row.diesel_price || 0),
+      unleaded_price: Number(row.unleaded_price || 0),
+      source_note: row.source_note || "",
+      updated_at: row.updated_at || "",
+    }))
+    .filter((row) => row.week_start)
+    .sort((a, b) => b.week_start.localeCompare(a.week_start));
+
+  tbody.replaceChildren();
+
+  if (summary) {
+    summary.textContent = rows.length
+      ? `Showing ${rows.length} saved weekly pump price ${rows.length === 1 ? "entry" : "entries"}.`
+      : "No saved weekly pump prices yet.";
+  }
+
+  if (rows.length === 0) {
+    const emptyRow = document.createElement("tr");
+    const emptyCell = document.createElement("td");
+    emptyCell.colSpan = 5;
+    emptyCell.className = "text-center text-muted py-4";
+    emptyCell.textContent = "No weekly fuel prices saved yet.";
+    emptyRow.appendChild(emptyCell);
+    tbody.appendChild(emptyRow);
+    return;
+  }
+
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    const updatedAt = row.updated_at ? formatDateTime(row.updated_at) : "";
+    const cells = [
+      { text: formatFullDate(row.week_start), className: "fw-semibold" },
+      { text: formatPeso(row.diesel_price), className: "text-end fuel-price-history-amount" },
+      { text: formatPeso(row.unleaded_price), className: "text-end fuel-price-history-amount" },
+      { text: row.source_note || "-", className: "text-muted weekly-price-history-note" },
+      { text: updatedAt || "-", className: "text-muted weekly-price-history-updated" },
+    ];
+
+    cells.forEach((cell) => {
+      const td = document.createElement("td");
+      td.className = cell.className;
+      td.textContent = cell.text;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
 }
 
 function renderFuelPriceTrend(history) {

@@ -634,9 +634,14 @@ try {
                                         <input type="text" class="form-control form-control-sm" id="dashboardFuelPriceSource" placeholder="DOE / pump price" value="<?php echo htmlspecialchars((string) ($latestWeeklyFuelPrice['source_note'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
                                     </div>
                                 </div>
-                                <button type="button" class="btn btn-primary btn-sm weekly-price-save" id="saveWeeklyFuelPriceBtn">
-                                    <i class="fas fa-save me-1"></i>Save Weekly Prices
-                                </button>
+                                <div class="weekly-price-actions">
+                                    <button type="button" class="btn btn-primary btn-sm weekly-price-save" id="saveWeeklyFuelPriceBtn">
+                                        <i class="fas fa-save me-1"></i>Save Weekly Prices
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm weekly-price-history-btn" data-bs-toggle="modal" data-bs-target="#weeklyFuelPriceHistoryModal">
+                                        <i class="fas fa-clock-rotate-left me-1"></i>View Price History
+                                    </button>
+                                </div>
                             </div>
                             <div class="fuel-price-trend-panel">
                                 <div class="budget-section-mini-title">Weekly Price Trend</div>
@@ -649,6 +654,45 @@ try {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="weeklyFuelPriceHistoryModal" tabindex="-1" aria-labelledby="weeklyFuelPriceHistoryModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="weeklyFuelPriceHistoryModalLabel">
+                            <i class="fas fa-clock-rotate-left me-2"></i>Weekly Pump Price History
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="weekly-price-history-summary" id="weeklyFuelPriceHistorySummary">
+                            Showing saved weekly pump prices.
+                        </div>
+                        <div class="table-responsive weekly-price-history-table-wrap">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">Tuesday Week</th>
+                                        <th scope="col" class="text-end">Diesel</th>
+                                        <th scope="col" class="text-end">Unleaded</th>
+                                        <th scope="col">Source Note</th>
+                                        <th scope="col">Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="weeklyFuelPriceHistoryBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">No weekly fuel prices saved yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>

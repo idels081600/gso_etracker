@@ -38,7 +38,7 @@ try {
         'success' => true,
         'message' => 'Weekly fuel prices saved.',
         'latest' => $latest,
-        'history' => fuelBudgetWeeklyFuelPriceHistory($conn, 12),
+        'history' => fuelBudgetWeeklyFuelPriceHistory($conn, 52),
     ]);
 } catch (InvalidArgumentException $e) {
     fuelPriceSaveJson(['success' => false, 'message' => $e->getMessage()], 422);

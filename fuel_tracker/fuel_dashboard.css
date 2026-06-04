@@ -568,9 +568,64 @@ body {
   gap: 0.75rem;
 }
 
-.weekly-price-save {
-  justify-self: start;
+.weekly-price-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.weekly-price-save,
+.weekly-price-history-btn {
   min-width: 180px;
+}
+
+.weekly-price-history-summary {
+  color: var(--dashboard-muted);
+  font-size: 0.86rem;
+  margin-bottom: 0.75rem;
+}
+
+.weekly-price-history-table-wrap {
+  border: 1px solid #e5eaf0;
+  border-radius: 8px;
+}
+
+.weekly-price-history-table-wrap .table {
+  min-width: 760px;
+  table-layout: auto;
+}
+
+.weekly-price-history-table-wrap .table th,
+.weekly-price-history-table-wrap .table td {
+  width: auto;
+}
+
+.weekly-price-history-table-wrap .table th:first-child,
+.weekly-price-history-table-wrap .table td:first-child {
+  width: 150px;
+}
+
+.weekly-price-history-table-wrap .table th:nth-child(2),
+.weekly-price-history-table-wrap .table td:nth-child(2),
+.weekly-price-history-table-wrap .table th:nth-child(3),
+.weekly-price-history-table-wrap .table td:nth-child(3) {
+  width: 120px;
+}
+
+.weekly-price-history-table-wrap .table th:last-child,
+.weekly-price-history-table-wrap .table td:last-child {
+  width: 210px;
+}
+
+.fuel-price-history-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.weekly-price-history-note,
+.weekly-price-history-updated {
+  max-width: 220px;
+  white-space: normal;
 }
 
 .budget-estimate-panel {
@@ -613,8 +668,13 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .weekly-price-save {
-    justify-self: stretch;
+  .weekly-price-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .weekly-price-save,
+  .weekly-price-history-btn {
     min-width: 0;
     width: 100%;
   }
