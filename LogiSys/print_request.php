@@ -17,78 +17,150 @@ class PDF extends FPDF
 
     function Footer()
     {
-        $this->SetFont('Arial', '', 8);
+        $this->SetFont('Arial', '', 5.5);
         $pageNo = $this->PageNo();
         $headName = $this->officeHeadNames[$pageNo] ?? '';
 
         error_log("Footer Debug - Page $pageNo Office Head Name: '$headName'");
 
-        $this->SetY(-30);
+        $pageWidth = method_exists($this, 'GetPageWidth') ? $this->GetPageWidth() : $this->w;
+        $margin = 5;
+        $gap = 6;
+
+        $tableWidth = ($pageWidth - (2 * $margin) - $gap) / 2;
+        $leftX = $margin;
+        $rightX = $margin + $tableWidth + $gap;
+        $sigWidth = min(48, ($tableWidth - 12) / 2);
+        $leftIssuedX = $leftX + 8;
+        $leftSupplyX = $leftX + $tableWidth - $sigWidth - 8;
+        $rightIssuedX = $rightX + 8;
+        $rightSupplyX = $rightX + $tableWidth - $sigWidth - 8;
+
+        $this->SetY(-20);
         $leftY = $this->GetY();
 
         // First Copy - Left Side
-        $this->SetXY(10, $leftY);
-        $this->Cell(80, 4, 'BRYAN LAUREANO', 0, 2, 'C');
-        $this->SetY($this->GetY() - 4); // Move back up to overlap
-        $this->SetX(10);
-        $this->Cell(80, 4, '_________________________', 0, 2, 'C');
-        $this->Cell(80, 4, 'Issued by:', 0, 2, 'C');
+        $this->SetXY($leftIssuedX, $leftY);
+        $this->Cell($sigWidth, 3, 'BRYAN LAUREANO', 0, 2, 'C');
+        $this->SetY($this->GetY() - 3); // Move back up to overlap
+        $this->SetX($leftIssuedX);
+        $this->Cell($sigWidth, 3, '_________________________', 0, 2, 'C');
+        $this->Cell($sigWidth, 3, 'Issued by:', 0, 2, 'C');
 
         // First Copy - Right Side
-        $this->SetXY(100, $leftY);
-        $this->Cell(80, 4, $headName, 0, 2, 'C');
-        $this->SetY($this->GetY() - 4); // Overlap name with underline
-        $this->SetX(100);
-        $this->Cell(80, 4, '_________________________', 0, 2, 'C');
-        $this->Cell(80, 4, 'Supply Officer/Representative:', 0, 2, 'C');
+        $this->SetXY($leftSupplyX, $leftY);
+        $this->Cell($sigWidth, 3, $headName, 0, 2, 'C');
+        $this->SetY($this->GetY() - 3); // Overlap name with underline
+        $this->SetX($leftSupplyX);
+        $this->Cell($sigWidth, 3, '_________________________', 0, 2, 'C');
+        $this->Cell($sigWidth, 3, 'Supply Officer/Representative:', 0, 2, 'C');
 
         // Second Copy - Left Side
-        $this->SetXY(190, $leftY);
-        $this->Cell(80, 4, 'BRYAN LAUREANO', 0, 2, 'C');
-        $this->SetY($this->GetY() - 4);
-        $this->SetX(190);
-        $this->Cell(80, 4, '_________________________', 0, 2, 'C');
-        $this->Cell(80, 4, 'Issued by:', 0, 2, 'C');
+        $this->SetXY($rightIssuedX, $leftY);
+        $this->Cell($sigWidth, 3, 'BRYAN LAUREANO', 0, 2, 'C');
+        $this->SetY($this->GetY() - 3);
+        $this->SetX($rightIssuedX);
+        $this->Cell($sigWidth, 3, '_________________________', 0, 2, 'C');
+        $this->Cell($sigWidth, 3, 'Issued by:', 0, 2, 'C');
 
         // Second Copy - Right Side
-        $this->SetXY(280, $leftY);
-        $this->Cell(80, 4, $headName, 0, 2, 'C');
-        $this->SetY($this->GetY() - 4);
-        $this->SetX(280);
-        $this->Cell(80, 4, '_________________________', 0, 2, 'C');
-        $this->Cell(80, 4, 'Supply Officer/Representative:', 0, 2, 'C');
+        $this->SetXY($rightSupplyX, $leftY);
+        $this->Cell($sigWidth, 3, $headName, 0, 2, 'C');
+        $this->SetY($this->GetY() - 3);
+        $this->SetX($rightSupplyX);
+        $this->Cell($sigWidth, 3, '_________________________', 0, 2, 'C');
+        $this->Cell($sigWidth, 3, 'Supply Officer/Representative:', 0, 2, 'C');
 
         // Page number
-        $this->SetY(-10);
-        $this->SetFont('Arial', 'I', 8);
-        $this->Cell(0, 10, 'Page ' . $pageNo . '/{nb}', 0, 0, 'C');
+        $this->SetY(-7);
+        $this->SetFont('Arial', 'I', 5.5);
+        $this->Cell(0, 5, 'Page ' . $pageNo . '/{nb}', 0, 0, 'C');
     }
 
 
 
-    function renderTableHeader($x, $y)
+    function getScaledColWidths($tableWidth)
+    {
+        $baseWidths = [20, 20, 60, 30, 35];
+        $baseTotal = array_sum($baseWidths);
+        $scaled = [];
+        $runningTotal = 0;
+
+        foreach ($baseWidths as $index => $width) {
+            if ($index === count($baseWidths) - 1) {
+                $scaled[] = $tableWidth - $runningTotal;
+                break;
+            }
+            $value = round(($width / $baseTotal) * $tableWidth, 2);
+            $scaled[] = $value;
+            $runningTotal += $value;
+        }
+
+        return $scaled;
+    }
+
+    function getPortraitColWidths($tableWidth)
+    {
+        $baseWidths = [10, 12, 48, 16, 17];
+        $baseTotal = array_sum($baseWidths);
+        $scaled = [];
+        $runningTotal = 0;
+
+        foreach ($baseWidths as $index => $width) {
+            if ($index === count($baseWidths) - 1) {
+                $scaled[] = $tableWidth - $runningTotal;
+                break;
+            }
+            $value = round(($width / $baseTotal) * $tableWidth, 2);
+            $scaled[] = $value;
+            $runningTotal += $value;
+        }
+
+        return $scaled;
+    }
+
+    function renderTableHeader($x, $y, $tableWidth = 165)
     {
         $logoLeft = 'tagbi_seal.png';
         $logoRight = 'logo.png';
-        $logoSize = $this->compactMode ? 15 : 20;
-        $headerFont = $this->compactMode ? 9 : 12;
-        $lineHeight = $this->compactMode ? 4 : 5;
-        $textOffsetX = $this->compactMode ? 20 : 25;
-        $rightLogoOffset = $this->compactMode ? 148 : 145;
+        $logoSize = $this->compactMode ? 8 : 20;
+        $headerFont = $this->compactMode ? 6 : 12;
+        $lineHeight = $this->compactMode ? 2.5 : 5;
+        $textWidth = max(70, $tableWidth - (2 * $logoSize) - 8);
+        $textX = $x + ($tableWidth - $textWidth) / 2;
+        $rightLogoX = $x + $tableWidth - $logoSize;
 
         // Position logos relative to table position
         $this->Image($logoLeft, $x, $y, $logoSize);
-        $this->Image($logoRight, $x + $rightLogoOffset, $y, $logoSize);
+        $this->Image($logoRight, $rightLogoX, $y, $logoSize);
 
         $this->SetFont('Arial', 'B', $headerFont);
-        $this->SetXY($x + $textOffsetX, $y + 1);
-        $this->Cell(120, $lineHeight, 'Republic of the Philippines', 0, 1, 'C');
-        $this->SetXY($x + $textOffsetX, $y + 1 + $lineHeight);
-        $this->Cell(120, $lineHeight, 'City Government of Tagbilaran', 0, 1, 'C');
-        $this->SetXY($x + $textOffsetX, $y + 1 + (2 * $lineHeight));
-        $this->Cell(120, $lineHeight, 'General Services Office', 0, 1, 'C');
+        $this->SetXY($textX, $y + 1);
+        $this->Cell($textWidth, $lineHeight, 'Republic of the Philippines', 0, 1, 'C');
+        $this->SetXY($textX, $y + 1 + $lineHeight);
+        $this->Cell($textWidth, $lineHeight, 'City Government of Tagbilaran', 0, 1, 'C');
+        $this->SetXY($textX, $y + 1 + (2 * $lineHeight));
+        $this->Cell($textWidth, $lineHeight, 'General Services Office', 0, 1, 'C');
 
-        return $y + ($this->compactMode ? 18 : 28); // Return Y position after header
+        return $y + ($this->compactMode ? 9 : 28); // Return Y position after header
+    }
+
+    function renderFittedCell($width, $height, $text, $border = 1, $align = 'C', $minFontSize = 3.2)
+    {
+        $text = (string)$text;
+        $originalFontSize = $this->FontSizePt;
+        $fontSize = $originalFontSize;
+        $maxTextWidth = max(1, $width - 1.5);
+
+        while ($fontSize > $minFontSize && $this->GetStringWidth($text) > $maxTextWidth) {
+            $fontSize -= 0.2;
+            $this->SetFont($this->FontFamily, $this->FontStyle, $fontSize);
+        }
+
+        $this->Cell($width, $height, $text, $border, 0, $align);
+        if ($fontSize !== $originalFontSize) {
+            $this->SetFont($this->FontFamily, $this->FontStyle, $originalFontSize);
+        }
     }
 
     // Calculate dynamic layout based on total rows
@@ -126,10 +198,11 @@ class PDF extends FPDF
     // Render one table (with header, title, info, header row, and a segment of rows)
     function renderSingleTablePage($x, $y, $title, $info, $header, $data, $startIndex, $layout, $maxRows = null)
     {
-        $colWidths = [20, 20, 60, 30, 35]; // total: 165
+        $tableWidth = $layout['tableWidth'] ?? 165;
+        $colWidths = $layout['colWidths'] ?? $this->getScaledColWidths($tableWidth);
 
         // Header (logos and office header)
-        $headerEndY = $this->renderTableHeader($x, $y);
+        $headerEndY = $this->renderTableHeader($x, $y, $tableWidth);
 
         // Title
         $this->SetFont('Arial', 'B', $layout['titleFont']);
@@ -175,7 +248,7 @@ class PDF extends FPDF
             $row = $data[$startIndex + $r];
             $this->SetXY($x, $currentY);
             foreach ($row as $i => $col) {
-                $this->Cell($colWidths[$i], $layout['rowHeight'], $col, 1, 0, 'C');
+                $this->renderFittedCell($colWidths[$i], $layout['rowHeight'], $col, 1, 'C', $layout['minRowFont'] ?? 3.2);
             }
             $currentY += $layout['rowHeight'];
         }
@@ -184,10 +257,12 @@ class PDF extends FPDF
     }
 
     // Render both left and right tables across as many pages as needed
-    function renderBothTablesPaginated($leftX, $rightX, $startY, $title, $requestInfo, $approvedInfo, $header, $data, $officeHeadName)
+    function renderBothTablesPaginated($leftX, $rightX, $startY, $title, $requestInfo, $approvedInfo, $header, $data, $officeHeadName, $tableWidth = 165)
     {
         $totalRows = count($data);
         $layout = $this->getDynamicLayout($totalRows);
+        $layout['tableWidth'] = $tableWidth;
+        $layout['colWidths'] = $this->getScaledColWidths($tableWidth);
 
         $rowIndex = 0;
         while ($rowIndex < $totalRows) {
@@ -207,20 +282,68 @@ class PDF extends FPDF
         }
     }
 
+    function renderBothTablesPortraitPaginated($startY, $title, $requestInfo, $approvedInfo, $header, $data, $officeHeadName)
+    {
+        $totalRows = count($data);
+        $portraitHeader = ['Qty', 'Unit', 'Item Description', 'Approved', 'Remarks'];
+
+        $this->setOfficeHeadName($officeHeadName);
+        $this->AddPage('P');
+        $this->compactMode = true;
+
+        $pageWidth = method_exists($this, 'GetPageWidth') ? $this->GetPageWidth() : 210;
+        $pageHeight = method_exists($this, 'GetPageHeight') ? $this->GetPageHeight() : 297;
+        $sideMargin = 5;
+        $gapWidth = 6;
+        $tableWidth = ($pageWidth - (2 * $sideMargin) - $gapWidth) / 2;
+        $leftTableX = $sideMargin;
+        $rightTableX = $leftTableX + $tableWidth + $gapWidth;
+
+        $titleCellHeight = 4.4;
+        $infoLineHeight = 3.5;
+        $headerRowHeight = 4.2;
+        $afterInfoGap = 2.2;
+        $headerEndY = $startY + 9;
+        $tableY = $headerEndY + 2 + $titleCellHeight + 1 + (2 * $infoLineHeight) + $afterInfoGap;
+        $firstRowY = $tableY + $headerRowHeight;
+        $availableRowHeight = max(5, $pageHeight - 35 - $firstRowY);
+        $rowHeight = ($totalRows > 0) ? ($availableRowHeight / $totalRows) : 5.2;
+        $rowFont = min(5.5, max(3.0, $rowHeight * 1.03));
+
+        $layout = [
+            'titleFont' => 7.2,
+            'infoFont' => 5.6,
+            'headerFont' => 5.0,
+            'rowFont' => $rowFont,
+            'rowHeight' => $rowHeight,
+            'headerRowHeight' => $headerRowHeight,
+            'titleCellHeight' => $titleCellHeight,
+            'infoLineHeight' => $infoLineHeight,
+            'afterInfoGap' => $afterInfoGap,
+            'forceRows' => true,
+            'tableWidth' => $tableWidth,
+            'colWidths' => $this->getPortraitColWidths($tableWidth),
+        ];
+
+        $renderedRows = $this->renderSingleTablePage($leftTableX, $startY, $title, $requestInfo, $portraitHeader, $data, 0, $layout, $totalRows);
+        $this->renderSingleTablePage($rightTableX, $startY, $title, $approvedInfo, $portraitHeader, $data, 0, $layout, $renderedRows);
+        $this->compactMode = false;
+    }
+
     // Render both left and right tables on a single page and FORCE all rows to fit
-    function renderBothTablesSinglePage($leftX, $rightX, $startY, $title, $requestInfo, $approvedInfo, $header, $data, $officeHeadName)
+    function renderBothTablesSinglePage($leftX, $rightX, $startY, $title, $requestInfo, $approvedInfo, $header, $data, $officeHeadName, $tableWidth = 165)
     {
         $totalRows = count($data);
         $pageHeight = method_exists($this, 'GetPageHeight') ? $this->GetPageHeight() : $this->h;
 
-        // Reserve space for footer/signatures; compact mode keeps everything on one page.
-        $bottomReserve = 34; // mm
-        $headerEndY = $startY + 18; // compact renderTableHeader()
+        // Reserve the exact lower band used by Footer() for two signatories per copy.
+        $bottomReserve = 23; // mm
+        $headerEndY = $startY + 9; // compact renderTableHeader()
 
-        $baseTitleCellH = 5.0;
-        $baseInfoLineH  = 4.0;
-        $baseHeaderRowH = 5.0;
-        $afterInfoGap   = 1.0;
+        $baseTitleCellH = 3.6;
+        $baseInfoLineH  = 2.8;
+        $baseHeaderRowH = 3.2;
+        $afterInfoGap   = 0.6;
 
         // Compute available height for rows given the fixed parts above
         $tableY    = $headerEndY + 2 + $baseTitleCellH + 1 + (2 * $baseInfoLineH) + $afterInfoGap;
@@ -228,11 +351,11 @@ class PDF extends FPDF
         $availH    = $pageHeight - $bottomReserve - $currentY;
         if ($availH < 5) { $availH = 5; }
 
-        $rowHeight = ($totalRows > 0) ? max(1.8, $availH / $totalRows) : 6.0;
-        $rowFont = max(4.5, min(10.0, $rowHeight * 1.3));
-        $headerFont = max(6.5, min(9.0, $rowFont + 0.5));
-        $infoFont = max(7.0, min(9.0, $rowFont + 0.5));
-        $titleFont = max(9.0, min(11.0, $rowFont + 2.0));
+        $rowHeight = ($totalRows > 0) ? ($availH / $totalRows) : 6.0;
+        $rowFont = max(4.2, min(7.0, $rowHeight * 1.15));
+        $headerFont = max(5.0, min(7.0, $rowFont + 0.1));
+        $infoFont = max(5.5, min(8.0, $rowFont + 0.1));
+        $titleFont = max(7.0, min(9.5, $rowFont + 1.1));
 
         $titleCellH = $baseTitleCellH;
         $infoLineH = $baseInfoLineH;
@@ -249,6 +372,9 @@ class PDF extends FPDF
             'rowHeight'       => $rowHeight,
             'afterInfoGap'    => $afterInfoGap,
             'forceRows'       => true,
+            'tableWidth'      => $tableWidth,
+            'colWidths'       => $this->getScaledColWidths($tableWidth),
+            'minRowFont'      => 3.4,
         ];
 
         // Render once on a single page (both left and right sides)
@@ -292,7 +418,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["offices"]) && is_array
     $reportType = $_POST["type"] ?? 'request'; // Default to 'request' if type is not set
 
     // Create PDF
-    $pdf = new PDF('L', 'mm', 'Legal');
+    $pdf = new PDF('L', 'mm', 'A4');
     $pdf->AliasNbPages();
 
     // Column headers
@@ -343,28 +469,43 @@ ORDER BY date_requested DESC;"; // Get only the latest request
 
             // Approval information for right table (same data, different context)
 
-            // Calculate positions with gap
-            $tableWidth = 165;
-            $gapWidth = 10;
-            $leftTableX = 10;
-            $rightTableX = $leftTableX + $tableWidth + $gapWidth; // 185
+            // Calculate positions from the actual A4 landscape paper width.
+            $pageWidth = method_exists($pdf, 'GetPageWidth') ? $pdf->GetPageWidth() : 297;
+            $sideMargin = 5;
+            $gapWidth = 6;
+            $tableWidth = ($pageWidth - (2 * $sideMargin) - $gapWidth) / 2;
+            $leftTableX = $sideMargin;
+            $rightTableX = $leftTableX + $tableWidth + $gapWidth;
 
             // Starting Y position for both tables
-            $startY = 5;
+            $startY = 3;
 
-            // Compact one-page print: reduce spacing and font as needed so the
-            // office/request copy pair stays on one page.
-            $pdf->renderBothTablesSinglePage(
-                $leftTableX,
-                $rightTableX,
-                $startY,
-                'REQUEST FORM',
-                $requestInfo,
-                $approvedInfo,
-                $requestHeader,
-                $requestData,
-                $officeHeadName
-            );
+            if (count($requestData) >= 30) {
+                // Very long requests print in portrait so each page has more row height.
+                $pdf->renderBothTablesPortraitPaginated(
+                    $startY,
+                    'REQUEST FORM',
+                    $requestInfo,
+                    $approvedInfo,
+                    $requestHeader,
+                    $requestData,
+                    $officeHeadName
+                );
+            } else {
+                // Requests below 30 rows stay in landscape with two copies on one page.
+                $pdf->renderBothTablesSinglePage(
+                    $leftTableX,
+                    $rightTableX,
+                    $startY,
+                    'REQUEST FORM',
+                    $requestInfo,
+                    $approvedInfo,
+                    $requestHeader,
+                    $requestData,
+                    $officeHeadName,
+                    $tableWidth
+                );
+            }
         } else {
             // Add a new page for each office
             $pdf->AddPage();
