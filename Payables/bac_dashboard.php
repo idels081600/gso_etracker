@@ -22,7 +22,7 @@ if ($currentPage < 1) {
 $perPage = 25;
 $offset = ($currentPage - 1) * $perPage;
 
-$where = ["1 = 1"];
+$where = ["LOWER(TRIM(COALESCE(tb.status, ''))) <> 'not yet received'"];
 $types = '';
 $params = [];
 
@@ -80,6 +80,7 @@ $metricsSql = "
     LEFT JOIN payables_workflow_status pws
         ON pws.record_type = 'bac_monitoring'
        AND pws.record_id = tb.id
+    WHERE LOWER(TRIM(COALESCE(tb.status, ''))) <> 'not yet received'
 ";
 $metricsResult = mysqli_query($conn, $metricsSql);
 if ($metricsResult && $metricsRow = mysqli_fetch_assoc($metricsResult)) {
@@ -153,6 +154,7 @@ $latestTransactions = [];
 $latestSql = "
     SELECT 'BAC' AS source, ib_no AS reference_no, project_name AS title, date_transmitted_from_bac AS transaction_date
     FROM bac_monitoring
+    WHERE LOWER(TRIM(COALESCE(status, ''))) <> 'not yet received'
     UNION ALL
     SELECT 'RFQ' AS source, RFQ_no AS reference_no, supplier AS title, date_received AS transaction_date
     FROM PO_sap
