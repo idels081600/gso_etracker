@@ -695,11 +695,11 @@ $approverName = $_SESSION['pay_name'] ?? $_SESSION['username'];
                 </label>
                 <label class="time-field">
                     <span>Hours</span>
-                    <input type="number" id="fix_hours" name="fix_hours" min="0" max="8" value="1">
+                    <input type="number" id="fix_hours" name="fix_hours" min="0" max="8" value="0">
                 </label>
                 <label class="time-field">
                     <span>Minutes</span>
-                    <input type="number" id="fix_minutes" name="fix_minutes" min="0" max="59" value="0">
+                    <input type="number" id="fix_minutes" name="fix_minutes" min="0" max="59" value="20">
                 </label>
             </div>
 

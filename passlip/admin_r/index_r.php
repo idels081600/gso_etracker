@@ -348,9 +348,9 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                 <div class="form-group mb-3" id="timeInputs">
                                     <label>Fixed Time for Pass Slip:</label><br>
                                     <label for="fix_hours">Hours:</label>
-                                    <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="4" placeholder="0">
+                                    <input type="number" class="form" id="fix_hours" name="fix_hours" min="0" max="4" value="0">
                                     <label for="fix_minutes">Minutes:</label>
-                                    <input type="number" class="form" id="fix_minutes" name="fix_minutes" min="0" max="59" placeholder="0">
+                                    <input type="number" class="form" id="fix_minutes" name="fix_minutes" min="0" max="59" value="20">
                                 </div>
                                 <div class="form-group mb-3">
                                     <label for="sel1">Status:</label>

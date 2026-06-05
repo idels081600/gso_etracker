@@ -69,11 +69,11 @@ $isPersonal = ($data['typeofbusiness'] ?? '') === 'Personal';
     <div class="form-grid">
         <label class="time-field" <?= $isPersonal ? 'hidden' : ''; ?>>
             <span>Hours</span>
-            <input type="number" name="fix_hours" min="0" max="<?= $isPersonal ? 0 : 4; ?>" value="<?= $isPersonal ? 0 : 1; ?>">
+            <input type="number" name="fix_hours" min="0" max="<?= $isPersonal ? 0 : 4; ?>" value="0">
         </label>
         <label class="time-field">
             <span>Minutes</span>
-            <input type="number" name="fix_minutes" min="0" max="<?= $isPersonal ? 30 : 59; ?>" value="0">
+            <input type="number" name="fix_minutes" min="0" max="<?= $isPersonal ? 30 : 59; ?>" value="20">
         </label>
         <label>
             <span>Status</span>

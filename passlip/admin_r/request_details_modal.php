@@ -71,11 +71,11 @@ $confirmedBy = $_SESSION['pay_name'] ?? $_SESSION['username'];
     <div class="request-modal-fields">
         <label <?= $isPersonal ? 'hidden' : ''; ?>>
             <span>Hours</span>
-            <input type="number" class="form-control" name="fix_hours" min="0" max="<?= $isPersonal ? 0 : 4; ?>" value="<?= $isPersonal ? 0 : 1; ?>">
+            <input type="number" class="form-control" name="fix_hours" min="0" max="<?= $isPersonal ? 0 : 4; ?>" value="0">
         </label>
         <label>
             <span>Minutes</span>
-            <input type="number" class="form-control" name="fix_minutes" min="0" max="<?= $isPersonal ? 30 : 59; ?>" value="0">
+            <input type="number" class="form-control" name="fix_minutes" min="0" max="<?= $isPersonal ? 30 : 59; ?>" value="20">
         </label>
         <label>
             <span>Confirmed By</span>
