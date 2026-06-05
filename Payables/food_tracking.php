@@ -33,11 +33,27 @@ function food_tracking_ensure_tables(): void
         INDEX idx_food_entries_deduction_date (deduction_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
+    $editHistorySql = "CREATE TABLE IF NOT EXISTS food_tracker_edit_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        food_tracker_id INT NOT NULL,
+        old_initial_cakes INT NOT NULL DEFAULT 0,
+        old_initial_food_packs INT NOT NULL DEFAULT 0,
+        new_initial_cakes INT NOT NULL DEFAULT 0,
+        new_initial_food_packs INT NOT NULL DEFAULT 0,
+        edited_by VARCHAR(150) NULL,
+        edited_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_food_edit_history_tracker_id (food_tracker_id),
+        INDEX idx_food_edit_history_edited_at (edited_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
     if (!$conn->query($trackersSql)) {
         payables_log_error('Food tracker table creation failed: ' . $conn->error);
     }
     if (!$conn->query($entriesSql)) {
         payables_log_error('Food entry table creation failed: ' . $conn->error);
+    }
+    if (!$conn->query($editHistorySql)) {
+        payables_log_error('Food edit history table creation failed: ' . $conn->error);
     }
 }
 
@@ -106,7 +122,7 @@ $token = $_POST['csrf_token'] ?? '';
 $sessionToken = $_SESSION['_payables_csrf_token'] ?? '';
 $action = $_POST['action'] ?? '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_tracker', 'edit_tracker', 'add_deduction', 'delete_tracker'], true)) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_tracker', 'edit_tracker', 'add_deduction', 'edit_deduction', 'delete_deduction', 'delete_tracker'], true)) {
     if (!$token || !$sessionToken || !hash_equals($sessionToken, $token)) {
         $formErrors[] = 'Security token expired. Please refresh and try again.';
     }
@@ -201,16 +217,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_tracker', '
         }
 
         if (!$formErrors) {
-            $stmt = $conn->prepare("UPDATE food_trackers SET initial_cakes = ?, initial_food_packs = ? WHERE id = ? LIMIT 1");
             $cakes = (int)$initialCakes;
             $foodPacks = (int)$initialFoodPacks;
-            $stmt->bind_param('iii', $cakes, $foodPacks, $trackerId);
-            if ($stmt->execute()) {
+            $oldCakes = (int)$balance['initial_cakes'];
+            $oldFoodPacks = (int)$balance['initial_food_packs'];
+            $conn->begin_transaction();
+
+            try {
+                if ($cakes !== $oldCakes || $foodPacks !== $oldFoodPacks) {
+                    $historyStmt = $conn->prepare("
+                        INSERT INTO food_tracker_edit_history (
+                            food_tracker_id, old_initial_cakes, old_initial_food_packs,
+                            new_initial_cakes, new_initial_food_packs, edited_by
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ");
+                    if (!$historyStmt) {
+                        throw new RuntimeException('Unable to prepare edit history.');
+                    }
+                    $historyStmt->bind_param('iiiiis', $trackerId, $oldCakes, $oldFoodPacks, $cakes, $foodPacks, $full_name);
+                    $historyStmt->execute();
+                    $historyStmt->close();
+                }
+
+                $stmt = $conn->prepare("UPDATE food_trackers SET initial_cakes = ?, initial_food_packs = ? WHERE id = ? LIMIT 1");
+                if (!$stmt) {
+                    throw new RuntimeException('Unable to prepare tracker update.');
+                }
+                $stmt->bind_param('iii', $cakes, $foodPacks, $trackerId);
+                $stmt->execute();
                 $stmt->close();
+                $conn->commit();
                 food_tracking_redirect(['updated' => 1]);
+            } catch (Throwable $error) {
+                $conn->rollback();
+                payables_log_error('Food tracker edit failed: ' . $error->getMessage());
+                $formErrors[] = 'Unable to update food tracker right now.';
             }
-            $formErrors[] = 'Unable to update food tracker right now.';
-            $stmt->close();
         }
     }
 
@@ -255,6 +298,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_tracker', '
         }
     }
 
+    if (!$formErrors && $action === 'edit_deduction') {
+        $entryId = filter_var($_POST['entry_id'] ?? null, FILTER_VALIDATE_INT);
+        $deductionDate = trim($_POST['deduction_date'] ?? '');
+        $cakesDeducted = trim($_POST['cakes_deducted'] ?? '0');
+        $foodPacksDeducted = trim($_POST['food_packs_deducted'] ?? '0');
+        $remarks = trim($_POST['remarks'] ?? '');
+
+        if (!$entryId || $entryId < 1) {
+            $formErrors[] = 'Invalid deduction record.';
+        }
+        if (!payables_valid_date_or_empty($deductionDate) || $deductionDate === '') {
+            $formErrors[] = 'Deduction date is required.';
+        }
+        if (!food_tracking_valid_int($cakesDeducted) || !food_tracking_valid_int($foodPacksDeducted)) {
+            $formErrors[] = 'Deduction quantities must be whole numbers.';
+        }
+        if ((int)$cakesDeducted === 0 && (int)$foodPacksDeducted === 0) {
+            $formErrors[] = 'Deduct at least one cake or food pack.';
+        }
+
+        $entry = null;
+        if (!$formErrors) {
+            $entryStmt = $conn->prepare("SELECT id, food_tracker_id, cakes_deducted, food_packs_deducted FROM food_tracking_entries WHERE id = ? LIMIT 1");
+            if ($entryStmt) {
+                $entryStmt->bind_param('i', $entryId);
+                $entryStmt->execute();
+                $entryResult = $entryStmt->get_result();
+                $entry = $entryResult ? $entryResult->fetch_assoc() : null;
+                $entryStmt->close();
+            }
+            if (!$entry) {
+                $formErrors[] = 'Deduction record was not found.';
+            }
+        }
+
+        if (!$formErrors) {
+            $balance = food_tracking_get_balance((int)$entry['food_tracker_id']);
+            $availableCakes = (int)$balance['remaining_cakes'] + (int)$entry['cakes_deducted'];
+            $availableFoodPacks = (int)$balance['remaining_food_packs'] + (int)$entry['food_packs_deducted'];
+            if ((int)$cakesDeducted > $availableCakes || (int)$foodPacksDeducted > $availableFoodPacks) {
+                $formErrors[] = 'Deduction cannot exceed the available balance.';
+            }
+        }
+
+        if (!$formErrors) {
+            $stmt = $conn->prepare("UPDATE food_tracking_entries SET deduction_date = ?, cakes_deducted = ?, food_packs_deducted = ?, remarks = ? WHERE id = ? LIMIT 1");
+            $cakes = (int)$cakesDeducted;
+            $foodPacks = (int)$foodPacksDeducted;
+            $stmt->bind_param('siisi', $deductionDate, $cakes, $foodPacks, $remarks, $entryId);
+            if ($stmt->execute()) {
+                $stmt->close();
+                food_tracking_redirect(['entry_updated' => 1]);
+            }
+            $formErrors[] = 'Unable to update deduction right now.';
+            $stmt->close();
+        }
+    }
+
+    if (!$formErrors && $action === 'delete_deduction') {
+        $entryId = filter_var($_POST['entry_id'] ?? null, FILTER_VALIDATE_INT);
+
+        if (!$entryId || $entryId < 1) {
+            $formErrors[] = 'Invalid deduction record.';
+        }
+
+        if (!$formErrors) {
+            $stmt = $conn->prepare("DELETE FROM food_tracking_entries WHERE id = ? LIMIT 1");
+            $stmt->bind_param('i', $entryId);
+            if ($stmt->execute() && $stmt->affected_rows > 0) {
+                $stmt->close();
+                food_tracking_redirect(['entry_deleted' => 1]);
+            }
+            $formErrors[] = 'Unable to delete deduction right now.';
+            $stmt->close();
+        }
+    }
+
     if (!$formErrors && $action === 'delete_tracker') {
         $trackerId = filter_var($_POST['tracker_id'] ?? null, FILTER_VALIDATE_INT);
 
@@ -272,6 +392,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_tracker', '
                 $entriesStmt->bind_param('i', $trackerId);
                 $entriesStmt->execute();
                 $entriesStmt->close();
+
+                $historyStmt = $conn->prepare("DELETE FROM food_tracker_edit_history WHERE food_tracker_id = ?");
+                if (!$historyStmt) {
+                    throw new RuntimeException('Unable to prepare edit history delete.');
+                }
+                $historyStmt->bind_param('i', $trackerId);
+                $historyStmt->execute();
+                $historyStmt->close();
 
                 $trackerStmt = $conn->prepare("DELETE FROM food_trackers WHERE id = ? LIMIT 1");
                 if (!$trackerStmt) {
@@ -368,7 +496,7 @@ if ($trackerRows) {
     $placeholders = implode(',', array_fill(0, count($trackerIds), '?'));
     $historyTypes = str_repeat('i', count($trackerIds));
     $historyStmt = $conn->prepare("
-        SELECT food_tracker_id, deduction_date, cakes_deducted, food_packs_deducted, remarks, created_by, created_at
+        SELECT id, food_tracker_id, deduction_date, cakes_deducted, food_packs_deducted, remarks, created_by, created_at
         FROM food_tracking_entries
         WHERE food_tracker_id IN ({$placeholders})
         ORDER BY deduction_date DESC, id DESC
@@ -382,6 +510,7 @@ if ($trackerRows) {
         }
         $historyStmt->close();
     }
+
 }
 
 $totalCakesRemaining = array_sum(array_map(static fn($row) => (int)$row['remaining_cakes'], $trackerRows));
@@ -443,6 +572,12 @@ $totalFoodPacksRemaining = array_sum(array_map(static fn($row) => (int)$row['rem
             <?php endif; ?>
             <?php if (isset($_GET['deleted'])): ?>
                 <div class="food-alert is-success" role="status"><i class="fas fa-check"></i> Food tracker deleted successfully.</div>
+            <?php endif; ?>
+            <?php if (isset($_GET['entry_updated'])): ?>
+                <div class="food-alert is-success" role="status"><i class="fas fa-check"></i> Deduction updated successfully.</div>
+            <?php endif; ?>
+            <?php if (isset($_GET['entry_deleted'])): ?>
+                <div class="food-alert is-success" role="status"><i class="fas fa-check"></i> Deduction deleted successfully.</div>
             <?php endif; ?>
 
             <div class="food-summary-strip">
@@ -635,8 +770,8 @@ $totalFoodPacksRemaining = array_sum(array_map(static fn($row) => (int)$row['rem
             <div class="modal-content food-modal">
                 <div class="modal-header">
                     <div>
-                        <h5 class="modal-title" id="historyModalLabel">Deduction History</h5>
-                        <div class="food-modal-subtitle" id="historySubtitle">Dated usage history.</div>
+                        <h5 class="modal-title" id="historyModalLabel">Tracking History</h5>
+                        <div class="food-modal-subtitle" id="historySubtitle">Dated deduction history.</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -644,6 +779,74 @@ $totalFoodPacksRemaining = array_sum(array_map(static fn($row) => (int)$row['rem
                     <div class="food-history-list" id="historyList"></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editDeductionModal" tabindex="-1" aria-labelledby="editDeductionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered food-dialog">
+            <form class="modal-content food-modal" method="post" action="food_tracking.php">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="editDeductionModalLabel">Edit Deduction</h5>
+                        <div class="food-modal-subtitle">Correct this dated deduction record.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <?php echo payables_csrf_input(); ?>
+                    <input type="hidden" name="action" value="edit_deduction">
+                    <input type="hidden" name="entry_id" id="editDeductionEntryId">
+                    <div class="food-form-grid">
+                        <label class="is-wide">
+                            <span>Date</span>
+                            <input type="date" name="deduction_date" id="editDeductionDate" required>
+                        </label>
+                        <label>
+                            <span>Cakes Deducted</span>
+                            <input type="number" name="cakes_deducted" id="editDeductionCakes" min="0" step="1" required>
+                        </label>
+                        <label>
+                            <span>Food Packs Deducted</span>
+                            <input type="number" name="food_packs_deducted" id="editDeductionFoodPacks" min="0" step="1" required>
+                        </label>
+                        <label class="is-wide">
+                            <span>Remarks</span>
+                            <input type="text" name="remarks" id="editDeductionRemarks" placeholder="Optional remarks">
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success food-save-button">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteDeductionModal" tabindex="-1" aria-labelledby="deleteDeductionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered food-dialog">
+            <form class="modal-content food-modal" method="post" action="food_tracking.php">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="deleteDeductionModalLabel">Delete Deduction</h5>
+                        <div class="food-modal-subtitle">The tracker balance will be recalculated.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <?php echo payables_csrf_input(); ?>
+                    <input type="hidden" name="action" value="delete_deduction">
+                    <input type="hidden" name="entry_id" id="deleteDeductionEntryId">
+                    <div class="food-delete-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="deleteDeductionMessage">Delete this deduction record?</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Deduction</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -714,16 +917,42 @@ $totalFoodPacksRemaining = array_sum(array_map(static fn($row) => (int)$row['rem
                     return;
                 }
 
-                list.innerHTML = entries.map(function (entry) {
+                list.innerHTML =
+                    '<div class="food-history-section-title">Deduction History</div>' +
+                    entries.map(function (entry) {
                     const remarks = entry.remarks ? '<span>' + escapeHtml(entry.remarks) + '</span>' : '<span>No remarks</span>';
                     return '<div class="food-history-item">' +
                         '<strong>' + escapeHtml(entry.deduction_date || '-') + '</strong>' +
                         '<span>Cakes: ' + escapeHtml(entry.cakes_deducted || '0') + '</span>' +
                         '<span>Food packs: ' + escapeHtml(entry.food_packs_deducted || '0') + '</span>' +
                         remarks +
+                        '<div class="food-history-actions">' +
+                            '<button type="button" class="food-history-action edit-history-entry" title="Edit deduction" aria-label="Edit deduction" data-entry-id="' + escapeHtml(entry.id || '') + '" data-date="' + escapeHtml(entry.deduction_date || '') + '" data-cakes="' + escapeHtml(entry.cakes_deducted || '0') + '" data-food-packs="' + escapeHtml(entry.food_packs_deducted || '0') + '" data-remarks="' + escapeHtml(entry.remarks || '') + '"><i class="fas fa-pen"></i></button>' +
+                            '<button type="button" class="food-history-action is-danger delete-history-entry" title="Delete deduction" aria-label="Delete deduction" data-entry-id="' + escapeHtml(entry.id || '') + '" data-date="' + escapeHtml(entry.deduction_date || '') + '"><i class="fas fa-trash"></i></button>' +
+                        '</div>' +
                     '</div>';
                 }).join("");
             });
+        });
+
+        document.getElementById("historyList").addEventListener("click", function (event) {
+            const editButton = event.target.closest(".edit-history-entry");
+            if (editButton) {
+                document.getElementById("editDeductionEntryId").value = editButton.dataset.entryId || "";
+                document.getElementById("editDeductionDate").value = editButton.dataset.date || "";
+                document.getElementById("editDeductionCakes").value = editButton.dataset.cakes || "0";
+                document.getElementById("editDeductionFoodPacks").value = editButton.dataset.foodPacks || "0";
+                document.getElementById("editDeductionRemarks").value = editButton.dataset.remarks || "";
+                switchHistoryModal("editDeductionModal");
+                return;
+            }
+
+            const deleteButton = event.target.closest(".delete-history-entry");
+            if (deleteButton) {
+                document.getElementById("deleteDeductionEntryId").value = deleteButton.dataset.entryId || "";
+                document.getElementById("deleteDeductionMessage").textContent = "Delete the deduction dated " + (deleteButton.dataset.date || "-") + "?";
+                switchHistoryModal("deleteDeductionModal");
+            }
         });
 
         document.querySelectorAll(".food-delete-row").forEach(function (button) {
@@ -732,6 +961,22 @@ $totalFoodPacksRemaining = array_sum(array_map(static fn($row) => (int)$row['rem
                 document.getElementById("deleteSubtitle").textContent = (button.dataset.reference || "IB") + " - " + (button.dataset.project || "");
             });
         });
+
+        function switchHistoryModal(targetId) {
+            const historyElement = document.getElementById("historyModal");
+            const historyModal = bootstrap.Modal.getInstance(historyElement);
+            const targetModal = bootstrap.Modal.getOrCreateInstance(document.getElementById(targetId));
+
+            if (!historyModal) {
+                targetModal.show();
+                return;
+            }
+
+            historyElement.addEventListener("hidden.bs.modal", function showTarget() {
+                targetModal.show();
+            }, { once: true });
+            historyModal.hide();
+        }
 
         function escapeHtml(value) {
             return String(value).replace(/[&<>"']/g, function (character) {

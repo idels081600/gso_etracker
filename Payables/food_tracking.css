@@ -330,7 +330,9 @@ body.sidebar-collapsed .food-tracking-content {
 }
 
 .food-history-dialog {
-  max-width: 760px;
+  width: min(1000px, calc(100vw - 32px)) !important;
+  max-width: 1000px !important;
+  margin-inline: auto;
 }
 
 .food-modal {
@@ -437,18 +439,59 @@ body.sidebar-collapsed .food-tracking-content {
 .food-history-list {
   display: grid;
   gap: 8px;
-  max-height: 420px;
+  max-height: 560px;
   overflow: auto;
+}
+
+.food-history-section-title {
+  margin-top: 4px;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .food-history-item {
   display: grid;
-  grid-template-columns: minmax(110px, 0.7fr) minmax(90px, 0.5fr) minmax(120px, 0.6fr) minmax(180px, 1fr);
+  grid-template-columns: minmax(110px, 0.7fr) minmax(90px, 0.5fr) minmax(120px, 0.6fr) minmax(160px, 1fr) minmax(76px, 0.36fr);
   gap: 10px;
   align-items: center;
   border: 1px solid #edf0f4;
   border-radius: 8px;
   padding: 10px 12px;
+}
+
+.food-history-actions {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.food-history-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 29px;
+  height: 29px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #475467;
+  font-size: 0.68rem;
+}
+
+.food-history-action:hover,
+.food-history-action:focus-visible {
+  border-color: #20a797;
+  color: #159383;
+  outline: none;
+}
+
+.food-history-action.is-danger:hover,
+.food-history-action.is-danger:focus-visible {
+  border-color: #fecaca;
+  color: #b42318;
 }
 
 .food-history-item strong {
