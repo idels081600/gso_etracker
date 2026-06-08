@@ -265,6 +265,34 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             font-weight: 700;
         }
 
+        .table-pagination {
+            align-items: center;
+            background: #fff;
+            border-top: 1px solid #dfe7e1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: space-between;
+            padding: 0.85rem 1rem;
+        }
+
+        .table-pagination-status {
+            color: #5d6b60;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .table-pagination-controls {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .table-page-size {
+            width: 82px;
+        }
+
         .coa-odometer-table th {
             background: #f8fafc;
             color: #475467;
@@ -453,6 +481,9 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                     <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#fuelSummaryModal">
                         <i class="fas fa-gas-pump me-1"></i>Fuel Summary
                     </button>
+                    <button type="button" class="btn btn-success" id="printSelectedTripsBtn" disabled>
+                        <i class="fas fa-route me-1"></i>Print Selected Trips
+                    </button>
                     <button type="button" class="btn btn-primary" id="printMonthlyBtn" disabled>
                         <i class="fas fa-table-list me-1"></i>Print Monthly Form B
                     </button>
@@ -559,6 +590,25 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                         <?php endif; ?>
                     </tbody>
                 </table>
+            </div>
+            <div class="table-pagination">
+                <div class="table-pagination-status" id="tablePaginationStatus">Showing 0 records</div>
+                <div class="table-pagination-controls">
+                    <label for="tablePageSize" class="small text-muted fw-semibold mb-0">Rows</label>
+                    <select class="form-select form-select-sm table-page-size" id="tablePageSize">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="tablePrevPage">
+                        <i class="fas fa-chevron-left me-1"></i>Previous
+                    </button>
+                    <span class="small fw-semibold text-muted" id="tablePageLabel">Page 1 of 1</span>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="tableNextPage">
+                        Next<i class="fas fa-chevron-right ms-1"></i>
+                    </button>
+                </div>
             </div>
         </section>
     </main>
@@ -964,6 +1014,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                 driver: item.driver_name || '',
                 vehicle: item.vehicle_type || '',
                 plate_no: item.plate_no || '',
+                office: item.office || '',
                 purpose: item.purpose || 'OFFICIAL TRAVEL',
                 gas_stock_issued: item.issued_liters || item.liters || '0',
                 gas_issued: item.issued_liters || item.liters || '0'
@@ -1182,9 +1233,51 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             });
         }
 
+        var tableCurrentPage = 1;
+        var tablePageSize = 25;
+
+        function getFilteredTableRows() {
+            return Array.from(document.querySelectorAll('#subAdminTableBody tr[data-search]')).filter(function(row) {
+                return row.dataset.filterMatch !== 'false';
+            });
+        }
+
+        function renderTablePage() {
+            var rows = Array.from(document.querySelectorAll('#subAdminTableBody tr[data-search]'));
+            var filteredRows = getFilteredTableRows();
+            var totalPages = Math.max(1, Math.ceil(filteredRows.length / tablePageSize));
+            tableCurrentPage = Math.min(Math.max(1, tableCurrentPage), totalPages);
+            var startIndex = (tableCurrentPage - 1) * tablePageSize;
+            var endIndex = Math.min(startIndex + tablePageSize, filteredRows.length);
+            var pageRows = new Set(filteredRows.slice(startIndex, endIndex));
+
+            rows.forEach(function(row) {
+                row.classList.toggle('d-none', !pageRows.has(row));
+            });
+
+            var status = document.getElementById('tablePaginationStatus');
+            var pageLabel = document.getElementById('tablePageLabel');
+            var previous = document.getElementById('tablePrevPage');
+            var next = document.getElementById('tableNextPage');
+            var noResults = document.getElementById('noFilterResults');
+
+            status.textContent = filteredRows.length === 0
+                ? 'Showing 0 records'
+                : 'Showing ' + (startIndex + 1) + '-' + endIndex + ' of ' + filteredRows.length + ' records';
+            pageLabel.textContent = 'Page ' + tableCurrentPage + ' of ' + totalPages;
+            previous.disabled = tableCurrentPage <= 1;
+            next.disabled = tableCurrentPage >= totalPages;
+            if (noResults) {
+                noResults.classList.toggle('d-none', filteredRows.length !== 0);
+            }
+
+            updateMonthlySelectionState();
+        }
+
         function updateMonthlySelectionState() {
             var selected = getSelectedIssuances();
             var printButton = document.getElementById('printMonthlyBtn');
+            var selectedTripsButton = document.getElementById('printSelectedTripsBtn');
             var selectedCoaButton = document.getElementById('printSelectedCoaBtn');
             var summary = document.getElementById('selectedSummary');
             var selectVisible = document.getElementById('selectVisibleRows');
@@ -1196,6 +1289,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             }, 0);
 
             printButton.disabled = selected.length === 0;
+            selectedTripsButton.disabled = selected.length === 0;
             selectedCoaButton.disabled = selected.length === 0;
 
             if (selected.length === 0) {
@@ -1218,7 +1312,6 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             var dateFrom = document.getElementById('dateFromFilter').value;
             var dateTo = document.getElementById('dateToFilter').value;
             var rows = Array.from(document.querySelectorAll('#subAdminTableBody tr[data-search]'));
-            var visible = 0;
 
             rows.forEach(function(row) {
                 var matchesQuery = !query || row.dataset.search.indexOf(query) !== -1;
@@ -1227,21 +1320,17 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                 var matchesFrom = !dateFrom || (rowDate && rowDate >= dateFrom);
                 var matchesTo = !dateTo || (rowDate && rowDate <= dateTo);
                 var show = matchesQuery && matchesVehicle && matchesFrom && matchesTo;
-                row.classList.toggle('d-none', !show);
+                row.dataset.filterMatch = show ? 'true' : 'false';
                 if (!show) {
                     var checkbox = row.querySelector('.monthly-select');
                     if (checkbox) {
                         checkbox.checked = false;
                     }
                 }
-                if (show) visible++;
             });
 
-            var noResults = document.getElementById('noFilterResults');
-            if (noResults) {
-                noResults.classList.toggle('d-none', visible !== 0);
-            }
-            updateMonthlySelectionState();
+            tableCurrentPage = 1;
+            renderTablePage();
         }
 
         document.getElementById('subAdminSearch').addEventListener('input', applyFilters);
@@ -1254,6 +1343,24 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             document.getElementById('dateFromFilter').value = '';
             document.getElementById('dateToFilter').value = '';
             applyFilters();
+        });
+        document.getElementById('tablePageSize').addEventListener('change', function() {
+            tablePageSize = Number(this.value) || 25;
+            tableCurrentPage = 1;
+            renderTablePage();
+        });
+        document.getElementById('tablePrevPage').addEventListener('click', function() {
+            if (tableCurrentPage > 1) {
+                tableCurrentPage--;
+                renderTablePage();
+            }
+        });
+        document.getElementById('tableNextPage').addEventListener('click', function() {
+            var totalPages = Math.max(1, Math.ceil(getFilteredTableRows().length / tablePageSize));
+            if (tableCurrentPage < totalPages) {
+                tableCurrentPage++;
+                renderTablePage();
+            }
         });
 
         document.getElementById('summaryOfficeFilter').addEventListener('change', renderFuelSummary);
@@ -1364,6 +1471,25 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             showToast('Opening ' + Object.keys(groups).length + ' monthly Form B report' + (Object.keys(groups).length === 1 ? '' : 's') + '...');
         });
 
+        document.getElementById('printSelectedTripsBtn').addEventListener('click', function() {
+            var selected = getSelectedIssuances();
+
+            if (selected.length === 0) {
+                showToast('Select at least one issuance for trip ticket printing.');
+                return;
+            }
+
+            var ids = selected.map(function(item) {
+                return item.id;
+            }).filter(Boolean);
+            var params = new URLSearchParams({
+                issuance_ids: ids.join(',')
+            });
+            window.open('trip_ticket_batch.php?' + params.toString(), '_blank', 'noopener');
+
+            showToast('Opening one PDF with ' + selected.length + ' trip ticket page' + (selected.length === 1 ? '' : 's') + '...');
+        });
+
         document.getElementById('printSelectedCoaBtn').addEventListener('click', function() {
             var selected = getSelectedIssuances();
 
@@ -1420,7 +1546,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                 return;
             }
         });
-        updateMonthlySelectionState();
+        applyFilters();
     </script>
 </body>
 
