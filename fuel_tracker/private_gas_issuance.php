@@ -193,6 +193,16 @@ function privateGasStatusClass(string $status): string
             margin: 0;
             width: 1.1rem;
         }
+        .print-select-cell {
+            text-align: center;
+            width: 48px;
+        }
+        .print-select-cell .form-check-input {
+            cursor: pointer;
+            height: 1.1rem;
+            margin: 0;
+            width: 1.1rem;
+        }
         .optional-note {
             color: #6c757d;
             font-size: 0.78rem;
@@ -370,12 +380,21 @@ function privateGasStatusClass(string $status): string
         <section class="card border-0 shadow-sm">
             <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2">
                 <h2 class="h5 mb-0"><i class="fas fa-list-check me-2 text-primary"></i>Private Issuance Records</h2>
-                <span class="badge text-bg-primary">Private</span>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="small text-muted fw-semibold" id="privatePrintSelectionSummary">0 selected</span>
+                    <button type="button" class="btn btn-success btn-sm" id="printSelectedPrivateBtn" disabled>
+                        <i class="fas fa-print me-1"></i>Print Selected Coupons
+                    </button>
+                    <span class="badge text-bg-primary">Private</span>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle private-table mb-0">
                     <thead>
                         <tr>
+                            <th class="print-select-cell">
+                                <input type="checkbox" class="form-check-input" id="selectAllPrivatePrint" title="Select all printable private issuances" aria-label="Select all printable private issuances">
+                            </th>
                             <th>Serial No.</th>
                             <th>Vehicle</th>
                             <th>Driver</th>
@@ -390,7 +409,7 @@ function privateGasStatusClass(string $status): string
                     <tbody>
                     <?php if ($privateIssuances === []): ?>
                         <tr>
-                            <td colspan="9">
+                            <td colspan="10">
                                 <div class="empty-state">
                                     <i class="fas fa-file-circle-plus fa-2x mb-2 text-primary"></i>
                                     <div class="fw-bold">No private gas issuance records yet.</div>
@@ -407,6 +426,17 @@ function privateGasStatusClass(string $status): string
                             $approvalLocked = in_array($status, ['used', 'expired', 'revoked'], true);
                             ?>
                             <tr>
+                                <td class="print-select-cell">
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input private-print-checkbox"
+                                        value="<?php echo privateGasEscape($issuance['id'] ?? ''); ?>"
+                                        data-print-id="<?php echo privateGasEscape($issuance['id'] ?? ''); ?>"
+                                        aria-label="Select <?php echo privateGasEscape($serial); ?> for printing"
+                                        title="<?php echo $isApproved ? 'Select for combined PDF' : 'Approve this issuance before printing'; ?>"
+                                        <?php echo $isApproved ? '' : 'disabled'; ?>
+                                    >
+                                </td>
                                 <td>
                                     <div class="fw-bold"><?php echo privateGasEscape($serial); ?></div>
                                     <span class="badge text-bg-light border">Private</span>
@@ -743,9 +773,17 @@ function privateGasStatusClass(string $status): string
                     });
                     const status = data.status || (this.checked ? 'approved' : 'draft');
                     const badge = document.querySelector(`[data-status-badge="${CSS.escape(id)}"]`);
+                    const printCheckbox = document.querySelector(`[data-print-id="${CSS.escape(id)}"]`);
                     if (badge) {
                         badge.className = `badge ${privateStatusClass(status)}`;
                         badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                    }
+                    if (printCheckbox) {
+                        const printable = ['approved', 'valid', 'used'].includes(String(status).toLowerCase());
+                        printCheckbox.disabled = !printable;
+                        printCheckbox.title = printable ? 'Select for combined PDF' : 'Approve this issuance before printing';
+                        if (!printable) printCheckbox.checked = false;
+                        updatePrivatePrintSelection();
                     }
                     showPrivateAlert(data.message || 'Approval updated.', 'success');
                 } catch (error) {
@@ -756,6 +794,46 @@ function privateGasStatusClass(string $status): string
                 }
             });
         });
+
+        const privatePrintCheckboxes = Array.from(document.querySelectorAll('.private-print-checkbox'));
+        const selectAllPrivatePrint = document.getElementById('selectAllPrivatePrint');
+        const printSelectedPrivateBtn = document.getElementById('printSelectedPrivateBtn');
+        const privatePrintSelectionSummary = document.getElementById('privatePrintSelectionSummary');
+
+        function updatePrivatePrintSelection() {
+            const printable = privatePrintCheckboxes.filter((checkbox) => !checkbox.disabled);
+            const selected = printable.filter((checkbox) => checkbox.checked);
+            if (printSelectedPrivateBtn) printSelectedPrivateBtn.disabled = selected.length === 0;
+            if (privatePrintSelectionSummary) {
+                privatePrintSelectionSummary.textContent = `${selected.length} selected`;
+            }
+            if (selectAllPrivatePrint) {
+                selectAllPrivatePrint.disabled = printable.length === 0;
+                selectAllPrivatePrint.checked = printable.length > 0 && selected.length === printable.length;
+                selectAllPrivatePrint.indeterminate = selected.length > 0 && selected.length < printable.length;
+            }
+        }
+
+        privatePrintCheckboxes.forEach((checkbox) => {
+            checkbox.addEventListener('change', updatePrivatePrintSelection);
+        });
+
+        selectAllPrivatePrint?.addEventListener('change', function () {
+            privatePrintCheckboxes.forEach((checkbox) => {
+                if (!checkbox.disabled) checkbox.checked = this.checked;
+            });
+            updatePrivatePrintSelection();
+        });
+
+        printSelectedPrivateBtn?.addEventListener('click', function () {
+            const selectedIds = privatePrintCheckboxes
+                .filter((checkbox) => !checkbox.disabled && checkbox.checked)
+                .map((checkbox) => checkbox.value);
+            if (selectedIds.length === 0) return;
+            window.open(`private_gas_coupon_batch.php?issuance_ids=${encodeURIComponent(selectedIds.join(','))}`, '_blank', 'noopener');
+        });
+
+        updatePrivatePrintSelection();
 
         document.getElementById('savePrivateVehicleBtn')?.addEventListener('click', async function () {
             const plateNo = document.getElementById('privateVehiclePlate').value.trim();
