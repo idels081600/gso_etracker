@@ -426,7 +426,7 @@ function privateGasStatusClass(string $status): string
                             $isApproved = in_array($status, ['approved', 'valid', 'used'], true);
                             $approvalLocked = in_array($status, ['used', 'expired', 'revoked'], true);
                             ?>
-                            <tr>
+                            <tr data-private-issuance-row="<?php echo privateGasEscape($issuance['id'] ?? ''); ?>">
                                 <td class="print-select-cell">
                                     <input
                                         type="checkbox"
@@ -468,6 +468,16 @@ function privateGasStatusClass(string $status): string
                                         <a class="btn btn-sm btn-outline-primary" href="private_gas_coupon.php?serial_no=<?php echo urlencode($serial); ?>" target="_blank" title="Export private gas coupon with QR code">
                                             <i class="fas fa-ticket-alt"></i>
                                         </a>
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-danger private-delete-issuance"
+                                            data-id="<?php echo privateGasEscape($issuance['id'] ?? ''); ?>"
+                                            data-serial="<?php echo privateGasEscape($serial); ?>"
+                                            title="Delete private issuance"
+                                            aria-label="Delete private issuance <?php echo privateGasEscape($serial); ?>"
+                                        >
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -796,12 +806,13 @@ function privateGasStatusClass(string $status): string
             });
         });
 
-        const privatePrintCheckboxes = Array.from(document.querySelectorAll('.private-print-checkbox'));
+        let privatePrintCheckboxes = Array.from(document.querySelectorAll('.private-print-checkbox'));
         const selectAllPrivatePrint = document.getElementById('selectAllPrivatePrint');
         const printSelectedPrivateBtn = document.getElementById('printSelectedPrivateBtn');
         const privatePrintSelectionSummary = document.getElementById('privatePrintSelectionSummary');
 
         function updatePrivatePrintSelection() {
+            privatePrintCheckboxes = Array.from(document.querySelectorAll('.private-print-checkbox'));
             const printable = privatePrintCheckboxes.filter((checkbox) => !checkbox.disabled);
             const selected = printable.filter((checkbox) => checkbox.checked);
             if (printSelectedPrivateBtn) printSelectedPrivateBtn.disabled = selected.length === 0;
@@ -835,6 +846,31 @@ function privateGasStatusClass(string $status): string
         });
 
         updatePrivatePrintSelection();
+
+        document.querySelectorAll('.private-delete-issuance').forEach((button) => {
+            button.addEventListener('click', async function () {
+                const id = this.dataset.id || '';
+                const serial = this.dataset.serial || 'this private issuance';
+                if (!window.confirm(`Delete private issuance ${serial}? This cannot be undone.`)) {
+                    return;
+                }
+
+                setButtonLoading(this, true);
+                try {
+                    const data = await postPrivateJson('private_gas_issuance_save.php', {
+                        action: 'delete',
+                        id,
+                    });
+                    document.querySelector(`[data-private-issuance-row="${CSS.escape(id)}"]`)?.remove();
+                    updatePrivatePrintSelection();
+                    showPrivateAlert(data.message || 'Private gas issuance deleted.', 'success');
+                    window.setTimeout(() => window.location.reload(), 700);
+                } catch (error) {
+                    showPrivateAlert(error.message, 'danger');
+                    setButtonLoading(this, false);
+                }
+            });
+        });
 
         document.getElementById('savePrivateVehicleBtn')?.addEventListener('click', async function () {
             const plateNo = document.getElementById('privateVehiclePlate').value.trim();

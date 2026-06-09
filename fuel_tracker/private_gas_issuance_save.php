@@ -71,9 +71,67 @@ function privateIssuanceVehicle(mysqli $conn, int $vehicleId): array
 
 $input = privateIssuanceInput();
 $action = strtolower(trim((string) ($input['action'] ?? 'create')));
+$transactionStarted = false;
 
 try {
     fuelTrackerEnsureScopeColumns($conn);
+
+    if ($action === 'delete') {
+        $id = (int) ($input['id'] ?? 0);
+        if ($id <= 0) {
+            privateIssuanceJson(['success' => false, 'message' => 'Private gas issuance ID is required.'], 422);
+        }
+
+        $stmt = $conn->prepare("
+            SELECT serial_no
+            FROM gas_issuances
+            WHERE id = ?
+                AND LOWER(TRIM(COALESCE(issuance_scope, 'government'))) = 'private'
+            LIMIT 1
+        ");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $issuance = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$issuance) {
+            privateIssuanceJson(['success' => false, 'message' => 'Private gas issuance record was not found.'], 404);
+        }
+
+        $conn->begin_transaction();
+        $transactionStarted = true;
+
+        $stmt = $conn->prepare('DELETE FROM vehicle_odometer_logs WHERE gas_issuance_id = ?');
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $conn->prepare("
+            DELETE FROM gas_issuances
+            WHERE id = ?
+                AND LOWER(TRIM(COALESCE(issuance_scope, 'government'))) = 'private'
+            LIMIT 1
+        ");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+
+        if ($affected < 1) {
+            throw new RuntimeException('Private gas issuance record was not found.');
+        }
+
+        $conn->commit();
+        $transactionStarted = false;
+        fuelTrackerClearGasIssuanceCache();
+
+        privateIssuanceJson([
+            'success' => true,
+            'message' => 'Private gas issuance deleted.',
+            'deleted_id' => $id,
+            'serial_no' => (string) ($issuance['serial_no'] ?? ''),
+        ]);
+    }
 
     if ($action === 'approval') {
         $id = (int) ($input['id'] ?? 0);
@@ -190,6 +248,9 @@ try {
         'serial_no' => $serialNo,
     ]);
 } catch (mysqli_sql_exception $e) {
+    if ($transactionStarted) {
+        $conn->rollback();
+    }
     error_log('Private gas issuance save error: ' . $e->getMessage());
     if ((int) $e->getCode() === 1062) {
         privateIssuanceJson(['success' => false, 'message' => 'This serial number already exists.'], 409);
@@ -197,6 +258,9 @@ try {
 
     privateIssuanceJson(['success' => false, 'message' => 'Unable to save private gas issuance.'], 500);
 } catch (Throwable $e) {
+    if ($transactionStarted) {
+        $conn->rollback();
+    }
     error_log('Private gas issuance unexpected error: ' . $e->getMessage());
     privateIssuanceJson(['success' => false, 'message' => 'Unexpected server error.'], 500);
 }
