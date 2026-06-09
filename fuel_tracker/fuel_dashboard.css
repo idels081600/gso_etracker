@@ -1090,6 +1090,31 @@ body {
   max-width: min(900px, calc(100vw - 2rem));
 }
 
+.modal-dialog.modal-xl {
+  max-width: min(1180px, calc(100vw - 2rem));
+}
+
+.budget-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.budget-management-table-wrap {
+  border: 1px solid #e9ecef;
+  border-radius: 0.75rem;
+}
+
+.budget-management-table-wrap .table {
+  min-width: 1040px;
+  table-layout: auto;
+}
+
+.budget-management-table-wrap .table th,
+.budget-management-table-wrap .table td {
+  width: auto;
+}
+
 @media (max-width: 576px) {
   .modal-dialog {
     margin: 0.5rem;
@@ -1103,6 +1128,10 @@ body {
 
   .modal-footer .btn {
     width: 100%;
+  }
+
+  .budget-card-actions {
+    grid-template-columns: 1fr;
   }
 }
 

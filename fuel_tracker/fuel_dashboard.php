@@ -534,9 +534,14 @@ try {
                                 <span class="text-danger" id="budgetUsed">&#8369;<?php echo htmlspecialchars(number_format((float) $budgetSummary['used_budget'], 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-3" data-bs-toggle="modal" data-bs-target="#addBudgetModal">
-                            <i class="fas fa-plus-circle me-1"></i>Add IB Budget
-                        </button>
+                        <div class="budget-card-actions mt-3">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="openAddBudgetBtn" data-bs-toggle="modal" data-bs-target="#addBudgetModal">
+                                <i class="fas fa-plus-circle me-1"></i>Add IB
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageBudgetModal">
+                                <i class="fas fa-list-check me-1"></i>Manage IBs
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -712,34 +717,93 @@ try {
                             <div class="mb-3">
                                 <label for="budgetIbNo" class="form-label">IB Number</label>
                                 <input type="text" class="form-control text-uppercase" id="budgetIbNo" required>
+                                <div class="form-text" id="budgetIbHelp">Enter a new IB number or edit an existing IB from Manage IBs.</div>
                             </div>
                             <div class="mb-3">
                                 <label for="budgetDescription" class="form-label">Description</label>
                                 <input type="text" class="form-control" id="budgetDescription" placeholder="Fuel budget">
                             </div>
+                            <div class="mb-3">
+                                <label for="budgetFuelCoverage" class="form-label">Fuel Coverage</label>
+                                <select class="form-select" id="budgetFuelCoverage" required>
+                                    <option value="diesel">Diesel Only</option>
+                                    <option value="unleaded">Unleaded Only</option>
+                                    <option value="both" selected>Diesel and Unleaded</option>
+                                </select>
+                                <div class="form-text">Only the selected fuel allocation will be changed. Other existing allocations are preserved.</div>
+                            </div>
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-md-6" id="budgetDieselAllocationGroup">
                                     <label for="budgetDieselAllocation" class="form-label">Diesel Allocation</label>
                                     <div class="input-group">
                                         <span class="input-group-text">&#8369;</span>
-                                        <input type="number" class="form-control" id="budgetDieselAllocation" min="0" step="0.01" value="0" required>
+                                        <input type="number" class="form-control" id="budgetDieselAllocation" min="0.01" step="0.01" value="0">
                                     </div>
+                                    <small class="text-muted" id="budgetDieselUsedHelp"></small>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6" id="budgetUnleadedAllocationGroup">
                                     <label for="budgetUnleadedAllocation" class="form-label">Unleaded Allocation</label>
                                     <div class="input-group">
                                         <span class="input-group-text">&#8369;</span>
-                                        <input type="number" class="form-control" id="budgetUnleadedAllocation" min="0" step="0.01" value="0" required>
+                                        <input type="number" class="form-control" id="budgetUnleadedAllocation" min="0.01" step="0.01" value="0">
                                     </div>
+                                    <small class="text-muted" id="budgetUnleadedUsedHelp"></small>
                                 </div>
                             </div>
-                            <small class="text-muted d-block mt-2">Fuel summary deductions use the matching diesel and unleaded allocations automatically.</small>
+                            <small class="text-muted d-block mt-2">Allocations cannot be reduced below their already deducted amounts.</small>
+                            <div class="form-check mt-3">
+                                <input class="form-check-input" type="checkbox" id="budgetAddAnother">
+                                <label class="form-check-label" for="budgetAddAnother">Add another IB after saving</label>
+                            </div>
                         </form>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-primary" id="saveBudgetBtn">
                             <i class="fas fa-save me-1"></i>Save Budget
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="manageBudgetModal" tabindex="-1" aria-labelledby="manageBudgetModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="manageBudgetModalLabel">
+                            <i class="fas fa-list-check me-2"></i>Manage IB Budgets
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small">Each IB can fund diesel, unleaded, or both. Automatic deductions use the oldest matching active IB first.</p>
+                        <div class="table-responsive budget-management-table-wrap">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>IB No.</th>
+                                        <th>Description</th>
+                                        <th>Fuel Coverage</th>
+                                        <th class="text-end">Diesel Allocation</th>
+                                        <th class="text-end">Diesel Remaining</th>
+                                        <th class="text-end">Unleaded Allocation</th>
+                                        <th class="text-end">Unleaded Remaining</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="budgetManagementBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">No IB budgets saved yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="manageAddBudgetBtn">
+                            <i class="fas fa-plus-circle me-1"></i>Add New IB
                         </button>
                     </div>
                 </div>
@@ -893,4 +957,3 @@ try {
 </body>
 
 </html>
-

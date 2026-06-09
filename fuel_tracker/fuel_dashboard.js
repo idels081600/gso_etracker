@@ -148,6 +148,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   if (saveBudgetBtn) {
     saveBudgetBtn.addEventListener("click", saveFuelBudget);
   }
+  initFuelBudgetControls();
 
   await loadDashboardVisuals();
 
@@ -161,7 +162,6 @@ function prepareBudgetBarAnimation() {
     bar.style.width = "0%";
   });
 }
-
 function handleRefreshRecords() {
   loadFuelRecords();
   showNotification("Budget deduction transactions refreshed", "success");
@@ -995,6 +995,160 @@ function updateFuelBudgetSummary(summary) {
   dashboardBudgetSummary = summary || {};
   renderActualFuelBudget();
   renderDraftFuelBudget();
+  renderBudgetManagementTable();
+}
+
+function initFuelBudgetControls() {
+  const coverage = document.getElementById("budgetFuelCoverage");
+  const openAddButton = document.getElementById("openAddBudgetBtn");
+  const manageAddButton = document.getElementById("manageAddBudgetBtn");
+  const managementBody = document.getElementById("budgetManagementBody");
+
+  coverage?.addEventListener("change", updateBudgetCoverageFields);
+  openAddButton?.addEventListener("click", resetFuelBudgetForm);
+  manageAddButton?.addEventListener("click", () => {
+    resetFuelBudgetForm();
+    showAddBudgetModalAfterManage();
+  });
+  managementBody?.addEventListener("click", (event) => {
+    const editButton = event.target.closest("[data-edit-budget-id]");
+    if (!editButton) return;
+    editFuelBudget(Number(editButton.dataset.editBudgetId || 0));
+  });
+
+  updateBudgetCoverageFields();
+}
+
+function showAddBudgetModalAfterManage() {
+  const manageModalElement = document.getElementById("manageBudgetModal");
+  const addModalElement = document.getElementById("addBudgetModal");
+  if (!manageModalElement || !addModalElement) return;
+
+  manageModalElement.addEventListener(
+    "hidden.bs.modal",
+    () => bootstrap.Modal.getOrCreateInstance(addModalElement).show(),
+    { once: true }
+  );
+  bootstrap.Modal.getOrCreateInstance(manageModalElement).hide();
+}
+
+function resetFuelBudgetForm() {
+  const form = document.getElementById("addBudgetForm");
+  form?.reset();
+  document.getElementById("addBudgetModalLabel").innerHTML =
+    '<i class="fas fa-wallet me-2"></i>Add IB Budget';
+  document.getElementById("budgetIbNo").readOnly = false;
+  document.getElementById("budgetIbHelp").textContent =
+    "Enter a new IB number or edit an existing IB from Manage IBs.";
+  document.getElementById("budgetFuelCoverage").value = "both";
+  document.getElementById("budgetDieselAllocation").value = "0";
+  document.getElementById("budgetUnleadedAllocation").value = "0";
+  document.getElementById("budgetDieselUsedHelp").textContent = "";
+  document.getElementById("budgetUnleadedUsedHelp").textContent = "";
+  updateBudgetCoverageFields();
+}
+
+function updateBudgetCoverageFields() {
+  const coverage = document.getElementById("budgetFuelCoverage")?.value || "both";
+  const dieselSelected = coverage === "diesel" || coverage === "both";
+  const unleadedSelected = coverage === "unleaded" || coverage === "both";
+  const dieselGroup = document.getElementById("budgetDieselAllocationGroup");
+  const unleadedGroup = document.getElementById("budgetUnleadedAllocationGroup");
+  const dieselInput = document.getElementById("budgetDieselAllocation");
+  const unleadedInput = document.getElementById("budgetUnleadedAllocation");
+
+  dieselGroup?.classList.toggle("d-none", !dieselSelected);
+  unleadedGroup?.classList.toggle("d-none", !unleadedSelected);
+  if (dieselInput) {
+    dieselInput.required = dieselSelected;
+    dieselInput.disabled = !dieselSelected;
+  }
+  if (unleadedInput) {
+    unleadedInput.required = unleadedSelected;
+    unleadedInput.disabled = !unleadedSelected;
+  }
+}
+
+function budgetFuelCoverageLabel(budget) {
+  const hasDiesel = Number(budget.diesel_allocation || 0) > 0;
+  const hasUnleaded = Number(budget.unleaded_allocation || 0) > 0;
+  if (hasDiesel && hasUnleaded) return "Diesel and Unleaded";
+  if (hasDiesel) return "Diesel Only";
+  if (hasUnleaded) return "Unleaded Only";
+  return "No Allocation";
+}
+
+function renderBudgetManagementTable() {
+  const tbody = document.getElementById("budgetManagementBody");
+  if (!tbody) return;
+  const budgets = Array.isArray(dashboardBudgetSummary.budgets)
+    ? dashboardBudgetSummary.budgets
+    : [];
+
+  if (!budgets.length) {
+    tbody.innerHTML =
+      '<tr><td colspan="8" class="text-center text-muted py-4">No IB budgets saved yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = budgets
+    .map(
+      (budget) => `
+        <tr>
+          <td><span class="font-monospace fw-semibold">${escapeHtml(budget.ib_no || "-")}</span></td>
+          <td>${escapeHtml(budget.description || "-")}</td>
+          <td><span class="badge text-bg-light border">${budgetFuelCoverageLabel(budget)}</span></td>
+          <td class="text-end">${formatPeso(budget.diesel_allocation)}</td>
+          <td class="text-end text-warning fw-semibold">${formatPeso(budget.remaining_diesel_amount)}</td>
+          <td class="text-end">${formatPeso(budget.unleaded_allocation)}</td>
+          <td class="text-end text-success fw-semibold">${formatPeso(budget.remaining_unleaded_amount)}</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-outline-primary btn-sm" data-edit-budget-id="${Number(budget.id || 0)}">
+              <i class="fas fa-pen me-1"></i>Edit
+            </button>
+          </td>
+        </tr>
+      `
+    )
+    .join("");
+}
+
+function editFuelBudget(budgetId) {
+  const budgets = Array.isArray(dashboardBudgetSummary.budgets)
+    ? dashboardBudgetSummary.budgets
+    : [];
+  const budget = budgets.find((item) => Number(item.id || 0) === budgetId);
+  if (!budget) {
+    showNotification("Unable to find the selected IB budget.", "danger");
+    return;
+  }
+
+  document.getElementById("addBudgetModalLabel").innerHTML =
+    '<i class="fas fa-pen me-2"></i>Edit IB Budget';
+  const ibInput = document.getElementById("budgetIbNo");
+  ibInput.value = budget.ib_no || "";
+  ibInput.readOnly = true;
+  document.getElementById("budgetIbHelp").textContent =
+    "IB numbers cannot be renamed. Choose the fuel allocation you want to update.";
+  document.getElementById("budgetDescription").value = budget.description || "";
+  document.getElementById("budgetDieselAllocation").value = Number(
+    budget.diesel_allocation || 0
+  ).toFixed(2);
+  document.getElementById("budgetUnleadedAllocation").value = Number(
+    budget.unleaded_allocation || 0
+  ).toFixed(2);
+  document.getElementById("budgetDieselUsedHelp").textContent =
+    `Already deducted: ${formatPeso(budget.used_diesel_amount)}`;
+  document.getElementById("budgetUnleadedUsedHelp").textContent =
+    `Already deducted: ${formatPeso(budget.used_unleaded_amount)}`;
+
+  const hasDiesel = Number(budget.diesel_allocation || 0) > 0;
+  const hasUnleaded = Number(budget.unleaded_allocation || 0) > 0;
+  document.getElementById("budgetFuelCoverage").value =
+    hasDiesel && hasUnleaded ? "both" : hasDiesel ? "diesel" : "unleaded";
+  document.getElementById("budgetAddAnother").checked = false;
+  updateBudgetCoverageFields();
+  showAddBudgetModalAfterManage();
 }
 
 function renderActualFuelBudget() {
@@ -1447,6 +1601,7 @@ async function saveFuelBudget() {
       body: JSON.stringify({
         ib_no: document.getElementById("budgetIbNo").value,
         description: document.getElementById("budgetDescription").value,
+        fuel_coverage: document.getElementById("budgetFuelCoverage").value,
         diesel_allocation: document.getElementById("budgetDieselAllocation").value,
         unleaded_allocation: document.getElementById("budgetUnleadedAllocation").value,
       }),
@@ -1457,11 +1612,15 @@ async function saveFuelBudget() {
     }
 
     updateFuelBudgetSummary(payload.budget_summary || {});
-    form.reset();
-    document.getElementById("budgetDieselAllocation").value = "0";
-    document.getElementById("budgetUnleadedAllocation").value = "0";
-    const modal = bootstrap.Modal.getInstance(document.getElementById("addBudgetModal"));
-    if (modal) modal.hide();
+    const addAnother = document.getElementById("budgetAddAnother").checked;
+    if (addAnother) {
+      resetFuelBudgetForm();
+      document.getElementById("budgetAddAnother").checked = true;
+      document.getElementById("budgetIbNo").focus();
+    } else {
+      const modal = bootstrap.Modal.getInstance(document.getElementById("addBudgetModal"));
+      if (modal) modal.hide();
+    }
     showNotification(payload.message || "IB budget saved.", "success");
   } catch (error) {
     showNotification(error.message, "danger");
@@ -2127,4 +2286,3 @@ async function loadFuelData(filters = {}) {
     showNotification("Failed to load fuel data", "danger");
   }
 }
-
