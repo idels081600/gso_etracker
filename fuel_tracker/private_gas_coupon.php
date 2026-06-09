@@ -102,7 +102,7 @@ $issueDate = privateCouponDate((string) ($coupon['issue_date'] ?? ''));
 $expiryDate = privateCouponDate((string) ($coupon['expiry_date'] ?? ''));
 $outputMode = isset($_GET['download']) && $_GET['download'] === '1' ? 'D' : 'I';
 
-$pdf = new PrivateGasCouponPdf('L', 'mm', [140, 80], true, 'UTF-8', false);
+$pdf = new PrivateGasCouponPdf('P', 'mm', 'A4', true, 'UTF-8', false);
 $pdf->setPrintHeader(false);
 $pdf->setPrintFooter(false);
 $pdf->SetCreator('TCPDF');
@@ -112,15 +112,16 @@ $pdf->SetMargins(0, 0, 0);
 $pdf->SetAutoPageBreak(false, 0);
 $pdf->AddPage();
 
+$templateId = $pdf->startTemplate(140, 80);
+
 $pdf->SetFillColor(255, 255, 255);
 $pdf->Rect(0, 0, 140, 80, 'F');
 $pdf->SetDrawColor(25, 35, 50);
 $pdf->SetLineWidth(0.45);
-$pdf->RoundedRect(5, 5, 130, 70, 2.5, '1111');
+$pdf->Rect(0, 0, 140, 80);
 
 $pdf->SetFillColor(3, 154, 0);
-$pdf->RoundedRect(5.25, 5.25, 129.5, 12, 2.2, '1001', 'F');
-$pdf->Rect(5.25, 13, 129.5, 4.25, 'F');
+$pdf->Rect(0.25, 0.25, 139.5, 17, 'F');
 $pdf->SetTextColor(255, 255, 255);
 $pdf->SetFont('helvetica', 'B', 11);
 $pdf->SetXY(9, 7.2);
@@ -175,6 +176,20 @@ $pdf->SetXY(9, 67);
 $pdf->Cell(40, 4, 'ISSUED: ' . $issueDate, 0, 0, 'L');
 $pdf->SetXY(50, 67);
 $pdf->Cell(40, 4, 'EXPIRES: ' . $expiryDate, 0, 0, 'L');
+
+$pdf->endTemplate();
+
+$pageWidth = 210.0;
+$pageHeight = 297.0;
+$couponWidth = 101.6;
+$couponHeight = 50.8;
+$columns = 2;
+$rowsPerPage = 5;
+$gridWidth = $couponWidth * $columns;
+$gridHeight = $couponHeight * $rowsPerPage;
+$startX = ($pageWidth - $gridWidth) / 2;
+$startY = ($pageHeight - $gridHeight) / 2;
+$pdf->printTemplate($templateId, $startX, $startY, $couponWidth, $couponHeight);
 
 $filename = 'Private_Gas_Coupon_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $serialNo) . '.pdf';
 $pdf->Output($filename, $outputMode);
