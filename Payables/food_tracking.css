@@ -329,6 +329,12 @@ body.sidebar-collapsed .food-tracking-content {
   max-width: 680px;
 }
 
+.food-wide-dialog {
+  width: min(900px, calc(100vw - 24px)) !important;
+  max-width: 900px !important;
+  margin-inline: auto;
+}
+
 .food-history-dialog {
   width: min(1000px, calc(100vw - 32px)) !important;
   max-width: 1000px !important;
@@ -394,6 +400,155 @@ body.sidebar-collapsed .food-tracking-content {
   padding: 0 10px;
 }
 
+.food-section-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18px 0 9px;
+  color: #344054;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.food-inline-button {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  min-height: 34px;
+  border: 1px solid #b8e2db;
+  border-radius: 8px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 850;
+  padding: 0 10px;
+}
+
+.food-line-list {
+  display: grid;
+  gap: 8px;
+}
+
+.food-input-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 0.55fr) 34px;
+  gap: 8px;
+  align-items: end;
+  border: 1px solid #e6eaf0;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 10px;
+}
+
+#newCategoryList .food-input-line {
+  grid-template-columns: minmax(120px, 0.65fr) minmax(0, 1fr) minmax(110px, 0.55fr) 34px;
+}
+
+.food-input-line label,
+.food-category-editor label {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+
+.food-input-line label span,
+.food-category-editor label span {
+  color: #475467;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.food-input-line input,
+.food-input-line select,
+.food-category-editor input,
+.food-category-editor select {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #202432;
+  font-size: 0.78rem;
+  font-weight: 650;
+  outline: none;
+  padding: 0 9px;
+}
+
+.food-input-line input:focus,
+.food-input-line select:focus,
+.food-category-editor input:focus,
+.food-category-editor select:focus {
+  border-color: #20a797;
+  box-shadow: 0 0 0 3px rgba(32, 167, 151, 0.12);
+}
+
+.food-remove-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 36px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff;
+  color: #b42318;
+}
+
+.food-category-manage-list {
+  display: grid;
+  gap: 7px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.food-category-manage-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(130px, 0.45fr) minmax(80px, auto);
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #edf0f4;
+  border-radius: 8px;
+  padding: 9px 11px;
+}
+
+.food-category-manage-row.is-archived {
+  background: #f8fafc;
+  opacity: 0.7;
+}
+
+.food-category-manage-row > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.food-category-manage-row > div:first-child strong {
+  color: #101828;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.food-category-manage-row > div:first-child span {
+  color: #667085;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.food-history-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.food-category-editor {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.65fr) minmax(220px, 1fr) minmax(130px, 0.65fr) auto;
+  gap: 8px;
+  align-items: end;
+  margin-top: 14px;
+  border-top: 1px solid #e6eaf0;
+  padding-top: 14px;
+}
+
 .food-form-grid input:focus,
 .food-form-grid select:focus {
   border-color: #20a797;
@@ -451,14 +606,60 @@ body.sidebar-collapsed .food-tracking-content {
   text-transform: uppercase;
 }
 
-.food-history-item {
-  display: grid;
-  grid-template-columns: minmax(110px, 0.7fr) minmax(90px, 0.5fr) minmax(120px, 0.6fr) minmax(160px, 1fr) minmax(76px, 0.36fr);
-  gap: 10px;
-  align-items: center;
+.food-history-transaction {
   border: 1px solid #edf0f4;
   border-radius: 8px;
-  padding: 10px 12px;
+  overflow: hidden;
+}
+
+.food-history-transaction-head {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.4fr) minmax(220px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  background: #f8fafc;
+  padding: 9px 11px;
+}
+
+.food-history-transaction-head > strong {
+  color: #101828;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.food-history-transaction-head > span {
+  color: #667085;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.food-history-lines {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: #edf0f4;
+}
+
+.food-history-line {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  color: #475467;
+  font-size: 0.73rem;
+  padding: 9px 11px;
+}
+
+.food-history-line strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.food-history-line b {
+  color: #101828;
+  font-size: 0.78rem;
 }
 
 .food-history-actions {
@@ -543,11 +744,35 @@ body.sidebar-collapsed .food-tracking-content {
     grid-column: 1 / -1;
   }
 
-  .food-form-grid {
+  .food-form-grid,
+  .food-category-editor {
     grid-template-columns: 1fr;
   }
 
-  .food-history-item {
+  .food-input-line,
+  .food-category-manage-row,
+  .food-history-transaction-head,
+  .food-history-lines {
     grid-template-columns: 1fr;
+  }
+
+  .food-remove-line {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .food-wide-dialog {
+    width: calc(100vw - 16px) !important;
+    margin: 8px auto;
+  }
+
+  .food-input-line,
+  #newCategoryList .food-input-line {
+    grid-template-columns: 1fr;
+  }
+
+  .food-remove-line {
+    width: 100%;
   }
 }
