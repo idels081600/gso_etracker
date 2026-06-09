@@ -204,41 +204,65 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
         }
     </style>
     <script type="text/javascript">
-        // Store checkbox states
         let checkboxStates = {};
 
-        function saveCheckboxStates() {
-            // Clear previous states first to handle removed checkboxes
-            checkboxStates = {};
+        function getRequestCheckboxes() {
+            return Array.from(document.querySelectorAll('input[name="selected[]"]'));
+        }
 
-            const checkboxes = document.querySelectorAll('input[name="selected[]"]');
-            checkboxes.forEach(checkbox => {
-                // Save the current state (checked or unchecked)
+        function updateBulkSelectionState() {
+            const checkboxes = getRequestCheckboxes();
+            const selected = checkboxes.filter(checkbox => checkbox.checked);
+            const selectAll = document.getElementById('selectAllRequests');
+            const selectedIdsInput = document.getElementById('selected_ids_input');
+
+            if (selectedIdsInput) {
+                selectedIdsInput.value = JSON.stringify(selected.map(checkbox => checkbox.value));
+            }
+
+            if (selectAll) {
+                selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
+                selectAll.indeterminate = selected.length > 0 && selected.length < checkboxes.length;
+            }
+        }
+
+        function saveCheckboxStates() {
+            checkboxStates = {};
+            getRequestCheckboxes().forEach(checkbox => {
                 checkboxStates[checkbox.value] = checkbox.checked;
             });
-
-            // For debugging
-            console.log("Saved states:", checkboxStates);
         }
 
         function restoreCheckboxStates() {
-            const checkboxes = document.querySelectorAll('input[name="selected[]"]');
-            checkboxes.forEach(checkbox => {
+            getRequestCheckboxes().forEach(checkbox => {
                 if (checkboxStates[checkbox.value] !== undefined) {
                     checkbox.checked = checkboxStates[checkbox.value];
                 }
             });
-
-            // For debugging
-            console.log("Restored states:", checkboxStates);
+            updateBulkSelectionState();
         }
 
-        // Add event listeners to checkboxes to save state when they change
         document.addEventListener('change', function(e) {
             if (e.target && e.target.name === 'selected[]') {
                 saveCheckboxStates();
+                updateBulkSelectionState();
             }
         }, true);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAll = document.getElementById('selectAllRequests');
+            if (!selectAll) return;
+
+            selectAll.addEventListener('change', function() {
+                getRequestCheckboxes().forEach(checkbox => {
+                    checkbox.checked = selectAll.checked;
+                    checkboxStates[checkbox.value] = selectAll.checked;
+                });
+                updateBulkSelectionState();
+            });
+
+            updateBulkSelectionState();
+        });
 
         function loadDoc() {
             function poll() {
@@ -251,8 +275,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
                         document.getElementById("table-body").innerHTML = this.responseText;
-                        // Restore checkbox states after content is updated
-                        setTimeout(restoreCheckboxStates, 10); // Small delay to ensure DOM is updated
+                        restoreCheckboxStates();
                     }
                 };
                 xhttp.open("GET", "data_r.php", true);
@@ -628,26 +651,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                 });
             }
 
-            // Function to update the selected IDs input
-            function updateSelectedIds() {
-                if (selectedIdsInput) {
-                    const checkboxes = document.querySelectorAll('input[name="selected[]"]:checked');
-                    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-                    console.log("Updated selected IDs:", selectedIds);
-                    selectedIdsInput.value = JSON.stringify(selectedIds);
-                }
-            }
-
-            // Add event listeners to all checkboxes
-            document.addEventListener('change', function(e) {
-                if (e.target && e.target.name === 'selected[]') {
-                    updateSelectedIds();
-                }
-            });
-
-            // Initialize selected IDs on page load
-            updateSelectedIds();
-
             // Add event listener to the Accept All button that opens the modal
             const acceptAllBtn = document.getElementById('acceptAllBtn');
             if (acceptAllBtn) {
@@ -798,55 +801,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             });
 
             console.log('Enhanced Bootstrap modal handlers initialized');
-        });
-    </script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const selectAll = document.getElementById('selectAllRequests');
-            const tableBody = document.getElementById('table-body');
-            const selectedIdsInput = document.getElementById('selected_ids_input');
-
-            function getRequestCheckboxes() {
-                return Array.from(document.querySelectorAll('input[name="selected[]"]'));
-            }
-
-            function updateBulkSelectionState() {
-                const checkboxes = getRequestCheckboxes();
-                const selected = checkboxes.filter(checkbox => checkbox.checked);
-
-                if (selectedIdsInput) {
-                    selectedIdsInput.value = JSON.stringify(selected.map(checkbox => checkbox.value));
-                }
-
-                if (selectAll) {
-                    selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
-                    selectAll.indeterminate = selected.length > 0 && selected.length < checkboxes.length;
-                }
-            }
-
-            selectAll?.addEventListener('change', function() {
-                getRequestCheckboxes().forEach(checkbox => {
-                    checkbox.checked = selectAll.checked;
-                    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-                });
-                updateBulkSelectionState();
-            });
-
-            document.addEventListener('change', function(event) {
-                if (event.target && event.target.name === 'selected[]') {
-                    updateBulkSelectionState();
-                }
-            });
-
-            if (tableBody) {
-                new MutationObserver(updateBulkSelectionState).observe(tableBody, {
-                    childList: true,
-                    subtree: true
-                });
-            }
-
-            updateBulkSelectionState();
         });
     </script>
 
