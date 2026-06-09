@@ -274,6 +274,7 @@ function privateGasStatusClass(string $status): string
                     <li class="nav-item"><a class="nav-link" href="fuel_dashboard.php"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="gas_issuance.php"><i class="fas fa-receipt me-1"></i>Gas Issuance</a></li>
                     <li class="nav-item"><a class="nav-link active" href="private_gas_issuance.php"><i class="fas fa-car-side me-1"></i>Private Issuance</a></li>
+                    <li class="nav-item"><a class="nav-link" href="sub_admin.php"><i class="fas fa-print me-1"></i>Print Desk</a></li>
                 </ul>
                 <a class="btn btn-outline-secondary btn-sm" href="../logout.php">
                     <i class="fas fa-sign-out-alt me-1"></i>Logout

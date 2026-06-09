@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/auth_guard.php';
-requireFuelRole('coa_admin', 'text');
+requireFuelRole(['coa_admin', 'fuel_admin'], 'text');
 require_once __DIR__ . '/rate_limiter.php';
 require_rate_limit(20, 60, 'monthly_official_travels', 'text');
 

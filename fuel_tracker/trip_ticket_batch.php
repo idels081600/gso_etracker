@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/auth_guard.php';
-requireFuelRole('coa_admin', 'text');
+requireFuelRole(['coa_admin', 'fuel_admin'], 'text');
 
 $tcpdfPath = __DIR__ . '/../vendor/tecnickcom/tcpdf/tcpdf.php';
 if (!is_file($tcpdfPath)) {
