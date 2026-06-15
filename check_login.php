@@ -88,9 +88,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "ASSET":
                 header("location:asset_tracker_dashboard/dashboard_asset_tracker.php");
                 exit;
-            // case "ASSET":
-            //     header("location:dashboard_asset_tracker.php");
-            //     exit;
             case "TENT INSTALLERS":
                 header("location:tent_installers.php");
                 exit;
@@ -135,6 +132,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
             case "master_admin":
                 header("location:master_dashboard/dashboard.php");
+                exit;
+            case "asset2":
+                header("location:dashboard_asset_tracker.php");
                 exit;
             default:
                 header("location:login_v2.php");
