@@ -85,7 +85,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "SAP":
                 header("location:sir_bayong.php");
                 exit;
-            case "ASSET":
+            case "asset2":
                 header("location:asset_tracker_dashboard/dashboard_asset_tracker.php");
                 exit;
             case "TENT INSTALLERS":
@@ -133,7 +133,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "master_admin":
                 header("location:master_dashboard/dashboard.php");
                 exit;
-            case "asset2":
+            case "ASSET":
                 header("location:dashboard_asset_tracker.php");
                 exit;
             default:
