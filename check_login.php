@@ -134,7 +134,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("location:master_dashboard/dashboard.php");
                 exit;
             case "ASSET":
-                header("location:dashboard_asset_tracker.php");
+                header("location:asset_tracker_dashboard/dashboard_asset_tracker.php");
                 exit;
             default:
                 header("location:login_v2.php");
