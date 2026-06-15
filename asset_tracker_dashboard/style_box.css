@@ -1,0 +1,24 @@
+.container {
+  display: flex;
+  flex-direction: column; /* Display boxes and dropdown vertically */
+  align-items: center; /* Center align the boxes horizontally */
+}
+
+/* .boxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px; 
+  justify-content: center; 
+} */
+
+/* .box {
+  width: 30px;
+  height: 30px; 
+  background-color: lightgray;
+  border: 1px solid black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+} */
+

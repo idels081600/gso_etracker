@@ -85,6 +85,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "SAP":
                 header("location:sir_bayong.php");
                 exit;
+            case "ASSET2":
+                header("location:asset_tracker_dashboard/dashboard_asset_tracker.php");
+                exit;
             case "ASSET":
                 header("location:dashboard_asset_tracker.php");
                 exit;

@@ -1,0 +1,50 @@
+:root {
+  --asset-focus: #0b63ce;
+  --asset-border: #d7dee8;
+  --asset-surface: #ffffff;
+  --asset-muted: #5c6778;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--asset-focus) 65%, white);
+  outline-offset: 2px;
+}
+
+.asset-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.asset-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.asset-status {
+  border-radius: 4px;
+  display: inline-block;
+  font-weight: 600;
+  padding: 0.2rem 0.45rem;
+}
+
+.asset-sr-only {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

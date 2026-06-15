@@ -1,0 +1,638 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chairs & Table Tracking - UI/UX Design Plan</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        :root {
+            --ct-teal: #20a797;
+            --ct-teal-dark: #157a6e;
+            --ct-teal-soft: #e0f5f2;
+            --ct-ink: #17202a;
+            --ct-muted: #667085;
+            --ct-line: #e5e7eb;
+            --ct-bg: #f7f9fa;
+            --ct-surface: #ffffff;
+            --ct-success: #16803c;
+            --ct-danger: #b42318;
+            --ct-warning: #c97800;
+            --ct-info: #2769a5;
+            --ct-longterm: #6941c6;
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: #eef1f3;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            color: var(--ct-ink);
+            padding: 30px 20px;
+        }
+        .page-header { max-width: 1200px; margin: 0 auto 30px; }
+        .page-header h1 { color: var(--ct-teal-dark); font-weight: 750; font-size: 2rem; }
+        .page-header p { color: var(--ct-muted); font-size: 1.05rem; }
+
+        .color-specs {
+            display: flex; flex-wrap: wrap; gap: 14px;
+            margin: 20px 0 30px; padding: 18px 22px;
+            background: #fff; border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .swatch { display: flex; align-items: center; gap: 10px; font-size: 0.82rem; }
+        .swatch-dot { width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.08); flex-shrink: 0; }
+        .swatch-label { font-weight: 600; }
+        .swatch-hex { color: #888; font-size: 0.78rem; }
+
+        .mockup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(560px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .mockup-card {
+            background: #fff; border-radius: 14px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+            overflow: hidden; border: 1px solid var(--ct-line);
+        }
+        .mockup-header {
+            padding: 16px 22px; background: var(--ct-teal-dark);
+            color: #fff; display: flex; align-items: center; justify-content: space-between;
+        }
+        .mockup-header h3 { margin: 0; font-size: 0.95rem; font-weight: 700; }
+        .mockup-header .badge-screen {
+            background: rgba(255,255,255,0.18); padding: 4px 12px;
+            border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+        }
+        .mockup-body { padding: 22px; }
+
+        .stat-row {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px; margin-bottom: 20px;
+        }
+        .stat-card {
+            padding: 14px 16px; border-radius: 10px;
+            background: var(--ct-bg); text-align: center;
+        }
+        .stat-card .num { font-size: 1.6rem; font-weight: 750; color: var(--ct-teal-dark); line-height: 1.2; }
+        .stat-card .label { font-size: 0.72rem; color: var(--ct-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+        .stat-card.success { background: #e6f7f2; }
+        .stat-card.success .num { color: var(--ct-success); }
+        .stat-card.danger { background: #fde8e8; }
+        .stat-card.danger .num { color: var(--ct-danger); }
+        .stat-card.warning { background: #fff3d9; }
+        .stat-card.warning .num { color: var(--ct-warning); }
+        .stat-card.info { background: #e8f1fc; }
+        .stat-card.info .num { color: var(--ct-info); }
+
+        .tracking-table { width: 100%; font-size: 0.82rem; border-collapse: collapse; }
+        .tracking-table th {
+            text-align: left; padding: 8px 6px; color: var(--ct-muted);
+            font-weight: 700; font-size: 0.72rem; text-transform: uppercase;
+            letter-spacing: 0.04em; border-bottom: 2px solid var(--ct-line);
+        }
+        .tracking-table td { padding: 10px 6px; border-bottom: 1px solid var(--ct-line); vertical-align: middle; }
+        .tracking-table tr:last-child td { border-bottom: none; }
+
+        .status-badge {
+            display: inline-block; padding: 3px 12px; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 700;
+        }
+        .badge-pending { background: #fff3d9; color: #8a5b00; }
+        .badge-deployed { background: #e6f7f2; color: #157a6e; }
+        .badge-retrieval { background: #e8f1fc; color: #2769a5; }
+        .badge-retrieved { background: #edf0f2; color: #52606d; }
+        .badge-longterm { background: #f1eafd; color: #6941c6; }
+        .badge-overdue { background: #fde8e8; color: #b42318; }
+
+        .btn-mock {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 16px; border-radius: 8px; border: 0;
+            font-size: 0.8rem; font-weight: 600; cursor: default;
+        }
+        .btn-teal { background: var(--ct-teal-dark); color: #fff; }
+        .btn-outline { background: transparent; color: var(--ct-teal-dark); border: 1px solid var(--ct-teal-dark); }
+        .btn-sm { padding: 4px 12px; font-size: 0.72rem; }
+
+        .form-mock {
+            width: 100%; padding: 9px 14px; border: 1px solid var(--ct-line);
+            border-radius: 8px; font-size: 0.85rem;
+            background: #fbfdfe; color: var(--ct-ink);
+        }
+
+        .subtype-section {
+            border: 1px solid var(--ct-line);
+            border-radius: 8px; padding: 14px;
+            margin-bottom: 14px;
+        }
+        .subtype-section h6 {
+            font-size: 0.85rem; font-weight: 700;
+            margin: 0 0 10px; display: flex; align-items: center; gap: 8px;
+        }
+        .subtype-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; background: var(--ct-bg);
+            border-radius: 8px; margin-bottom: 8px;
+        }
+        .subtype-row select { width: 180px; }
+        .subtype-row input[type=number] { width: 80px; }
+        .add-row-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border: 1px dashed var(--ct-teal-dark);
+            border-radius: 6px; color: var(--ct-teal-dark);
+            font-size: 0.78rem; font-weight: 600; cursor: default; background: transparent;
+        }
+        .subtype-chip {
+            display: inline-block; padding: 3px 10px; border-radius: 20px;
+            font-size: 0.72rem; font-weight: 700; margin: 1px;
+        }
+        .chip-white { background: #f5f5f5; color: #333; border: 1px solid #ddd; }
+        .chip-blue { background: #e3f2fd; color: #1565c0; }
+        .chip-red { background: #ffebee; color: #c62828; }
+        .chip-black { background: #333; color: #fff; }
+        .chip-round { background: #e8f5e9; color: #2e7d32; }
+        .chip-rectangle { background: #fff3e0; color: #e65100; }
+        .chip-square { background: #f3e5f5; color: #6a1b9a; }
+
+        .toolbar-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+        }
+        .filter-chips { display: flex; gap: 4px; }
+        .filter-chip {
+            padding: 6px 12px; border: 1px solid transparent; border-radius: 6px;
+            background: transparent; color: #596273; font-size: 0.72rem; font-weight: 700; cursor: default;
+        }
+        .filter-chip.active { border-color: #b8e4de; background: var(--ct-teal-soft); color: var(--ct-teal-dark); }
+        .search-bar {
+            display: flex; align-items: center; gap: 8px;
+            padding: 0 11px; border: 1px solid var(--ct-line);
+            border-radius: 6px; background: #fff; width: 210px;
+        }
+        .search-bar input { border: 0; outline: 0; background: transparent; font-size: 0.78rem; padding: 8px 0; width: 100%; }
+
+        .modal-overlay {
+            border: 1px solid var(--ct-line); border-radius: 10px;
+            background: #fff; overflow: hidden;
+        }
+        .modal-overlay-header {
+            padding: 14px 18px; border-bottom: 1px solid var(--ct-line);
+            background: #f8f9fa; display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-overlay-header h5 { margin: 0; font-size: 1rem; font-weight: 700; }
+        .modal-overlay-body { padding: 18px; }
+        .modal-overlay-footer {
+            padding: 12px 18px; border-top: 1px solid var(--ct-line);
+            display: flex; justify-content: flex-end; gap: 8px;
+        }
+
+        .section-divider { margin: 50px auto 30px; max-width: 1200px; }
+        .section-divider h2 {
+            color: var(--ct-teal-dark); font-weight: 750; font-size: 1.5rem;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .section-divider h2 small { font-size: 0.65rem; color: var(--ct-muted); font-weight: normal; }
+
+        .mockup-annotations {
+            margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px;
+        }
+        .mockup-annotations .annotation {
+            padding: 4px 12px; background: #fff3e0; border-radius: 6px;
+            font-size: 0.7rem; color: #e65100; font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .alert-bar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; background: #fff7f7; border: 1px solid #f6c9c9;
+            border-left: 4px solid #b42318; border-radius: 8px;
+            margin-bottom: 16px; font-size: 0.85rem;
+        }
+        .alert-bar strong { color: #8b2929; }
+        .alert-bar span { color: #8d5151; font-size: 0.78rem; }
+    </style>
+</head>
+<body>
+
+<div class="page-header">
+    <h1>🪑 Chairs & Table Tracking — UI/UX Design Plan</h1>
+    <p>Wireframes and mockups for all key screens — quantity + subtype tracking (chair by color, table by shape).</p>
+    <div class="color-specs">
+        <span class="swatch"><span class="swatch-dot" style="background:#20a797;"></span><span class="swatch-label">Teal</span><span class="swatch-hex">#20a797</span></span>
+        <span class="swatch"><span class="swatch-dot" style="background:#157a6e;"></span><span class="swatch-label">Teal Dark</span><span class="swatch-hex">#157a6e</span></span>
+        <span class="swatch"><span class="swatch-dot" style="background:#e0f5f2;"></span><span class="swatch-label">Teal Soft</span><span class="swatch-hex">#e0f5f2</span></span>
+        <span class="swatch"><span class="swatch-dot" style="background:#16803c;"></span><span class="swatch-label">Available</span><span class="swatch-hex">#16803c</span></span>
+        <span class="swatch"><span class="swatch-dot" style="background:#c53b32;"></span><span class="swatch-label">Deployed</span><span class="swatch-hex">#c53b32</span></span>
+        <span class="swatch"><span class="swatch-dot" style="background:#c97800;"></span><span class="swatch-label">For Retrieval</span><span class="swatch-hex">#c97800</span></span>
+        <span class="swatch"><span class="swatch-dot" style="background:#315bb5;"></span><span class="swatch-label">Long Term</span><span class="swatch-hex">#315bb5</span></span>
+        <span class="swatch"><span class="swatch-dot" style="background:#b42318;"></span><span class="swatch-label">Overdue</span><span class="swatch-hex">#b42318</span></span>
+    </div>
+</div>
+
+<!-- ===== MAIN TRACKING PAGE ===== -->
+<div class="section-divider">
+    <h2>📊 Main Tracking Page <small>Dashboard + Deployment Records</small></h2>
+</div>
+
+<div class="mockup-grid">
+    <div class="mockup-card">
+        <div class="mockup-header">
+            <h3><i class="fas fa-chair mr-2"></i> Chairs & Table Tracking Dashboard</h3>
+            <span class="badge-screen">Main Screen</span>
+        </div>
+        <div class="mockup-body">
+            <div class="alert-bar">
+                <i class="fas fa-exclamation-triangle" style="color:#b42318;"></i>
+                <div><strong>2 deployments overdue for retrieval</strong><br><span>Review the overdue records and coordinate retrieval as soon as possible.</span></div>
+            </div>
+
+            <div class="stat-row">
+                <div class="stat-card success">
+                    <div class="num">156</div>
+                    <div class="label">Chairs Deployed</div>
+                </div>
+                <div class="stat-card success" style="background:#e8f5e9;">
+                    <div class="num">42</div>
+                    <div class="label">Tables Deployed</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="num">8</div>
+                    <div class="label">Pending</div>
+                </div>
+                <div class="stat-card info">
+                    <div class="num">5</div>
+                    <div class="label">For Retrieval</div>
+                </div>
+                <div class="stat-card danger">
+                    <div class="num">2</div>
+                    <div class="label">Overdue</div>
+                </div>
+            </div>
+
+            <div class="toolbar-row">
+                <div class="filter-chips">
+                    <span class="filter-chip active">All</span>
+                    <span class="filter-chip">Deployed</span>
+                    <span class="filter-chip">Pending</span>
+                    <span class="filter-chip">Overdue</span>
+                    <span class="filter-chip">Retrieved</span>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <span class="btn-mock btn-teal btn-sm"><i class="fas fa-plus"></i> Deploy Equipment</span>
+                    <span class="btn-mock btn-outline btn-sm"><i class="fas fa-edit"></i> Edit Status</span>
+                    <span class="btn-mock btn-outline btn-sm"><i class="fas fa-print"></i> Print</span>
+                    <span class="btn-mock btn-outline btn-sm"><i class="fas fa-download"></i> Export CSV</span>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
+                <label style="font-size:0.72rem;color:var(--ct-muted);display:flex;align-items:center;gap:5px;">
+                    <i class="far fa-calendar-alt"></i> Installation date
+                    <input type="date" class="form-mock" style="width:130px;padding:5px 8px;font-size:0.72rem;">
+                    <span style="padding:0 4px;">to</span>
+                    <input type="date" class="form-mock" style="width:130px;padding:5px 8px;font-size:0.72rem;">
+                </label>
+                <div class="search-bar" style="margin-left:auto;">
+                    <i class="fas fa-search" style="font-size:0.78rem;"></i>
+                    <input type="search" placeholder="Search records">
+                </div>
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table class="tracking-table">
+                    <thead>
+                        <tr><th>ID</th><th>Requestor</th><th>Equipment</th><th>Location</th><th>Purpose</th><th>Installed</th><th>Retrieval</th><th>Status</th><th style="text-align:right;">Actions</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#104</td>
+                            <td><strong>Maria Santos</strong><br><small style="color:#98a2b3;">+639123456789</small></td>
+                            <td>
+                                <span class="subtype-chip chip-white">White x10</span>
+                                <span class="subtype-chip chip-round">Round x3</span>
+                            </td>
+                            <td>Brgy. Dao</td>
+                            <td><span style="background:#f0f2f4;padding:3px 8px;border-radius:5px;font-size:0.72rem;">Fiesta</span></td>
+                            <td>Jun 5</td>
+                            <td style="color:#986400;font-weight:700;">Jun 10 <small style="color:#986400;">Due today</small></td>
+                            <td><span class="status-badge badge-deployed">Deployed</span></td>
+                            <td style="text-align:right;">
+                                <span style="display:inline-flex;gap:4px;">
+                                    <span style="width:28px;height:28px;border:1px solid #d7dce2;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:0.72rem;color:#596273;"><i class="fas fa-edit"></i></span>
+                                    <span style="width:28px;height:28px;border:1px solid #d7dce2;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:0.72rem;color:#596273;"><i class="fas fa-check"></i></span>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#103</td>
+                            <td><strong>Juan Reyes</strong><br><small style="color:#98a2b3;">+639987654321</small></td>
+                            <td>
+                                <span class="subtype-chip chip-blue">Blue x20</span>
+                                <span class="subtype-chip chip-rectangle">Rectangle x8</span>
+                            </td>
+                            <td>Brgy. Cogon</td>
+                            <td><span style="background:#f0f2f4;padding:3px 8px;border-radius:5px;font-size:0.72rem;">Wedding</span></td>
+                            <td>Jun 3</td>
+                            <td style="color:#b42318;font-weight:700;">Jun 8 <small style="color:#b42318;">Overdue</small></td>
+                            <td><span class="status-badge badge-overdue">Overdue</span></td>
+                            <td style="text-align:right;">
+                                <span style="display:inline-flex;gap:4px;">
+                                    <span style="width:28px;height:28px;border:1px solid #d7dce2;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:0.72rem;color:#596273;"><i class="fas fa-edit"></i></span>
+                                    <span style="width:28px;height:28px;border:1px solid #d7dce2;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:0.72rem;color:#596273;"><i class="fas fa-check"></i></span>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#102</td>
+                            <td><strong>Ana Gonzales</strong><br><small style="color:#98a2b3;">+639555123456</small></td>
+                            <td>
+                                <span class="subtype-chip chip-red">Red x10</span>
+                                <span class="subtype-chip chip-square">Square x3</span>
+                            </td>
+                            <td>Brgy. Manga</td>
+                            <td><span style="background:#f0f2f4;padding:3px 8px;border-radius:5px;font-size:0.72rem;">Wake</span></td>
+                            <td>Jun 10</td>
+                            <td>Jun 12</td>
+                            <td><span class="status-badge badge-pending">Pending</span></td>
+                            <td style="text-align:right;">
+                                <span style="display:inline-flex;gap:4px;">
+                                    <span style="width:28px;height:28px;border:1px solid #d7dce2;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:0.72rem;color:#596273;"><i class="fas fa-edit"></i></span>
+                                    <span style="width:28px;height:28px;border:1px solid #d7dce2;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:0.72rem;color:#596273;"><i class="fas fa-check"></i></span>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--ct-line);margin-top:8px;">
+                <span style="font-size:0.78rem;color:var(--ct-muted);">Showing 3 of 47 records</span>
+                <div style="display:flex;gap:4px;">
+                    <span style="width:30px;height:30px;border:1px solid #d7dce2;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:0.78rem;color:#596273;font-weight:700;">1</span>
+                    <span style="width:30px;height:30px;border:1px solid #d7dce2;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:0.78rem;color:#596273;font-weight:700;">2</span>
+                    <span style="width:30px;height:30px;background:var(--ct-teal-dark);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:0.78rem;color:#fff;font-weight:700;">3</span>
+                    <span style="width:30px;height:30px;border:1px solid #d7dce2;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:0.78rem;color:#596273;">4</span>
+                    <span style="width:30px;height:30px;border:1px solid #d7dce2;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:0.78rem;color:#596273;">5</span>
+                </div>
+            </div>
+
+            <div class="mockup-annotations">
+                <span class="annotation"><i class="fas fa-circle"></i> Stats cards: Chairs Deployed / Tables Deployed / Pending / For Retrieval / Overdue</span>
+                <span class="annotation"><i class="fas fa-circle"></i> Equipment column shows subtype chips: "White x10" + "Round x3"</span>
+                <span class="annotation"><i class="fas fa-circle"></i> Filter chips + date range + search + pagination</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== DEPLOY MODAL WITH SUBTYPE SELECTION ===== -->
+    <div class="mockup-card">
+        <div class="mockup-header">
+            <h3><i class="fas fa-plus mr-2"></i> Deploy Equipment Modal <small style="font-weight:normal;font-size:0.7rem;">(Subtype dropdowns)</small></h3>
+            <span class="badge-screen">Add New</span>
+        </div>
+        <div class="mockup-body">
+            <div class="modal-overlay">
+                <div class="modal-overlay-header">
+                    <div>
+                        <span style="color:var(--ct-teal-dark);font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">Chairs & Table Deployment</span>
+                        <h5>Deploy Equipment</h5>
+                    </div>
+                    <span style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f0f2f4;color:#888;cursor:default;">✕</span>
+                </div>
+                <div class="modal-overlay-body">
+                    <!-- Requestor Details -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                        <div style="grid-column:span 2;">
+                            <label style="font-size:0.72rem;font-weight:700;">Requestor Name</label>
+                            <input class="form-mock" placeholder="Full name">
+                        </div>
+                        <div>
+                            <label style="font-size:0.72rem;font-weight:700;">Contact No.</label>
+                            <input class="form-mock" value="+639" maxlength="13">
+                        </div>
+                        <div>
+                            <label style="font-size:0.72rem;font-weight:700;">Address</label>
+                            <input class="form-mock" placeholder="Full address">
+                        </div>
+                    </div>
+
+                    <!-- Chairs Section -->
+                    <div class="subtype-section">
+                        <h6><i class="fas fa-chair" style="color:#1565c0;"></i> Chairs (by Color)</h6>
+                        <div class="subtype-row">
+                            <span class="subtype-chip chip-white">White</span>
+                            <select class="form-mock subtype-select">
+                                <option>White</option>
+                                <option>Blue</option>
+                                <option>Red</option>
+                                <option>Black</option>
+                            </select>
+                            <input class="form-mock qty-input" type="number" min="0" value="10" style="width:70px;">
+                            <span style="color:#888;font-size:0.78rem;">pcs</span>
+                            <span style="margin-left:auto;color:#999;font-size:0.72rem;">Available: 45</span>
+                            <span style="color:#b42318;cursor:default;"><i class="fas fa-times"></i></span>
+                        </div>
+                        <div class="subtype-row">
+                            <span class="subtype-chip chip-blue">Blue</span>
+                            <select class="form-mock subtype-select">
+                                <option>White</option>
+                                <option selected>Blue</option>
+                                <option>Red</option>
+                                <option>Black</option>
+                            </select>
+                            <input class="form-mock qty-input" type="number" min="0" value="5" style="width:70px;">
+                            <span style="color:#888;font-size:0.78rem;">pcs</span>
+                            <span style="margin-left:auto;color:#999;font-size:0.72rem;">Available: 30</span>
+                            <span style="color:#b42318;cursor:default;"><i class="fas fa-times"></i></span>
+                        </div>
+                        <div style="margin-top:8px;">
+                            <span class="add-row-btn"><i class="fas fa-plus"></i> Add another chair color</span>
+                        </div>
+                    </div>
+
+                    <!-- Tables Section -->
+                    <div class="subtype-section">
+                        <h6><i class="fas fa-table" style="color:#e65100;"></i> Tables (by Shape)</h6>
+                        <div class="subtype-row">
+                            <span class="subtype-chip chip-round">Round</span>
+                            <select class="form-mock subtype-select">
+                                <option selected>Round</option>
+                                <option>Rectangle</option>
+                                <option>Square</option>
+                            </select>
+                            <input class="form-mock qty-input" type="number" min="0" value="3" style="width:70px;">
+                            <span style="color:#888;font-size:0.78rem;">pcs</span>
+                            <span style="margin-left:auto;color:#999;font-size:0.72rem;">Available: 12</span>
+                            <span style="color:#b42318;cursor:default;"><i class="fas fa-times"></i></span>
+                        </div>
+                        <div style="margin-top:8px;">
+                            <span class="add-row-btn"><i class="fas fa-plus"></i> Add another table shape</span>
+                        </div>
+                    </div>
+
+                    <!-- Schedule -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                        <div>
+                            <label style="font-size:0.72rem;font-weight:700;">Installation Date</label>
+                            <input class="form-mock" type="date" value="2026-06-10">
+                        </div>
+                        <div>
+                            <label style="font-size:0.72rem;font-weight:700;">Duration (days)</label>
+                            <input class="form-mock" type="number" min="1" value="3">
+                        </div>
+                        <div>
+                            <label style="font-size:0.72rem;font-weight:700;">Retrieval Date</label>
+                            <input class="form-mock" type="date" value="2026-06-13" style="background:#f2f4f7;" readonly>
+                        </div>
+                    </div>
+
+                    <!-- Location & Purpose -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+                        <div>
+                            <label style="font-size:0.72rem;font-weight:700;">Barangay</label>
+                            <select class="form-mock">
+                                <option>Select Location</option>
+                                <option>Bool</option><option>Booy</option><option>Cabawan</option>
+                                <option>Cogon</option><option>Dao</option><option>Dampas</option>
+                                <option>Manga</option><option>Mansasa</option><option>Poblacion I</option>
+                                <option>Poblacion II</option><option>Poblacion III</option><option>San Isidro</option>
+                                <option>Taloto</option><option>Tiptip</option><option>Ubujan</option>
+                                <option>Outside Tagbilaran</option><option>Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.72rem;font-weight:700;">Purpose</label>
+                            <select class="form-mock">
+                                <option>Select Purpose</option>
+                                <option>Wake</option><option>Fiesta</option><option>Birthday</option>
+                                <option>Wedding</option><option>Baptism</option><option>Personal</option>
+                                <option>Private</option><option>Church</option><option>School</option>
+                                <option>City Government</option><option>LGU</option><option>Province</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-overlay-footer">
+                    <span class="btn-mock btn-outline btn-sm" style="font-size:0.78rem;">Close</span>
+                    <span class="btn-mock btn-teal btn-sm" style="font-size:0.78rem;"><i class="fas fa-check"></i> Submit</span>
+                </div>
+            </div>
+            <div class="mockup-annotations">
+                <span class="annotation"><i class="fas fa-circle"></i> Chairs section: dropdown to select color + quantity input + remove button</span>
+                <span class="annotation"><i class="fas fa-circle"></i> Tables section: dropdown to select shape + quantity input</span>
+                <span class="annotation"><i class="fas fa-circle"></i> "Add another" button to add multiple subtypes per deployment</span>
+                <span class="annotation"><i class="fas fa-circle"></i> Retrieval date auto-calculated from installation date + duration</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+<div class="section-divider">
+    <h2>📋 Additional Modal Screens</h2>
+</div>
+
+<div class="mockup-grid">
+    <!-- Edit Status Modal -->
+    <div class="mockup-card">
+        <div class="mockup-header">
+            <h3><i class="fas fa-edit mr-2"></i> Edit Status / Bulk Update Modal</h3>
+            <span class="badge-screen">Bulk Operations</span>
+        </div>
+        <div class="mockup-body">
+            <div class="modal-overlay">
+                <div class="modal-overlay-header">
+                    <h5>Edit Deployment Status</h5>
+                    <span style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f0f2f4;color:#888;cursor:default;">✕</span>
+                </div>
+                <div class="modal-overlay-body">
+                    <input class="form-mock" placeholder="🔍 Search deployments..." style="margin-bottom:12px;">
+                    <div style="max-height:240px;overflow-y:auto;">
+                        <table class="tracking-table">
+                            <thead>
+                                <tr><th style="width:30px;"><input type="checkbox"></th><th>ID</th><th>Requestor</th><th>Current Status</th><th style="width:40px;"></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><input type="checkbox" checked></td><td>#104</td><td>Maria Santos</td><td><span class="status-badge badge-deployed">Deployed</span></td><td><i class="fas fa-save" style="color:var(--ct-teal-dark);"></i></td></tr>
+                                <tr><td><input type="checkbox" checked></td><td>#103</td><td>Juan Reyes</td><td><span class="status-badge badge-overdue">Overdue</span></td><td><i class="fas fa-save" style="color:var(--ct-teal-dark);"></i></td></tr>
+                                <tr><td><input type="checkbox"></td><td>#102</td><td>Ana Gonzales</td><td><span class="status-badge badge-pending">Pending</span></td><td><i class="fas fa-save" style="color:var(--ct-teal-dark);"></i></td></tr>
+                                <tr><td><input type="checkbox" checked></td><td>#101</td><td>Pedro Reyes</td><td><span class="status-badge badge-deployed">Deployed</span></td><td><i class="fas fa-save" style="color:var(--ct-teal-dark);"></i></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-overlay-footer">
+                    <span class="btn-mock btn-teal btn-sm"><i class="fas fa-check"></i> Apply to Selected</span>
+                    <span class="btn-mock btn-outline btn-sm">Close</span>
+                </div>
+            </div>
+            <div class="mockup-annotations">
+                <span class="annotation"><i class="fas fa-circle"></i> Checkbox column + select all header checkbox</span>
+                <span class="annotation"><i class="fas fa-circle"></i> Inline dropdown to change status per deployment</span>
+                <span class="annotation"><i class="fas fa-circle"></i> "Apply to Selected" bulk updates all checked items</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Modal -->
+    <div class="mockup-card">
+        <div class="mockup-header">
+            <h3><i class="fas fa-print mr-2"></i> Print & Archive</h3>
+            <span class="badge-screen">Utilities</span>
+        </div>
+        <div class="mockup-body">
+            <div class="modal-overlay">
+                <div class="modal-overlay-header">
+                    <h5>Print Records</h5>
+                    <span style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f0f2f4;color:#888;cursor:default;">✕</span>
+                </div>
+                <div class="modal-overlay-body" style="display:flex;flex-direction:column;gap:10px;padding:24px;">
+                    <span class="btn-mock btn-teal" style="width:100%;justify-content:center;padding:12px;"><i class="fas fa-clock"></i> Print Pending Requests</span>
+                    <span class="btn-mock btn-outline" style="width:100%;justify-content:center;padding:12px;border-color:var(--ct-warning);color:var(--ct-warning);"><i class="fas fa-truck"></i> Print For Retrieval</span>
+                </div>
+            </div>
+            <div style="margin-top:14px;padding:16px;background:var(--ct-bg);border-radius:8px;display:flex;align-items:center;gap:14px;">
+                <i class="fas fa-archive" style="font-size:1.4rem;color:var(--ct-teal-dark);"></i>
+                <div><strong style="font-size:0.88rem;">Retrieved History</strong><p style="font-size:0.75rem;color:#666;margin:2px 0 0;">View and undo retrieved equipment records.</p></div>
+                <span class="btn-mock btn-outline btn-sm" style="margin-left:auto;">Open Archive</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SUBTYPE REFERENCE ===== -->
+<div class="section-divider">
+    <h2>🎨 Subtype Reference <small>Equipment categories shown in UI chips</small></h2>
+</div>
+
+<div class="mockup-grid">
+    <div class="mockup-card">
+        <div class="mockup-header" style="background:#1565c0;">
+            <h3><i class="fas fa-chair mr-2"></i> Chair Colors</h3>
+        </div>
+        <div class="mockup-body">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <span class="subtype-chip chip-white">White</span>
+                <span class="subtype-chip chip-blue">Blue</span>
+                <span class="subtype-chip chip-red">Red</span>
+                <span class="subtype-chip chip-black">Black</span>
+            </div>
+            <p style="margin-top:14px;font-size:0.85rem;color:#666;">Each color is a distinct subtype in the <code>equipment_types</code> table with its own inventory count.</p>
+        </div>
+    </div>
+    <div class="mockup-card">
+        <div class="mockup-header" style="background:#e65100;">
+            <h3><i class="fas fa-table mr-2"></i> Table Shapes</h3>
+        </div>
+        <div class="mockup-body">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <span class="subtype-chip chip-round">Round</span>
+                <span class="subtype-chip chip-rectangle">Rectangle</span>
+                <span class="subtype-chip chip-square">Square</span>
+            </div>
+            <p style="margin-top:14px;font-size:0.85rem;color:#666;">Each shape is a distinct subtype in the <code>equipment_types</code> table with its own inventory count.</p>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
