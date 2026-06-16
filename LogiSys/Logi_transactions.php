@@ -605,19 +605,8 @@ function getTransactionTypeBadge($type)
                             <select class="form-select" id="bulkFilterOffice">
                                 <option value="">All Offices</option>
                                 <?php
-                                // Get unique office names for filter (use requested items which contain office_name)
-                                if (isset($bulk_transactions_data)) {
-                                    mysqli_data_seek($bulk_transactions_data, 0);
-                                    $offices = [];
-                                    while ($row = mysqli_fetch_assoc($bulk_transactions_data)) {
-                                        if (!empty($row['office_name']) && !in_array($row['office_name'], $offices)) {
-                                            $offices[] = $row['office_name'];
-                                        }
-                                    }
-                                    sort($offices);
-                                    foreach ($offices as $office) {
-                                        echo '<option value="' . htmlspecialchars($office ?? '') . '">' . htmlspecialchars($office ?? '') . '</option>';
-                                    }
+                                foreach ($all_offices as $office) {
+                                    echo '<option value="' . htmlspecialchars($office ?? '') . '">' . htmlspecialchars($office ?? '') . '</option>';
                                 }
                                 ?>
                             </select>
