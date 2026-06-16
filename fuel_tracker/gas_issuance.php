@@ -41,6 +41,11 @@ $vehicleLookup = fuelTrackerVehicleLookupByPlate($vehicles);
 $serialNo = 'FI-' . date('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
 $defaultExpiryDate = date('Y-m-d', strtotime('+7 days'));
 $budgetSummary = fuelBudgetSummary($conn);
+$latestWeeklyFuelPrice = fuelBudgetLatestWeeklyFuelPrice($conn);
+$dieselPumpPrice = (float) ($latestWeeklyFuelPrice['diesel_price'] ?? 0);
+$unleadedPumpPrice = (float) ($latestWeeklyFuelPrice['unleaded_price'] ?? 0);
+$fuelPriceWeek = (string) ($latestWeeklyFuelPrice['week_start'] ?? '');
+$fuelPriceSource = (string) ($latestWeeklyFuelPrice['source_note'] ?? '');
 $dieselBudgetRemaining = (float) ($budgetSummary['remaining_diesel_budget'] ?? 0);
 $dieselBudgetTotal = (float) ($budgetSummary['total_diesel_budget'] ?? 0);
 $dieselBudgetPercent = $dieselBudgetTotal > 0 ? max(0, min(100, ($dieselBudgetRemaining / $dieselBudgetTotal) * 100)) : 0;
@@ -1140,14 +1145,14 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                     <label for="dieselPumpPrice" class="form-label mb-1">Diesel Price</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text">&#8369;</span>
-                                        <input type="number" class="form-control" id="dieselPumpPrice" min="0" step="0.01" placeholder="0.00">
+                                        <input type="number" class="form-control" id="dieselPumpPrice" min="0" step="0.01" placeholder="0.00" value="<?php echo htmlspecialchars(number_format($dieselPumpPrice, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>">
                                     </div>
                                 </div>
                                 <div>
                                     <label for="unleadedPumpPrice" class="form-label mb-1">Unleaded Price</label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text">&#8369;</span>
-                                        <input type="number" class="form-control" id="unleadedPumpPrice" min="0" step="0.01" placeholder="0.00">
+                                        <input type="number" class="form-control" id="unleadedPumpPrice" min="0" step="0.01" placeholder="0.00" value="<?php echo htmlspecialchars(number_format($unleadedPumpPrice, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>">
                                     </div>
                                 </div>
                             </div>
@@ -1702,6 +1707,10 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             'diesel_total' => $dieselBudgetTotal,
             'unleaded_remaining' => $unleadedBudgetRemaining,
             'unleaded_total' => $unleadedBudgetTotal,
+            'diesel_price' => $dieselPumpPrice,
+            'unleaded_price' => $unleadedPumpPrice,
+            'fuel_price_week' => $fuelPriceWeek,
+            'fuel_price_source' => $fuelPriceSource,
         ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
 
         function formatPeso(amount) {
@@ -1755,8 +1764,12 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             document.getElementById('draftUnleadedProgress').setAttribute('aria-valuenow', String(Math.round(unleadedPercent)));
             document.getElementById('draftEstimatedCost').textContent = formatPeso(totalEstimated);
             document.getElementById('draftEstimatedLeft').textContent = formatPeso(dieselDraftRemaining + unleadedDraftRemaining);
+            var sourceNote = draftBudgetBase.fuel_price_source ? ' Source: ' + draftBudgetBase.fuel_price_source + '.' : '';
+            var priceNote = draftBudgetBase.fuel_price_week
+                ? ' Prices use dashboard weekly pump prices for ' + draftBudgetBase.fuel_price_week + '.' + sourceNote
+                : ' Enter pump prices to update this estimate.';
             document.getElementById('draftBudgetNote').textContent =
-                'Reserved estimate: ' + liters.diesel.toFixed(2) + ' L diesel and ' + liters.unleaded.toFixed(2) + ' L unleaded from approved/valid issuances.';
+                'Reserved estimate: ' + liters.diesel.toFixed(2) + ' L diesel and ' + liters.unleaded.toFixed(2) + ' L unleaded from approved/valid issuances.' + priceNote;
 
             try {
                 localStorage.setItem('fuelTrackerDieselPumpPrice', dieselPriceInput ? dieselPriceInput.value : '');
@@ -1772,13 +1785,20 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 return;
             }
 
-            try {
-                var saved = localStorage.getItem(inputId === 'dieselPumpPrice' ? 'fuelTrackerDieselPumpPrice' : 'fuelTrackerUnleadedPumpPrice');
-                if (saved !== null) {
-                    input.value = saved;
+            var dashboardPrice = inputId === 'dieselPumpPrice'
+                ? Number(draftBudgetBase.diesel_price || 0)
+                : Number(draftBudgetBase.unleaded_price || 0);
+            if (dashboardPrice > 0) {
+                input.value = dashboardPrice.toFixed(2);
+            } else {
+                try {
+                    var saved = localStorage.getItem(inputId === 'dieselPumpPrice' ? 'fuelTrackerDieselPumpPrice' : 'fuelTrackerUnleadedPumpPrice');
+                    if (saved !== null) {
+                        input.value = saved;
+                    }
+                } catch (error) {
+                    // Ignore local storage restrictions.
                 }
-            } catch (error) {
-                // Ignore local storage restrictions.
             }
 
             input.addEventListener('input', renderDraftBudgetStatus);
