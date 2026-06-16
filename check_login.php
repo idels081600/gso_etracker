@@ -53,13 +53,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['_last_activity'] = time();
         $_SESSION['_heartbeat_count'] = 0;
 
-        // Change #1: close session write
-        session_write_close();
-
+        // Close database before redirect
         mysqli_stmt_close($stmt);
         mysqli_close($conn);
 
-        // Change #2: Use exit;
+        // Redirect based on role
         switch ($row['role']) {
             case "Admin":
                 header("location:passlip/super_admin/index.php");
@@ -85,9 +83,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             case "SAP":
                 header("location:sir_bayong.php");
                 exit;
-            // case "asset2":
-            //     header("location:asset_tracker_dashboard/dashboard_asset_tracker.php");
-            //     exit;
+            case "ASSET2":
+                header("location:asset_tracker_dashboard/dashboard_asset_tracker.php");
+                exit;
+            case "ASSET":
+                header("location:dashboard_asset_tracker.php");
+                exit;
             case "TENT INSTALLERS":
                 header("location:tent_installers.php");
                 exit;
@@ -132,9 +133,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
             case "master_admin":
                 header("location:master_dashboard/dashboard.php");
-                exit;
-            case "ASSET":
-                header("location:dashboard_asset_tracker.php");
                 exit;
             default:
                 header("location:login_v2.php");
