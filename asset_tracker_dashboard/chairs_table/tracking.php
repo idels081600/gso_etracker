@@ -86,17 +86,18 @@ function status_slug(string $status, string $retrievalDate, string $today): stri
 </head>
 <body>
 <aside class="sidebar">
-    <div class="logo"><img src="../logo.png" alt="Logo"><span class="role">Admin</span><span class="user-name">Rene Art Cagulada</span></div>
+    <div class="logo"><img src="../logo.png" alt="Logo"><span class="role"><?php echo htmlspecialchars($_SESSION['role'] ?? 'User'); ?></span><span class="user-name"><?php echo htmlspecialchars($_SESSION['pay_name'] ?? $_SESSION['username'] ?? 'User'); ?></span></div>
     <hr class="divider">
     <ul>
         <li><a href="../dashboard_asset_tracker.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
         <li class="dropdown"><a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a><ul class="dropdown-menu"><li><a href="../pay_track.php">Payables</a></li><li><a href="../rfq_tracking.php">RFQ</a></li></ul></li>
         <li><a href="../tent_tracking/tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
         <li><a class="active" href="tracking.php"><i class="fas fa-chair icon-size"></i> Chairs & Table</a></li>
+        <li><a href="../motorpool_admin.php"><i class="fas fa-wrench icon-size"></i> Motorpool</a></li>
         <li><a href="../transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
-        <li><a href="../create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
+        <li><a href="../../create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
     </ul>
-    <a href="../logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+    <a href="../../logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
 </aside>
 
 <main class="content ct-page">

@@ -2,7 +2,7 @@
 
 require_once dirname(__DIR__) . '/auth_security.php';
 
-const ASSET_ALLOWED_ROLES = ['ASSET', 'Admin', 'master_admin'];
+const ASSET_ALLOWED_ROLES = ['ASSET', 'ASSET2', 'Admin', 'master_admin'];
 const ASSET_ADMIN_ROLES = ['Admin', 'master_admin'];
 
 function asset_start_session(): void
@@ -104,4 +104,3 @@ function asset_require_post(bool $validateCsrf = true): void
         asset_validate_csrf();
     }
 }
-

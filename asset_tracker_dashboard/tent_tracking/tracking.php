@@ -8,7 +8,7 @@ $on_stock = display_tent_status();
 $on_field = display_tent_status_Installed();
 $on_retrieval = display_tent_status_Retrieval();
 $longterm = display_tent_status_Longterm();
-$result = display_data_dashboard();
+$result = display_data();
 $today = date('Y-m-d');
 $todayLabel = date('F j, Y');
 $trackingMetrics = db_fetch_one(
@@ -166,8 +166,8 @@ if (isset($_POST['save_data'])) {
     <div class="sidebar">
         <div class="logo">
             <img src="../logo.png" alt="Logo">
-            <span class="role">Admin</span>
-            <span class="user-name">Rene Art Cagulada</span>
+            <span class="role"><?php echo htmlspecialchars($_SESSION['role'] ?? 'User'); ?></span>
+            <span class="user-name"><?php echo htmlspecialchars($_SESSION['pay_name'] ?? $_SESSION['username'] ?? 'User'); ?></span>
         </div>
         <hr class="divider">
         <ul>
@@ -181,10 +181,11 @@ if (isset($_POST['save_data'])) {
             </li>
             <li><a href="tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
             <li><a href="../chairs_table/tracking.php"><i class="fas fa-chair icon-size"></i> Chairs & Table</a></li>
+            <li><a href="../motorpool_admin.php"><i class="fas fa-wrench icon-size"></i> Motorpool</a></li>
             <li><a href="../transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
-            <li><a href="../create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
+            <li><a href="../../create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="../logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="../../logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
 
     <div class="content">
@@ -224,9 +225,9 @@ if (isset($_POST['save_data'])) {
 
         <header class="tracking-header">
             <div>
-                <p class="tracking-eyebrow">Operations / Tent Services</p>
+                <p class="tracking-eyebrow">General Services Office</p>
                 <h1>Tent Tracking</h1>
-                <p>Monitor active deployments, retrieval schedules, and service requests.</p>
+                <p>Monitor deployments, retrieval schedules, and available tent inventory in one workspace.</p>
             </div>
             <div class="tracking-date" aria-label="Today's date">
                 <i class="far fa-calendar-alt" aria-hidden="true"></i>
@@ -283,7 +284,6 @@ if (isset($_POST['save_data'])) {
                     <button type="button" class="tracking-filter" data-filter="installed" aria-pressed="false">Installed</button>
                     <button type="button" class="tracking-filter" data-filter="pending" aria-pressed="false">Pending</button>
                     <button type="button" class="tracking-filter" data-filter="overdue" aria-pressed="false">Overdue</button>
-                    <button type="button" class="tracking-filter" data-filter="retrieved" aria-pressed="false">Retrieved</button>
                 </div>
                 <div class="tracking-actions">
                     <div class="tracking-date-range" role="group" aria-labelledby="trackingDateRangeLabel">
@@ -1111,4 +1111,3 @@ if (isset($_POST['save_data'])) {
 </body>
 
 </html>
-

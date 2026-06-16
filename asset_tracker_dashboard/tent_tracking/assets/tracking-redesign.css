@@ -28,28 +28,43 @@ body {
 }
 
 .tracking-header {
+    min-height: 142px;
     margin-bottom: 22px;
+    padding: 26px 28px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    background: linear-gradient(112deg, #147a6e 0%, #188d80 48%, #3aa797 100%);
+    box-shadow: 0 12px 28px rgba(21, 122, 110, 0.14);
+    color: #fff;
 }
 
 .tracking-header h1 {
-    margin: 2px 0 4px;
-    color: var(--tracking-text) !important;
-    font-size: 30px !important;
-    font-weight: 750;
-    letter-spacing: -0.03em;
+    margin: 7px 0 4px;
+    color: #fff !important;
+    font-size: clamp(28px, 2.5vw, 36px) !important;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
 }
 
-.tracking-header p,
 .tracking-panel-header p {
     margin: 0;
     color: var(--tracking-muted);
 }
 
+.tracking-header p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 13px;
+    font-weight: 550;
+}
+
 .tracking-eyebrow {
-    color: var(--tracking-primary-dark) !important;
-    font-size: 12px;
-    font-weight: 750;
-    letter-spacing: 0.08em;
+    color: #fff !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
 }
 
@@ -57,18 +72,19 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 9px;
-    padding: 10px 13px;
-    border: 1px solid var(--tracking-border);
+    padding: 11px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.34);
     border-radius: 7px;
-    background: #fff;
-    color: #475467;
-    font-size: 13px;
-    font-weight: 650;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
     white-space: nowrap;
+    backdrop-filter: blur(8px);
 }
 
 .tracking-date i {
-    color: var(--tracking-primary-dark);
+    color: #fff;
 }
 
 .tracking-alert {
@@ -1001,6 +1017,9 @@ body {
     .tracking-panel-header,
     .tracking-pagination { align-items: flex-start; flex-direction: column; }
     .tracking-stats { grid-template-columns: 1fr; }
+    .tracking-header { min-height: auto; padding: 22px; }
+    .tracking-header h1 { font-size: 29px !important; }
+    .tracking-date { margin-top: 5px; }
     .tracking-filter-chips { width: 100%; overflow-x: auto; }
     .tracking-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
     .tracking-date-range { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; width: 100%; padding: 8px; }

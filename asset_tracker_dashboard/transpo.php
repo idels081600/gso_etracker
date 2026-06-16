@@ -121,8 +121,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
     <div class="sidebar">
         <div class="logo">
             <img src="logo.png" alt="Logo">
-            <span class="role">Admin</span>
-            <span class="user-name">Reyna Bumaat</span>
+            <span class="role"><?php echo htmlspecialchars($_SESSION['role'] ?? 'User'); ?></span>
+            <span class="user-name"><?php echo htmlspecialchars($_SESSION['pay_name'] ?? $_SESSION['username'] ?? 'User'); ?></span>
         </div>
         <hr class="divider">
         <ul>
@@ -136,10 +136,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['save_driver'])) {
             </li>
             <li><a href="tent_tracking/tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
             <li><a href="chairs_table/tracking.php"><i class="fas fa-chair icon-size"></i> Chairs & Table</a></li>
+            <li><a href="motorpool_admin.php"><i class="fas fa-wrench icon-size"></i> Motorpool</a></li>
             <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
-            <li><a href="create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
+            <li><a href="../create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="../logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
 
     <div class="content">
