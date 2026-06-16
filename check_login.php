@@ -90,7 +90,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("location:dashboard_asset_tracker.php");
                 exit;
             case "TENT INSTALLERS":
-                header("location:tent_installers.php");
+                header("location:asset_tracker_dashboard/tent_installers.php");
                 exit;
             case "SUPPLIES":
                 header("location:LogiSys/Logi_Sys_Dashboard.php");
