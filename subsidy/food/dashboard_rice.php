@@ -165,7 +165,7 @@ if ($barangay_result) {
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <div class="table-responsive">
                         <table class="table table-bordered table-striped align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
@@ -179,6 +179,18 @@ if ($barangay_result) {
                             </thead>
                             <tbody id="recordsTable"></tbody>
                         </table>
+                    </div>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-3">
+                        <small class="text-muted" id="tablePaginationInfo">Showing 0 to 0 of 0 records</small>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="prevPageBtn">
+                                <i class="bi bi-chevron-left"></i> Prev
+                            </button>
+                            <span class="small fw-semibold text-nowrap" id="pageIndicator">Page 1 of 1</span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="nextPageBtn">
+                                Next <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,9 +1,17 @@
+const PAGE_SIZE = 10;
+let allRiceRecords = [];
+let filteredRiceRecords = [];
+let currentPage = 1;
+
 async function loadRiceRecords() {
     try {
         const response = await fetch('api_get_rice_records.php');
         const data = await response.json();
         if (data.success) {
-            renderRiceTable(data.data);
+            allRiceRecords = Array.isArray(data.data) ? data.data : [];
+            filteredRiceRecords = [...allRiceRecords];
+            currentPage = 1;
+            renderCurrentPage();
         }
     } catch (error) {
         console.error('Error loading rice records:', error);
@@ -17,11 +25,25 @@ const addHouseholdName = document.getElementById('addHouseholdName');
 const addHouseholdCodeHint = document.getElementById('addHouseholdCodeHint');
 const saveHouseholdBtn = document.getElementById('saveHouseholdBtn');
 const addHouseholdModalEl = document.getElementById('addHouseholdModal');
+const tableSearch = document.getElementById('tableSearch');
+const tablePaginationInfo = document.getElementById('tablePaginationInfo');
+const pageIndicator = document.getElementById('pageIndicator');
+const prevPageBtn = document.getElementById('prevPageBtn');
+const nextPageBtn = document.getElementById('nextPageBtn');
 let currentNextHouseholdCode = '';
 
-function renderRiceTable(records) {
+function renderRiceTable(records, startIndex = 0) {
     const tbody = document.getElementById('recordsTable');
     tbody.innerHTML = '';
+
+    if (!records.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">No rice household records found.</td>
+            </tr>
+        `;
+        return;
+    }
 
     records.forEach((record, index) => {
         const tr = document.createElement('tr');
@@ -36,7 +58,7 @@ function renderRiceTable(records) {
             : 'N/A';
 
         tr.innerHTML = `
-            <td>${index + 1}</td>
+            <td>${startIndex + index + 1}</td>
             <td><strong>${record.household_code}</strong></td>
             <td>${record.household_name}</td>
             <td>${statusBadge}</td>
@@ -45,6 +67,59 @@ function renderRiceTable(records) {
         `;
         tbody.appendChild(tr);
     });
+}
+
+function renderCurrentPage() {
+    const totalRecords = filteredRiceRecords.length;
+    const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
+    currentPage = Math.min(Math.max(currentPage, 1), totalPages);
+
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    const endIndex = Math.min(startIndex + PAGE_SIZE, totalRecords);
+    const pageRecords = filteredRiceRecords.slice(startIndex, endIndex);
+
+    renderRiceTable(pageRecords, startIndex);
+
+    if (tablePaginationInfo) {
+        if (totalRecords === 0) {
+            tablePaginationInfo.textContent = 'Showing 0 to 0 of 0 records';
+        } else {
+            tablePaginationInfo.textContent = `Showing ${startIndex + 1} to ${endIndex} of ${totalRecords} records`;
+        }
+    }
+
+    if (pageIndicator) {
+        pageIndicator.textContent = `Page ${totalRecords === 0 ? 0 : currentPage} of ${totalRecords === 0 ? 0 : totalPages}`;
+    }
+
+    if (prevPageBtn) {
+        prevPageBtn.disabled = currentPage <= 1 || totalRecords === 0;
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.disabled = currentPage >= totalPages || totalRecords === 0;
+    }
+}
+
+function applyTableSearch() {
+    const searchTerm = (tableSearch?.value || '').trim().toLowerCase();
+
+    if (!searchTerm) {
+        filteredRiceRecords = [...allRiceRecords];
+    } else {
+        filteredRiceRecords = allRiceRecords.filter((record) =>
+            [
+                record.household_code,
+                record.household_name,
+                record.status,
+                record.is_claimed === 1 ? 'claimed' : 'unclaimed',
+                record.claimed_at || ''
+            ].join(' ').toLowerCase().includes(searchTerm)
+        );
+    }
+
+    currentPage = 1;
+    renderCurrentPage();
 }
 
 function resetAddHouseholdForm() {
@@ -99,13 +174,28 @@ async function loadNextHouseholdCode() {
     }
 }
 
-document.getElementById('tableSearch').addEventListener('input', (e) => {
-    const searchTerm = e.target.value.toLowerCase();
-    const rows = document.querySelectorAll('#recordsTable tr');
-    rows.forEach((row) => {
-        row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
+if (tableSearch) {
+    tableSearch.addEventListener('input', applyTableSearch);
+}
+
+if (prevPageBtn) {
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage -= 1;
+            renderCurrentPage();
+        }
     });
-});
+}
+
+if (nextPageBtn) {
+    nextPageBtn.addEventListener('click', () => {
+        const totalPages = Math.max(1, Math.ceil(filteredRiceRecords.length / PAGE_SIZE));
+        if (currentPage < totalPages) {
+            currentPage += 1;
+            renderCurrentPage();
+        }
+    });
+}
 
 if (addHouseholdBarangay) {
     addHouseholdBarangay.addEventListener('change', loadNextHouseholdCode);
