@@ -91,7 +91,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
             case "TENT INSTALLERS":
                 header("location:asset_tracker_dashboard/tent_installers.php");
-                exit;
+                exit;  
             case "SUPPLIES":
                 header("location:LogiSys/Logi_Sys_Dashboard.php");
                 exit;
@@ -121,6 +121,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
             case "FOOD_VERIFIER":
                 header("location:subsidy/food/select_station.php");
+                exit;
+            case "RICE_VERIFIER":
+                header("location:subsidy/food/releasing_rice.php");
                 exit;
             case "FOOD_REDEEMER":
                 header("location:subsidy/food/redeem_batch.php");
