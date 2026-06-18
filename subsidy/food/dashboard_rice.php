@@ -138,10 +138,16 @@ if ($barangay_result) {
                                 <a href="releasing_rice.php" class="btn btn-warning btn-sm">
                                     <i class="bi bi-person-check me-1"></i>Open Releasing
                                 </a>
+                                <button type="button" class="btn btn-rice-teal btn-sm" data-bs-toggle="modal" data-bs-target="#addHouseholdModal">
+                                    <i class="bi bi-plus-circle me-1"></i>Add Household
+                                </button>
                                 <input type="text" class="form-control form-control-sm" placeholder="Search records..." id="tableSearch" style="width: 200px;">
                                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#printBarangayModal">
                                     <i class="bi bi-printer me-1"></i>Print Vouchers
                                 </button>
+                                <a href="api_export_rice_beneficiaries_pdf.php" class="btn btn-danger btn-sm" target="_blank">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+                                </a>
                                 <a href="api_export_rice_daily_csv.php" class="btn btn-rice-teal btn-sm" target="_blank">
                                     <i class="bi bi-download me-1"></i>Daily Report CSV
                                 </a>
@@ -178,6 +184,49 @@ if ($barangay_result) {
             </div>
         </section>
     </main>
+
+    <div class="modal fade" id="addHouseholdModal" tabindex="-1" aria-labelledby="addHouseholdModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-rice-teal" id="addHouseholdModalLabel">Add Missing Household</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="addHouseholdBarangay" class="form-label">Barangay</label>
+                        <select class="form-select" id="addHouseholdBarangay">
+                            <option value="">Select barangay...</option>
+                            <?php foreach ($barangays as $barangay): ?>
+                                <option value="<?php echo htmlspecialchars($barangay); ?>"><?php echo htmlspecialchars($barangay); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label for="addHouseholdLastNumber" class="form-label">Last Number</label>
+                            <input type="text" class="form-control fw-semibold" id="addHouseholdLastNumber" value="Select barangay" readonly>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="addHouseholdCodePreview" class="form-label">Next Household Code</label>
+                            <input type="text" class="form-control fw-semibold" id="addHouseholdCodePreview" value="Select barangay" readonly>
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <label for="addHouseholdName" class="form-label">Household Name</label>
+                        <input type="text" class="form-control" id="addHouseholdName" placeholder="Enter household name">
+                        <div id="addHouseholdCodeHint" class="form-text mt-2">The next available code will continue from the latest number in the selected barangay.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-rice-teal" id="saveHouseholdBtn">
+                        <i class="bi bi-save me-1"></i>Add Household
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="printBarangayModal" tabindex="-1" aria-labelledby="printBarangayModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
