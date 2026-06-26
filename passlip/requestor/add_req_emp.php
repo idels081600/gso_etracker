@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once "../dbh.php";
 session_start();
 date_default_timezone_set('Asia/Manila'); // Set the timezone to Philippines
@@ -19,15 +19,11 @@ if (isset($_POST['save_data2'])) {
         SELECT id
         FROM request
         WHERE name = ?
+        AND DATE(date) = CURDATE()
         AND (
-            (
-                DATE(date) = CURDATE()
-                AND (
-                    Status = 'Pending'
-                    OR status1 = 'Pass-Slip'
-                    OR status1 = 'Waiting For Pass Slip Approval'
-                )
-            )
+            Status = 'Pending'
+            OR status1 = 'Pass-Slip'
+            OR status1 = 'Waiting For Pass Slip Approval'
             OR status1 = 'Scan Qrcode'
         )
         LIMIT 1
@@ -40,7 +36,7 @@ if (isset($_POST['save_data2'])) {
     if (mysqli_stmt_num_rows($stmt_pending) > 0) {
         echo '<div class="alert alert-danger alert-dismissible">
                 <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <strong>Error!</strong> You already have a pending request for today or an unfinished request that still needs QR return scan.
+                <strong>Error!</strong> You already have an active request for today.
             </div>';
     } else {
         $name = mysqli_real_escape_string($conn, $_POST["name"]);
@@ -270,3 +266,4 @@ if ($row = mysqli_fetch_assoc($result_position)) {
 </body>
 
 </html>
+
