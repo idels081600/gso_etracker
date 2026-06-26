@@ -138,11 +138,27 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
         gap: 12px;
     }
 
+    .request-modal-fields .wide {
+        grid-column: 1 / -1;
+    }
+
     .request-modal-actions {
         display: flex;
         justify-content: flex-end;
         gap: 8px;
         margin-top: 18px;
+    }
+
+    #requestDetailModal.manual-show {
+        display: block;
+        padding-right: 0;
+        background: rgba(0, 0, 0, .45);
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    #requestDetailModal.manual-show .modal-dialog {
+        transform: none;
     }
 
     @media screen and (max-width: 767px) {
@@ -295,7 +311,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 id="pen_label">Pending Request</h2>
-            <button id="acceptAllBtn" class="btn btn-success" data-toggle="modal" data-target="#acceptModal">Accept All Selected</button>
+            <button id="acceptAllBtn" class="btn btn-success" data-toggle="modal" data-target="#acceptModal">Process Selected</button>
         </div>
 
         <div class="p-5 rounded shadow">
@@ -349,13 +365,13 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="acceptModalLabel">Accept Selected Requests</h5>
+                    <h5 class="modal-title" id="acceptModalLabel">Process Selected Requests</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p>You are about to accept the following requests:</p>
+                    <p>You are about to process the following requests:</p>
                     <div id="selectedRequestsList" class="mb-4">
                         <!-- Selected requests will be listed here -->
                     </div>
@@ -379,7 +395,13 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                                     <label for="sel1">Status:</label>
                                     <select class="form-control" id="sel1" name="status" required>
                                         <option value="Partially Approved">Partially Approved</option>
+                                        <option value="Declined">Declined</option>
                                     </select>
+                                </div>
+
+                                <div class="form-group mb-3" id="batchDeclineReason" hidden>
+                                    <label for="batch_decline_reason">Decline Reason:</label>
+                                    <textarea class="form-control" id="batch_decline_reason" name="decline_reason" rows="3" placeholder="Reason applied to all selected requests"></textarea>
                                 </div>
 
                                 <div class="form-group mb-3">
@@ -413,7 +435,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <button type="submit" form="batchApprovalForm" name="approve_multiple_req" id="approveAllBtn" class="btn btn-success">
-                        <span id="approveButtonText">Approve All</span>
+                        <span id="approveButtonText">Approve Selected</span>
                         <span id="loadingSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                     </button>
                 </div>
@@ -508,19 +530,6 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             xhr.send('ids=' + JSON.stringify(ids));
         }
 
-        document.getElementById('confirmAcceptBtn').addEventListener('click', function() {
-            // Validate form
-            const status = document.getElementById('sel1').value;
-            const confirmedBy = document.getElementById('sel2').value;
-
-            if (!status || !confirmedBy) {
-                alert('Please fill in all required fields.');
-                return;
-            }
-
-            // Submit the form
-            document.getElementById('batchApprovalForm').submit();
-        });
     </script>
     <!-- Add JavaScript for form validation and submission -->
     <!-- Add JavaScript for form validation and submission -->
@@ -531,13 +540,20 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             const approveAllBtn = document.getElementById('approveAllBtn');
             const selectedIdsInput = document.getElementById('selected_ids_input');
 
-            // Keep fixed-time inputs visible for approval-only bulk processing.
             function toggleEstTimeRequirement() {
+                const status = document.getElementById('sel1').value;
                 const timeContainer = document.getElementById('timeInputs');
+                const declineReason = document.getElementById('batchDeclineReason');
+                const declineReasonInput = document.getElementById('batch_decline_reason');
+                const buttonText = document.getElementById('approveButtonText');
+                const isDeclined = status === 'Declined';
 
                 if (timeContainer) {
-                    timeContainer.style.display = 'block';
+                    timeContainer.style.display = isDeclined ? 'none' : 'block';
                 }
+                if (declineReason) declineReason.hidden = !isDeclined;
+                if (declineReasonInput) declineReasonInput.required = isDeclined;
+                if (buttonText) buttonText.textContent = isDeclined ? 'Decline Selected' : 'Approve Selected';
             }
 
             // Add event listener to status dropdown
@@ -605,29 +621,30 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                             if (!response.ok) {
                                 throw new Error('Network response was not ok');
                             }
-                            return response.text();
+                            return response.json();
                         })
                         .then(data => {
-                            // Log the response
                             console.log("Response data:", data);
-
-                            // Success - show message and redirect
-                            alert('Requests processed successfully!');
-                            window.location.href = 'index_r.php';
+                            alert(data.message || 'Requests processed successfully!');
+                            if (data.success) {
+                                window.location.href = 'index_r.php';
+                            }
                         })
                         .catch(error => {
-                            // Error handling
                             console.error('Error:', error);
                             alert('There was an error processing your request. Please try again.');
-
-                            // Reset button state
-                            if (approveAllBtn) {
-                                approveAllBtn.disabled = false;
-                                const buttonText = document.getElementById('approveButtonText');
-                                const spinner = document.getElementById('loadingSpinner');
-                                if (buttonText) buttonText.textContent = 'Approve All';
-                                if (spinner) spinner.classList.add('d-none');
+                        })
+                        .finally(() => {
+                            if (!approveAllBtn) return;
+                            approveAllBtn.disabled = false;
+                            const buttonText = document.getElementById('approveButtonText');
+                            const spinner = document.getElementById('loadingSpinner');
+                            if (buttonText) {
+                                buttonText.textContent = document.getElementById('sel1').value === 'Declined'
+                                    ? 'Decline Selected'
+                                    : 'Approve Selected';
                             }
+                            if (spinner) spinner.classList.add('d-none');
                         });
                 });
             }
@@ -806,7 +823,57 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const detailModal = document.getElementById('requestDetailModal');
             const detailBody = document.getElementById('requestDetailBody');
+
+            function showDetailModal() {
+                detailModal.classList.add('manual-show', 'show');
+                detailModal.removeAttribute('aria-hidden');
+                detailModal.setAttribute('aria-modal', 'true');
+                document.body.classList.add('modal-open');
+            }
+
+            function closeDetailModal() {
+                detailModal.classList.remove('manual-show', 'show');
+                detailModal.setAttribute('aria-hidden', 'true');
+                detailModal.removeAttribute('aria-modal');
+                document.body.classList.remove('modal-open');
+            }
+
+            function bindSingleRequestForm() {
+                const status = detailBody.querySelector('[data-single-status]');
+                const reason = detailBody.querySelector('[data-single-decline-reason]');
+                const reasonInput = reason ? reason.querySelector('textarea') : null;
+                const approve = detailBody.querySelector('[data-single-approve]');
+                const decline = detailBody.querySelector('[data-single-decline]');
+                const timeFields = detailBody.querySelectorAll('[data-single-time]');
+
+                function syncSingleAction() {
+                    const isDeclined = status && status.value === 'Declined';
+                    if (reason) reason.hidden = !isDeclined;
+                    if (reasonInput) reasonInput.required = isDeclined;
+                    if (approve) approve.hidden = isDeclined;
+                    if (decline) decline.hidden = !isDeclined;
+                    timeFields.forEach(field => {
+                        field.hidden = isDeclined || field.hasAttribute('data-personal-hidden');
+                    });
+                }
+
+                if (status) status.addEventListener('change', syncSingleAction);
+                syncSingleAction();
+            }
+
+            detailModal.addEventListener('click', function(event) {
+                if (event.target === detailModal || event.target.closest('[data-dismiss="modal"]')) {
+                    closeDetailModal();
+                }
+            });
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && detailModal.classList.contains('manual-show')) {
+                    closeDetailModal();
+                }
+            });
 
             document.addEventListener('click', function(event) {
                 const button = event.target.closest('[data-view-request]');
@@ -814,7 +881,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
 
                 event.preventDefault();
                 detailBody.innerHTML = '<div class="text-center py-4">Loading request details...</div>';
-                $('#requestDetailModal').modal('show');
+                showDetailModal();
 
                 fetch('request_details_modal.php?id=' + encodeURIComponent(button.dataset.viewRequest), {
                         cache: 'no-store'
@@ -822,6 +889,7 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                     .then(response => response.text().then(html => ({ ok: response.ok, html })))
                     .then(result => {
                         detailBody.innerHTML = result.html || '<div class="alert alert-warning mb-0">Unable to load request details.</div>';
+                        if (result.ok) bindSingleRequestForm();
                     })
                     .catch(() => {
                         detailBody.innerHTML = '<div class="alert alert-danger mb-0">Unable to load request details.</div>';

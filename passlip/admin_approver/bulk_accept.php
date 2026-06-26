@@ -27,6 +27,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $status = mysqli_real_escape_string($conn, $_POST['status']);
         $confirmed_by = mysqli_real_escape_string($conn, $_POST['confirmed_by']);
+        $decline_reason = mysqli_real_escape_string($conn, trim($_POST['decline_reason'] ?? ''));
+
+        if (!in_array($status, ['Partially Approved', 'Declined'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid request status']);
+            exit;
+        }
+
+        if ($status === 'Declined' && $decline_reason === '') {
+            echo json_encode(['success' => false, 'message' => 'A decline reason is required']);
+            exit;
+        }
 
         // Determine status1 based on the status
         $status1 = ($status === 'Declined') ? 'Declined' : 'Scan Qrcode';
@@ -54,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Build query based on whether it's declined
             if ($status === 'Declined') {
-                $query = "UPDATE request SET Status = '$status', status1 = '$status1', confirmed_by = '$confirmed_by' WHERE id = '$data_id'";
+                $query = "UPDATE request SET Status = '$status', status1 = '$status1', confirmed_by = '$confirmed_by', reason = '$decline_reason', ImageName = 'declined.png' WHERE id = '$data_id'";
             } else {
                 $query = "UPDATE request SET esttime = '$time_allotted', time_allotted = '$time_allotted_formatted', Status = '$status', status1 = '$status1', confirmed_by = '$confirmed_by' WHERE id = '$data_id'";
             }

@@ -38,7 +38,6 @@ $confirmedBy = $_SESSION['pay_name'] ?? $_SESSION['username'];
 ?>
 <form action="../code.php" method="POST" class="request-modal-form">
     <input type="hidden" name="data_id" value="<?= (int) $data['id']; ?>">
-    <input type="hidden" name="status" value="Partially Approved">
     <input type="hidden" name="esttime" value="<?= htmlspecialchars(date('H:i')); ?>">
 
     <div class="request-detail-grid">
@@ -69,11 +68,11 @@ $confirmedBy = $_SESSION['pay_name'] ?? $_SESSION['username'];
     </div>
 
     <div class="request-modal-fields">
-        <label <?= $isPersonal ? 'hidden' : ''; ?>>
+        <label data-single-time <?= $isPersonal ? 'data-personal-hidden hidden' : ''; ?>>
             <span>Hours</span>
             <input type="number" class="form-control" name="fix_hours" min="0" max="<?= $isPersonal ? 0 : 4; ?>" value="0">
         </label>
-        <label>
+        <label data-single-time>
             <span>Minutes</span>
             <input type="number" class="form-control" name="fix_minutes" min="0" max="<?= $isPersonal ? 30 : 59; ?>" value="20">
         </label>
@@ -87,10 +86,22 @@ $confirmedBy = $_SESSION['pay_name'] ?? $_SESSION['username'];
                 <?php endif; ?>
             </select>
         </label>
+        <label>
+            <span>Status</span>
+            <select class="form-control" name="status" data-single-status required>
+                <option value="Partially Approved">Partially Approved</option>
+                <option value="Declined">Declined</option>
+            </select>
+        </label>
+        <label class="wide" data-single-decline-reason hidden>
+            <span>Decline Reason</span>
+            <textarea class="form-control" name="decline_reason" rows="3" placeholder="Reason for declining this request"></textarea>
+        </label>
     </div>
 
     <div class="request-modal-actions">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="submit" name="approve_req_r" class="btn btn-success">Approve Request</button>
+        <button type="submit" name="approve_req_r" class="btn btn-success" data-single-approve>Approve Request</button>
+        <button type="submit" name="decline_req_r" class="btn btn-danger" data-single-decline hidden>Decline Request</button>
     </div>
 </form>

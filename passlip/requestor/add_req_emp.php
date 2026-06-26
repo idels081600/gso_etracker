@@ -15,13 +15,32 @@ if (!isset($_SESSION['username'])) {
 if (isset($_POST['save_data2'])) {
 
     $username = $_SESSION['username'];
-    $query_pending = "SELECT * FROM request WHERE name = '$username' AND DATE(date) = CURDATE() AND (Status = 'Pending' OR status1 = 'Pass-Slip' OR status1 = 'Waiting For Pass Slip Approval' OR status1 = 'Scan Qrcode')";
-    $result_pending = mysqli_query($conn, $query_pending);
+    $query_pending = "
+        SELECT id
+        FROM request
+        WHERE name = ?
+        AND (
+            (
+                DATE(date) = CURDATE()
+                AND (
+                    Status = 'Pending'
+                    OR status1 = 'Pass-Slip'
+                    OR status1 = 'Waiting For Pass Slip Approval'
+                )
+            )
+            OR status1 = 'Scan Qrcode'
+        )
+        LIMIT 1
+    ";
+    $stmt_pending = mysqli_prepare($conn, $query_pending);
+    mysqli_stmt_bind_param($stmt_pending, "s", $username);
+    mysqli_stmt_execute($stmt_pending);
+    mysqli_stmt_store_result($stmt_pending);
 
-    if (mysqli_num_rows($result_pending) > 0) {
+    if (mysqli_stmt_num_rows($stmt_pending) > 0) {
         echo '<div class="alert alert-danger alert-dismissible">
                 <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <strong>Error!</strong> You already have a pending request for today or You forgot to scan your Qrcode for arrival.
+                <strong>Error!</strong> You already have a pending request for today or an unfinished request that still needs QR return scan.
             </div>';
     } else {
         $name = mysqli_real_escape_string($conn, $_POST["name"]);
@@ -32,8 +51,10 @@ if (isset($_POST['save_data2'])) {
         $role = $_SESSION['role'];
         $typeofbusiness = mysqli_real_escape_string($conn, $_POST["typeofbusiness"]);
         // Proceed with inserting the new request
-        $query_insert = "INSERT INTO request(name, position, date, destination, purpose, timedept, esttime, typeofbusiness, time_returned, Status, status1, dest2, ImageName, confirmed_by,remarks ,reason ,Role) VALUES ('$name', '$position', '$date', '$destination', '$purpose', '00:00:00', '00:00:00', '$typeofbusiness', '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', '$destination', '../pending.png', ' ', ' ', ' ', '$role')";
-        $query_run = mysqli_query($conn, $query_insert);
+        $query_insert = "INSERT INTO request(name, position, date, destination, purpose, timedept, esttime, typeofbusiness, time_returned, Status, status1, dest2, ImageName, confirmed_by, remarks, reason, Role) VALUES (?, ?, ?, ?, ?, '00:00:00', '00:00:00', ?, '00:00:00', 'Pending', 'Waiting For Pass Slip Approval', ?, '../pending.png', ' ', ' ', ' ', ?)";
+        $stmt_insert = mysqli_prepare($conn, $query_insert);
+        mysqli_stmt_bind_param($stmt_insert, "ssssssss", $name, $position, $date, $destination, $purpose, $typeofbusiness, $destination, $role);
+        $query_run = mysqli_stmt_execute($stmt_insert);
 
         if ($query_run) {
             // require_once 'send_notification.php';
@@ -50,8 +71,11 @@ if (isset($_POST['save_data2'])) {
 
 // Fetch user's position from the database
 $username = $_SESSION['username'];
-$query_position = "SELECT position FROM logindb WHERE username = '$username'";
-$result_position = mysqli_query($conn, $query_position);
+$query_position = "SELECT position FROM logindb WHERE username = ?";
+$stmt_position = mysqli_prepare($conn, $query_position);
+mysqli_stmt_bind_param($stmt_position, "s", $username);
+mysqli_stmt_execute($stmt_position);
+$result_position = mysqli_stmt_get_result($stmt_position);
 if ($row = mysqli_fetch_assoc($result_position)) {
     $default_position = $row['position'];
 } else {
