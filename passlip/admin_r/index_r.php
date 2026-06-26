@@ -149,16 +149,62 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
         margin-top: 18px;
     }
 
-    #requestDetailModal.manual-show {
-        display: block;
-        padding-right: 0;
-        background: rgba(0, 0, 0, .45);
-        overflow-x: hidden;
-        overflow-y: auto;
+    dialog {
+        width: min(760px, calc(100% - 32px));
+        max-height: min(86vh, 820px);
+        padding: 0;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
     }
 
-    #requestDetailModal.manual-show .modal-dialog {
-        transform: none;
+    dialog::backdrop {
+        background: rgba(10, 20, 14, .52);
+    }
+
+    .modal-card {
+        overflow: hidden;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, .24);
+    }
+
+    .modal-card header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 16px 18px;
+        border-bottom: 1px solid #dde7df;
+    }
+
+    .modal-card h2,
+    .modal-card p {
+        margin: 0;
+    }
+
+    .eyebrow {
+        color: #66746b;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .icon-btn {
+        min-width: 36px;
+        min-height: 36px;
+        border: 1px solid #dde7df;
+        border-radius: 6px;
+        background: #fff;
+        color: #17211b;
+        font-weight: 800;
+    }
+
+    .detail-modal-body {
+        max-height: calc(86vh - 86px);
+        overflow: auto;
+        padding: 18px;
     }
 
     @media screen and (max-width: 767px) {
@@ -444,21 +490,20 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             </div>
         </div>
     </div>
-    <div class="modal fade" id="requestDetailModal" tabindex="-1" role="dialog" aria-labelledby="requestDetailModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="requestDetailModalLabel">Review Request</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+    <dialog id="requestDetailModal">
+        <div class="modal-card">
+            <header>
+                <div>
+                    <p class="eyebrow">Request details</p>
+                    <h2>Review Request</h2>
                 </div>
-                <div class="modal-body" id="requestDetailBody">
-                    <div class="text-center py-4">Loading request details...</div>
-                </div>
+                <button type="button" class="icon-btn" id="closeDetailModal" aria-label="Close">x</button>
+            </header>
+            <div id="requestDetailBody" class="detail-modal-body">
+                <div class="text-center py-4">Loading request details...</div>
             </div>
         </div>
-    </div>
+    </dialog>
     <script>
         document.getElementById('acceptAllBtn').addEventListener('click', function(e) {
             // Get all checked checkboxes
@@ -826,18 +871,20 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
             const detailModal = document.getElementById('requestDetailModal');
             const detailBody = document.getElementById('requestDetailBody');
 
-            function showDetailModal() {
-                detailModal.classList.add('manual-show', 'show');
-                detailModal.removeAttribute('aria-hidden');
-                detailModal.setAttribute('aria-modal', 'true');
-                document.body.classList.add('modal-open');
-            }
+            async function openRequestDetails(id) {
+                detailBody.innerHTML = '<div class="text-center py-4">Loading request details...</div>';
+                detailModal.showModal();
 
-            function closeDetailModal() {
-                detailModal.classList.remove('manual-show', 'show');
-                detailModal.setAttribute('aria-hidden', 'true');
-                detailModal.removeAttribute('aria-modal');
-                document.body.classList.remove('modal-open');
+                try {
+                    const response = await fetch(`request_details_modal.php?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
+                    const html = await response.text();
+                    detailBody.innerHTML = html || '<div class="alert alert-warning mb-0">Unable to load request details.</div>';
+                    if (response.ok) {
+                        bindSingleRequestForm();
+                    }
+                } catch (error) {
+                    detailBody.innerHTML = '<div class="alert alert-danger mb-0">Unable to load request details.</div>';
+                }
             }
 
             function bindSingleRequestForm() {
@@ -860,40 +907,20 @@ if ($_SESSION['role'] == 'Employee' || $_SESSION['role'] == 'Desk Clerk' || $_SE
                 }
 
                 if (status) status.addEventListener('change', syncSingleAction);
+                detailBody.querySelectorAll('[data-dismiss="modal"], [data-close-detail]').forEach(button => {
+                    button.addEventListener('click', () => detailModal.close());
+                });
                 syncSingleAction();
             }
 
-            detailModal.addEventListener('click', function(event) {
-                if (event.target === detailModal || event.target.closest('[data-dismiss="modal"]')) {
-                    closeDetailModal();
-                }
-            });
-
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && detailModal.classList.contains('manual-show')) {
-                    closeDetailModal();
-                }
-            });
+            document.getElementById('closeDetailModal').addEventListener('click', () => detailModal.close());
 
             document.addEventListener('click', function(event) {
                 const button = event.target.closest('[data-view-request]');
                 if (!button) return;
 
                 event.preventDefault();
-                detailBody.innerHTML = '<div class="text-center py-4">Loading request details...</div>';
-                showDetailModal();
-
-                fetch('request_details_modal.php?id=' + encodeURIComponent(button.dataset.viewRequest), {
-                        cache: 'no-store'
-                    })
-                    .then(response => response.text().then(html => ({ ok: response.ok, html })))
-                    .then(result => {
-                        detailBody.innerHTML = result.html || '<div class="alert alert-warning mb-0">Unable to load request details.</div>';
-                        if (result.ok) bindSingleRequestForm();
-                    })
-                    .catch(() => {
-                        detailBody.innerHTML = '<div class="alert alert-danger mb-0">Unable to load request details.</div>';
-                    });
+                openRequestDetails(button.dataset.viewRequest);
             });
         });
     </script>
