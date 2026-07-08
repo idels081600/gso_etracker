@@ -23,6 +23,19 @@ function asset_is_api_request(): bool
         || strtolower($requestedWith) === 'xmlhttprequest';
 }
 
+function asset_login_url(): string
+{
+    $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+    $dashboardSegment = '/asset_tracker_dashboard/';
+    $dashboardPosition = strpos($scriptName, $dashboardSegment);
+
+    if ($dashboardPosition !== false) {
+        return substr($scriptName, 0, $dashboardPosition) . '/login_v2.php';
+    }
+
+    return '../login_v2.php';
+}
+
 function asset_current_role(): string
 {
     asset_start_session();
@@ -51,7 +64,7 @@ function asset_require_auth(array $allowedRoles = ASSET_ALLOWED_ROLES): void
         exit;
     }
 
-    header('Location: ../login_v2.php');
+    header('Location: ' . asset_login_url());
     exit;
 }
 

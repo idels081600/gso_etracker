@@ -1,9 +1,9 @@
 <?php
 
-require_once __DIR__ . '/app_security.php';
-require_once __DIR__ . '/api_helpers.php';
-require_once __DIR__ . '/validators.php';
-require_once __DIR__ . '/db_asset.php';
+require_once dirname(__DIR__) . '/app_security.php';
+require_once dirname(__DIR__) . '/api_helpers.php';
+require_once dirname(__DIR__) . '/validators.php';
+require_once dirname(__DIR__) . '/db_asset.php';
 
 asset_require_auth();
 asset_require_post();

@@ -1,9 +1,9 @@
 <?php
 
-require_once __DIR__ . '/app_security.php';
-require_once __DIR__ . '/api_helpers.php';
-require_once __DIR__ . '/validators.php';
-require_once __DIR__ . '/db_asset.php';
+require_once dirname(__DIR__) . '/app_security.php';
+require_once dirname(__DIR__) . '/api_helpers.php';
+require_once dirname(__DIR__) . '/validators.php';
+require_once dirname(__DIR__) . '/db_asset.php';
 
 asset_require_auth();
 asset_require_post();
@@ -11,7 +11,35 @@ asset_require_post();
 try {
     $plateNo = input_string($_POST, 'vehicle_id', 30);
     $repairDate = input_date($_POST, 'repair_date');
-    $repairTypes = array_values(array_filter(array_map('trim', (array) ($_POST['repair_type'] ?? []))));
+    $allowedRepairTypes = [
+        'AC Repair',
+        'Battery Replacement',
+        'Body Repair',
+        'Brake Repair',
+        'Engine Repair',
+        'Engine Tune-up',
+        'Oil Change',
+        'Suspension Repair',
+        'Tire Replacement',
+        'Transmission Service',
+        'Other',
+    ];
+    $submittedRepairTypes = $_POST['repair_type'] ?? [];
+    if (!is_array($submittedRepairTypes)) {
+        throw new InvalidArgumentException('Invalid repair type selection.');
+    }
+    $repairTypes = [];
+    foreach ($submittedRepairTypes as $repairType) {
+        if (!is_string($repairType)) {
+            throw new InvalidArgumentException('Invalid repair type selection.');
+        }
+        $repairType = trim($repairType);
+        if (!in_array($repairType, $allowedRepairTypes, true)) {
+            throw new InvalidArgumentException('Invalid repair type selection.');
+        }
+        $repairTypes[$repairType] = $repairType;
+    }
+    $repairTypes = array_values($repairTypes);
     if ($repairTypes === []) {
         throw new InvalidArgumentException('At least one repair type is required.');
     }
@@ -38,15 +66,12 @@ try {
     $stmt = db_execute($conn, 'UPDATE vehicle_records SET no_of_repairs = no_of_repairs + 1, new_repair_date = ?, latest_mileage = ? WHERE plate_no = ?', 'sis', [$repairDate, $mileage, $plateNo]);
     mysqli_stmt_close($stmt);
     mysqli_commit($conn);
-    header('Location: motorpool_admin.php?success=repair_added');
-    exit;
+
+    api_response(true, 'Repair record added successfully.');
 } catch (InvalidArgumentException $error) {
     mysqli_rollback($conn);
-    header('Location: motorpool_admin.php?error=' . rawurlencode($error->getMessage()));
-    exit;
+    api_response(false, $error->getMessage(), [], 422);
 } catch (Throwable $error) {
     mysqli_rollback($conn);
-    error_log($error->getMessage());
-    header('Location: motorpool_admin.php?error=repair_add_failed');
-    exit;
+    api_database_error($error);
 }

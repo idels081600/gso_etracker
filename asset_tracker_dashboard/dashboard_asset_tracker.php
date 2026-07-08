@@ -169,7 +169,7 @@ $hover_data_onfield = display_data_transpo_onfield_hover();
             </li>
             <li><a href="tent_tracking/tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
             <li><a href="chairs_table/tracking.php"><i class="fas fa-chair icon-size"></i> Chairs & Table</a></li>
-           <li><a href="motorpool_admin.php"><i class="fas fa-wrench icon-size"></i> Motorpool</a></li>
+           <li><a href="motorpool/motorpool_admin.php"><i class="fas fa-wrench icon-size"></i> Motorpool</a></li>
             <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
              <li><a href="../create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
@@ -414,7 +414,6 @@ $hover_data_onfield = display_data_transpo_onfield_hover();
                     </table>
                 </div>
             </div>
-
             <script>
                 window.onload = function() {
                     document.getElementById('sel1').addEventListener('change', function() {
@@ -524,16 +523,11 @@ $hover_data_onfield = display_data_transpo_onfield_hover();
                         }
                     });
 
-                    popup.addEventListener("mouseover", () => {
+                    popup.addEventListener("mouseenter", () => {
                         popup.style.opacity = "1";
-                        popup.style.display = "block";
                     });
 
-                    popup.addEventListener("mouseout", (e) => {
-                        if (!onGarage.contains(e.relatedTarget) && !onField.contains(e.relatedTarget)) {
-                            hidePopup();
-                        }
-                    });
+                    popup.addEventListener("mouseleave", hidePopup);
                 });
             </script>
 

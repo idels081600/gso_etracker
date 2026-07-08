@@ -1,13 +1,18 @@
 <?php
-require_once __DIR__ . '/page_bootstrap.php';
+require_once dirname(__DIR__) . '/page_bootstrap.php';
 // Include database connection
-require_once __DIR__ . '/db_asset.php';
+require_once dirname(__DIR__) . '/db_asset.php';
 require_once __DIR__ . '/motorpool_data_display.php';
 
 // Fetch vehicles from the database
 $vehicles = get_vehicles_list();
 $repair_list = get_motorpool_repairs();
 $most_repaired_vehicles = count_completed_repairs_by_car();
+$pending_repairs_count = count_pending_repairs();
+$in_progress_repairs_count = count_in_progress_repairs();
+$completed_repairs_count = count_repaired_repairs();
+$active_repairs_count = count($repair_list);
+$vehicle_count = count($vehicles);
 
 // Extract plate numbers (labels) and repair counts (data) for the chart
 $vehicle_labels = array_keys($most_repaired_vehicles);
@@ -17,16 +22,24 @@ $repair_counts = array_values($most_repaired_vehicles);
 $vehicle_labels_json = json_encode($vehicle_labels);
 $repair_counts_json = json_encode($repair_counts);
 
-// Get completed repairs by office
-$office_repairs = count_completed_repairs_by_office();
+$repair_type_breakdown = count_repairs_by_type(10);
+$repair_type_labels = array_keys($repair_type_breakdown);
+$repair_type_counts = array_values($repair_type_breakdown);
+$repair_type_labels_json = json_encode($repair_type_labels);
+$repair_type_counts_json = json_encode($repair_type_counts);
 
-// Extract office names (labels) and repair counts (data) for the chart
-$office_labels = array_keys($office_repairs);
-$office_counts = array_values($office_repairs);
+$daily_repairs = count_daily_repairs();
+$dates = [];
+$counts = [];
+$chart_data = array_reverse(array_slice($daily_repairs, 0, 7));
 
-// Convert to JSON for JavaScript
-$office_labels_json = json_encode($office_labels);
-$office_counts_json = json_encode($office_counts);
+foreach ($chart_data as $repair) {
+    $dates[] = date('M d', strtotime($repair['repair_day']));
+    $counts[] = $repair['repair_count'];
+}
+
+$dates_json = json_encode($dates);
+$counts_json = json_encode($counts);
 ?>
 
 
@@ -36,230 +49,105 @@ $office_counts_json = json_encode($office_counts);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?php echo asset_page_security_tags(); ?>
-    <title>Transportation Tracker</title>
+    <?php echo asset_page_security_tags('../'); ?>
+    <title>Motorpool Tracker</title>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <link rel="stylesheet" href="sidebar_asset.css">
+    <link rel="stylesheet" href="../sidebar_asset.css">
     <link rel="stylesheet" href="motorpool_admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.10/vue.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
 </head>
 
 <body>
-    <?php
-    // // Database connection
-    // $conn = mysqli_connect("localhost", "username", "password", "database_name");
-
-    // Fetch vehicle repair history
-    function getVehicleRepairHistory()
-    {
-        global $conn;
-        // In a real implementation, this would fetch from your database
-        // For demo purposes, we'll create sample data
-        return [
-            ['vehicle_id' => 1, 'plate_no' => 'ABC-123', 'repair_date' => '2023-01-15', 'repair_type' => 'Oil Change', 'mileage' => 15000, 'parts_replaced' => 'Oil Filter', 'cost' => 1500],
-            ['vehicle_id' => 1, 'plate_no' => 'ABC-123', 'repair_date' => '2023-03-20', 'repair_type' => 'Brake Repair', 'mileage' => 18000, 'parts_replaced' => 'Brake Pads', 'cost' => 3500],
-            ['vehicle_id' => 1, 'plate_no' => 'ABC-123', 'repair_date' => '2023-05-25', 'repair_type' => 'Tire Replacement', 'mileage' => 21000, 'parts_replaced' => 'Tires', 'cost' => 8000],
-            ['vehicle_id' => 2, 'plate_no' => 'XYZ-789', 'repair_date' => '2023-02-10', 'repair_type' => 'Battery Replacement', 'mileage' => 25000, 'parts_replaced' => 'Battery', 'cost' => 4500],
-            ['vehicle_id' => 2, 'plate_no' => 'XYZ-789', 'repair_date' => '2023-06-05', 'repair_type' => 'AC Repair', 'mileage' => 28000, 'parts_replaced' => 'Compressor', 'cost' => 7500],
-            ['vehicle_id' => 3, 'plate_no' => 'DEF-456', 'repair_date' => '2023-01-05', 'repair_type' => 'Engine Tune-up', 'mileage' => 30000, 'parts_replaced' => 'Spark Plugs', 'cost' => 2500],
-            ['vehicle_id' => 3, 'plate_no' => 'DEF-456', 'repair_date' => '2023-02-20', 'repair_type' => 'Transmission Service', 'mileage' => 32000, 'parts_replaced' => 'Transmission Fluid', 'cost' => 3000],
-            ['vehicle_id' => 3, 'plate_no' => 'DEF-456', 'repair_date' => '2023-04-10', 'repair_type' => 'Suspension Repair', 'mileage' => 35000, 'parts_replaced' => 'Shock Absorbers', 'cost' => 6000],
-            ['vehicle_id' => 4, 'plate_no' => 'GHI-789', 'repair_date' => '2023-03-15', 'repair_type' => 'Oil Change', 'mileage' => 10000, 'parts_replaced' => 'Oil Filter', 'cost' => 1500],
-            ['vehicle_id' => 5, 'plate_no' => 'JKL-012', 'repair_date' => '2023-01-25', 'repair_type' => 'Brake Repair', 'mileage' => 22000, 'parts_replaced' => 'Brake Pads', 'cost' => 3500],
-            ['vehicle_id' => 5, 'plate_no' => 'JKL-012', 'repair_date' => '2023-05-10', 'repair_type' => 'Tire Rotation', 'mileage' => 25000, 'parts_replaced' => 'None', 'cost' => 1000],
-        ];
-    }
-
-    // Group repair history by vehicle
-    function groupRepairsByVehicle($repairs)
-    {
-        $grouped = [];
-        foreach ($repairs as $repair) {
-            $vehicleId = $repair['vehicle_id'];
-            if (!isset($grouped[$vehicleId])) {
-                $grouped[$vehicleId] = [
-                    'plate_no' => $repair['plate_no'],
-                    'repairs' => []
-                ];
-            }
-            $grouped[$vehicleId]['repairs'][] = $repair;
-        }
-        return $grouped;
-    }
-
-    // Predictive maintenance algorithm
-    function predictNextMaintenance($vehicleRepairs)
-    {
-        $predictions = [];
-
-        foreach ($vehicleRepairs as $vehicleId => $data) {
-            $plateNo = $data['plate_no'];
-            $repairs = $data['repairs'];
-
-            // Calculate average time between repairs
-            $repairDates = array_map(function ($repair) {
-                return strtotime($repair['repair_date']);
-            }, $repairs);
-
-            if (count($repairDates) >= 2) {
-                sort($repairDates);
-                $intervals = [];
-                for ($i = 1; $i < count($repairDates); $i++) {
-                    $intervals[] = $repairDates[$i] - $repairDates[$i - 1];
-                }
-
-                $avgInterval = array_sum($intervals) / count($intervals);
-                $lastRepairDate = max($repairDates);
-                $predictedNextDate = $lastRepairDate + $avgInterval;
-
-                // Calculate days until next predicted maintenance
-                $daysUntil = ceil(($predictedNextDate - time()) / (60 * 60 * 24));
-
-                // Determine maintenance urgency
-                $urgency = 'normal';
-                if ($daysUntil < 7) {
-                    $urgency = 'urgent';
-                } else if ($daysUntil < 30) {
-                    $urgency = 'upcoming';
-                }
-
-                $predictions[$vehicleId] = [
-                    'plate_no' => $plateNo,
-                    'last_repair' => date('Y-m-d', $lastRepairDate),
-                    'predicted_date' => date('Y-m-d', $predictedNextDate),
-                    'days_until' => $daysUntil,
-                    'urgency' => $urgency,
-                    'confidence' => min(95, 50 + (count($repairs) * 5)) // Higher confidence with more data points
-                ];
-            } else {
-                // Not enough repair history for prediction
-                $predictions[$vehicleId] = [
-                    'plate_no' => $plateNo,
-                    'last_repair' => count($repairs) > 0 ? date('Y-m-d', $repairDates[0]) : 'N/A',
-                    'predicted_date' => 'Insufficient data',
-                    'days_until' => null,
-                    'urgency' => 'unknown',
-                    'confidence' => 0
-                ];
-            }
-        }
-
-        return $predictions;
-    }
-
-    $repairHistory = getVehicleRepairHistory();
-    $vehicleRepairs = groupRepairsByVehicle($repairHistory);
-    $maintenancePredictions = predictNextMaintenance($vehicleRepairs);
-    ?>
-
     <div class="sidebar">
         <div class="logo">
-            <img src="logo.png" alt="Logo">
+            <img src="../logo.png" alt="Logo">
             <span class="role"><?php echo htmlspecialchars($_SESSION['role'] ?? 'User'); ?></span>
             <span class="user-name"><?php echo htmlspecialchars($_SESSION['pay_name'] ?? $_SESSION['username'] ?? 'User'); ?></span>
         </div>
         <hr class="divider">
         <ul>
-            <li><a href="dashboard_asset_tracker.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
+            <li><a href="../dashboard_asset_tracker.php"><i class="fas fa-home icon-size"></i> Dashboard</a></li>
             <li class="dropdown">
                 <a href="#"><i class="fas fa-map icon-size"></i> Tracking <i class="fas fa-chevron-down dropdown-icon"></i></a>
                 <ul class="dropdown-menu">
-                    <li><a href="pay_track.php">Payables</a></li>
-                    <li><a href="rfq_tracking.php">RFQ</a></li>
+                    <li><a href="../pay_track.php">Payables</a></li>
+                    <li><a href="../rfq_tracking.php">RFQ</a></li>
                 </ul>
             </li>
-            <li><a href="tent_tracking/tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
-            <li><a href="chairs_table/tracking.php"><i class="fas fa-chair icon-size"></i> Chairs & Table</a></li>
+            <li><a href="../tent_tracking/tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
+            <li><a href="../chairs_table/tracking.php"><i class="fas fa-chair icon-size"></i> Chairs & Table</a></li>
             <li><a href="motorpool_admin.php"><i class="fas fa-wrench icon-size"></i> Motorpool</a></li>
-            <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
-            <li><a href="../create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
+            <li><a href="../transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
+            <li><a href="../../create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
-        <a href="../logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
+        <a href="../../logout.php" class="logout-item"><i class="fas fa-sign-out-alt icon-size"></i> Logout</a>
     </div>
 
-    <div class="container-fluid">
-        <h1 class="Title_header">Motorpool</h1>
-        <div class="row g-3">
+    <div class="container-fluid motorpool-page">
+        <div class="motorpool-header">
+            <div>
+                <p class="motorpool-eyebrow">General Services Office</p>
+                <h1 class="Title_header">Motorpool</h1>
+                <p class="motorpool-subtitle">Monitor vehicle repairs, maintenance activity, and fleet records.</p>
+            </div>
+        </div>
+        <section class="motorpool-kpi-grid" aria-label="Motorpool repair summary">
+            <article class="motorpool-kpi-card motorpool-kpi-card--active">
+                <span class="motorpool-kpi-label">Active Jobs</span>
+                <strong class="motorpool-kpi-value"><?php echo $active_repairs_count; ?></strong>
+                <span class="motorpool-kpi-note">Pending and in progress</span>
+            </article>
+            <article class="motorpool-kpi-card">
+                <span class="motorpool-kpi-label">Pending</span>
+                <strong class="motorpool-kpi-value"><?php echo $pending_repairs_count; ?></strong>
+                <span class="motorpool-kpi-note">Waiting to start</span>
+            </article>
+            <article class="motorpool-kpi-card">
+                <span class="motorpool-kpi-label">In Progress</span>
+                <strong class="motorpool-kpi-value"><?php echo $in_progress_repairs_count; ?></strong>
+                <span class="motorpool-kpi-note">Currently serviced</span>
+            </article>
+            <article class="motorpool-kpi-card">
+                <span class="motorpool-kpi-label">Completed</span>
+                <strong class="motorpool-kpi-value"><?php echo $completed_repairs_count; ?></strong>
+                <span class="motorpool-kpi-note">Repair history</span>
+            </article>
+            <article class="motorpool-kpi-card">
+                <span class="motorpool-kpi-label">Fleet Vehicles</span>
+                <strong class="motorpool-kpi-value"><?php echo $vehicle_count; ?></strong>
+                <span class="motorpool-kpi-note">Registered units</span>
+            </article>
+        </section>
 
-            <div class="col-lg-3">
-                <div class="bento-box mb-3" style="height: 170px;">
-                    <div class="bento_title">
-                        Vehicle Repair Status
-                    </div>
-                    <div class="status-container">
-                        <div class="status-item">
-                            <div class="status-label">Repaired</div>
-                            <div class="status-value"><?php echo count_repaired_repairs(); ?></div>
+        <div class="motorpool-chart-grid">
+            <div class="motorpool-chart-column">
+                <div class="bento-box motorpool-chart-card">
+                    <div class="motorpool-card-heading">
+                        <div>
+                            <div class="bento_title">Repair Trend</div>
+                            <p class="motorpool-card-subtitle">Daily repair volume from recent records.</p>
                         </div>
-                        <div class="status-item">
-                            <div class="status-label">In Progress</div>
-                            <div class="status-value"><?php echo count_in_progress_repairs(); ?></div>
-                        </div>
-                        <div class="status-item">
-                            <div class="status-label">Pending</div>
-                            <div class="status-value"><?php echo count_pending_repairs(); ?></div>
-                        </div>
+                        <span class="motorpool-chart-badge">Last 7 days</span>
                     </div>
-                </div>
-
-
-                <div class="bento-box mb-3" style="height: 230px; overflow: hidden;">
-                    <div class="bento_title">
-                        Repairs per day
-                    </div>
-                    <div class="chart-container" style="position: relative; height: calc(100% - 30px); width: 100%;">
+                    <div class="chart-container chart-container--line">
                         <canvas id="dailyRepairsChart"></canvas>
                     </div>
-
-                    <?php
-                    // Prepare data for the chart in PHP
-                    $daily_repairs = count_daily_repairs();
-
-                    // Prepare data for chart
-                    $dates = [];
-                    $counts = [];
-
-                    // Get the last 7 days of data (or fewer if not enough data)
-                    $chart_data = array_slice($daily_repairs, 0, 7);
-
-                    // Reverse to show chronological order
-                    $chart_data = array_reverse($chart_data);
-
-                    foreach ($chart_data as $repair) {
-                        $dates[] = date('M d', strtotime($repair['repair_day']));
-                        $counts[] = $repair['repair_count'];
-                    }
-
-                    // Convert PHP arrays to JSON for JavaScript
-                    $dates_json = json_encode($dates);
-                    $counts_json = json_encode($counts);
-                    ?>
-
-                    <!-- Data attributes to pass PHP data to JavaScript -->
-                    <div id="repairChartData"
-                        data-dates='<?php echo $dates_json; ?>'
-                        data-counts='<?php echo $counts_json; ?>'
-                        style="display: none;"></div>
                 </div>
-
             </div>
 
-            <!-- Second column -->
-            <div class="col-lg-4">
-                <div class="bento-box" style="height: 416px;">
-                    <div class="bento_title">
-                        Car with Most Repairs
+            <div class="motorpool-chart-column">
+                <div class="bento-box motorpool-chart-card">
+                    <div class="motorpool-card-heading">
+                        <div>
+                            <div class="bento_title">Most Repaired Vehicles</div>
+                            <p class="motorpool-card-subtitle">Top completed repair counts by plate number.</p>
+                        </div>
                     </div>
                     <div class="chart-container">
                         <canvas id="repairsChart"></canvas>
@@ -267,30 +155,41 @@ $office_counts_json = json_encode($office_counts);
                 </div>
             </div>
 
-            <!-- Third column -->
-            <div class="col-lg-4">
-                <div class="bento-box" style="height: 416px;">
-                    <div class="bento_title">
-                        Offices of Repaired Vehicles
+            <div class="motorpool-chart-column">
+                <div class="bento-box motorpool-chart-card">
+                    <div class="motorpool-card-heading">
+                        <div>
+                            <div class="bento_title">Repair Type Breakdown</div>
+                            <p class="motorpool-card-subtitle">Most common repair problems from all records.</p>
+                        </div>
                     </div>
                     <div class="chart-container-small">
-                        <canvas id="officesChart"></canvas>
+                        <canvas id="repairTypesChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
+        <div id="repairChartData"
+            data-dates='<?php echo htmlspecialchars($dates_json, ENT_QUOTES, 'UTF-8'); ?>'
+            data-counts='<?php echo htmlspecialchars($counts_json, ENT_QUOTES, 'UTF-8'); ?>'
+            data-vehicle-labels='<?php echo htmlspecialchars($vehicle_labels_json, ENT_QUOTES, 'UTF-8'); ?>'
+            data-vehicle-counts='<?php echo htmlspecialchars($repair_counts_json, ENT_QUOTES, 'UTF-8'); ?>'
+            data-repair-type-labels='<?php echo htmlspecialchars($repair_type_labels_json, ENT_QUOTES, 'UTF-8'); ?>'
+            data-repair-type-counts='<?php echo htmlspecialchars($repair_type_counts_json, ENT_QUOTES, 'UTF-8'); ?>'
+            hidden></div>
+
         <!-- AI Predictive Maintenance Section -->
 
 
         <!-- Add a new row for the table -->
-        <div class="row mt-3">
-            <div class="col-lg-11">
+        <div class="motorpool-table-section">
+            <div>
                 <!-- Header section outside of table -->
-                <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                <div class="motorpool-toolbar">
                     <h4 class="mb-0">Repair List</h4>
-                    <div class="d-flex align-items-center">
-                        <div class="input-group me-2" style="width: 250px;">
+                    <div class="motorpool-actions">
+                        <div class="input-group motorpool-search">
                             <input type="text" id="repairSearch" class="form-control form-control-sm" placeholder="Search repairs...">
                         </div>
                         <button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#addRepairModal">
@@ -309,9 +208,9 @@ $office_counts_json = json_encode($office_counts);
                 </div>
 
                 <!-- Scrollable table with sticky header -->
-                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
-                    <table class="table table-borderless">
-                        <thead class="sticky-top bg-light border-bottom" style="border-bottom: 2px solid #dee2e6 !important;">
+                <div class="table-responsive motorpool-table-wrap">
+                    <table class="table table-borderless motorpool-table">
+                        <thead class="sticky-top bg-light border-bottom">
                             <tr>
                                 <th scope="col">Plate no.</th>
 
@@ -347,6 +246,7 @@ $office_counts_json = json_encode($office_counts);
                                         <td><?php echo htmlspecialchars($repair['remarks'] ?? ''); ?></td>
                                         <td>
                                             <form class="status-form" data-repair-id="<?php echo $repair['id']; ?>">
+                                                <?php echo asset_csrf_input(); ?>
                                                 <select class="form-select form-select-sm status-select" name="status">
                                                     <option value="Pending" <?php echo ($repair['status'] == 'Pending') ? 'selected' : ''; ?>>Pending</option>
                                                     <option value="In Progress" <?php echo ($repair['status'] == 'In Progress') ? 'selected' : ''; ?>>In Progress</option>
@@ -369,7 +269,7 @@ $office_counts_json = json_encode($office_counts);
                             } else {
                                 ?>
                                 <tr>
-                                    <td colspan="11" class="text-center">No repair records found</td>
+                                    <td colspan="8" class="text-center text-muted py-4">No active repair records found.</td>
                                 </tr>
                             <?php
                             }
@@ -393,7 +293,7 @@ $office_counts_json = json_encode($office_counts);
                     <div class="mb-3">
                         <input type="text" id="completedRepairSearch" class="form-control" placeholder="Search completed repairs...">
                     </div>
-                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                    <div class="table-responsive motorpool-modal-table-wrap">
                         <table class="table table-striped" id="completedRepairsTable">
                             <thead class="sticky-top bg-light">
                                 <tr>
@@ -436,7 +336,7 @@ $office_counts_json = json_encode($office_counts);
         </div>
     </div>
     <div class="modal fade" id="addVehicleModal" tabindex="-1" aria-labelledby="addVehicleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addVehicleModalLabel">Add New Vehicle</h5>
@@ -444,6 +344,7 @@ $office_counts_json = json_encode($office_counts);
                 </div>
                 <div class="modal-body">
                     <form id="addVehicleForm" method="post" action="add_vehicle_record_motorpool.php">
+                        <?php echo asset_csrf_input(); ?>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="plate_no" class="form-label">Plate Number</label>
@@ -547,6 +448,7 @@ $office_counts_json = json_encode($office_counts);
                 </div>
                 <div class="modal-body">
                     <form id="editRepairForm">
+                        <?php echo asset_csrf_input(); ?>
                         <input type="hidden" id="edit_repair_id" name="edit_repair_id">
 
                         <div class="row mb-3">
@@ -573,7 +475,7 @@ $office_counts_json = json_encode($office_counts);
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Repair Type</label>
-                                <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                <div class="border rounded p-3 motorpool-checklist">
                                     <div class="form-check">
                                         <input class="form-check-input edit-repair-type-checkbox" type="checkbox" name="edit_repair_type[]" value="AC Repair" id="edit_repair_ac">
                                         <label class="form-check-label" for="edit_repair_ac">AC Repair</label>
@@ -647,7 +549,7 @@ $office_counts_json = json_encode($office_counts);
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_parts_replaced" class="form-label">Parts Replaced</label>
-                                <textarea class="form-control" id="edit_parts_replaced" name="edit_parts_replaced" rows="4" style="resize: vertical; min-height: 80px;" placeholder="Enter parts replaced (press Enter for new line)"></textarea>
+                                <textarea class="form-control motorpool-textarea" id="edit_parts_replaced" name="edit_parts_replaced" rows="4" placeholder="Enter parts replaced (press Enter for new line)"></textarea>
                             </div>
                         </div>
 
@@ -736,7 +638,7 @@ $office_counts_json = json_encode($office_counts);
 
     <!-- Add Repair Modal -->
     <div class="modal fade" id="addRepairModal" tabindex="-1" aria-labelledby="addRepairModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-dialog-scrollable motorpool-repair-modal">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addRepairModalLabel">Add New Repair</h5>
@@ -744,6 +646,7 @@ $office_counts_json = json_encode($office_counts);
                 </div>
                 <div class="modal-body">
                     <form id="addRepairForm" method="post" action="add_repair_motorpool.php">
+                        <?php echo asset_csrf_input(); ?>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="vehicle_id" class="form-label">Vehicle</label>
@@ -768,7 +671,7 @@ $office_counts_json = json_encode($office_counts);
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Repair Type</label>
-                                <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                <div class="border rounded p-3 motorpool-checklist">
                                     <div class="form-check">
                                         <input class="form-check-input repair-type-checkbox" type="checkbox" name="repair_type[]" value="AC Repair" id="repair_ac">
                                         <label class="form-check-label" for="repair_ac">AC Repair</label>
@@ -818,7 +721,7 @@ $office_counts_json = json_encode($office_counts);
                             </div>
                             <div class="col-md-6">
                                 <label for="parts_replaced" class="form-label">Parts Replaced</label>
-                                <textarea class="form-control" id="parts_replaced" name="parts_replaced" rows="3" style="resize: vertical; min-height: 80px;" placeholder="Enter parts replaced (press Enter for new line)"></textarea>
+                                <textarea class="form-control motorpool-textarea" id="parts_replaced" name="parts_replaced" rows="3" placeholder="Enter parts replaced (press Enter for new line)"></textarea>
                             </div>
 
 
@@ -874,6 +777,7 @@ $office_counts_json = json_encode($office_counts);
             </div>
             <div class="modal-body">
                 <form id="updateVehicleForm" method="post" action="update_vehicle_record_motorpool.php">
+                    <?php echo asset_csrf_input(); ?>
                     <!-- Hidden field to store original plate number for updates -->
                     <input type="hidden" id="original_plate_no" name="original_plate_no">
 
@@ -964,14 +868,14 @@ $office_counts_json = json_encode($office_counts);
                 <hr class="my-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5>Select Vehicle to Update</h5>
-                    <div class="input-group" style="width: 250px;">
+                    <div class="input-group motorpool-search">
                         <input type="text" id="vehicleSearchInput" class="form-control form-control-sm" placeholder="Search vehicles...">
                         <button class="btn btn-outline-secondary btn-sm" type="button" id="clearVehicleSearch">
                             <i class="fas fa-window-close"></i>
                         </button>
                     </div>
                 </div>
-                <div class="table-responsive mt-3" style="max-height: 300px; overflow-y: auto;">
+                <div class="table-responsive mt-3 motorpool-modal-table-wrap motorpool-modal-table-wrap--short">
                     <table class="table table-striped table-hover" id="vehicleSelectionTable">
                         <thead class="sticky-top bg-light">
                             <tr>
@@ -1003,156 +907,7 @@ $office_counts_json = json_encode($office_counts);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="motorpool_admin.js"></script>
     <script>
-        const ctx = document.getElementById("repairsChart").getContext("2d");
-        const repairsChart = new Chart(ctx, {
-            type: "bar",
-            data: {
-                labels: <?php echo $vehicle_labels_json; ?>,
-                datasets: [{
-                    label: "Number of Completed Repairs",
-                    data: <?php echo $repair_counts_json; ?>,
-                    backgroundColor: [
-                        "rgba(75, 192, 192, 0.6)",
-                        "rgba(54, 162, 235, 0.6)",
-                        "rgba(153, 102, 255, 0.6)",
-                        "rgba(255, 159, 64, 0.6)",
-                        "rgba(255, 99, 132, 0.6)",
-                    ],
-                    borderColor: [
-                        "rgba(75, 192, 192, 1)",
-                        "rgba(54, 162, 235, 1)",
-                        "rgba(153, 102, 255, 1)",
-                        "rgba(255, 159, 64, 1)",
-                        "rgba(255, 99, 132, 1)",
-                    ],
-                    borderWidth: 1,
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Completed Repairs'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Vehicle Plate Number'
-                        }
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        font: {
-                            size: 16
-                        }
-                    },
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            title: function(tooltipItems) {
-                                return 'Vehicle: ' + tooltipItems[0].label;
-                            },
-                            label: function(context) {
-                                return 'Completed Repairs: ' + context.raw;
-                            }
-                        }
-                    }
-                }
-            },
-        });
-        const officesCtx = document.getElementById("officesChart").getContext("2d");
-        const officesChart = new Chart(officesCtx, {
-            type: "pie",
-            data: {
-                labels: <?php echo $office_labels_json; ?>,
-                datasets: [{
-                    data: <?php echo $office_counts_json; ?>,
-                    backgroundColor: [
-                        "rgba(255, 99, 132, 0.8)",
-                        "rgba(54, 162, 235, 0.8)",
-                        "rgba(255, 206, 86, 0.8)",
-                        "rgba(75, 192, 192, 0.8)",
-                        "rgba(153, 102, 255, 0.8)",
-                        "rgba(201, 203, 207, 0.8)",
-                        "rgba(255, 159, 64, 0.8)",
-                        "rgba(142, 65, 64, 0.8)",
-                        "rgba(59, 72, 169, 0.8)",
-                        "rgba(100, 120, 140, 0.8)",
-                    ],
-                    borderWidth: 1,
-                }],
-            },
-            plugins: [ChartDataLabels],
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    datalabels: {
-                        color: '#fff',
-                        font: {
-                            weight: 'bold',
-                            size: 14
-                        },
-                        formatter: (value, context) => {
-                            return `${value}`;
-                        }
-                    },
-                    legend: {
-                        position: "bottom",
-                    },
-                    title: {
-                        display: true,
-                        text: 'Completed Repairs by Office',
-                        font: {
-                            size: 16
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                const percentage = Math.round((value / total) * 100);
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
-            },
-        });
-
-
-        // Vehicle data for office lookup
-        const vehicleData = <?php echo json_encode($vehicles); ?>;
-
-        // Add event listener for vehicle selection
-        document.getElementById('vehicle_id').addEventListener('change', function() {
-            const selectedPlateNo = this.value;
-            const officeField = document.getElementById('office');
-
-            if (selectedPlateNo) {
-                // Find the selected vehicle in the data
-                const selectedVehicle = vehicleData.find(vehicle => vehicle.plate_no === selectedPlateNo);
-
-                if (selectedVehicle && selectedVehicle.office) {
-                    officeField.value = selectedVehicle.office;
-                } else {
-                    officeField.value = '';
-                }
-            } else {
-                officeField.value = '';
-            }
-        });
+        window.motorpoolVehicleData = <?php echo json_encode($vehicles); ?>;
     </script>
 
 </body>

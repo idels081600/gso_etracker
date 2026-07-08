@@ -52,7 +52,7 @@ $total_amount_bq = get_total_amount_BQ();
             </li>
             <li><a href="tent_tracking/tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
             <li><a href="chairs_table/tracking.php"><i class="fas fa-chair icon-size"></i> Chairs & Table</a></li>
-            <li><a href="motorpool_admin.php"><i class="fas fa-wrench icon-size"></i> Motorpool</a></li>
+            <li><a href="motorpool/motorpool_admin.php"><i class="fas fa-wrench icon-size"></i> Motorpool</a></li>
             <li><a href="transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
             <li><a href="../create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>

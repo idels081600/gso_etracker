@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/db_asset.php';
+require_once dirname(__DIR__) . '/db_asset.php';
 function get_vehicles_list()
 {
     global $conn;
@@ -230,3 +230,23 @@ function count_completed_repairs_by_office()
     return $office_counts;
 }
 
+function count_repairs_by_type($limit = 10)
+{
+    global $conn;
+
+    $query = "SELECT repair_type FROM motorpool_repair WHERE repair_type IS NOT NULL AND repair_type != ''";
+    $result = mysqli_query($conn, $query);
+    $type_counts = [];
+
+    if ($result && mysqli_num_rows($result) > 0) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $types = array_filter(array_map('trim', explode(',', $row['repair_type'] ?? '')));
+            foreach ($types as $type) {
+                $type_counts[$type] = ($type_counts[$type] ?? 0) + 1;
+            }
+        }
+    }
+
+    arsort($type_counts);
+    return array_slice($type_counts, 0, max(1, (int) $limit), true);
+}

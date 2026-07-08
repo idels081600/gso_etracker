@@ -44,16 +44,16 @@ check(str_contains($trackingSource, 'id="printModal"'), 'Tracking page must keep
 
 $mutationFiles = [
     'delete_data.php',
-    'delete_vehicle_record_motorpool.php',
-    'delete_repair_motorpool.php',
+    'motorpool/delete_vehicle_record_motorpool.php',
+    'motorpool/delete_repair_motorpool.php',
     'delete_rfq.php',
     'update_status.php',
     'tent_tracking/update_data.php',
     'update_tent_status.php',
     'update_bulk_tent_status.php',
-    'update_vehicle_record_motorpool.php',
-    'update_repair_motorpool.php',
-    'update_repair_status_motorpool.php',
+    'motorpool/update_vehicle_record_motorpool.php',
+    'motorpool/update_repair_motorpool.php',
+    'motorpool/update_repair_status_motorpool.php',
     'update_rfq_status1.php',
     'scan_data.php',
     'undo_retrieved_status.php',
@@ -65,7 +65,7 @@ foreach ($mutationFiles as $file) {
     check(str_contains($source, 'asset_require_post'), "{$file} must require POST and CSRF validation.");
 }
 
-$transactionFiles = ['update_status.php', 'tent_tracking/update_data.php', 'scan_data.php', 'add_repair_motorpool.php'];
+$transactionFiles = ['update_status.php', 'tent_tracking/update_data.php', 'scan_data.php', 'motorpool/add_repair_motorpool.php'];
 foreach ($transactionFiles as $file) {
     $source = file_get_contents($root . DIRECTORY_SEPARATOR . $file);
     check(str_contains($source, 'mysqli_begin_transaction'), "{$file} must start a transaction.");

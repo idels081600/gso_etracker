@@ -1057,3 +1057,764 @@ body {
 @media (prefers-reduced-motion: reduce) {
     * { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
+
+/* Mobile responsive pass for tent tracking */
+@media (max-width: 900px) {
+    .content {
+        padding: 24px 18px 40px !important;
+    }
+
+    .tracking-header {
+        min-height: 128px;
+        padding: 24px;
+    }
+
+    .tracking-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .tracking-stat-card {
+        min-height: 104px;
+        padding: 15px;
+    }
+
+    .tracking-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px 16px;
+    }
+
+    .tracking-actions {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .tracking-date-range,
+    .tracking-search {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .tracking-secondary-action {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 760px) {
+    body {
+        overflow-x: hidden;
+    }
+
+    .content {
+        width: 100%;
+        min-width: 0;
+        padding: 18px 12px 34px !important;
+    }
+
+    .tracking-header,
+    .tracking-panel-header,
+    .tracking-pagination {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .tracking-header {
+        gap: 18px;
+        margin-bottom: 16px;
+        padding: 22px;
+        border-radius: 12px;
+    }
+
+    .tracking-header h1 {
+        font-size: 28px !important;
+        line-height: 1.08;
+    }
+
+    .tracking-header p:not(.tracking-eyebrow) {
+        max-width: 28ch;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    .tracking-date {
+        align-self: flex-start;
+        margin-top: 0;
+    }
+
+    .tracking-alert {
+        align-items: flex-start;
+        padding: 12px;
+    }
+
+    .tracking-stats {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .tracking-stat-card {
+        width: min(100%, 320px);
+        min-height: 106px;
+        margin: 0 auto;
+        padding: 18px;
+    }
+
+    .tracking-panel {
+        border-radius: 10px;
+    }
+
+    .tracking-panel-header {
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .tracking-panel-header .tracking-primary-action {
+        width: 100%;
+        min-height: 40px;
+    }
+
+    .tracking-filter-chips {
+        width: 100%;
+        margin: 0 -2px;
+        padding: 0 2px 5px;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tracking-filter {
+        flex: 0 0 auto;
+        min-height: 36px;
+        white-space: nowrap;
+    }
+
+    .tracking-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .tracking-date-range {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .tracking-date-range-label,
+    .tracking-date-range-error,
+    .tracking-date-clear {
+        grid-column: 1 / -1;
+    }
+
+    .tracking-date-range label {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    .tracking-date-range input {
+        width: 100%;
+        height: 38px;
+        font-size: 12px;
+    }
+
+    .tracking-date-range-separator {
+        display: none;
+    }
+
+    .tracking-date-clear {
+        height: 34px;
+    }
+
+    .tracking-date-range-error {
+        position: static;
+        white-space: normal;
+    }
+
+    .tracking-search {
+        height: 40px;
+    }
+
+    .tracking-secondary-action {
+        min-height: 40px;
+        padding-right: 8px !important;
+        padding-left: 8px !important;
+        white-space: nowrap;
+    }
+
+    .tracking-pagination {
+        gap: 10px;
+        padding: 13px 16px;
+    }
+
+    #trackingPaginationButtons {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .install-modal-dialog,
+    #viewEditModal .edit-record-dialog,
+    #editStatusModal .modal-dialog,
+    #retrievedDataModal .modal-dialog,
+    #printModal .modal-dialog {
+        width: calc(100vw - 16px) !important;
+        max-width: calc(100vw - 16px) !important;
+        margin: 8px auto !important;
+    }
+
+    .install-modal-body {
+        max-height: calc(100dvh - 145px);
+        overflow-y: auto;
+        padding: 16px !important;
+    }
+
+    #detailsModal .install-simple-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    #detailsModal .install-simple-grid > .col-12 {
+        grid-column: auto;
+    }
+
+    .install-modal-footer,
+    #editStatusModal .modal-footer,
+    #retrievedDataModal .modal-footer,
+    #printModal .modal-footer {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .install-modal-footer .btn,
+    #editStatusModal .modal-footer .btn,
+    #retrievedDataModal .modal-footer .btn,
+    #printModal .modal-footer .btn {
+        width: 100%;
+    }
+
+    #viewEditModal .edit-record-header {
+        padding: 14px 16px !important;
+    }
+
+    #viewEditModal .edit-record-body {
+        max-height: calc(100dvh - 150px);
+        padding: 12px !important;
+    }
+
+    #viewEditModal .edit-record-section {
+        padding: 12px;
+    }
+
+    #viewEditModal .edit-section-heading,
+    #viewEditModal .edit-tent-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    #viewEditModal .edit-tent-search {
+        width: 100%;
+    }
+
+    #viewEditModal .edit-tent-legend {
+        justify-content: flex-start;
+    }
+
+    #viewEditModal .edit-record-columns,
+    #viewEditModal .edit-field-grid,
+    #viewEditModal .edit-assignment-summary {
+        grid-template-columns: 1fr;
+    }
+
+    #viewEditModal .edit-field-full {
+        grid-column: auto;
+    }
+
+    #viewEditModal .edit-tent-container {
+        max-height: 150px;
+        padding: 8px;
+    }
+
+    #viewEditModal .edit-tent-grid {
+        grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+        gap: 5px;
+    }
+
+    #viewEditModal .edit-record-footer {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 10px 12px !important;
+    }
+
+    #viewEditModal .edit-record-footer > div {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    #viewEditModal .edit-record-footer .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 560px) {
+    .content {
+        padding: 14px 10px 28px !important;
+    }
+
+    .tracking-header {
+        padding: 20px;
+    }
+
+    .tracking-header h1 {
+        font-size: 27px !important;
+    }
+
+    .tracking-stat-card {
+        width: min(100%, 290px);
+    }
+
+    .tracking-toolbar {
+        padding: 10px;
+    }
+
+    .tracking-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tracking-date-range,
+    .tracking-search {
+        grid-column: 1 / -1;
+    }
+
+    .tracking-table-wrap {
+        min-height: 0;
+        overflow: visible !important;
+        padding: 10px;
+        background: #f6f8f9;
+    }
+
+    .tracking-table {
+        display: block;
+        min-width: 0;
+        width: 100%;
+        border-collapse: separate;
+    }
+
+    .tracking-table thead {
+        display: none;
+    }
+
+    .tracking-table tbody {
+        display: grid;
+        gap: 12px;
+    }
+
+    .tracking-table tbody tr {
+        display: grid;
+        gap: 0;
+        padding: 12px;
+        border: 1px solid var(--tracking-border);
+        border-radius: 10px;
+        background: #fff;
+        box-shadow: 0 8px 18px rgba(16, 24, 40, 0.05);
+    }
+
+    .tracking-table tbody td {
+        display: grid;
+        grid-template-columns: 96px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        padding: 8px 0 !important;
+        border: 0 !important;
+        border-bottom: 1px solid #eef1f3 !important;
+        font-size: 12px !important;
+        text-align: right;
+        word-break: break-word;
+    }
+
+    .tracking-table tbody td:last-child {
+        border-bottom: 0 !important;
+    }
+
+    .tracking-table tbody td::before {
+        content: attr(data-label);
+        color: #667085;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-align: left;
+        text-transform: uppercase;
+    }
+
+    .tracking-table tbody td[data-label="Tent No."],
+    .tracking-table tbody td[data-label="Requestor"],
+    .tracking-table tbody td[data-label="Status"],
+    .tracking-table tbody td[data-label="Actions"] {
+        align-items: center;
+    }
+
+    .tracking-person {
+        justify-content: flex-end;
+        min-width: 0;
+    }
+
+    .tracking-person strong {
+        max-width: 170px;
+        overflow-wrap: anywhere;
+        text-align: right;
+    }
+
+    .tracking-purpose {
+        max-width: 100%;
+        white-space: normal;
+        text-align: right;
+    }
+
+    .tracking-status {
+        justify-self: end;
+        margin-bottom: 4px;
+    }
+
+    .tracking-status-select {
+        justify-self: end;
+        width: 100% !important;
+        max-width: 170px;
+        height: 34px !important;
+        margin-top: 4px;
+        padding: 5px 28px 5px 8px !important;
+        border: 1px solid #d7dce2 !important;
+        opacity: 1;
+        font-size: 12px !important;
+    }
+
+    .tracking-row-actions {
+        justify-content: flex-end;
+    }
+
+    .tracking-row-actions .btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .tracking-empty-state {
+        min-height: 180px;
+        padding: 18px;
+        border: 1px dashed #cfd6dd;
+        border-radius: 10px;
+        background: #fff;
+        text-align: center;
+    }
+}
+
+@media (max-width: 390px) {
+    .tracking-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .tracking-table tbody td {
+        grid-template-columns: 82px minmax(0, 1fr);
+    }
+
+    #viewEditModal .edit-record-footer > div {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Mobile record-card refinement */
+@media (max-width: 560px) {
+    .tracking-table-wrap {
+        padding: 8px;
+    }
+
+    .tracking-table tbody {
+        gap: 10px;
+    }
+
+    .tracking-table tbody tr {
+        overflow: hidden;
+        padding: 0;
+        border-radius: 9px;
+        box-shadow: 0 6px 14px rgba(16, 24, 40, 0.06);
+    }
+
+    .tracking-table tbody td {
+        grid-template-columns: 84px minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        min-height: 40px;
+        padding: 9px 12px !important;
+        text-align: left;
+    }
+
+    .tracking-table tbody td::before {
+        align-self: center;
+        line-height: 1.15;
+    }
+
+    .tracking-table tbody td > * {
+        min-width: 0;
+    }
+
+    .tracking-table tbody td[data-label="Tent No."] {
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        min-height: 54px;
+        padding: 12px 14px !important;
+        background: #f8fbfb;
+    }
+
+    .tracking-table tbody td[data-label="Tent No."]::before {
+        content: "Tent assignment";
+        grid-column: 1 / -1;
+        color: #157a6e;
+    }
+
+    .tracking-table tbody td[data-label="Tent No."] .tracking-tent-number {
+        display: block;
+        color: #17202a;
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1.2;
+        text-align: left;
+    }
+
+    .tracking-table tbody td[data-label="Tent No."] small {
+        align-self: center;
+        justify-self: end;
+        margin: 0;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #e0f5f2;
+        color: #157a6e;
+        font-size: 10px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .tracking-table tbody td[data-label="Requestor"] {
+        min-height: 44px;
+    }
+
+    .tracking-person {
+        justify-content: flex-start;
+    }
+
+    .tracking-person strong {
+        max-width: none;
+        text-align: left;
+    }
+
+    .tracking-table tbody td[data-label="Contact"] .tracking-contact,
+    .tracking-table tbody td[data-label="Location"],
+    .tracking-table tbody td[data-label="Installed"],
+    .tracking-table tbody td[data-label="Retrieval"],
+    .tracking-table tbody td[data-label="Days on Field"] {
+        color: #25313d !important;
+        font-weight: 650;
+    }
+
+    .tracking-purpose {
+        justify-self: start;
+        text-align: left;
+    }
+
+    .tracking-table tbody td[data-label="Days on Field"] {
+        white-space: nowrap;
+    }
+
+    .tracking-table tbody td[data-label="Days on Field"] strong {
+        display: inline;
+        margin-right: 2px;
+    }
+
+    .tracking-table tbody td[data-label="Status"] {
+        align-items: start;
+        grid-template-columns: 84px minmax(0, 1fr);
+    }
+
+    .tracking-table tbody td[data-label="Status"] .tracking-status,
+    .tracking-table tbody td[data-label="Status"] .tracking-status-select {
+        justify-self: start;
+    }
+
+    .tracking-status-select {
+        max-width: 150px;
+        margin-top: 6px;
+    }
+
+    .tracking-table tbody td[data-label="Actions"] {
+        align-items: center;
+        min-height: 52px;
+    }
+
+    .tracking-row-actions {
+        justify-content: flex-start;
+        gap: 8px;
+    }
+
+    .tracking-row-actions .btn {
+        width: 38px;
+        min-width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 390px) {
+    .tracking-table tbody td,
+    .tracking-table tbody td[data-label="Status"] {
+        grid-template-columns: 78px minmax(0, 1fr);
+    }
+
+    .tracking-table tbody td[data-label="Tent No."] {
+        grid-template-columns: 1fr;
+    }
+
+    .tracking-table tbody td[data-label="Tent No."] small {
+        justify-self: start;
+    }
+}
+
+/* Mobile record rows: consistent label/value format */
+@media (max-width: 560px) {
+    .tracking-table tbody td,
+    .tracking-table tbody td[data-label="Tent No."],
+    .tracking-table tbody td[data-label="Status"] {
+        display: grid;
+        grid-template-columns: minmax(92px, 34%) minmax(0, 1fr);
+        gap: 12px;
+        align-items: center;
+        min-height: 44px;
+        padding: 10px 12px !important;
+        background: #fff;
+        text-align: left;
+    }
+
+    .tracking-table tbody td[data-label="Tent No."] {
+        min-height: 50px;
+    }
+
+    .tracking-table tbody td[data-label="Tent No."]::before {
+        content: attr(data-label);
+        grid-column: auto;
+        color: #667085;
+    }
+
+    .tracking-table tbody td[data-label="Tent No."] .tracking-tent-number,
+    .tracking-table tbody td[data-label="Tent No."] small,
+    .tracking-table tbody td[data-label="Status"] .tracking-status,
+    .tracking-table tbody td[data-label="Status"] .tracking-status-select,
+    .tracking-row-actions {
+        justify-self: start;
+    }
+
+    .tracking-table tbody td[data-label="Tent No."] .tracking-tent-number {
+        font-size: 13px;
+    }
+
+    .tracking-table tbody td[data-label="Tent No."] small {
+        display: inline-flex;
+        width: fit-content;
+        margin-top: 4px;
+    }
+
+    .tracking-table tbody td[data-label="Location"],
+    .tracking-table tbody td[data-label="Purpose"],
+    .tracking-table tbody td[data-label="Days on Field"] {
+        word-break: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .tracking-purpose {
+        justify-self: start;
+        max-width: 100%;
+    }
+
+    .tracking-status-select {
+        width: 100% !important;
+        max-width: 160px;
+    }
+}
+
+@media (max-width: 390px) {
+    .tracking-table tbody td,
+    .tracking-table tbody td[data-label="Tent No."],
+    .tracking-table tbody td[data-label="Status"] {
+        grid-template-columns: minmax(82px, 32%) minmax(0, 1fr);
+    }
+}
+
+/* Final mobile table reset: make every record field a full-width row */
+@media (max-width: 560px) {
+    .tracking-table,
+    .tracking-table tbody,
+    .tracking-table tbody tr,
+    .tracking-table tbody td {
+        box-sizing: border-box;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .tracking-table tbody tr {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+    }
+
+    .tracking-table tbody td {
+        display: grid !important;
+        grid-template-columns: 96px minmax(0, 1fr) !important;
+        column-gap: 12px !important;
+        align-items: center !important;
+    }
+
+    .tracking-table tbody td::before {
+        min-width: 0;
+    }
+
+    .tracking-cell-value {
+        min-width: 0;
+        width: 100%;
+        color: #25313d;
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.35;
+        text-align: left;
+        overflow-wrap: anywhere;
+    }
+
+    .tracking-cell-value .tracking-tent-number {
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .tracking-cell-value small {
+        display: inline-flex;
+        width: fit-content;
+        margin: 3px 0 0;
+    }
+
+    .tracking-cell-value .tracking-status {
+        margin: 0 0 6px;
+    }
+
+    .tracking-cell-value .tracking-status-select {
+        justify-self: start;
+        width: 100% !important;
+        max-width: 170px;
+    }
+
+    .tracking-cell-value .tracking-row-actions {
+        justify-content: flex-start;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 390px) {
+    .tracking-table tbody td {
+        grid-template-columns: 82px minmax(0, 1fr) !important;
+    }
+}

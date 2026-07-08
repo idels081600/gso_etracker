@@ -181,7 +181,7 @@ if (isset($_POST['save_data'])) {
             </li>
             <li><a href="tracking.php"><i class="fas fa-campground icon-size"></i> Tent</a></li>
             <li><a href="../chairs_table/tracking.php"><i class="fas fa-chair icon-size"></i> Chairs & Table</a></li>
-            <li><a href="../motorpool_admin.php"><i class="fas fa-wrench icon-size"></i> Motorpool</a></li>
+            <li><a href="../motorpool/motorpool_admin.php"><i class="fas fa-wrench icon-size"></i> Motorpool</a></li>
             <li><a href="../transpo.php"><i class="fas fa-truck icon-size"></i> Transportation</a></li>
             <li><a href="../../create_report.php"><i class="fas fa-chart-line icon-size"></i> Report</a></li>
         </ul>
@@ -358,36 +358,30 @@ if (isset($_POST['save_data'])) {
                                 data-installed-date="<?php echo e($installedDate); ?>"
                                 data-retrieval-date="<?php echo e($retrievalDate); ?>"
                             >
-                                <td><strong class="tracking-tent-number"><?php echo e($row['tent_no'] ?: 'Unassigned'); ?></strong><small><?php echo e($row['no_of_tents']); ?> tent(s)</small></td>
-                                <td><div class="tracking-person"><span class="tracking-avatar"><?php echo e($initials); ?></span><strong><?php echo e($row['name']); ?></strong></div></td>
-                                <td><a class="tracking-contact" href="tel:<?php echo e($row['Contact_no']); ?>"><?php echo e($row['Contact_no']); ?></a></td>
-                                <td><?php echo e($row['location']); ?></td>
-                                <td><span class="tracking-purpose"><?php echo e($row['purpose']); ?></span></td>
-                                <td class="date"><?php echo e($installedDate ?: 'Not set'); ?></td>
-                                <td class="retrieval-date <?php echo $isOverdue ? 'is-overdue' : ($isDueToday ? 'is-due' : ''); ?>" data-retrieval-date="<?php echo e($retrievalDate); ?>" title="<?php echo $isOverdue ? 'Retrieval is overdue' : ($isDueToday ? 'Retrieval is due today' : 'Scheduled retrieval date'); ?>">
-                                    <?php echo e($retrievalDate ?: 'Not set'); ?>
-                                    <?php if ($isOverdue): ?><small>Overdue</small><?php elseif ($isDueToday): ?><small>Due today</small><?php endif; ?>
-                                </td>
-                                <td><strong><?php echo $daysOnField; ?></strong> day<?php echo $daysOnField === 1 ? '' : 's'; ?></td>
-                                <td>
-                                    <span class="tracking-status status-<?php echo e($filterStatus); ?>"><?php echo e($isOverdue ? 'Overdue' : $status); ?></span>
+                                <td data-label="Tent No."><div class="tracking-cell-value"><strong class="tracking-tent-number"><?php echo e($row['tent_no'] ?: 'Unassigned'); ?></strong><small><?php echo e($row['no_of_tents']); ?> tent(s)</small></div></td>
+                                <td data-label="Requestor"><div class="tracking-cell-value"><div class="tracking-person"><span class="tracking-avatar"><?php echo e($initials); ?></span><strong><?php echo e($row['name']); ?></strong></div></div></td>
+                                <td data-label="Contact"><div class="tracking-cell-value"><a class="tracking-contact" href="tel:<?php echo e($row['Contact_no']); ?>"><?php echo e($row['Contact_no']); ?></a></div></td>
+                                <td data-label="Location"><div class="tracking-cell-value"><?php echo e($row['location']); ?></div></td>
+                                <td data-label="Purpose"><div class="tracking-cell-value"><span class="tracking-purpose"><?php echo e($row['purpose']); ?></span></div></td>
+                                <td data-label="Installed" class="date"><div class="tracking-cell-value"><?php echo e($installedDate ?: 'Not set'); ?></div></td>
+                                <td data-label="Retrieval" class="retrieval-date <?php echo $isOverdue ? 'is-overdue' : ($isDueToday ? 'is-due' : ''); ?>" data-retrieval-date="<?php echo e($retrievalDate); ?>" title="<?php echo $isOverdue ? 'Retrieval is overdue' : ($isDueToday ? 'Retrieval is due today' : 'Scheduled retrieval date'); ?>"><div class="tracking-cell-value"><?php echo e($retrievalDate ?: 'Not set'); ?>
+                                    <?php if ($isOverdue): ?><small>Overdue</small><?php elseif ($isDueToday): ?><small>Due today</small><?php endif; ?></div></td>
+                                <td data-label="Days on Field"><div class="tracking-cell-value"><strong><?php echo $daysOnField; ?></strong> day<?php echo $daysOnField === 1 ? '' : 's'; ?></div></td>
+                                <td data-label="Status"><div class="tracking-cell-value"><span class="tracking-status status-<?php echo e($filterStatus); ?>"><?php echo e($isOverdue ? 'Overdue' : $status); ?></span>
                                     <select class="form-select status-dropdown tracking-status-select" name="status" aria-label="Change status for <?php echo e($row['name']); ?>">
                                         <option value="Pending" data-id="<?php echo (int) $row['id']; ?>" <?php echo $status === 'Pending' ? 'selected' : ''; ?>>Pending</option>
                                         <option value="Installed" data-id="<?php echo (int) $row['id']; ?>" <?php echo $status === 'Installed' ? 'selected' : ''; ?>>Installed</option>
                                         <option value="For Retrieval" data-id="<?php echo (int) $row['id']; ?>" <?php echo $status === 'For Retrieval' ? 'selected' : ''; ?>>For Retrieval</option>
                                         <option value="Retrieved" data-id="<?php echo (int) $row['id']; ?>" <?php echo $status === 'Retrieved' ? 'selected' : ''; ?>>Retrieved</option>
                                         <option value="Long Term" data-id="<?php echo (int) $row['id']; ?>" <?php echo $status === 'Long Term' ? 'selected' : ''; ?>>Long Term</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <div class="tracking-row-actions">
+                                    </select></div></td>
+                                <td data-label="Actions"><div class="tracking-cell-value"><div class="tracking-row-actions">
                                         <button class="btn viewButton" data-id="<?php echo (int) $row['id']; ?>" type="button" title="Edit record" aria-label="Edit <?php echo e($row['name']); ?>"><i class="fas fa-edit" aria-hidden="true"></i></button>
                                         <?php if ($status !== 'Retrieved'): ?>
                                             <button class="btn mark-retrieved-button" data-id="<?php echo (int) $row['id']; ?>" type="button" title="Mark retrieved" aria-label="Mark <?php echo e($row['name']); ?> as retrieved"><i class="fas fa-check" aria-hidden="true"></i></button>
                                         <?php endif; ?>
                                         <button class="btn deleteButton" data-id="<?php echo (int) $row['id']; ?>" type="button" title="Delete record" aria-label="Delete <?php echo e($row['name']); ?>"><i class="fas fa-trash" aria-hidden="true"></i></button>
-                                    </div>
-                                </td>
+                                    </div></div></td>
                             </tr>
                         <?php endwhile; ?>
                     </tbody>

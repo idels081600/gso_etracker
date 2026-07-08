@@ -1,20 +1,15 @@
 <?php
-require_once __DIR__ . '/app_security.php';
+require_once dirname(__DIR__) . '/app_security.php';
+require_once dirname(__DIR__) . '/api_helpers.php';
 asset_require_auth();
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
 
 try {
-    // Include database connection
-    require_once __DIR__ . '/db_asset.php';
+    require_once dirname(__DIR__) . '/db_asset.php';
 
-    // Check connection
     if (!isset($conn) || !$conn) {
-        throw new Exception("Database connection failed: " . (mysqli_connect_error() ?? "Unknown error"));
+        throw new RuntimeException('Database connection failed.');
     }
 
-    // Query to get all vehicle records
     $query = "SELECT id, plate_no, car_model, office, status, old_mileage, latest_mileage, no_of_repairs, new_repair_date, date_procured, no_dispatch FROM vehicle_records ORDER BY plate_no ASC";
     $result = mysqli_query($conn, $query);
 
@@ -22,14 +17,11 @@ try {
         throw new Exception('Unable to load vehicle records.');
     }
 
-    // Fetch all records
     $vehicles = [];
     while ($row = mysqli_fetch_assoc($result)) {
-        // Format dates
         $latest_repair_date = !empty($row['new_repair_date']) ? date('Y-m-d', strtotime($row['new_repair_date'])) : '';
         $date_procured = !empty($row['date_procured']) ? date('Y-m-d', strtotime($row['date_procured'])) : '';
 
-        // Add to vehicles array
         $vehicles[] = [
             'plate_no' => $row['plate_no'],
             'id' => $row['id'],
@@ -45,20 +37,11 @@ try {
         ];
     }
 
-    mysqli_close($conn);
-
-    // Return data as JSON
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => true,
-        'data' => $vehicles,
-        'count' => count($vehicles)
+    api_response(true, 'Vehicle records loaded.', [
+        'vehicles' => $vehicles,
+        'count' => count($vehicles),
     ]);
-} catch (Exception $e) {
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage()
-    ]);
+} catch (Throwable $error) {
+    api_database_error($error);
 }
 
