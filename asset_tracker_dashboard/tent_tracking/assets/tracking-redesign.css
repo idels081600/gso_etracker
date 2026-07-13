@@ -1818,3 +1818,372 @@ body {
         grid-template-columns: 82px minmax(0, 1fr) !important;
     }
 }
+
+/* Date-range record viewer */
+.tracking-range-modal .modal-dialog {
+    width: min(1180px, calc(100vw - 32px));
+}
+
+.tracking-range-modal .modal-content {
+    max-height: min(880px, calc(100vh - 32px));
+    border: 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.tracking-range-header {
+    align-items: flex-start;
+    padding: 18px 22px;
+    border-bottom: 1px solid #dce4ec;
+}
+
+.tracking-range-header h5 {
+    margin: 3px 0 2px;
+    color: #172033;
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.tracking-range-header p {
+    margin: 0;
+    color: #66758c;
+    font-size: .82rem;
+}
+
+.tracking-range-eyebrow {
+    color: #087d73;
+    font-size: .66rem;
+    font-weight: 850;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+}
+
+.tracking-range-body {
+    display: flex;
+    min-height: 360px;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px 22px;
+    background: #f7f9fb;
+}
+
+.tracking-range-form {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto auto;
+    gap: 10px;
+    align-items: end;
+    padding: 14px;
+    border: 1px solid #dce4ec;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.tracking-range-form label {
+    display: grid;
+    gap: 5px;
+    margin: 0;
+    color: #34435a;
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+.tracking-range-form .form-control,
+.tracking-range-form .btn {
+    min-height: 40px;
+}
+
+.tracking-range-error {
+    grid-column: 1 / -1;
+    min-height: 0;
+    color: #b42318;
+    font-size: .75rem;
+    font-weight: 700;
+}
+
+.tracking-range-error:empty {
+    display: none;
+}
+
+.tracking-range-feedback {
+    display: grid;
+    min-height: 210px;
+    place-items: center;
+    border: 1px dashed #cbd6e2;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.tracking-range-placeholder {
+    display: grid;
+    max-width: 430px;
+    justify-items: center;
+    gap: 7px;
+    padding: 30px 18px;
+    color: #66758c;
+    text-align: center;
+}
+
+.tracking-range-placeholder i {
+    color: #15998d;
+    font-size: 1.55rem;
+}
+
+.tracking-range-placeholder strong {
+    color: #26364d;
+    font-size: .95rem;
+}
+
+.tracking-range-placeholder span {
+    font-size: .8rem;
+}
+
+.tracking-range-placeholder.is-error i,
+.tracking-range-placeholder.is-error strong {
+    color: #b42318;
+}
+
+.tracking-range-results {
+    border: 1px solid #dce4ec;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.tracking-range-results-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid #dce4ec;
+}
+
+.tracking-range-results-head > div:first-child {
+    display: grid;
+    gap: 2px;
+}
+
+.tracking-range-results-head strong {
+    color: #172033;
+    font-size: .9rem;
+}
+
+.tracking-range-results-head span {
+    color: #66758c;
+    font-size: .75rem;
+}
+
+.tracking-range-result-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.tracking-range-result-actions .btn {
+    min-height: 36px;
+}
+
+.tracking-range-table-wrap {
+    max-height: 52vh;
+    overflow: auto;
+}
+
+.tracking-range-table {
+    min-width: 1020px;
+    margin: 0;
+}
+
+.tracking-range-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.tracking-range-table thead th {
+    padding: 10px 12px;
+    border-bottom: 1px solid #dce4ec;
+    background: #f1f5f8;
+    color: #536279;
+    font-size: .65rem;
+    font-weight: 850;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.tracking-range-table tbody td {
+    padding: 10px 12px;
+    border-color: #e7edf3;
+    color: #2c3a4f;
+    font-size: .76rem;
+    vertical-align: top;
+}
+
+.tracking-range-table tbody tr:hover td {
+    background: #f8fbfb;
+}
+
+.tracking-range-cell-value {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.tracking-range-table .range-status .tracking-range-cell-value {
+    display: inline-flex;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #eef2f6;
+    color: #46556b;
+    font-size: .68rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.tracking-range-table .status-installed .tracking-range-cell-value {
+    background: #dcf7ef;
+    color: #087d67;
+}
+
+.tracking-range-table .status-pending .tracking-range-cell-value {
+    background: #fff1cf;
+    color: #946200;
+}
+
+.tracking-range-table .status-for-retrieval .tracking-range-cell-value {
+    background: #e1efff;
+    color: #1d5f9d;
+}
+
+.tracking-range-table .status-overdue .tracking-range-cell-value {
+    background: #fde4e6;
+    color: #ad252c;
+}
+
+.tracking-range-footer {
+    padding: 10px 22px;
+    border-top: 1px solid #dce4ec;
+}
+
+@media (max-width: 760px) {
+    .tracking-range-modal .modal-dialog {
+        width: 100%;
+        max-width: none;
+        height: 100%;
+        margin: 0;
+    }
+
+    .tracking-range-modal .modal-content {
+        height: 100%;
+        max-height: none;
+        border-radius: 0;
+    }
+
+    .tracking-range-header,
+    .tracking-range-body {
+        padding-right: 14px;
+        padding-left: 14px;
+    }
+
+    .tracking-range-form {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .tracking-range-form .tracking-range-clear,
+    .tracking-range-form .tracking-primary-action {
+        width: 100%;
+    }
+
+    .tracking-range-results-head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .tracking-range-result-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .tracking-range-table-wrap {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .tracking-range-table,
+    .tracking-range-table tbody,
+    .tracking-range-table tbody tr,
+    .tracking-range-table tbody td {
+        display: block;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .tracking-range-table thead {
+        display: none;
+    }
+
+    .tracking-range-table tbody {
+        display: grid;
+        gap: 10px;
+        padding: 10px;
+        background: #f2f5f8;
+    }
+
+    .tracking-range-table tbody tr {
+        padding: 7px 12px;
+        border: 1px solid #dce4ec;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .tracking-range-table tbody td {
+        display: grid;
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        padding: 8px 0;
+        border-bottom: 1px solid #edf1f5;
+    }
+
+    .tracking-range-table tbody td:last-child {
+        border-bottom: 0;
+    }
+
+    .tracking-range-table tbody td::before {
+        content: attr(data-label);
+        color: #65738a;
+        font-size: .62rem;
+        font-weight: 850;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .tracking-range-table .range-status .tracking-range-cell-value {
+        justify-self: start;
+    }
+
+    .tracking-range-footer .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 430px) {
+    .tracking-range-form {
+        grid-template-columns: 1fr;
+    }
+
+    .tracking-range-error {
+        grid-column: 1;
+    }
+
+    .tracking-range-result-actions {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tracking-range-modal *,
+    .tracking-range-modal *::before,
+    .tracking-range-modal *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+    }
+}

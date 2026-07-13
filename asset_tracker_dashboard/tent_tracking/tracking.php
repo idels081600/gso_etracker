@@ -286,27 +286,12 @@ if (isset($_POST['save_data'])) {
                     <button type="button" class="tracking-filter" data-filter="overdue" aria-pressed="false">Overdue</button>
                 </div>
                 <div class="tracking-actions">
-                    <div class="tracking-date-range" role="group" aria-labelledby="trackingDateRangeLabel">
-                        <span class="tracking-date-range-label" id="trackingDateRangeLabel">
-                            <i class="far fa-calendar-alt" aria-hidden="true"></i>
-                            Installation date
-                        </span>
-                        <label for="date-filter-from">
-                            <span>From</span>
-                            <input type="date" id="date-filter-from">
-                        </label>
-                        <span class="tracking-date-range-separator" aria-hidden="true">to</span>
-                        <label for="date-filter-to">
-                            <span>To</span>
-                            <input type="date" id="date-filter-to">
-                        </label>
-                        <button type="button" class="tracking-date-clear" id="clear-date-filter" disabled>Clear</button>
-                        <small class="tracking-date-range-error" id="date-filter-error" aria-live="polite"></small>
-                    </div>
+
                     <label class="tracking-search" for="search-input">
                         <i class="fas fa-search" aria-hidden="true"></i>
                         <input type="search" id="search-input" placeholder="Search records" autocomplete="off">
                     </label>
+                    <button class="btn tracking-secondary-action" id="dateRangeViewerButton" type="button" data-bs-toggle="modal" data-bs-target="#dateRangeViewerModal"><i class="far fa-calendar-alt" aria-hidden="true"></i> View by Date Range</button>
                     <button class="btn tracking-secondary-action" id="editStatusButton" type="button" data-bs-toggle="modal" data-bs-target="#editStatusModal"><i class="fas fa-edit" aria-hidden="true"></i> Edit Status</button>
                     <button class="btn tracking-secondary-action" id="printButton" type="button" data-bs-toggle="modal" data-bs-target="#printModal"><i class="fas fa-print" aria-hidden="true"></i> Print</button>
                     <a class="btn tracking-secondary-action" href="../export_tents_csv.php"><i class="fas fa-download" aria-hidden="true"></i> Export CSV</a>
@@ -389,7 +374,7 @@ if (isset($_POST['save_data'])) {
                 <div class="tracking-empty-state" id="trackingEmptyState" hidden>
                     <i class="fas fa-search" aria-hidden="true"></i>
                     <strong>No matching records</strong>
-                    <span>Try another search, status, or installation date range.</span>
+                    <span>Try another search or status.</span>
                 </div>
             </div>
             <footer class="tracking-pagination">
@@ -399,6 +384,77 @@ if (isset($_POST['save_data'])) {
         </section>
     </div>
 
+    <div class="modal fade tracking-range-modal" id="dateRangeViewerModal" tabindex="-1" aria-labelledby="dateRangeViewerTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header tracking-range-header">
+                    <div>
+                        <span class="tracking-range-eyebrow">Installation Records</span>
+                        <h5 class="modal-title" id="dateRangeViewerTitle">View Deployments by Date Range</h5>
+                        <p>Load every deployment installed within the selected dates.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body tracking-range-body">
+                    <form id="dateRangeViewerForm" class="tracking-range-form" novalidate>
+                        <label for="range-viewer-from">
+                            <span>From</span>
+                            <input class="form-control" type="date" id="range-viewer-from" name="from" required>
+                        </label>
+                        <label for="range-viewer-to">
+                            <span>To</span>
+                            <input class="form-control" type="date" id="range-viewer-to" name="to" required>
+                        </label>
+                        <button type="button" class="btn btn-light tracking-range-clear" id="range-viewer-clear" disabled>Clear</button>
+                        <button type="submit" class="btn tracking-primary-action" id="range-viewer-submit"><i class="fas fa-search" aria-hidden="true"></i> Show Records</button>
+                        <small class="tracking-range-error" id="range-viewer-error" aria-live="polite"></small>
+                    </form>
+
+                    <div class="tracking-range-feedback" id="range-viewer-feedback" aria-live="polite">
+                        <div class="tracking-range-placeholder">
+                            <i class="far fa-calendar-check" aria-hidden="true"></i>
+                            <strong>Select an installation date range</strong>
+                            <span>All matching records will appear here without pagination.</span>
+                        </div>
+                    </div>
+
+                    <section class="tracking-range-results" id="range-viewer-results" hidden aria-labelledby="range-viewer-summary">
+                        <div class="tracking-range-results-head">
+                            <div>
+                                <strong id="range-viewer-summary">0 records</strong>
+                                <span id="range-viewer-caption"></span>
+                            </div>
+                            <div class="tracking-range-result-actions">
+                                <button type="button" class="btn tracking-secondary-action" id="range-viewer-print"><i class="fas fa-print" aria-hidden="true"></i> Print</button>
+                                <button type="button" class="btn tracking-secondary-action" id="range-viewer-export"><i class="fas fa-download" aria-hidden="true"></i> Export CSV</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive tracking-range-table-wrap">
+                            <table class="table tracking-range-table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Tent No.</th>
+                                        <th scope="col">Requestor</th>
+                                        <th scope="col">Contact</th>
+                                        <th scope="col">Location</th>
+                                        <th scope="col">Purpose</th>
+                                        <th scope="col">Installed</th>
+                                        <th scope="col">Retrieval</th>
+                                        <th scope="col">Days</th>
+                                        <th scope="col">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="range-viewer-table-body"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+                <div class="modal-footer tracking-range-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="modal fade" id="viewEditModal" tabindex="-1" aria-labelledby="viewEditModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl edit-record-dialog">
             <div class="modal-content edit-record-content">
@@ -1105,3 +1161,4 @@ if (isset($_POST['save_data'])) {
 </body>
 
 </html>
+
