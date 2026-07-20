@@ -140,6 +140,66 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             gap: 0.25rem;
             margin-bottom: 0.1rem;
         }
+        .vehicle-combobox {
+            position: relative;
+        }
+        .vehicle-suggestion-menu {
+            background: #fff;
+            border: 1px solid #d8dee6;
+            border-radius: 8px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+            display: none;
+            left: 0;
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 0.35rem;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.35rem);
+            z-index: 1060;
+        }
+        .vehicle-suggestion-menu.show {
+            display: block;
+        }
+        .vehicle-suggestion-item,
+        .vehicle-suggestion-empty {
+            border: 0;
+            border-radius: 6px;
+            color: #212529;
+            display: block;
+            padding: 0.55rem 0.65rem;
+            text-align: left;
+            width: 100%;
+        }
+        .vehicle-suggestion-item {
+            background: transparent;
+            cursor: pointer;
+        }
+        .vehicle-suggestion-item:hover,
+        .vehicle-suggestion-item:focus {
+            background: #f1f5f9;
+            outline: 0;
+        }
+        .vehicle-suggestion-plate {
+            display: block;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .vehicle-suggestion-meta {
+            color: #64748b;
+            display: block;
+            font-size: 0.82rem;
+            line-height: 1.35;
+            margin-top: 0.15rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .vehicle-suggestion-empty {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.88rem;
+        }
 
         /* ---------- Mini Calendar ---------- */
         .mini-calendar {
@@ -1491,18 +1551,12 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                 <input type="text" class="form-control" id="createSerialNo" value="<?php echo htmlspecialchars($serialNo); ?>" readonly>
                             </div>
                             <div class="col-md-6">
-                                <label for="createVehicle" class="form-label">Vehicle</label>
-                                <select class="form-select" id="createVehicle" required>
-                                    <option value="">Select vehicle</option>
-                                    <?php foreach ($vehicles as $vehicle): ?>
-                                        <option value="<?php echo htmlspecialchars((string) $vehicle['id']); ?>"
-                                            data-office="<?php echo htmlspecialchars((string) ($vehicle['office'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-driver="<?php echo htmlspecialchars((string) ($vehicle['driver_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-fuel-type="<?php echo htmlspecialchars(str_contains(strtolower((string) ($vehicle['fuel_type'] ?? '')), 'diesel') ? 'diesel' : 'unleaded', ENT_QUOTES, 'UTF-8'); ?>">
-                                            <?php echo htmlspecialchars($vehicle['plate_no'] . ' - ' . $vehicle['type_of_vehicle']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <label for="createVehicleSearch" class="form-label">Vehicle</label>
+                                <div class="vehicle-combobox">
+                                    <input type="text" class="form-control" id="createVehicleSearch" placeholder="Search plate no, vehicle, or office" autocomplete="off" required>
+                                    <input type="hidden" id="createVehicle" required>
+                                    <div class="vehicle-suggestion-menu" id="createVehicleSuggestions" role="listbox" aria-label="Vehicle suggestions"></div>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label for="createOffice" class="form-label">Office</label>
@@ -2310,21 +2364,87 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             });
         }
 
+        var createDriverAutoFilled = false;
+
         function updateCreateOfficeFromVehicle() {
-            var vehicleSelect = document.getElementById('createVehicle');
-            var selectedOption = vehicleSelect.options[vehicleSelect.selectedIndex];
-            document.getElementById('createOffice').value = selectedOption ? (selectedOption.dataset.office || '') : '';
+            var vehicle = getVehicleById(document.getElementById('createVehicle').value);
+            document.getElementById('createOffice').value = vehicle ? (vehicle.office || '') : '';
             var createDriver = document.getElementById('createDriver');
-            if (createDriver && !createDriver.value.trim()) {
-                createDriver.value = selectedOption ? (selectedOption.dataset.driver || '') : '';
+            if (createDriver && (!createDriver.value.trim() || createDriverAutoFilled)) {
+                createDriver.value = vehicle ? (vehicle.driver_name || '') : '';
+                createDriverAutoFilled = Boolean(vehicle && vehicle.driver_name);
             }
         }
 
         function getCreateFuelTypeFromVehicle() {
-            var vehicleSelect = document.getElementById('createVehicle');
-            var selectedOption = vehicleSelect.options[vehicleSelect.selectedIndex];
-            var fuelType = normalizeFuelType(selectedOption ? (selectedOption.dataset.fuelType || 'unleaded') : 'unleaded');
+            var vehicle = getVehicleById(document.getElementById('createVehicle').value);
+            var fuelType = normalizeFuelType(vehicle ? (vehicle.fuel_type || 'unleaded') : 'unleaded');
             return fuelType.charAt(0).toUpperCase() + fuelType.slice(1).toLowerCase();
+        }
+
+        function createVehicleLabel(vehicle) {
+            var plate = String(vehicle.plate_no || '').trim();
+            var type = String(vehicle.type_of_vehicle || '').trim();
+            return type ? plate + ' - ' + type : plate;
+        }
+
+        function vehicleSearchText(vehicle) {
+            return [
+                vehicle.plate_no,
+                vehicle.type_of_vehicle,
+                vehicle.office,
+                vehicle.driver_name
+            ].join(' ').toLowerCase();
+        }
+
+        function renderCreateVehicleSuggestions(query) {
+            var menu = document.getElementById('createVehicleSuggestions');
+            var trimmed = String(query || '').trim().toLowerCase();
+            var matches = vehicleData.filter(function(vehicle) {
+                return trimmed === '' || vehicleSearchText(vehicle).indexOf(trimmed) !== -1;
+            }).slice(0, 12);
+
+            if (matches.length === 0) {
+                menu.innerHTML = '<div class="vehicle-suggestion-empty">No vehicle found. Try a plate no, vehicle name, or office.</div>';
+                menu.classList.add('show');
+                return;
+            }
+
+            menu.innerHTML = matches.map(function(vehicle) {
+                var meta = [
+                    vehicle.type_of_vehicle || 'No vehicle name',
+                    vehicle.office || 'No office',
+                    vehicle.driver_name || 'No driver'
+                ].join(' | ');
+                return '<button type="button" class="vehicle-suggestion-item" role="option" data-vehicle-id="' + calendarEscape(vehicle.id) + '">' +
+                    '<span class="vehicle-suggestion-plate">' + calendarEscape(vehicle.plate_no || 'No plate') + '</span>' +
+                    '<span class="vehicle-suggestion-meta">' + calendarEscape(meta) + '</span>' +
+                '</button>';
+            }).join('');
+            menu.classList.add('show');
+        }
+
+        function clearCreateVehicleSelection() {
+            document.getElementById('createVehicle').value = '';
+            document.getElementById('createOffice').value = '';
+            var createDriver = document.getElementById('createDriver');
+            if (createDriver && createDriverAutoFilled) {
+                createDriver.value = '';
+                createDriverAutoFilled = false;
+            }
+        }
+
+        function selectCreateVehicle(vehicle) {
+            if (!vehicle) {
+                clearCreateVehicleSelection();
+                return;
+            }
+
+            document.getElementById('createVehicle').value = vehicle.id;
+            document.getElementById('createVehicleSearch').value = createVehicleLabel(vehicle);
+            document.getElementById('createVehicleSearch').setCustomValidity('');
+            document.getElementById('createVehicleSuggestions').classList.remove('show');
+            updateCreateOfficeFromVehicle();
         }
 
         function normalizeFuelType(value) {
@@ -2516,6 +2636,13 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
 
         document.getElementById('createIssuanceBtn').addEventListener('click', function() {
             var form = document.getElementById('createIssuanceForm');
+            var vehicleInput = document.getElementById('createVehicle');
+            var vehicleSearch = document.getElementById('createVehicleSearch');
+            if (!vehicleInput.value) {
+                vehicleSearch.setCustomValidity('Please select a vehicle from the suggestions.');
+            } else {
+                vehicleSearch.setCustomValidity('');
+            }
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
@@ -2537,8 +2664,33 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             }, this);
         });
 
-        document.getElementById('createVehicle').addEventListener('change', updateCreateOfficeFromVehicle);
-        document.getElementById('createIssuanceModal').addEventListener('shown.bs.modal', updateCreateOfficeFromVehicle);
+        document.getElementById('createDriver').addEventListener('input', function() {
+            createDriverAutoFilled = false;
+        });
+        document.getElementById('createVehicleSearch').addEventListener('input', function() {
+            clearCreateVehicleSelection();
+            this.setCustomValidity('');
+            renderCreateVehicleSuggestions(this.value);
+        });
+        document.getElementById('createVehicleSearch').addEventListener('focus', function() {
+            renderCreateVehicleSuggestions(this.value);
+        });
+        document.getElementById('createVehicleSuggestions').addEventListener('mousedown', function(event) {
+            var item = event.target.closest('.vehicle-suggestion-item');
+            if (!item) {
+                return;
+            }
+            event.preventDefault();
+            selectCreateVehicle(getVehicleById(item.dataset.vehicleId));
+        });
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.vehicle-combobox')) {
+                document.getElementById('createVehicleSuggestions').classList.remove('show');
+            }
+        });
+        document.getElementById('createIssuanceModal').addEventListener('shown.bs.modal', function() {
+            document.getElementById('createVehicleSearch').focus();
+        });
         document.querySelectorAll('.schedule-option').forEach(function(option) {
             option.addEventListener('change', function() {
                 handleScheduleOptionChange(option);

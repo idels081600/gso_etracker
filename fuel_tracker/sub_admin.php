@@ -2,7 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/auth_guard.php';
-requireFuelRole('coa_admin');
+requireFuelRole(['coa_admin', 'fuel_admin']);
+$currentFuelRole = fuelAuthRole();
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
@@ -106,6 +107,74 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             grid-template-columns: minmax(210px, 1fr) minmax(190px, 240px) repeat(2, minmax(145px, 170px)) repeat(4, auto);
         }
 
+        .vehicle-filter-combobox {
+            position: relative;
+        }
+
+        .vehicle-filter-menu {
+            background: #fff;
+            border: 1px solid #d8dee6;
+            border-radius: 8px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+            display: none;
+            left: 0;
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 0.35rem;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.35rem);
+            z-index: 1060;
+        }
+
+        .vehicle-filter-menu.show {
+            display: block;
+        }
+
+        .vehicle-filter-option,
+        .vehicle-filter-empty {
+            border: 0;
+            border-radius: 6px;
+            color: #212529;
+            display: block;
+            padding: 0.55rem 0.65rem;
+            text-align: left;
+            width: 100%;
+        }
+
+        .vehicle-filter-option {
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .vehicle-filter-option:hover,
+        .vehicle-filter-option:focus {
+            background: #f1f5f9;
+            outline: 0;
+        }
+
+        .vehicle-filter-plate {
+            display: block;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .vehicle-filter-meta {
+            color: #64748b;
+            display: block;
+            font-size: 0.82rem;
+            line-height: 1.35;
+            margin-top: 0.15rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .vehicle-filter-empty {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.88rem;
+        }
         .sub-table-card {
             border: 0;
             border-radius: 8px;
@@ -404,6 +473,61 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
 </head>
 
 <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm" aria-label="Fuel Tracker navigation">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="<?php echo $currentFuelRole === 'fuel_admin' ? 'fuel_dashboard.php' : 'sub_admin.php'; ?>">
+                <i class="fas fa-gas-pump text-primary me-2"></i>
+                <span class="fw-bold text-dark">Fuel Tracker</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#fuelTrackerNav"
+                aria-controls="fuelTrackerNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="fuelTrackerNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <?php if ($currentFuelRole === 'fuel_admin'): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="fuel_dashboard.php">
+                                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="gas_issuance.php">
+                                <i class="fas fa-receipt me-1"></i>Gas Issuance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="private_gas_issuance.php">
+                                <i class="fas fa-car-side me-1"></i>Private Issuance
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="sub_admin.php">
+                            <i class="fas fa-print me-1"></i>Print Desk
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="printDeskUserDropdown"
+                        role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="../logo.png" alt="User" class="rounded-circle me-2" width="32" height="32">
+                        <span class="text-dark"><?php echo htmlspecialchars((string) ($_SESSION['pay_name'] ?? 'User'), ENT_QUOTES, 'UTF-8'); ?></span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="printDeskUserDropdown">
+                        <li>
+                            <a class="dropdown-item" href="../logout.php">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
     <main class="container-fluid sub-admin-shell py-4">
         <section class="sub-admin-hero shadow-sm mb-4">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
@@ -416,6 +540,11 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                     <span class="badge bg-white text-success px-3 py-2">
                         <i class="fas fa-check-circle me-1"></i>Used Records
                     </span>
+                    <?php if ($currentFuelRole === 'fuel_admin'): ?>
+                        <a href="fuel_dashboard.php" class="btn btn-light text-primary fw-semibold">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                    <?php endif; ?>
                     <a href="../logout.php" class="btn btn-light text-danger fw-semibold">
                         <i class="fas fa-sign-out-alt me-1"></i>Logout
                     </a>
@@ -457,15 +586,12 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                         </div>
                     </div>
                     <div>
-                        <label for="vehicleFilter" class="form-label small fw-bold text-muted">Vehicle</label>
-                        <select class="form-select" id="vehicleFilter">
-                            <option value="">All vehicles</option>
-                            <?php foreach ($approvedVehicles as $plate => $label): ?>
-                                <option value="<?php echo htmlspecialchars($plate, ENT_QUOTES, 'UTF-8'); ?>">
-                                    <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                        <label for="vehicleFilterSearch" class="form-label small fw-bold text-muted">Vehicle</label>
+                        <div class="vehicle-filter-combobox">
+                            <input type="text" class="form-control" id="vehicleFilterSearch" placeholder="Search vehicle..." autocomplete="off">
+                            <input type="hidden" id="vehicleFilter" value="">
+                            <div class="vehicle-filter-menu" id="vehicleFilterSuggestions" role="listbox" aria-label="Vehicle filter suggestions"></div>
+                        </div>
                     </div>
                     <div>
                         <label for="dateFromFilter" class="form-label small fw-bold text-muted">Date from</label>
@@ -798,6 +924,92 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                     "'": '&#039;'
                 }[character];
             });
+        }
+
+        function vehicleFilterLabel(vehicle) {
+            var plate = String(vehicle.plate_no || '').trim();
+            var type = String(vehicle.vehicle_type || '').trim();
+            return type ? plate + ' - ' + type : plate;
+        }
+
+        function uniqueVehicleFilterOptions() {
+            var vehicles = {};
+            approvedIssuances.forEach(function(item) {
+                var plate = String(item.plate_no || '').trim();
+                if (!plate || vehicles[plate]) {
+                    return;
+                }
+                vehicles[plate] = {
+                    plate_no: plate,
+                    vehicle_type: item.vehicle_type || '',
+                    driver_name: item.driver_name || '',
+                    office: item.office || ''
+                };
+            });
+
+            return Object.keys(vehicles).sort().map(function(plate) {
+                return vehicles[plate];
+            });
+        }
+
+        var vehicleFilterOptions = uniqueVehicleFilterOptions();
+
+        function vehicleFilterSearchText(vehicle) {
+            return [
+                vehicle.plate_no,
+                vehicle.vehicle_type,
+                vehicle.driver_name,
+                vehicle.office
+            ].join(' ').toLowerCase();
+        }
+
+        function renderVehicleFilterSuggestions(query) {
+            var menu = document.getElementById('vehicleFilterSuggestions');
+            var trimmed = String(query || '').trim().toLowerCase();
+            var matches = vehicleFilterOptions.filter(function(vehicle) {
+                return trimmed === '' || vehicleFilterSearchText(vehicle).indexOf(trimmed) !== -1;
+            }).slice(0, 12);
+
+            var allButton = '<button type="button" class="vehicle-filter-option" role="option" data-plate="">' +
+                '<span class="vehicle-filter-plate">All vehicles</span>' +
+                '<span class="vehicle-filter-meta">Clear vehicle filter</span>' +
+            '</button>';
+
+            if (matches.length === 0) {
+                menu.innerHTML = allButton + '<div class="vehicle-filter-empty">No vehicle found. Try a plate no, vehicle name, driver, or office.</div>';
+                menu.classList.add('show');
+                return;
+            }
+
+            menu.innerHTML = allButton + matches.map(function(vehicle) {
+                var meta = [
+                    vehicle.vehicle_type || 'No vehicle name',
+                    vehicle.office || 'No office',
+                    vehicle.driver_name || 'No driver'
+                ].join(' | ');
+                return '<button type="button" class="vehicle-filter-option" role="option" data-plate="' + escapeHtml(vehicle.plate_no) + '">' +
+                    '<span class="vehicle-filter-plate">' + escapeHtml(vehicle.plate_no || 'No plate') + '</span>' +
+                    '<span class="vehicle-filter-meta">' + escapeHtml(meta) + '</span>' +
+                '</button>';
+            }).join('');
+            menu.classList.add('show');
+        }
+
+        function clearVehicleFilter() {
+            document.getElementById('vehicleFilter').value = '';
+            document.getElementById('vehicleFilterSearch').value = '';
+            document.getElementById('vehicleFilterSuggestions').classList.remove('show');
+        }
+
+        function selectVehicleFilter(plate) {
+            var selected = vehicleFilterOptions.find(function(vehicle) {
+                return String(vehicle.plate_no) === String(plate);
+            });
+
+            document.getElementById('vehicleFilter').value = selected ? selected.plate_no : '';
+            document.getElementById('vehicleFilterSearch').value = selected ? vehicleFilterLabel(selected) : '';
+            document.getElementById('vehicleFilterSuggestions').classList.remove('show');
+            applyFilters();
         }
 
         function formatLiters(value) {
@@ -1198,7 +1410,45 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                 .filter(Boolean);
         }
 
-        function formatMonthlyLabel(items) {
+        function formatMonthlyRangeLabel(startDate, endDate) {
+            if (!startDate && !endDate) {
+                return '';
+            }
+            if (!startDate) {
+                startDate = endDate;
+            }
+            if (!endDate) {
+                endDate = startDate;
+            }
+
+            var first = new Date(startDate + 'T00:00:00');
+            var last = new Date(endDate + 'T00:00:00');
+            if (Number.isNaN(first.getTime()) || Number.isNaN(last.getTime())) {
+                return startDate === endDate ? startDate : startDate + ' - ' + endDate;
+            }
+            if (first > last) {
+                var temporary = first;
+                first = last;
+                last = temporary;
+            }
+
+            var firstMonth = first.toLocaleString('en-US', { month: 'long' }).toUpperCase();
+            var lastMonth = last.toLocaleString('en-US', { month: 'long' }).toUpperCase();
+            if (first.toDateString() === last.toDateString()) {
+                return firstMonth + ' ' + first.getDate() + ', ' + first.getFullYear();
+            }
+            if (first.getFullYear() === last.getFullYear() && first.getMonth() === last.getMonth()) {
+                return firstMonth + ' ' + first.getDate() + ' - ' + lastMonth + ' ' + last.getDate() + ', ' + first.getFullYear();
+            }
+
+            return firstMonth + ' ' + first.getDate() + ', ' + first.getFullYear() + ' - ' + lastMonth + ' ' + last.getDate() + ', ' + last.getFullYear();
+        }
+
+        function formatMonthlyLabel(items, startDate, endDate) {
+            if (startDate || endDate) {
+                return formatMonthlyRangeLabel(startDate, endDate);
+            }
+
             var dates = items.map(function(item) {
                 return item.date || '';
             }).filter(Boolean).sort();
@@ -1207,15 +1457,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                 return '';
             }
 
-            var first = new Date(dates[0] + 'T00:00:00');
-            var last = new Date(dates[dates.length - 1] + 'T00:00:00');
-            var monthName = first.toLocaleString('en-US', { month: 'long' }).toUpperCase();
-
-            if (first.getFullYear() === last.getFullYear() && first.getMonth() === last.getMonth()) {
-                return monthName + ' ' + first.getDate() + '-' + last.getDate() + ', ' + first.getFullYear();
-            }
-
-            return dates[0] + ' - ' + dates[dates.length - 1];
+            return formatMonthlyRangeLabel(dates[0], dates[dates.length - 1]);
         }
 
         function buildMonthlyFormBParams(items) {
@@ -1223,11 +1465,15 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             var ids = items.map(function(item) {
                 return item.id;
             }).filter(Boolean);
+            var startDate = document.getElementById('dateFromFilter').value || '';
+            var endDate = document.getElementById('dateToFilter').value || '';
 
             return new URLSearchParams({
                 vehicle: first.vehicle_type || '',
                 plate_no: first.plate_no || '',
-                date: formatMonthlyLabel(items),
+                date: formatMonthlyLabel(items, startDate, endDate),
+                start_date: startDate,
+                end_date: endDate,
                 driver: first.driver_name || '',
                 issuance_ids: ids.join(',')
             });
@@ -1309,13 +1555,14 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
         function applyFilters() {
             var query = document.getElementById('subAdminSearch').value.trim().toLowerCase();
             var vehicle = document.getElementById('vehicleFilter').value;
+            var vehicleQuery = document.getElementById('vehicleFilterSearch').value.trim().toLowerCase();
             var dateFrom = document.getElementById('dateFromFilter').value;
             var dateTo = document.getElementById('dateToFilter').value;
             var rows = Array.from(document.querySelectorAll('#subAdminTableBody tr[data-search]'));
 
             rows.forEach(function(row) {
                 var matchesQuery = !query || row.dataset.search.indexOf(query) !== -1;
-                var matchesVehicle = !vehicle || row.dataset.plate === vehicle;
+                var matchesVehicle = vehicle ? row.dataset.plate === vehicle : (!vehicleQuery || row.dataset.search.indexOf(vehicleQuery) !== -1);
                 var rowDate = row.dataset.date || '';
                 var matchesFrom = !dateFrom || (rowDate && rowDate >= dateFrom);
                 var matchesTo = !dateTo || (rowDate && rowDate <= dateTo);
@@ -1334,12 +1581,32 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
         }
 
         document.getElementById('subAdminSearch').addEventListener('input', applyFilters);
-        document.getElementById('vehicleFilter').addEventListener('change', applyFilters);
+        document.getElementById('vehicleFilterSearch').addEventListener('input', function() {
+            document.getElementById('vehicleFilter').value = '';
+            renderVehicleFilterSuggestions(this.value);
+            applyFilters();
+        });
+        document.getElementById('vehicleFilterSearch').addEventListener('focus', function() {
+            renderVehicleFilterSuggestions(this.value);
+        });
+        document.getElementById('vehicleFilterSuggestions').addEventListener('mousedown', function(event) {
+            var item = event.target.closest('.vehicle-filter-option');
+            if (!item) {
+                return;
+            }
+            event.preventDefault();
+            selectVehicleFilter(item.dataset.plate || '');
+        });
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.vehicle-filter-combobox')) {
+                document.getElementById('vehicleFilterSuggestions').classList.remove('show');
+            }
+        });
         document.getElementById('dateFromFilter').addEventListener('change', applyFilters);
         document.getElementById('dateToFilter').addEventListener('change', applyFilters);
         document.getElementById('clearFiltersBtn').addEventListener('click', function() {
             document.getElementById('subAdminSearch').value = '';
-            document.getElementById('vehicleFilter').value = '';
+            clearVehicleFilter();
             document.getElementById('dateFromFilter').value = '';
             document.getElementById('dateToFilter').value = '';
             applyFilters();
