@@ -104,7 +104,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             align-items: end;
             display: grid;
             gap: 0.75rem;
-            grid-template-columns: minmax(210px, 1fr) minmax(190px, 240px) repeat(2, minmax(145px, 170px)) repeat(4, auto);
+            grid-template-columns: minmax(210px, 1fr) minmax(190px, 240px) repeat(2, minmax(145px, 170px)) repeat(6, auto);
         }
 
         .vehicle-filter-combobox {
@@ -607,6 +607,9 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                     <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#fuelSummaryModal">
                         <i class="fas fa-gas-pump me-1"></i>Fuel Summary
                     </button>
+                    <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#odometerHistoryModal">
+                        <i class="fas fa-gauge-high me-1"></i>Odometer History
+                    </button>
                     <button type="button" class="btn btn-success" id="printSelectedTripsBtn" disabled>
                         <i class="fas fa-route me-1"></i>Print Selected Trips
                     </button>
@@ -814,6 +817,41 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
         </div>
     </div>
 
+    <div class="modal fade" id="odometerHistoryModal" tabindex="-1" aria-labelledby="odometerHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="odometerHistoryModalLabel">
+                        <i class="fas fa-gauge-high me-2"></i>Export Odometer History
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label for="odometerHistoryMonth" class="form-label">Month</label>
+                            <input type="month" class="form-control" id="odometerHistoryMonth" required>
+                        </div>
+                        <div class="col-md-7">
+                            <label for="odometerHistoryVehicle" class="form-label">Vehicle</label>
+                            <select class="form-select" id="odometerHistoryVehicle">
+                                <option value="">All fueled vehicles for selected month</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="alert alert-light border small mt-3 mb-0" id="odometerHistoryHelp">
+                        Select a month to load vehicles with uploaded odometer history. Leave Vehicle as all to export every fueled vehicle for that month.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-dark" id="exportOdometerHistoryBtn">
+                        <i class="fas fa-file-csv me-1"></i>Export CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="modal fade" id="coaOdometerModal" tabindex="-1" aria-labelledby="coaOdometerModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
@@ -1019,6 +1057,69 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             });
         }
 
+        function currentMonthValue() {
+            var now = new Date();
+            return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+        }
+
+        function setOdometerHistoryHelp(message, type) {
+            var help = document.getElementById('odometerHistoryHelp');
+            if (!help) {
+                return;
+            }
+            help.className = 'alert small mt-3 mb-0 alert-' + (type || 'light') + (type ? '' : ' border');
+            help.textContent = message;
+        }
+
+        async function loadOdometerHistoryVehicles() {
+            var monthInput = document.getElementById('odometerHistoryMonth');
+            var vehicleSelect = document.getElementById('odometerHistoryVehicle');
+            if (!monthInput || !vehicleSelect) {
+                return;
+            }
+
+            var month = monthInput.value || currentMonthValue();
+            monthInput.value = month;
+            vehicleSelect.disabled = true;
+            vehicleSelect.innerHTML = '<option value="">Loading fueled vehicles...</option>';
+            setOdometerHistoryHelp('Loading vehicles with uploaded odometer history for ' + month + '.', 'light');
+
+            try {
+                var params = new URLSearchParams({ month: month, scope: 'all' });
+                var response = await fetch('api_odometer_history_vehicles.php?' + params.toString(), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                var payload = await response.json();
+                if (!response.ok || !payload.success) {
+                    throw new Error(payload.message || 'Unable to load vehicles.');
+                }
+
+                var options = ['<option value="">All fueled vehicles for selected month</option>'];
+                (payload.vehicles || []).forEach(function(vehicle) {
+                    var label = [vehicle.plate_no || 'No plate', vehicle.vehicle_name || 'Vehicle'].join(' - ');
+                    var meta = [vehicle.office || '', vehicle.scope || 'government'].filter(Boolean).join(' | ');
+                    options.push('<option value="' + escapeHtml(vehicle.plate_no || '') + '">' + escapeHtml(label + (meta ? ' (' + meta + ')' : '')) + '</option>');
+                });
+                vehicleSelect.innerHTML = options.join('');
+                vehicleSelect.disabled = false;
+                setOdometerHistoryHelp((payload.count || 0) + ' fueled vehicle' + ((payload.count || 0) === 1 ? '' : 's') + ' found for ' + month + '.', (payload.count || 0) > 0 ? 'success' : 'warning');
+            } catch (error) {
+                vehicleSelect.innerHTML = '<option value="">All fueled vehicles for selected month</option>';
+                vehicleSelect.disabled = false;
+                setOdometerHistoryHelp(error.message, 'warning');
+            }
+        }
+
+        function exportOdometerHistory() {
+            var month = document.getElementById('odometerHistoryMonth').value || currentMonthValue();
+            var plateNo = document.getElementById('odometerHistoryVehicle').value || '';
+            var params = new URLSearchParams({ month: month, scope: 'all' });
+            if (plateNo) {
+                params.set('plate_no', plateNo);
+            }
+            window.open('odometer_history_export.php?' + params.toString(), '_blank', 'noopener');
+            showToast('Opening odometer history CSV export...');
+        }
         function formatMoney(value) {
             return Number(value || 0).toLocaleString(undefined, {
                 minimumFractionDigits: 2,
@@ -1580,6 +1681,15 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
             renderTablePage();
         }
 
+        document.getElementById('odometerHistoryModal').addEventListener('shown.bs.modal', function() {
+            var monthInput = document.getElementById('odometerHistoryMonth');
+            if (monthInput && !monthInput.value) {
+                monthInput.value = currentMonthValue();
+            }
+            loadOdometerHistoryVehicles();
+        });
+        document.getElementById('odometerHistoryMonth').addEventListener('change', loadOdometerHistoryVehicles);
+        document.getElementById('exportOdometerHistoryBtn').addEventListener('click', exportOdometerHistory);
         document.getElementById('subAdminSearch').addEventListener('input', applyFilters);
         document.getElementById('vehicleFilterSearch').addEventListener('input', function() {
             document.getElementById('vehicleFilter').value = '';

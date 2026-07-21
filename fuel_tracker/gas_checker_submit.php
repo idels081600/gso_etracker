@@ -49,6 +49,7 @@ $transactionStarted = false;
 
 try {
     fuelTrackerEnsureVehiclePastOdometer($conn);
+    fuelTrackerEnsureVehicleOdometerLogs($conn);
 
     $id = (int) ($input['db_id'] ?? 0);
     $serialNo = strtoupper(trim((string) ($input['serial_no'] ?? '')));
@@ -130,12 +131,37 @@ try {
     $stmt->close();
 
     $stmt = $conn->prepare("
-        INSERT INTO vehicle_odometer_logs
-            (gas_issuance_id, vehicle_id, past_odometer, current_odometer, recorded_at)
-        VALUES
-            (?, ?, ?, ?, NOW())
+        SELECT id
+        FROM vehicle_odometer_logs
+        WHERE gas_issuance_id = ?
+        ORDER BY id DESC
+        LIMIT 1
     ");
-    $stmt->bind_param('iidd', $gasIssuanceId, $vehicleId, $pastOdometer, $currentOdometer);
+    $stmt->bind_param('i', $gasIssuanceId);
+    $stmt->execute();
+    $existingLog = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($existingLog) {
+        $logId = (int) $existingLog['id'];
+        $stmt = $conn->prepare("
+            UPDATE vehicle_odometer_logs
+            SET vehicle_id = ?,
+                past_odometer = ?,
+                current_odometer = ?,
+                recorded_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->bind_param('iddi', $vehicleId, $pastOdometer, $currentOdometer, $logId);
+    } else {
+        $stmt = $conn->prepare("
+            INSERT INTO vehicle_odometer_logs
+                (gas_issuance_id, vehicle_id, past_odometer, current_odometer, recorded_at)
+            VALUES
+                (?, ?, ?, ?, NOW())
+        ");
+        $stmt->bind_param('iidd', $gasIssuanceId, $vehicleId, $pastOdometer, $currentOdometer);
+    }
     $stmt->execute();
     $stmt->close();
 

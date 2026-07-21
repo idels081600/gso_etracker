@@ -22,6 +22,51 @@ function fuelTrackerEnsureVehiclePastOdometer(mysqli $conn): void
     $ensured = true;
 }
 
+function fuelTrackerEnsureVehicleOdometerLogs(mysqli $conn): void
+{
+    static $ensured = false;
+
+    if ($ensured) {
+        return;
+    }
+
+    $createSql = "
+        CREATE TABLE IF NOT EXISTS vehicle_odometer_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            gas_issuance_id INT NOT NULL,
+            vehicle_id INT NOT NULL,
+            past_odometer DECIMAL(12,1) NOT NULL DEFAULT 0,
+            current_odometer DECIMAL(12,1) NOT NULL DEFAULT 0,
+            recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ";
+
+    if (!$conn->query($createSql)) {
+        throw new RuntimeException('Unable to ensure vehicle odometer logs table: ' . $conn->error);
+    }
+
+    $columns = [
+        'gas_issuance_id' => "ALTER TABLE vehicle_odometer_logs ADD COLUMN gas_issuance_id INT NOT NULL AFTER id",
+        'vehicle_id' => "ALTER TABLE vehicle_odometer_logs ADD COLUMN vehicle_id INT NOT NULL AFTER gas_issuance_id",
+        'past_odometer' => "ALTER TABLE vehicle_odometer_logs ADD COLUMN past_odometer DECIMAL(12,1) NOT NULL DEFAULT 0 AFTER vehicle_id",
+        'current_odometer' => "ALTER TABLE vehicle_odometer_logs ADD COLUMN current_odometer DECIMAL(12,1) NOT NULL DEFAULT 0 AFTER past_odometer",
+        'recorded_at' => "ALTER TABLE vehicle_odometer_logs ADD COLUMN recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER current_odometer",
+    ];
+
+    foreach ($columns as $column => $sql) {
+        $result = $conn->query("SHOW COLUMNS FROM vehicle_odometer_logs LIKE '" . $conn->real_escape_string($column) . "'");
+        if ($result && $result->num_rows === 0) {
+            if (!$conn->query($sql)) {
+                throw new RuntimeException('Unable to add vehicle_odometer_logs.' . $column . ': ' . $conn->error);
+            }
+        }
+    }
+
+    $ensured = true;
+}
+
 function fuelTrackerEnsureVehicleSchedules(mysqli $conn): void
 {
     static $ensured = false;
@@ -391,6 +436,8 @@ function fuelTrackerCreateUpcomingScheduledIssuances(mysqli $conn, int $daysAhea
 
 function fuelTrackerEnsureQueryIndexes(mysqli $conn): void
 {
+    fuelTrackerEnsureVehicleOdometerLogs($conn);
+
     static $ensured = false;
 
     if ($ensured) {
@@ -401,6 +448,8 @@ function fuelTrackerEnsureQueryIndexes(mysqli $conn): void
         ['gas_issuances', 'idx_gas_issuances_status_issue_date', 'CREATE INDEX idx_gas_issuances_status_issue_date ON gas_issuances (status, issue_date, id)'],
         ['gas_issuances', 'idx_gas_issuances_vehicle_id', 'CREATE INDEX idx_gas_issuances_vehicle_id ON gas_issuances (vehicle_id)'],
         ['vehicle_odometer_logs', 'idx_vehicle_odometer_logs_issuance_id', 'CREATE INDEX idx_vehicle_odometer_logs_issuance_id ON vehicle_odometer_logs (gas_issuance_id, id)'],
+        ['vehicle_odometer_logs', 'idx_vehicle_odometer_logs_vehicle_recorded', 'CREATE INDEX idx_vehicle_odometer_logs_vehicle_recorded ON vehicle_odometer_logs (vehicle_id, recorded_at, id)'],
+        ['vehicle_odometer_logs', 'idx_vehicle_odometer_logs_recorded', 'CREATE INDEX idx_vehicle_odometer_logs_recorded ON vehicle_odometer_logs (recorded_at, id)'],
     ];
 
     foreach ($indexes as [$table, $indexName, $sql]) {
@@ -675,6 +724,144 @@ function fuelTrackerFetchGasIssuancesByIds(mysqli $conn, array $ids, string $sco
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
+function fuelTrackerDateRangeFromMonth(?string $month, ?string $startDate, ?string $endDate): array
+{
+    $month = trim((string) $month);
+    $startDate = trim((string) $startDate);
+    $endDate = trim((string) $endDate);
+
+    if ($month !== '') {
+        if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+            throw new InvalidArgumentException('Month must use YYYY-MM format.');
+        }
+        $start = DateTimeImmutable::createFromFormat('!Y-m-d', $month . '-01');
+        if (!$start) {
+            throw new InvalidArgumentException('Month is invalid.');
+        }
+        return [$start->format('Y-m-d'), $start->modify('first day of next month')->format('Y-m-d')];
+    }
+
+    if ($startDate === '' && $endDate === '') {
+        $start = new DateTimeImmutable('first day of this month');
+        return [$start->format('Y-m-d'), $start->modify('first day of next month')->format('Y-m-d')];
+    }
+
+    if ($startDate === '') {
+        $startDate = $endDate;
+    }
+    if ($endDate === '') {
+        $endDate = $startDate;
+    }
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) !== 1 || preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate) !== 1) {
+        throw new InvalidArgumentException('Start and end dates must use YYYY-MM-DD format.');
+    }
+
+    $start = DateTimeImmutable::createFromFormat('!Y-m-d', $startDate);
+    $end = DateTimeImmutable::createFromFormat('!Y-m-d', $endDate);
+    if (!$start || !$end) {
+        throw new InvalidArgumentException('Date range is invalid.');
+    }
+    if ($end < $start) {
+        [$start, $end] = [$end, $start];
+    }
+
+    return [$start->format('Y-m-d'), $end->modify('+1 day')->format('Y-m-d')];
+}
+
+function fuelTrackerFetchOdometerHistory(mysqli $conn, array $filters = []): array
+{
+    fuelTrackerEnsureScopeColumns($conn);
+    fuelTrackerEnsureQueryIndexes($conn);
+
+    [$startDate, $endExclusive] = fuelTrackerDateRangeFromMonth(
+        isset($filters['month']) ? (string) $filters['month'] : null,
+        isset($filters['start_date']) ? (string) $filters['start_date'] : null,
+        isset($filters['end_date']) ? (string) $filters['end_date'] : null
+    );
+
+    $conditions = ['ol.recorded_at >= ?', 'ol.recorded_at < ?'];
+    $params = [$startDate . ' 00:00:00', $endExclusive . ' 00:00:00'];
+    $types = 'ss';
+
+    $scope = strtolower(trim((string) ($filters['scope'] ?? 'all')));
+    if ($scope === 'government') {
+        $conditions[] = "LOWER(TRIM(COALESCE(gi.issuance_scope, v.vehicle_scope, 'government'))) <> 'private'";
+    } elseif ($scope === 'private') {
+        $conditions[] = "LOWER(TRIM(COALESCE(gi.issuance_scope, v.vehicle_scope, 'government'))) = 'private'";
+    }
+
+    $vehicleId = (int) ($filters['vehicle_id'] ?? 0);
+    if ($vehicleId > 0) {
+        $conditions[] = 'v.id = ?';
+        $params[] = $vehicleId;
+        $types .= 'i';
+    }
+
+    $plateNo = trim((string) ($filters['plate_no'] ?? ''));
+    if ($plateNo !== '') {
+        $conditions[] = 'v.plate_no = ?';
+        $params[] = $plateNo;
+        $types .= 's';
+    }
+
+    $fuelType = strtolower(trim((string) ($filters['fuel_type'] ?? '')));
+    if ($fuelType !== '') {
+        $conditions[] = 'LOWER(TRIM(gi.fuel_type)) LIKE ?';
+        $params[] = '%' . $fuelType . '%';
+        $types .= 's';
+    }
+
+    $where = implode(' AND ', $conditions);
+    $sql = "
+        SELECT
+            ol.id AS log_id,
+            ol.gas_issuance_id,
+            ol.vehicle_id,
+            ol.past_odometer,
+            ol.current_odometer,
+            ol.recorded_at,
+            gi.serial_no,
+            gi.driver_name,
+            gi.office,
+            gi.fuel_type,
+            gi.actual_liters_fueled,
+            gi.authorized_liters,
+            gi.issue_date,
+            COALESCE(gi.issuance_scope, v.vehicle_scope, 'government') AS scope,
+            v.plate_no,
+            v.type_of_vehicle AS vehicle_name
+        FROM vehicle_odometer_logs ol
+        INNER JOIN gas_issuances gi ON gi.id = ol.gas_issuance_id
+        INNER JOIN vehicles v ON v.id = ol.vehicle_id
+        WHERE ol.id = (
+            SELECT MAX(inner_ol.id)
+            FROM vehicle_odometer_logs inner_ol
+            WHERE inner_ol.gas_issuance_id = ol.gas_issuance_id
+        )
+        AND {$where}
+        ORDER BY v.plate_no ASC, ol.recorded_at ASC, ol.id ASC
+    ";
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        throw new RuntimeException('Unable to prepare odometer history query: ' . $conn->error);
+    }
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    foreach ($rows as &$row) {
+        $past = (float) ($row['past_odometer'] ?? 0);
+        $current = (float) ($row['current_odometer'] ?? 0);
+        $actualLiters = (float) ($row['actual_liters_fueled'] ?? 0);
+        $row['km_traveled'] = max(0, $current - $past);
+        $row['km_per_liter'] = $actualLiters > 0 ? $row['km_traveled'] / $actualLiters : 0;
+    }
+    unset($row);
+
+    return $rows;
+}
 function fuelTrackerVehicleLookupByPlate(array $vehicles): array
 {
     $lookup = [];
