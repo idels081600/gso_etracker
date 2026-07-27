@@ -1322,6 +1322,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
 
         function buildTripParams(item) {
             return new URLSearchParams({
+                issuance_id: item.id || '',
                 serial_no: item.serial_no || '',
                 date: item.date || '',
                 driver: item.driver_name || '',

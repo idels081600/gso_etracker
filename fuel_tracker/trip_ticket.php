@@ -128,6 +128,7 @@ function drawFuelLine(
 }
 
 $serialNo = tripParam('serial_no', 'TT-SAMPLE');
+$issuanceId = (int) tripParam('issuance_id', '0');
 $issuanceOfficeName = tripIssuanceOfficeBySerial($conn, $serialNo);
 $officeName = tripParam('office', $issuanceOfficeName !== '' ? $issuanceOfficeName : '(Name of Office)');
 $dateLabel = tripDateLabel(tripParam('date', date('Y-m-d')));
@@ -139,7 +140,9 @@ $purpose = tripParam('purpose', '');
 $approvedBy = strtoupper(tripParam('approved_by', 'CHRIS JOHN RENER G. TORRALBA'));
 $approverTitle = tripParam('approver_title', 'Chief of Bureau or Office or his Duly Authorized Representative');
 $vehicle = strtoupper(tripParam('vehicle', ''));
-$driverSignature = fuelTrackerFetchDriverSignature($conn, $serialNo);
+$driverSignature = $issuanceId > 0
+    ? fuelTrackerFetchDriverSignatureByIssuanceId($conn, $issuanceId)
+    : fuelTrackerFetchDriverSignature($conn, $serialNo);
 $outputMode = isset($_GET['download']) && $_GET['download'] === '1' ? 'D' : 'I';
 
 $departureGarage = tripParam('departure_garage', '8:00');

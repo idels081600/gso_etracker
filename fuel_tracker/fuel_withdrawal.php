@@ -117,7 +117,13 @@ function drawWithdrawalCopy(
         'module_width' => 1,
         'module_height' => 1,
     ];
-    $pdf->write2DBarcode($serialNo, 'QRCODE,H', 174, $topY - 20, 20, 20, $qrStyle, 'N');
+    $qrX = 174;
+    $qrY = $topY - 20;
+    $qrSize = 20;
+    $pdf->write2DBarcode($serialNo, 'QRCODE,H', $qrX, $qrY, $qrSize, $qrSize, $qrStyle, 'N');
+    $pdf->SetFont('helvetica', 'B', 7.5);
+    $pdf->SetXY($qrX - 12, $qrY + $qrSize + 1.2);
+    $pdf->Cell($qrSize + 24, 5, $serialNo, 0, 0, 'C');
 
     $pdf->SetFont('helvetica', 'B', 10);
     $pdf->SetXY(0, $topY);

@@ -60,6 +60,28 @@ function fuelTrackerSaveDriverSignature(mysqli $conn, int $gasIssuanceId, string
     $stmt->close();
 }
 
+
+function fuelTrackerFetchDriverSignatureByIssuanceId(mysqli $conn, int $gasIssuanceId): string
+{
+    if ($gasIssuanceId <= 0) {
+        return '';
+    }
+
+    fuelTrackerEnsureSignatureTable($conn);
+
+    $stmt = $conn->prepare("\n        SELECT driver_signature\n        FROM gas_issuance_signatures\n        WHERE gas_issuance_id = ?\n        LIMIT 1\n    ");
+    if (!$stmt) {
+        return '';
+    }
+
+    $stmt->bind_param('i', $gasIssuanceId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return is_array($row) ? (string) ($row['driver_signature'] ?? '') : '';
+}
+
 function fuelTrackerFetchDriverSignature(mysqli $conn, string $gasIssuanceRef): string
 {
     $gasIssuanceRef = trim($gasIssuanceRef);

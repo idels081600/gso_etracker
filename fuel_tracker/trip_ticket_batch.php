@@ -89,6 +89,7 @@ function batchTripFuelLine(
 
 function batchTripDrawPage(BatchTripTicketPdf $pdf, mysqli $conn, array $issuance): void
 {
+    $issuanceId = (int) ($issuance['id'] ?? 0);
     $serialNo = (string) ($issuance['serial_no'] ?? '');
     $office = trim((string) ($issuance['office'] ?? '')) ?: '(Name of Office)';
     $date = batchTripDateLabel((string) ($issuance['issue_date'] ?? date('Y-m-d')));
@@ -105,7 +106,10 @@ function batchTripDrawPage(BatchTripTicketPdf $pdf, mysqli $conn, array $issuanc
     $balance = batchTripFormatNumber($balanceValue);
     $total = batchTripFormatNumber($balanceValue + $issuedValue);
     $endBalance = batchTripFormatNumber($balanceValue);
-    $driverSignature = fuelTrackerFetchDriverSignature($conn, $serialNo);
+    $driverSignature = fuelTrackerFetchDriverSignatureByIssuanceId($conn, $issuanceId);
+    if ($driverSignature === '') {
+        $driverSignature = fuelTrackerFetchDriverSignature($conn, $serialNo);
+    }
 
     $pdf->AddPage();
     $pdf->SetDrawColor(0, 0, 0);
