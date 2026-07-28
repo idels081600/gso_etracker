@@ -16,8 +16,8 @@ $vehicles = fuelTrackerFetchVehicles($conn);
 $vehicleLookup = fuelTrackerVehicleLookupByPlate($vehicles);
 fuelTrackerSyncIssuanceOffices($conn);
 $fuelBudgetPool = fuelBudgetSummary($conn);
-$initialPrintableLimit = 200;
-$printableIssuances = fuelTrackerFetchGasIssuances($conn, ['used'], 'government', $initialPrintableLimit);
+$printableIssuances = fuelTrackerFetchGasIssuances($conn, ['used'], 'government', 0);
+$totalPrintableRecords = count($printableIssuances);
 
 $approvedVehicles = [];
 $approvedOffices = [];
@@ -574,7 +574,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                         <h2 class="h5 mb-1 fw-bold">
                             <i class="fas fa-print me-2 text-success"></i>Used Gas Issuances
                         </h2>
-                        <p class="text-muted mb-0 small">Search the latest loaded used records, then print the required document.</p>
+                        <p class="text-muted mb-0 small">Search all used records, then print the required document.</p>
                     </div>
                 </div>
                 <div class="print-toolbar">
@@ -622,7 +622,7 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                 </div>
                 <div class="selected-summary mt-2" id="selectedSummary">Select one or more gas issuances. Monthly Form B will be grouped per vehicle.</div>
                 <div class="small text-muted mt-1">
-                    Showing the latest <?php echo htmlspecialchars((string) $initialPrintableLimit, ENT_QUOTES, 'UTF-8'); ?> used records for faster loading.
+                    Showing all <?php echo htmlspecialchars((string) $totalPrintableRecords, ENT_QUOTES, 'UTF-8'); ?> used gas issuance records.
                 </div>
             </div>
 
