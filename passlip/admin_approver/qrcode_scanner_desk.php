@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Include your database connection code here
 include '../dbh.php';
 session_start();
@@ -164,7 +164,7 @@ if (!isset($_SESSION['username'])) {
                 aria-describedby="qr-instructions"
                 autofocus
                 autocomplete="off"
-                inputmode="numeric"
+                inputmode="text"
                 aria-label="Scan barcode input" />
         </div>
         <!-- Greeting Text -->

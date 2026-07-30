@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * Code Department Scanner Handler
@@ -22,15 +22,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     include 'dbh.php';
 
     // Sanitize input to prevent SQL injection
-    // The scannedData typically contains a name or unique identifier from QR code
-    $scannedData = mysqli_real_escape_string($conn, $_POST['scannedData']);
+    // The scannedData typically contains a name or unique identifier from QR code.
+    // Some scanners send ñ as 6 depending on keyboard layout, so include enye variants.
+    $scannedDataRaw = trim((string) ($_POST['scannedData'] ?? ''));
+    $scanCandidates = [$scannedDataRaw];
+    if (strpos($scannedDataRaw, '6') !== false) {
+        $scanCandidates[] = str_replace('6', 'ñ', $scannedDataRaw);
+        $scanCandidates[] = str_replace('6', 'Ñ', $scannedDataRaw);
+    }
+
+    $scanCandidates = array_values(array_unique(array_filter($scanCandidates, function ($value) {
+        return trim((string) $value) !== '';
+    })));
+
+    if (count($scanCandidates) === 0) {
+        echo json_encode(['status' => 'invalid_request']);
+        exit;
+    }
+
+    $escapedScanCandidates = [];
+    foreach ($scanCandidates as $candidate) {
+        $escapedScanCandidates[] = "'" . mysqli_real_escape_string($conn, $candidate) . "'";
+    }
+    $scanNameSql = implode(',', $escapedScanCandidates);
     // Set timezone for consistent time handling across the system
     date_default_timezone_set('Asia/Manila');
 
     // STEP 1: Handle Initial Entry (Check-in)
     // Check if there's a pending request that needs approval activation
     // Looks for the most recent (DESC by id) partially approved request matching the scanned name
-    $query_in = "SELECT * FROM request WHERE name = '$scannedData' AND Status = 'Partially Approved' ORDER BY id DESC LIMIT 1";
+    $query_in = "SELECT * FROM request WHERE name IN ($scanNameSql) AND Status = 'Partially Approved' ORDER BY id DESC LIMIT 1";
     $result_in = mysqli_query($conn, $query_in);
     // Debug: Check query success and row count
     // If query failed: check mysqli_error($conn)
@@ -97,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // STEP 2: Handle Return Scan (Check-out)
     // Look for the most recent approved request matching the scanned name for check-out
     // This handles the case where someone is returning from their approved absence
-    $query_out = "SELECT * FROM request WHERE name = '$scannedData' AND Status = 'Approved' ORDER BY id DESC LIMIT 1";
+    $query_out = "SELECT * FROM request WHERE name IN ($scanNameSql) AND Status = 'Approved' ORDER BY id DESC LIMIT 1";
     $result_out = mysqli_query($conn, $query_out);
 
     // Debug: Query and row validation (same as STEP 1)
@@ -185,3 +206,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // or sends a GET request instead of POST
     echo json_encode(['status' => 'invalid_request']);
 }
+
+

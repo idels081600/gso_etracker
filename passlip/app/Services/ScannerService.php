@@ -25,7 +25,11 @@ final class ScannerService
         return Database::transaction(function () use ($name): array {
             $departing = $this->requests->findScannable($name, 'Partially Approved');
             if ($departing) {
-                $this->requests->markDeparted((int) $departing['id']);
+                $allottedMinutes = $this->allottedMinutes((string) ($departing['time_allotted'] ?? ''));
+                $expectedReturn = (new \DateTimeImmutable())
+                    ->modify('+' . $allottedMinutes . ' minutes')
+                    ->format('H:i:s');
+                $this->requests->markDeparted((int) $departing['id'], $expectedReturn);
                 $this->audit->log('scan.departed', (int) $departing['id'], $name . ' scanned out.');
                 return [
                     'success' => true,
@@ -67,5 +71,24 @@ final class ScannerService
                 'message' => 'No approved pass slip found for today.',
             ];
         });
+    }
+    private function allottedMinutes(string $value): int
+    {
+        $text = strtolower(trim($value));
+        if (preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $text, $matches)) {
+            $minutes = ((int) $matches[1] * 60) + (int) $matches[2];
+        } elseif (preg_match('/(?:(\d+)\s*(?:hours?|hrs?|h))?\s*(?:(\d+)\s*(?:minutes?|mins?|m))?/i', $text, $matches)) {
+            $hours = isset($matches[1]) && $matches[1] !== '' ? (int) $matches[1] : 0;
+            $remainder = isset($matches[2]) && $matches[2] !== '' ? (int) $matches[2] : 0;
+            $minutes = ($hours * 60) + $remainder;
+        } else {
+            $minutes = 0;
+        }
+
+        if ($minutes < 1 || $minutes > 1440) {
+            throw new \RuntimeException('The approved pass slip has an invalid allotted time.');
+        }
+
+        return $minutes;
     }
 }

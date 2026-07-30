@@ -173,7 +173,6 @@ final class RequestRepository
     public function approveMany(array $ids, string $status, string $confirmedBy, int $minutes, ?string $reason = null): array
     {
         $status1 = $status === 'Declined' ? 'Declined' : 'Scan Qrcode';
-        $time = (new \DateTimeImmutable())->modify('+' . $minutes . ' minutes')->format('H:i:s');
         $timeText = intdiv($minutes, 60) . ' hours ' . ($minutes % 60) . ' minutes';
         $updated = 0;
         $errors = [];
@@ -188,8 +187,8 @@ final class RequestRepository
                     );
                 } else {
                     Database::execute(
-                        "UPDATE `request` SET esttime = ?, time_allotted = ?, Status = ?, status1 = ?, confirmed_by = ? WHERE id = ?",
-                        [$time, $timeText, $status, $status1, $confirmedBy, $id]
+                        "UPDATE `request` SET esttime = '00:00:00', time_allotted = ?, Status = ?, status1 = ?, confirmed_by = ? WHERE id = ?",
+                        [$timeText, $status, $status1, $confirmedBy, $id]
                     );
                 }
                 $updated++;
@@ -203,10 +202,24 @@ final class RequestRepository
 
     public function findScannable(string $name, string $status): ?array
     {
+        if ($status === 'Partially Approved') {
+            return Database::row(
+                "SELECT * FROM `request`
+                 WHERE name = ?
+                 AND status1 = 'Scan Qrcode'
+                 AND Status IN ('Partially Approved', 'Approved')
+                 AND DATE(`date`) = CURDATE()
+                 ORDER BY id DESC
+                 LIMIT 1",
+                [$name]
+            );
+        }
+
         return Database::row(
             "SELECT * FROM `request`
              WHERE name = ?
              AND Status = ?
+             AND status1 = 'Pass-Slip'
              AND DATE(`date`) = CURDATE()
              ORDER BY id DESC
              LIMIT 1",
@@ -214,13 +227,13 @@ final class RequestRepository
         );
     }
 
-    public function markDeparted(int $id): void
+    public function markDeparted(int $id, string $expectedReturn): void
     {
         Database::execute(
             "UPDATE `request`
-             SET timedept = NOW(), Status = 'Approved', status1 = 'Pass-Slip', ImageName = 'Check-Approved.png'
+             SET timedept = NOW(), esttime = ?, Status = 'Approved', status1 = 'Pass-Slip', ImageName = 'Check-Approved.png'
              WHERE id = ?",
-            [$id]
+            [$expectedReturn, $id]
         );
     }
 

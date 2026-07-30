@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -155,7 +155,7 @@
                 aria-describedby="qr-instructions"
                 autofocus
                 autocomplete="off"
-                inputmode="numeric"
+                inputmode="text"
                 aria-label="Scan barcode input" />
         </div>
         <!-- Greeting Text -->
@@ -397,3 +397,4 @@
 </body>
 
 </html>
+

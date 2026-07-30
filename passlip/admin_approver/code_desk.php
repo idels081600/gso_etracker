@@ -61,6 +61,13 @@ function scan_candidates_from_raw($raw)
         }
     }
 
+    foreach ($candidates as $candidate) {
+        if (strpos($candidate, '6') !== false) {
+            add_scan_candidate($candidates, str_replace('6', 'ñ', $candidate));
+            add_scan_candidate($candidates, str_replace('6', 'Ñ', $candidate));
+        }
+    }
+
     return $candidates;
 }
 
@@ -241,3 +248,4 @@ send_json([
     'status' => 'not_exists',
     'message' => 'No active approved or partially approved pass slip found for this QR code.'
 ]);
+
