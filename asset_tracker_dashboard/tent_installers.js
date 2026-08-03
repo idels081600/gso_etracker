@@ -74,15 +74,25 @@
 
     visibleRecords.forEach((record) => {
       const row = document.createElement("tr");
-      row.className = ["pending-row", "for-retrieval-row", "overdue-row"].includes(record.row_class)
+      row.className = ["pending-row", "overdue-installation-row", "for-retrieval-row", "overdue-row"].includes(record.row_class)
         ? record.row_class
         : "";
+      let displayStatus = record.status;
+      if (record.row_class === "overdue-installation-row") {
+        displayStatus = "Pending (Past Due)";
+      } else if (record.status === "Installed") {
+        displayStatus = record.row_class === "overdue-row"
+          ? "Installed (Retrieval Past Due)"
+          : "Installed (Retrieval Due)";
+      } else if (record.status === "For Retrieval" && record.row_class === "overdue-row") {
+        displayStatus = "For Retrieval (Past Due)";
+      }
       row.append(
         createCell(record.name),
         createLocationCell(record.location),
         createCell(record.no_of_tents),
         createCell(record.date),
-        createCell(record.status)
+        createCell(displayStatus)
       );
 
       const actionCell = document.createElement("td");

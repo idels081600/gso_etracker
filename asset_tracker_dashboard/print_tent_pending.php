@@ -1,39 +1,39 @@
 <?php
 require_once __DIR__ . '/page_bootstrap.php';
 require_once __DIR__ . '/db_asset.php';
+date_default_timezone_set('Asia/Manila');
 
-// Fetch all tents with status = 'Pending' for the current week
+// Include every unresolved pending installation through the end of this week.
+$today = date('Y-m-d');
 $week_start = date('Y-m-d', strtotime('monday this week'));
 $week_end = date('Y-m-d', strtotime('sunday this week'));
-$query = "SELECT * FROM tent WHERE status = 'Pending' AND date >= ? AND date <= ? ORDER BY id DESC";
+$query = "SELECT * FROM tent WHERE status = 'Pending' AND date <= ? ORDER BY date ASC, id ASC";
 $stmt = mysqli_prepare($conn, $query);
-mysqli_stmt_bind_param($stmt, 'ss', $week_start, $week_end);
+mysqli_stmt_bind_param($stmt, 's', $week_end);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
+$past_due_rows = [];
+$today_rows = [];
 $weekday_rows = [];
 $weekend_rows = [];
 if ($result && mysqli_num_rows($result) > 0) {
     while ($row = mysqli_fetch_assoc($result)) {
         $row_date = $row['date'];
-        if ($row_date >= $week_start && $row_date <= $week_end) {
+        if ($row_date < $today) {
+            $past_due_rows[] = $row;
+        } elseif ($row_date === $today) {
+            $today_rows[] = $row;
+        } elseif ($row_date >= $week_start && $row_date <= $week_end) {
             $dow = date('N', strtotime($row_date)); // 6=Sat, 7=Sun
             if ($dow == 6 || $dow == 7) {
                 $weekend_rows[] = $row;
             } else {
                 $weekday_rows[] = $row;
             }
-        } else {
-            $weekday_rows[] = $row; // Out-of-week entries go to main
         }
     }
 }
-
-// Display today's pending tents (weekdays only)
-$today = date('Y-m-d');
-$today_rows = array_filter($weekday_rows, function ($row) use ($today) {
-    return $row['date'] === $today;
-});
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -110,6 +110,19 @@ $today_rows = array_filter($weekday_rows, function ($row) use ($today) {
             background: #f2f2f2;
         }
 
+        .past-due-heading {
+            color: #a61b24;
+        }
+
+        .past-due-table tbody tr {
+            background: #fff2f2;
+        }
+
+        .report-section {
+            break-inside: avoid;
+            margin-bottom: 34px;
+        }
+
         .print-btn {
             background: #28a745;
             color: #fff;
@@ -147,6 +160,39 @@ $today_rows = array_filter($weekday_rows, function ($row) use ($today) {
 
     <button class="print-btn" onclick="window.print()">Print</button>
 
+    <?php if (count($past_due_rows) > 0): ?>
+        <section class="report-section">
+            <h2 class="past-due-heading">PAST DUE PENDING TENT INSTALLATIONS (<?= count($past_due_rows) ?>)</h2>
+            <table class="past-due-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Name of Recipient</th>
+                        <th>Contact No.</th>
+                        <th>Address</th>
+                        <th>Location</th>
+                        <th>No. of Tents</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($past_due_rows as $row): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row['date']) ?></td>
+                            <td><?= htmlspecialchars($row['name']) ?></td>
+                            <td><?= htmlspecialchars($row['Contact_no']) ?></td>
+                            <td><?= htmlspecialchars($row['address']) ?></td>
+                            <td><?= htmlspecialchars($row['location']) ?></td>
+                            <td><?= htmlspecialchars($row['no_of_tents']) ?></td>
+                            <td><?= htmlspecialchars($row['purpose']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </section>
+    <?php endif; ?>
+
+    <section class="report-section">
     <h2>PENDING TENT SCHEDULE FOR TODAY (<?= htmlspecialchars($today) ?>)</h2>
     <table>
         <thead>
@@ -175,11 +221,12 @@ $today_rows = array_filter($weekday_rows, function ($row) use ($today) {
                 <?php endforeach; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan="6">No pending tents found for today.</td>
+                    <td colspan="7">No pending tents found for today.</td>
                 </tr>
             <?php endif; ?>
         </tbody>
     </table>
+    </section>
     <div style="width: 100%; margin-top: 60px;">
         <div style="width: 350px; float: right; text-align: center;">
             <div style="font-weight: bold; text-transform: uppercase; letter-spacing: 1px; text-decoration: underline;">CHRIS JOHN RENER G. TORRALBA</div>

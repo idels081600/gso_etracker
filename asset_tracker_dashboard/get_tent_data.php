@@ -18,15 +18,21 @@ try {
                 CASE WHEN status = 'Pending' THEN date ELSE retrieval_date END AS scheduled_date,
                 no_of_tents,
                 CASE
-                    WHEN status = 'For Retrieval' AND retrieval_date < CURDATE() THEN 'overdue-row'
-                    WHEN status = 'For Retrieval' THEN 'for-retrieval-row'
+                    WHEN status = 'Pending' AND date < CURDATE() THEN 'overdue-installation-row'
+                    WHEN status IN ('Installed', 'For Retrieval') AND retrieval_date < CURDATE() THEN 'overdue-row'
+                    WHEN status IN ('Installed', 'For Retrieval') THEN 'for-retrieval-row'
                     ELSE 'pending-row'
                 END AS row_class
            FROM tent
-          WHERE (status = 'Pending' AND date = CURDATE())
-             OR (status = 'For Retrieval' AND retrieval_date <= CURDATE())
+          WHERE (status = 'Pending' AND date <= CURDATE())
+             OR (status IN ('Installed', 'For Retrieval') AND retrieval_date <= CURDATE())
           ORDER BY
-                CASE WHEN status = 'For Retrieval' AND retrieval_date < CURDATE() THEN 0 ELSE 1 END,
+                CASE
+                    WHEN status = 'Pending' AND date < CURDATE() THEN 0
+                    WHEN status IN ('Installed', 'For Retrieval') AND retrieval_date < CURDATE() THEN 1
+                    WHEN status = 'Pending' THEN 2
+                    ELSE 3
+                END,
                 scheduled_date ASC,
                 id ASC"
     );

@@ -40,7 +40,7 @@ if ($statusResult) {
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3">
             <div>
                 <h1 class="h3 mb-1">Tent Installer Daily Jobs</h1>
-                <p class="text-muted mb-0">Install today’s pending requests and complete due or overdue retrievals.</p>
+                <p class="text-muted mb-0">Install pending requests scheduled through today and complete due or overdue retrievals.</p>
             </div>
             <button type="button" class="btn btn-outline-success mt-3 mt-md-0" id="refreshBtn">
                 <i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh Data
@@ -51,7 +51,7 @@ if ($statusResult) {
             <div class="col-md-6">
                 <small class="text-muted">
                     <i class="fas fa-calendar-day" aria-hidden="true"></i>
-                    Showing today’s pending jobs and all due or overdue retrievals
+                    Showing pending installations scheduled through today and all due or overdue retrievals
                     <span id="lastUpdated" class="d-block d-md-inline ml-md-3"></span>
                 </small>
             </div>

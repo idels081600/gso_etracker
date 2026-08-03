@@ -263,7 +263,7 @@ if (!isset($_SESSION['username'])) {
                 textDisplay.textContent = "";
             }
 
-            function showSuccess(name, status, scannedData) {
+            function showSuccess(name, status) {
                 // Hide error message
                 errorMessage.style.display = "none";
                 errorMessage.classList.add("d-none");
@@ -283,8 +283,8 @@ if (!isset($_SESSION['username'])) {
                     textHead.textContent = "Success!";
                 }
 
-                // Display the scanned data as is
-                textDisplay.textContent = scannedData;
+                // Display the matched database name so names with enye render correctly
+                textDisplay.textContent = name || "Unknown";
             }
 
             function showError(message) {
@@ -341,7 +341,7 @@ if (!isset($_SESSION['username'])) {
                         if (isSuccessStatus || isArrivedStatus) {
                             // Handle success cases
                             const name = response.name || scannedData;
-                            showSuccess(name, response.status, scannedData);
+                            showSuccess(name, response.status);
                         } else {
                             // Handle error cases
                             let errorMsg = "An unexpected error occurred.";
@@ -406,3 +406,4 @@ if (!isset($_SESSION['username'])) {
 </body>
 
 </html>
+

@@ -28,6 +28,11 @@
   border-left: 4px solid #28a745;
 }
 
+.overdue-installation-row {
+  border-left: 4px solid #b42318;
+  background: #fff4e8;
+}
+
 .for-retrieval-row {
   border-left: 4px solid #fd7e14;
   background: #fff8ed;
