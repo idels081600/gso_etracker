@@ -204,8 +204,8 @@ if ($departing) {
     send_json(['status' => 'update_error', 'message' => 'Unable to activate this pass slip.']);
 }
 
-// Return scans should still work after a day rolls over while someone is outside.
-$returning = find_scannable_request($conn, $candidates, 'Approved', false);
+// Scanner must only update the current-date request. Old approved rows should not be reused.
+$returning = find_scannable_request($conn, $candidates, 'Approved', true);
 if ($returning) {
     $estimatedTime = new DateTime($returning['esttime']);
     $actualTime = new DateTime();
@@ -246,6 +246,8 @@ if ($returning) {
 
 send_json([
     'status' => 'not_exists',
-    'message' => 'No active approved or partially approved pass slip found for this QR code.'
+    'message' => 'No active approved or partially approved pass slip found for today.'
 ]);
+
+
 

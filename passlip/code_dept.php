@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // STEP 1: Handle Initial Entry (Check-in)
     // Check if there's a pending request that needs approval activation
     // Looks for the most recent (DESC by id) partially approved request matching the scanned name
-    $query_in = "SELECT * FROM request WHERE name IN ($scanNameSql) AND Status = 'Partially Approved' ORDER BY id DESC LIMIT 1";
+    $query_in = "SELECT * FROM request WHERE name IN ($scanNameSql) AND Status = 'Partially Approved' AND DATE(date) = CURDATE() ORDER BY id DESC LIMIT 1";
     $result_in = mysqli_query($conn, $query_in);
     // Debug: Check query success and row count
     // If query failed: check mysqli_error($conn)
@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // STEP 2: Handle Return Scan (Check-out)
     // Look for the most recent approved request matching the scanned name for check-out
     // This handles the case where someone is returning from their approved absence
-    $query_out = "SELECT * FROM request WHERE name IN ($scanNameSql) AND Status = 'Approved' ORDER BY id DESC LIMIT 1";
+    $query_out = "SELECT * FROM request WHERE name IN ($scanNameSql) AND Status = 'Approved' AND DATE(date) = CURDATE() ORDER BY id DESC LIMIT 1";
     $result_out = mysqli_query($conn, $query_out);
 
     // Debug: Query and row validation (same as STEP 1)
@@ -194,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;  // Stop processing after handling check-out
     }
 
-    // FALLBACK: No matching request found in database
+    // FALLBACK: No matching current-date request found in database
     // Possible reasons:
     // - QR code scanned but no approved request exists for that name
     // - Name mismatch between scan and database record
@@ -206,5 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // or sends a GET request instead of POST
     echo json_encode(['status' => 'invalid_request']);
 }
+
+
 
 
