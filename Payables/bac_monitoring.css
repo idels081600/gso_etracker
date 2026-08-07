@@ -521,3 +521,33 @@ body.sidebar-collapsed .bac-monitoring-content {
     grid-template-columns: 1fr;
   }
 }
+
+.bac-print-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #344054;
+  font-size: 0.76rem;
+  font-weight: 850;
+  padding: 0 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.bac-print-button:hover,
+.bac-print-button:focus-visible {
+  border-color: #20a797;
+  color: #159383;
+  outline: none;
+}
+
+@media (max-width: 860px) {
+  .bac-print-button {
+    width: 100%;
+  }
+}

@@ -419,6 +419,10 @@ if ($bacStmt) {
                     <h1>Active IB/RFQ</h1>
                 </div>
                 <div class="bac-monitoring-actions">
+                    <a class="bac-print-button" href="print_bac_not_received.php" target="_blank" rel="noopener">
+                        <i class="fas fa-print"></i>
+                        <span>Print Not Yet Received</span>
+                    </a>
                     <button type="button" class="bac-add-button" data-bs-toggle="modal" data-bs-target="#addBacMonitoringModal">
                         <i class="fas fa-plus"></i>
                         <span>Add Data</span>

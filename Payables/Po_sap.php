@@ -34,6 +34,10 @@ $perPage = 25;
                     <h1>RFQ Receiving</h1>
                 </div>
                 <div class="rfq-actions">
+                    <a class="rfq-print-button" href="print_po_pending.php" target="_blank" rel="noopener">
+                        <i class="fas fa-print"></i>
+                        <span>Print Pending</span>
+                    </a>
                     <button type="button" class="rfq-add-button" data-bs-toggle="modal" data-bs-target="#addTransmittalModal">
                         <i class="fas fa-plus"></i>
                         <span>Receive</span>
