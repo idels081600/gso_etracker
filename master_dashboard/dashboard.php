@@ -3,6 +3,7 @@ require_once __DIR__ . '/master_layout.php';
 master_require_admin();
 
 require_once __DIR__ . '/master_data.php';
+require_once dirname(__DIR__) . '/asset_tracker_dashboard/chairs_table/equipment_helpers.php';
 
 function h($value): string
 {
@@ -19,6 +20,89 @@ function peso($value): string
     return '&#8369;' . number_format((float)$value, 2);
 }
 
+function dashboard_advance_db_value(string $source, string $name): string
+{
+    if (preg_match('/\$' . preg_quote($name, '/') . '\s*=\s*(["\'])(.*?)\1\s*;/', $source, $matches)) {
+        return $matches[2];
+    }
+
+    return '';
+}
+
+function dashboard_advance_cached_totals(string $cacheFile): ?array
+{
+    if (!is_readable($cacheFile)) {
+        return null;
+    }
+
+    $payload = json_decode((string)file_get_contents($cacheFile), true);
+    return is_array($payload) ? $payload : null;
+}
+
+function dashboard_advance_store_totals(string $advanceDir): array
+{
+    $stores = ['BQ', 'BQ BUILDERWARE', 'NODAL', 'JETS MARKETING', 'JJS SEAFOODS', 'CITY TYRE'];
+    $totals = array_fill_keys($stores, 0.0);
+    $cacheDir = __DIR__ . DIRECTORY_SEPARATOR . '.cache';
+    $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'advance_store_totals.json';
+    $cached = dashboard_advance_cached_totals($cacheFile);
+    if ($cached !== null && filemtime($cacheFile) >= time() - 300) {
+        return $cached;
+    }
+
+    $dbFile = $advanceDir . DIRECTORY_SEPARATOR . 'advance_po_db.php';
+    if (!is_readable($dbFile)) {
+        return $cached ?? [];
+    }
+
+    $source = (string)file_get_contents($dbFile);
+    $host = dashboard_advance_db_value($source, 'servername');
+    $user = dashboard_advance_db_value($source, 'username');
+    $pass = dashboard_advance_db_value($source, 'password');
+    $db = dashboard_advance_db_value($source, 'dbname');
+    if ($host === '' || $user === '' || $db === '') {
+        return $cached ?? [];
+    }
+
+    mysqli_report(MYSQLI_REPORT_OFF);
+    $advanceConn = mysqli_init();
+    if (!$advanceConn) {
+        return $cached ?? [];
+    }
+    mysqli_options($advanceConn, MYSQLI_OPT_CONNECT_TIMEOUT, 2);
+    if (!@mysqli_real_connect($advanceConn, $host, $user, $pass, $db)) {
+        return $cached ?? [];
+    }
+    $advanceConn->set_charset('utf8mb4');
+
+    $sql = "
+        SELECT store, COALESCE(SUM(amount), 0) AS total_amount
+        FROM advancePo
+        WHERE delete_status = 0
+          AND status = 'Pending'
+          AND store IN ('BQ', 'BQ BUILDERWARE', 'NODAL', 'JETS MARKETING', 'JJS SEAFOODS', 'CITY TYRE')
+        GROUP BY store";
+    $result = mysqli_query($advanceConn, $sql);
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            if (isset($totals[$row['store']])) {
+                $totals[$row['store']] = (float)$row['total_amount'];
+            }
+        }
+    }
+    mysqli_close($advanceConn);
+
+    $filteredTotals = array_filter($totals, fn ($total): bool => $total > 0);
+    if (!is_dir($cacheDir)) {
+        mkdir($cacheDir, 0775, true);
+    }
+    if (is_dir($cacheDir) && is_writable($cacheDir)) {
+        file_put_contents($cacheFile, json_encode($filteredTotals));
+    }
+
+    return $filteredTotals;
+}
+
 function short_date($value): string
 {
     if (!$value) {
@@ -30,6 +114,7 @@ function short_date($value): string
 }
 
 $userName = $_SESSION['username'] ?? 'Admin';
+$advanceStoreTotals = dashboard_advance_store_totals(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'advance_request');
 $dispatchTrend = is_array($masterData['transportation']['dispatch_trend']) ? $masterData['transportation']['dispatch_trend'] : [];
 $dispatchChartLabels = array_keys($dispatchTrend);
 $dispatchChartValues = array_map('intval', array_values($dispatchTrend));
@@ -41,6 +126,25 @@ foreach (array_reverse($masterData['motorpool']['daily_repairs']) as $repairDay)
 }
 $maxMostRepaired = max(array_map('intval', array_values($masterData['motorpool']['most_repaired'] ?: [0])));
 $maxMostRepaired = $maxMostRepaired > 0 ? $maxMostRepaired : 1;
+$chairsMetrics = get_deployment_metrics();
+$chairsEquipmentTypes = get_equipment_types();
+$chairsInventory = [
+    'chairs_total' => 0,
+    'chairs_available' => 0,
+    'tables_total' => 0,
+    'tables_available' => 0,
+];
+foreach ($chairsEquipmentTypes as $type) {
+    if (($type['category'] ?? '') === 'Chair') {
+        $chairsInventory['chairs_total'] += (int)($type['total_qty'] ?? 0);
+        $chairsInventory['chairs_available'] += (int)($type['available_qty'] ?? 0);
+    } elseif (($type['category'] ?? '') === 'Table') {
+        $chairsInventory['tables_total'] += (int)($type['total_qty'] ?? 0);
+        $chairsInventory['tables_available'] += (int)($type['available_qty'] ?? 0);
+    }
+}
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -70,7 +174,9 @@ $maxMostRepaired = $maxMostRepaired > 0 ? $maxMostRepaired : 1;
         <nav aria-label="Master dashboard navigation">
             <ul>
                 <li><a class="active" href="dashboard.php"><i class="fas fa-th-large icon-size"></i><span class="nav-label">Master Dashboard</span></a></li>
-                <li><a href="assets.php"><i class="fas fa-campground icon-size"></i><span class="nav-label">Assets / Tents</span></a></li>
+                <li><a href="assets.php"><i class="fas fa-campground icon-size"></i><span class="nav-label">Tents</span></a></li>
+                <li><a href="chairs_table.php"><i class="fas fa-chair icon-size"></i><span class="nav-label">Chairs & Tables</span></a></li>
+                <li><a href="advance_request.php"><i class="fas fa-receipt icon-size"></i><span class="nav-label">Advance Request</span></a></li>
                 <li><a href="transportation.php"><i class="fas fa-truck icon-size"></i><span class="nav-label">Transportation</span></a></li>
                 <li><a href="motorpool.php"><i class="fas fa-wrench icon-size"></i><span class="nav-label">Motorpool</span></a></li>
                 <li><a href="payables.php"><i class="fas fa-file-invoice-dollar icon-size"></i><span class="nav-label">BAC Payables</span></a></li>
@@ -84,54 +190,19 @@ $maxMostRepaired = $maxMostRepaired > 0 ? $maxMostRepaired : 1;
             <div>
                 <p class="eyebrow">Executive overview</p>
                 <h1>GSO Master Dashboard</h1>
-                <span class="page-subtitle">Read-only summary across assets, transportation, motorpool, and BAC payables.</span>
+                <span class="page-subtitle">Read-only summary across tents, chairs and tables, transportation, motorpool, and BAC payables.</span>
             </div>
             <div class="header-actions">
                 <span class="last-updated"><i class="fas fa-clock"></i> Updated <?php echo date('M d, Y g:i A'); ?></span>
             </div>
         </header>
 
-        <section class="kpi-grid reveal-on-load" aria-label="Master KPI summary">
-            <article class="metric-card">
-                <span class="metric-icon success"><i class="fas fa-campground"></i></span>
-                <div>
-                    <span class="metric-label">Available Tents</span>
-                    <strong class="count-up" data-count="<?php echo (int)$masterData['tents']['available']; ?>"><?php echo n($masterData['tents']['available']); ?></strong>
-                    <small><?php echo n($masterData['tents']['on_field']); ?> on field</small>
-                </div>
-            </article>
-            <article class="metric-card">
-                <span class="metric-icon info"><i class="fas fa-truck"></i></span>
-                <div>
-                    <span class="metric-label">Available Vehicles</span>
-                    <strong class="count-up" data-count="<?php echo (int)$masterData['transportation']['available']; ?>"><?php echo n($masterData['transportation']['available']); ?></strong>
-                    <small><?php echo n($masterData['transportation']['departed']); ?> on field</small>
-                </div>
-            </article>
-            <article class="metric-card">
-                <span class="metric-icon warning"><i class="fas fa-wrench"></i></span>
-                <div>
-                    <span class="metric-label">Active Repairs</span>
-                    <strong class="count-up" data-count="<?php echo (int)($masterData['motorpool']['pending'] + $masterData['motorpool']['in_progress']); ?>"><?php echo n($masterData['motorpool']['pending'] + $masterData['motorpool']['in_progress']); ?></strong>
-                    <small><?php echo n($masterData['motorpool']['completed']); ?> completed</small>
-                </div>
-            </article>
-            <article class="metric-card">
-                <span class="metric-icon primary"><i class="fas fa-file-invoice-dollar"></i></span>
-                <div>
-                    <span class="metric-label">BAC Workflow</span>
-                    <strong class="count-up" data-count="<?php echo (int)($masterData['payables']['counts']['GSO'] + $masterData['payables']['counts']['BUDGET'] + $masterData['payables']['counts']['ACCOUNTING'] + $masterData['payables']['counts']['CTO']); ?>"><?php echo n($masterData['payables']['counts']['GSO'] + $masterData['payables']['counts']['BUDGET'] + $masterData['payables']['counts']['ACCOUNTING'] + $masterData['payables']['counts']['CTO']); ?></strong>
-                    <small><?php echo n($masterData['payables']['counts']['RELEASED']); ?> released</small>
-                </div>
-            </article>
-        </section>
-
         <section class="dashboard-layout">
             <div class="module-stack">
                 <section class="dashboard-card module-card reveal-on-load">
                     <div class="card-header">
                         <div>
-                            <span class="section-kicker">Assets / Tents</span>
+                            <span class="section-kicker">Tents</span>
                             <h2>Tent Inventory</h2>
                         </div>
                         <a class="module-link" href="assets.php">Open workspace <i class="fas fa-arrow-right"></i></a>
@@ -142,23 +213,41 @@ $maxMostRepaired = $maxMostRepaired > 0 ? $maxMostRepaired : 1;
                         <div><span>Retrieval</span><strong><?php echo n($masterData['tents']['for_retrieval']); ?></strong></div>
                         <div><span>Long Term</span><strong><?php echo n($masterData['tents']['long_term']); ?></strong></div>
                     </div>
-                    <div class="compact-table" role="table" aria-label="Recent tent records">
-                        <div class="compact-row compact-head" role="row">
-                            <span>Tent No.</span><span>Name</span><span>Date</span><span>Status</span>
+</section>
+
+                <section class="dashboard-card module-card reveal-on-load">
+                    <div class="card-header">
+                        <div>
+                            <span class="section-kicker">Asset Tracker Dashboard</span>
+                            <h2>Chairs & Tables</h2>
                         </div>
-                        <?php if ($masterData['tents']['recent']): ?>
-                            <?php foreach ($masterData['tents']['recent'] as $row): ?>
-                                <div class="compact-row" role="row">
-                                    <span><?php echo h($row['tent_no'] ?? ''); ?></span>
-                                    <strong><?php echo h($row['name'] ?? ''); ?></strong>
-                                    <span><?php echo h(short_date($row['date'] ?? '')); ?></span>
-                                    <span class="status-pill"><?php echo h($row['status'] ?? 'Unknown'); ?></span>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="empty-state">No recent tent records.</div>
-                        <?php endif; ?>
+                        <a class="module-link" href="chairs_table.php">Open workspace <i class="fas fa-arrow-right"></i></a>
                     </div>
+                    <div class="mini-metrics four">
+                        <div><span>Available Chairs</span><strong><?php echo n($chairsInventory['chairs_available']); ?></strong></div>
+                        <div><span>Available Tables</span><strong><?php echo n($chairsInventory['tables_available']); ?></strong></div>
+                        <div><span>Pending</span><strong><?php echo n($chairsMetrics['pending']); ?></strong></div>
+                        <div><span>Overdue</span><strong><?php echo n($chairsMetrics['overdue']); ?></strong></div>
+                    </div>
+</section>
+
+                <section class="dashboard-card module-card reveal-on-load">
+                    <div class="card-header">
+                        <div>
+                            <span class="section-kicker">Advance Request</span>
+                            <h2>Pending Expenses</h2>
+                        </div>
+                        <a class="module-link" href="advance_request.php">Open workspace <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <?php if ($advanceStoreTotals): ?>
+                        <div class="mini-metrics advance-summary-metrics">
+                            <?php foreach ($advanceStoreTotals as $store => $total): ?>
+                                <div><span><?php echo h($store); ?></span><strong><?php echo peso($total); ?></strong></div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="empty-state">No pending advance request expenses.</div>
+                    <?php endif; ?>
                 </section>
 
                 <section class="dashboard-card module-card reveal-on-load">
@@ -206,23 +295,7 @@ $maxMostRepaired = $maxMostRepaired > 0 ? $maxMostRepaired : 1;
                             <?php endif; ?>
                         </div>
                     </div>
-                    <div class="compact-table" role="table" aria-label="Recent transportation records">
-                        <div class="compact-row compact-head" role="row">
-                            <span>Plate</span><span>Driver</span><span>Date</span><span>Status</span>
-                        </div>
-                        <?php foreach ($masterData['transportation']['recent'] as $row): ?>
-                            <div class="compact-row" role="row">
-                                <span><?php echo h($row['Plate_no'] ?? ''); ?></span>
-                                <strong><?php echo h($row['Driver'] ?? ''); ?></strong>
-                                <span><?php echo h(short_date($row['Date'] ?? '')); ?></span>
-                                <span class="status-pill"><?php echo h($row['Status1'] ?? $row['Status'] ?? 'Unknown'); ?></span>
-                            </div>
-                        <?php endforeach; ?>
-                        <?php if (!$masterData['transportation']['recent']): ?>
-                            <div class="empty-state">No recent transportation records.</div>
-                        <?php endif; ?>
-                    </div>
-                </section>
+</section>
 
                 <section class="dashboard-card module-card reveal-on-load">
                     <div class="card-header">
@@ -270,23 +343,7 @@ $maxMostRepaired = $maxMostRepaired > 0 ? $maxMostRepaired : 1;
                             <?php endif; ?>
                         </div>
                     </div>
-                    <div class="compact-table" role="table" aria-label="Recent motorpool repairs">
-                        <div class="compact-row compact-head" role="row">
-                            <span>Plate</span><span>Office</span><span>Repair</span><span>Status</span>
-                        </div>
-                        <?php foreach ($masterData['motorpool']['recent'] as $row): ?>
-                            <div class="compact-row" role="row">
-                                <span><?php echo h($row['plate_no'] ?? ''); ?></span>
-                                <strong><?php echo h($row['office'] ?? ''); ?></strong>
-                                <span><?php echo h($row['repair_type'] ?? ''); ?></span>
-                                <span class="status-pill"><?php echo h($row['status'] ?? 'Unknown'); ?></span>
-                            </div>
-                        <?php endforeach; ?>
-                        <?php if (!$masterData['motorpool']['recent']): ?>
-                            <div class="empty-state">No active repair records.</div>
-                        <?php endif; ?>
-                    </div>
-                </section>
+</section>
 
                 <section class="dashboard-card module-card reveal-on-load">
                     <div class="card-header">
@@ -302,24 +359,9 @@ $maxMostRepaired = $maxMostRepaired > 0 ? $maxMostRepaired : 1;
                             <div><span>Budget</span><strong><?php echo n($masterData['payables']['counts']['BUDGET']); ?></strong></div>
                             <div><span>Accounting</span><strong><?php echo n($masterData['payables']['counts']['ACCOUNTING']); ?></strong></div>
                             <div><span>CTO</span><strong><?php echo n($masterData['payables']['counts']['CTO']); ?></strong></div>
-                            <div><span>Released</span><strong><?php echo n($masterData['payables']['counts']['RELEASED']); ?></strong></div>
+                            <div><span>Check Released</span><strong><?php echo n($masterData['payables']['counts']['RELEASED']); ?></strong></div>
                         </div>
-                        <div class="compact-table" role="table" aria-label="Latest BAC and RFQ transactions">
-                            <div class="compact-row compact-head" role="row">
-                                <span>Source</span><span>Title</span><span>Reference</span><span>Date</span>
-                            </div>
-                            <?php foreach ($masterData['payables']['latest'] as $row): ?>
-                                <div class="compact-row" role="row">
-                                    <span class="status-pill"><?php echo h($row['source'] ?? ''); ?></span>
-                                    <strong><?php echo h($row['title'] ?? ''); ?></strong>
-                                    <span><?php echo h($row['reference_no'] ?? ''); ?></span>
-                                    <span><?php echo h(short_date($row['transaction_date'] ?? '')); ?></span>
-                                </div>
-                            <?php endforeach; ?>
-                            <?php if (!$masterData['payables']['latest']): ?>
-                                <div class="empty-state">No recent payables transactions.</div>
-                            <?php endif; ?>
-                        </div>
+
                     <?php else: ?>
                         <div class="empty-state prominent">Payables data is unavailable right now. The master dashboard is still showing asset, transportation, and motorpool summaries.</div>
                     <?php endif; ?>

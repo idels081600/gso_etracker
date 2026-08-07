@@ -19,11 +19,19 @@ if ($payablesAvailable) {
 }
 
 $activeStatus = strtoupper(trim($_GET['status'] ?? 'GSO'));
-$statuses = ['GSO', 'BUDGET', 'ACCOUNTING', 'CTO'];
+$statuses = ['GSO', 'BUDGET', 'ACCOUNTING', 'CTO', 'RELEASED'];
+$statusLabels = [
+    'GSO' => 'GSO',
+    'BUDGET' => 'BUDGET',
+    'ACCOUNTING' => 'ACCOUNTING',
+    'CTO' => 'CTO',
+    'RELEASED' => 'CHECK RELEASED',
+];
 if (!in_array($activeStatus, $statuses, true)) {
     $activeStatus = 'GSO';
 }
 $search = trim($_GET['search'] ?? '');
+$showChecklist = $activeStatus === 'GSO';
 $rows = [];
 $counts = array_fill_keys(['GSO', 'BUDGET', 'ACCOUNTING', 'CTO', 'RELEASED'], 0);
 
@@ -50,14 +58,18 @@ if ($payablesAvailable) {
     $types = '';
     $params = [];
     if ($search === '') {
-        $where[] = "COALESCE(pws.main_status, 'GSO') = ?";
-        $types .= 's';
-        $params[] = $activeStatus;
+        if ($activeStatus === 'RELEASED') {
+            $where[] = "COALESCE(pws.released, 0) = 1";
+        } else {
+            $where[] = "COALESCE(pws.main_status, 'GSO') = ?";
+            $types .= 's';
+            $params[] = $activeStatus;
+        }
     } else {
         $like = '%' . $search . '%';
-        $where[] = "(tb.ib_no LIKE ? OR tb.winning_bidders LIKE ? OR tb.project_name LIKE ? OR CAST(tb.amount AS CHAR) LIKE ? OR COALESCE(pws.main_status, 'GSO') LIKE ?)";
-        $types .= 'sssss';
-        array_push($params, $like, $like, $like, $like, $like);
+        $where[] = "(tb.ib_no LIKE ? OR tb.winning_bidders LIKE ? OR tb.project_name LIKE ? OR CAST(tb.amount AS CHAR) LIKE ? OR COALESCE(pws.main_status, 'GSO') LIKE ? OR (COALESCE(pws.released, 0) = 1 AND ? LIKE '%released%'))";
+        $types .= 'ssssss';
+        array_push($params, $like, $like, $like, $like, $like, strtolower($search));
     }
     $sql = "SELECT tb.id, tb.ib_no, tb.winning_bidders, tb.project_name, tb.amount,
         COALESCE(pws.main_status, 'GSO') AS main_status,
@@ -65,7 +77,8 @@ if ($payablesAvailable) {
         COALESCE(pws.obr, 0) AS obr,
         COALESCE(pws.ics, 0) AS ics,
         COALESCE(pws.par, 0) AS par,
-        COALESCE(pws.ris, 0) AS ris
+        COALESCE(pws.ris, 0) AS ris,
+        COALESCE(pws.released, 0) AS released
         FROM transmittal_bac tb
         LEFT JOIN payables_workflow_status pws ON pws.record_type = 'bac' AND pws.record_id = tb.id
         WHERE " . implode(' AND ', $where) . "
@@ -85,9 +98,9 @@ if ($payablesAvailable) {
 
 master_page_start('payables', 'BAC Payables', 'Search and update BAC workflow records inside the master portal.');
 ?>
-<section class="kpi-grid reveal-on-load">
-    <?php foreach (['GSO', 'BUDGET', 'ACCOUNTING', 'CTO'] as $status): ?>
-        <article class="metric-card"><span class="metric-icon success"><i class="fas fa-file-invoice"></i></span><div><span class="metric-label"><?php echo master_h($status); ?></span><strong class="count-up" data-count="<?php echo (int)$counts[$status]; ?>"><?php echo master_n($counts[$status]); ?></strong><small>Workflow records</small></div></article>
+<section class="kpi-grid payables-metrics reveal-on-load">
+    <?php foreach ($statuses as $status): ?>
+        <article class="metric-card"><span class="metric-icon success"><i class="fas <?php echo $status === 'RELEASED' ? 'fa-money-check-alt' : 'fa-file-invoice'; ?>"></i></span><div><span class="metric-label"><?php echo master_h($statusLabels[$status]); ?></span><strong class="count-up" data-count="<?php echo (int)$counts[$status]; ?>"><?php echo master_n($counts[$status]); ?></strong><small><?php echo $status === 'RELEASED' ? 'Check released' : 'Workflow records'; ?></small></div></article>
     <?php endforeach; ?>
 </section>
 
@@ -98,7 +111,7 @@ master_page_start('payables', 'BAC Payables', 'Search and update BAC workflow re
         <div class="workspace-toolbar">
             <div class="task-tabs">
                 <?php foreach ($statuses as $status): ?>
-                    <a class="<?php echo $activeStatus === $status && $search === '' ? 'active' : ''; ?>" href="payables.php?status=<?php echo master_h($status); ?>"><?php echo master_h($status); ?></a>
+                    <a class="<?php echo $activeStatus === $status && $search === '' ? 'active' : ''; ?>" href="payables.php?status=<?php echo master_h($status); ?>"><?php echo master_h($statusLabels[$status]); ?></a>
                 <?php endforeach; ?>
             </div>
             <form class="workspace-search" method="get">
@@ -109,20 +122,31 @@ master_page_start('payables', 'BAC Payables', 'Search and update BAC workflow re
             </form>
         </div>
         <div class="master-table is-active">
-            <div class="master-row master-head payables-row readonly"><span>IB No.</span><span>Bidder / Project</span><span>Amount</span><span>Checklist</span></div>
+            <div class="master-row master-head payables-row readonly <?php echo !$showChecklist ? 'without-checklist' : ''; ?>">
+                <span>IB No.</span><span>Bidder / Project</span><span>Amount</span>
+                <?php if ($showChecklist): ?><span>Checklist / Released</span><?php endif; ?>
+            </div>
             <?php foreach ($rows as $row): ?>
-                <div class="master-row payables-row readonly" data-record-id="<?php echo (int)$row['id']; ?>">
+                <div class="master-row payables-row readonly <?php echo !$showChecklist ? 'without-checklist' : ''; ?>" data-record-id="<?php echo (int)$row['id']; ?>">
                     <span><?php echo master_h($row['ib_no'] ?? ''); ?></span>
                     <strong><?php echo master_h(($row['winning_bidders'] ?? '') . ' / ' . ($row['project_name'] ?? '')); ?></strong>
                     <span>&#8369;<?php echo number_format((float)($row['amount'] ?? 0), 2); ?></span>
-                    <span class="checklist-inline readonly" aria-label="Current checklist">
-                        <?php foreach (['inspection' => 'Inspection', 'obr' => 'OBR', 'ics' => 'ICS', 'par' => 'PAR', 'ris' => 'RIS'] as $key => $label): ?>
-                            <span class="check-chip <?php echo !empty($row[$key]) ? 'is-complete' : 'is-missing'; ?>">
-                                <i class="fas <?php echo !empty($row[$key]) ? 'fa-check' : 'fa-minus'; ?>"></i>
-                                <?php echo master_h($label); ?>
-                            </span>
-                        <?php endforeach; ?>
-                    </span>
+                    <?php if ($showChecklist): ?>
+                        <span class="checklist-inline readonly" aria-label="Current checklist">
+                            <?php foreach (['inspection' => 'Inspection', 'obr' => 'OBR', 'ics' => 'ICS', 'par' => 'PAR', 'ris' => 'RIS'] as $key => $label): ?>
+                                <span class="check-chip <?php echo !empty($row[$key]) ? 'is-complete' : 'is-missing'; ?>">
+                                    <i class="fas <?php echo !empty($row[$key]) ? 'fa-check' : 'fa-minus'; ?>"></i>
+                                    <?php echo master_h($label); ?>
+                                </span>
+                            <?php endforeach; ?>
+                            <?php if (!empty($row['released'])): ?>
+                                <span class="check-chip is-complete">
+                                    <i class="fas fa-money-check-alt"></i>
+                                    Released
+                                </span>
+                            <?php endif; ?>
+                        </span>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
             <?php if (!$rows): ?><div class="empty-state">No matching BAC records.</div><?php endif; ?>

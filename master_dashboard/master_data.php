@@ -5,7 +5,7 @@ set_include_path($masterRoot . PATH_SEPARATOR . $masterRoot . DIRECTORY_SEPARATO
 
 require_once $masterRoot . DIRECTORY_SEPARATOR . 'db_asset.php';
 require_once $masterRoot . DIRECTORY_SEPARATOR . 'display_data_asset.php';
-require_once $masterRoot . DIRECTORY_SEPARATOR . 'motorpool_data_display.php';
+require_once $masterRoot . DIRECTORY_SEPARATOR . 'asset_tracker_dashboard' . DIRECTORY_SEPARATOR . 'motorpool' . DIRECTORY_SEPARATOR . 'motorpool_data_display.php';
 
 if (!function_exists('master_rows_from_result')) {
     function master_rows_from_result($result, int $limit = 5): array
@@ -82,6 +82,35 @@ function master_payables_connect(string $payablesDir): ?mysqli
     return $connection;
 }
 
+function master_motorpool_status_counts(): array
+{
+    global $conn;
+    $sql = "SELECT
+            SUM(status = 'Pending') AS pending,
+            SUM(status = 'In Progress') AS in_progress,
+            SUM(status = 'Completed') AS completed
+        FROM motorpool_repair";
+    $result = mysqli_query($conn, $sql);
+    $row = $result ? mysqli_fetch_assoc($result) : [];
+
+    return [
+        'pending' => master_safe_number($row['pending'] ?? 0),
+        'in_progress' => master_safe_number($row['in_progress'] ?? 0),
+        'completed' => master_safe_number($row['completed'] ?? 0),
+    ];
+}
+function master_motorpool_daily_repairs(int $limit = 7): array
+{
+    global $conn;
+    $limit = max(1, $limit);
+    $sql = "SELECT DATE(repair_date) AS repair_day, COUNT(*) AS repair_count
+        FROM motorpool_repair
+        GROUP BY DATE(repair_date)
+        ORDER BY repair_day DESC
+        LIMIT " . (int)$limit;
+    $result = mysqli_query($conn, $sql);
+    return master_rows_from_result($result, $limit);
+}
 function master_payables_summary(string $payablesDir): array
 {
     $summary = [
@@ -141,29 +170,28 @@ function master_payables_summary(string $payablesDir): array
 }
 
 $assetConn = $conn;
+$assetMetrics = get_dashboard_metrics();
+$motorpoolStatusCounts = master_motorpool_status_counts();
 
 $masterData = [
     'tents' => [
-        'available' => master_safe_number(display_tent_status()),
-        'on_field' => master_safe_number(display_tent_status_Installed()),
-        'for_retrieval' => master_safe_number(display_tent_status_Retrieval()),
-        'long_term' => master_safe_number(display_tent_status_Longterm()),
-        'recent' => master_rows_from_result(display_data_dashboard(), 5),
+        'available' => master_safe_number($assetMetrics['tent_available'] ?? 0),
+        'on_field' => master_safe_number($assetMetrics['tent_installed'] ?? 0),
+        'for_retrieval' => master_safe_number($assetMetrics['tent_for_retrieval'] ?? 0),
+        'long_term' => master_safe_number($assetMetrics['tent_long_term'] ?? 0),
     ],
     'transportation' => [
-        'available' => master_safe_number(display_vehicle_ongarage()),
-        'departed' => master_safe_number(display_vehicle_departed()),
+        'available' => master_safe_number($assetMetrics['vehicle_available'] ?? 0),
+        'departed' => master_safe_number($assetMetrics['vehicle_departed'] ?? 0),
         'dispatch_trend' => get_daily_dispatch_counts(),
         'top_vehicles' => get_top_5_vehicle_counts(),
-        'recent' => master_rows_from_result(display_data_transpo(), 5),
     ],
     'motorpool' => [
-        'pending' => master_safe_number(count_pending_repairs()),
-        'in_progress' => master_safe_number(count_in_progress_repairs()),
-        'completed' => master_safe_number(count_repaired_repairs()),
-        'daily_repairs' => array_slice(count_daily_repairs(), 0, 7),
+        'pending' => $motorpoolStatusCounts['pending'],
+        'in_progress' => $motorpoolStatusCounts['in_progress'],
+        'completed' => $motorpoolStatusCounts['completed'],
+        'daily_repairs' => master_motorpool_daily_repairs(7),
         'most_repaired' => count_completed_repairs_by_car(),
-        'recent' => array_slice(get_motorpool_repairs(), 0, 5),
     ],
     'payables' => master_payables_summary($masterRoot . DIRECTORY_SEPARATOR . 'Payables'),
 ];

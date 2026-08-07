@@ -81,7 +81,9 @@ function master_page_start(string $activePage, string $title, string $subtitle =
     $userName = $_SESSION['username'] ?? 'Admin';
     $nav = [
         'dashboard' => ['href' => 'dashboard.php', 'icon' => 'fas fa-th-large', 'label' => 'Master Dashboard'],
-        'assets' => ['href' => 'assets.php', 'icon' => 'fas fa-campground', 'label' => 'Assets / Tents'],
+        'assets' => ['href' => 'assets.php', 'icon' => 'fas fa-campground', 'label' => 'Tents'],
+        'chairs_table' => ['href' => 'chairs_table.php', 'icon' => 'fas fa-chair', 'label' => 'Chairs & Tables'],
+        'advance_request' => ['href' => 'advance_request.php', 'icon' => 'fas fa-receipt', 'label' => 'Advance Request'],
         'transportation' => ['href' => 'transportation.php', 'icon' => 'fas fa-truck', 'label' => 'Transportation'],
         'motorpool' => ['href' => 'motorpool.php', 'icon' => 'fas fa-wrench', 'label' => 'Motorpool'],
         'payables' => ['href' => 'payables.php', 'icon' => 'fas fa-file-invoice-dollar', 'label' => 'BAC Payables'],
