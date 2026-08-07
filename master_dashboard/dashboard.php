@@ -3,7 +3,6 @@ require_once __DIR__ . '/master_layout.php';
 master_require_admin();
 
 require_once __DIR__ . '/master_data.php';
-require_once dirname(__DIR__) . '/asset_tracker_dashboard/chairs_table/equipment_helpers.php';
 
 function h($value): string
 {
@@ -92,7 +91,7 @@ function dashboard_advance_store_totals(string $advanceDir): array
     }
     mysqli_close($advanceConn);
 
-    $filteredTotals = array_filter($totals, fn ($total): bool => $total > 0);
+    $filteredTotals = array_filter($totals, function ($total): bool { return $total > 0; });
     if (!is_dir($cacheDir)) {
         mkdir($cacheDir, 0775, true);
     }

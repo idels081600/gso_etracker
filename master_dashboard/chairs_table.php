@@ -2,7 +2,8 @@
 require_once __DIR__ . '/master_layout.php';
 master_require_admin();
 
-require_once dirname(__DIR__) . '/asset_tracker_dashboard/chairs_table/equipment_helpers.php';
+require_once __DIR__ . '/master_data.php';
+
 
 $today = date('Y-m-d');
 $metrics = get_deployment_metrics();

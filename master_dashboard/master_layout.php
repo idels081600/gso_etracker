@@ -15,6 +15,20 @@ function master_require_admin(): void
     }
 }
 
+function master_optional_require(string $path): bool
+{
+    if (!is_readable($path)) {
+        return false;
+    }
+
+    try {
+        require_once $path;
+        return true;
+    } catch (Throwable $error) {
+        error_log('Master dashboard optional include failed: ' . $path . ' - ' . $error->getMessage());
+        return false;
+    }
+}
 function master_csrf_token(): string
 {
     if (empty($_SESSION['_master_csrf'])) {

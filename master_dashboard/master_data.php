@@ -3,9 +3,9 @@
 $masterRoot = dirname(__DIR__);
 set_include_path($masterRoot . PATH_SEPARATOR . $masterRoot . DIRECTORY_SEPARATOR . 'Payables' . PATH_SEPARATOR . get_include_path());
 
-require_once $masterRoot . DIRECTORY_SEPARATOR . 'db_asset.php';
-require_once $masterRoot . DIRECTORY_SEPARATOR . 'display_data_asset.php';
-require_once $masterRoot . DIRECTORY_SEPARATOR . 'asset_tracker_dashboard' . DIRECTORY_SEPARATOR . 'motorpool' . DIRECTORY_SEPARATOR . 'motorpool_data_display.php';
+if (class_exists('mysqli')) {
+    mysqli_report(MYSQLI_REPORT_OFF);
+}
 
 if (!function_exists('master_rows_from_result')) {
     function master_rows_from_result($result, int $limit = 5): array
@@ -23,12 +23,6 @@ if (!function_exists('master_rows_from_result')) {
     }
 }
 
-function master_asset_query_rows(mysqli $connection, string $sql, int $limit = 5): array
-{
-    $result = mysqli_query($connection, $sql);
-    return master_rows_from_result($result, $limit);
-}
-
 function master_safe_number($value): int
 {
     return is_numeric($value) ? (int)$value : 0;
@@ -40,40 +34,32 @@ function master_read_env_file(string $path): array
         return [];
     }
 
-    $values = [];
-    foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-        $line = trim($line);
-        if ($line === '' || strpos($line, '#') === 0 || strpos($line, '=') === false) {
-            continue;
-        }
-
-        [$key, $value] = explode('=', $line, 2);
-        $values[trim($key)] = trim($value, " \t\n\r\0\x0B\"'");
-    }
-
-    return $values;
+    $values = parse_ini_file($path, false, INI_SCANNER_RAW);
+    return is_array($values) ? $values : [];
 }
 
-function master_payables_connect(string $payablesDir): ?mysqli
+function master_connect_from_env(array $env, string $databaseKey = 'DB_DATABASE', int $timeout = 2): ?mysqli
 {
-    $env = master_read_env_file($payablesDir . DIRECTORY_SEPARATOR . '.env');
-    if (!$env) {
+    if (!class_exists('mysqli')) {
         return null;
     }
 
-    mysqli_report(MYSQLI_REPORT_OFF);
+    $host = $env['DB_HOST'] ?? 'localhost';
+    $user = $env['DB_USERNAME'] ?? '';
+    $pass = $env['DB_PASSWORD'] ?? '';
+    $db = $env[$databaseKey] ?? ($env['DB_NAME'] ?? '');
+    $port = isset($env['DB_PORT']) ? (int)$env['DB_PORT'] : 3306;
+
+    if ($host === '' || $user === '' || $db === '') {
+        return null;
+    }
+
     $connection = mysqli_init();
     if (!$connection) {
         return null;
     }
 
-    mysqli_options($connection, MYSQLI_OPT_CONNECT_TIMEOUT, 3);
-    $host = $env['DB_HOST'] ?? 'localhost';
-    $user = $env['DB_USERNAME'] ?? '';
-    $pass = $env['DB_PASSWORD'] ?? '';
-    $db = $env['DB_DATABASE'] ?? '';
-    $port = isset($env['DB_PORT']) ? (int)$env['DB_PORT'] : 3306;
-
+    mysqli_options($connection, MYSQLI_OPT_CONNECT_TIMEOUT, $timeout);
     if (!@mysqli_real_connect($connection, $host, $user, $pass, $db, $port)) {
         return null;
     }
@@ -82,9 +68,325 @@ function master_payables_connect(string $payablesDir): ?mysqli
     return $connection;
 }
 
+function master_asset_connect(string $masterRoot): ?mysqli
+{
+    return master_connect_from_env(
+        master_read_env_file($masterRoot . DIRECTORY_SEPARATOR . 'asset_tracker_dashboard' . DIRECTORY_SEPARATOR . '.env'),
+        'DB_NAME',
+        2
+    );
+}
+
+$conn = master_asset_connect($masterRoot);
+
+if (!function_exists('get_dashboard_metrics')) {
+    function get_dashboard_metrics(): array
+    {
+        global $conn;
+        if (!$conn instanceof mysqli) {
+            return [];
+        }
+
+        $tentResult = mysqli_query($conn, "
+            SELECT
+                COUNT(*) AS total,
+                SUM(Status = 'Retrieved') AS available,
+                SUM(Status = 'Installed') AS installed,
+                SUM(Status = 'For Retrieval') AS for_retrieval,
+                SUM(Status = 'Long Term') AS long_term
+            FROM tent_status
+        ");
+        $vehicleResult = mysqli_query($conn, "
+            SELECT
+                COUNT(*) AS total,
+                SUM(Status = 'Stand By') AS available,
+                SUM(Status = 'Departed') AS departed
+            FROM Vehicle
+        ");
+
+        if (!$tentResult || !$vehicleResult) {
+            return [];
+        }
+
+        $tent = mysqli_fetch_assoc($tentResult) ?: [];
+        $vehicle = mysqli_fetch_assoc($vehicleResult) ?: [];
+        $tentTotal = master_safe_number($tent['total'] ?? 0);
+        $vehicleTotal = master_safe_number($vehicle['total'] ?? 0);
+        $tentAvailable = master_safe_number($tent['available'] ?? 0);
+        $vehicleAvailable = master_safe_number($vehicle['available'] ?? 0);
+        $vehicleDeparted = master_safe_number($vehicle['departed'] ?? 0);
+
+        return [
+            'tent_total' => $tentTotal,
+            'tent_available' => $tentAvailable,
+            'tent_installed' => master_safe_number($tent['installed'] ?? 0),
+            'tent_for_retrieval' => master_safe_number($tent['for_retrieval'] ?? 0),
+            'tent_long_term' => master_safe_number($tent['long_term'] ?? 0),
+            'tent_available_percent' => $tentTotal > 0 ? (int)round(($tentAvailable / $tentTotal) * 100) : 0,
+            'vehicle_total' => $vehicleTotal,
+            'vehicle_available' => $vehicleAvailable,
+            'vehicle_departed' => $vehicleDeparted,
+            'vehicle_available_percent' => $vehicleTotal > 0 ? (int)round(($vehicleAvailable / $vehicleTotal) * 100) : 0,
+            'vehicle_departed_percent' => $vehicleTotal > 0 ? (int)round(($vehicleDeparted / $vehicleTotal) * 100) : 0,
+        ];
+    }
+}
+
+if (!function_exists('get_daily_dispatch_counts')) {
+    function get_daily_dispatch_counts(): array
+    {
+        global $conn;
+        $weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        $dayCounts = array_fill_keys($weekdays, 0);
+        if (!$conn instanceof mysqli) {
+            return $dayCounts;
+        }
+
+        $sql = "
+            SELECT DATE_FORMAT(Date, '%W') AS day_name, COUNT(*) AS count
+            FROM Transportation
+            WHERE Date BETWEEN ? AND ?
+              AND DATE_FORMAT(Date, '%W') IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+            GROUP BY day_name
+            ORDER BY FIELD(day_name, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+        ";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            return $dayCounts;
+        }
+
+        $startOfWeek = date('Y-m-d', strtotime('monday this week'));
+        $endOfWeek = date('Y-m-d', strtotime('friday this week'));
+        $stmt->bind_param('ss', $startOfWeek, $endOfWeek);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        while ($result && $row = mysqli_fetch_assoc($result)) {
+            if (isset($dayCounts[$row['day_name']])) {
+                $dayCounts[$row['day_name']] = master_safe_number($row['count'] ?? 0);
+            }
+        }
+        $stmt->close();
+
+        return $dayCounts;
+    }
+}
+
+if (!function_exists('get_top_5_vehicle_counts')) {
+    function get_top_5_vehicle_counts(): array
+    {
+        global $conn;
+        if (!$conn instanceof mysqli) {
+            return [];
+        }
+
+        $result = mysqli_query($conn, "
+            SELECT Vehicle, Plate_no, COUNT(*) AS Count
+            FROM Transportation
+            GROUP BY Vehicle, Plate_no
+            ORDER BY Count DESC
+            LIMIT 5
+        ");
+        $rows = [];
+        while ($result && $row = mysqli_fetch_assoc($result)) {
+            $rows[] = [
+                'vehicle' => $row['Vehicle'] ?? '',
+                'plate_no' => $row['Plate_no'] ?? '',
+                'count' => master_safe_number($row['Count'] ?? 0),
+            ];
+        }
+
+        return $rows;
+    }
+}
+
+if (!function_exists('count_completed_repairs_by_car')) {
+    function count_completed_repairs_by_car(): array
+    {
+        global $conn;
+        if (!$conn instanceof mysqli) {
+            return [];
+        }
+
+        $result = mysqli_query($conn, "
+            SELECT plate_no, COUNT(*) AS completed_count
+            FROM motorpool_repair
+            WHERE status = 'Completed'
+            GROUP BY plate_no
+            ORDER BY completed_count DESC
+            LIMIT 5
+        ");
+        $counts = [];
+        while ($result && $row = mysqli_fetch_assoc($result)) {
+            $counts[$row['plate_no']] = master_safe_number($row['completed_count'] ?? 0);
+        }
+
+        return $counts;
+    }
+}
+
+if (!defined('EQUIPMENT_DEPLOYMENT_STATUSES')) {
+    define('EQUIPMENT_DEPLOYMENT_STATUSES', ['Pending', 'Deployed', 'For Retrieval', 'Retrieved', 'Long Term']);
+}
+
+if (!function_exists('get_equipment_types')) {
+    function get_equipment_types(?string $category = null): array
+    {
+        global $conn;
+        if (!$conn instanceof mysqli) {
+            return [];
+        }
+
+        $sql = 'SELECT *, (total_qty - available_qty) AS reserved_qty FROM equipment_types';
+        $types = '';
+        $params = [];
+        if ($category !== null && in_array($category, ['Chair', 'Table'], true)) {
+            $sql .= ' WHERE category = ?';
+            $types = 's';
+            $params[] = $category;
+        }
+        $sql .= ' ORDER BY category, subtype_name';
+
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            return [];
+        }
+        if ($types !== '') {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $rows = master_rows_from_result($result, 500);
+        $stmt->close();
+
+        return $rows;
+    }
+}
+
+if (!function_exists('get_deployment_metrics')) {
+    function get_deployment_metrics(): array
+    {
+        global $conn;
+        $empty = ['total' => 0, 'deployed' => 0, 'pending' => 0, 'due_today' => 0, 'overdue' => 0, 'chairs_deployed' => 0, 'tables_deployed' => 0];
+        if (!$conn instanceof mysqli) {
+            return $empty;
+        }
+
+        $result = mysqli_query($conn, "
+            SELECT COUNT(*) AS total,
+                SUM(status = 'Deployed') AS deployed,
+                SUM(status = 'Pending') AS pending,
+                SUM(status = 'For Retrieval' AND retrieval_date = CURDATE()) AS due_today,
+                SUM(status = 'For Retrieval' AND retrieval_date < CURDATE()) AS overdue
+            FROM deployments
+        ");
+        $row = $result ? (mysqli_fetch_assoc($result) ?: []) : [];
+
+        $deployedResult = mysqli_query($conn, "
+            SELECT
+                COALESCE(SUM(CASE WHEN et.category = 'Chair' THEN di.quantity ELSE 0 END), 0) AS chairs_deployed,
+                COALESCE(SUM(CASE WHEN et.category = 'Table' THEN di.quantity ELSE 0 END), 0) AS tables_deployed
+            FROM deployment_items di
+            JOIN deployments d ON d.id = di.deployment_id
+            JOIN equipment_types et ON et.id = di.equipment_type_id
+            WHERE d.status <> 'Retrieved'
+        ");
+        $deployed = $deployedResult ? (mysqli_fetch_assoc($deployedResult) ?: []) : [];
+
+        return [
+            'total' => master_safe_number($row['total'] ?? 0),
+            'deployed' => master_safe_number($row['deployed'] ?? 0),
+            'pending' => master_safe_number($row['pending'] ?? 0),
+            'due_today' => master_safe_number($row['due_today'] ?? 0),
+            'overdue' => master_safe_number($row['overdue'] ?? 0),
+            'chairs_deployed' => master_safe_number($deployed['chairs_deployed'] ?? 0),
+            'tables_deployed' => master_safe_number($deployed['tables_deployed'] ?? 0),
+        ];
+    }
+}
+
+if (!function_exists('get_deployment_items')) {
+    function get_deployment_items(int $deploymentId): array
+    {
+        global $conn;
+        if (!$conn instanceof mysqli) {
+            return [];
+        }
+
+        $stmt = $conn->prepare("
+            SELECT di.*, et.subtype_name, et.display_name, et.category, et.total_qty, et.available_qty
+            FROM deployment_items di
+            JOIN equipment_types et ON et.id = di.equipment_type_id
+            WHERE di.deployment_id = ?
+            ORDER BY et.category, et.subtype_name
+        ");
+        if (!$stmt) {
+            return [];
+        }
+        $stmt->bind_param('i', $deploymentId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $rows = master_rows_from_result($result, 100);
+        $stmt->close();
+
+        return $rows;
+    }
+}
+
+if (!function_exists('get_deployments_with_items')) {
+    function get_deployments_with_items(?string $status = null): array
+    {
+        global $conn;
+        if (!$conn instanceof mysqli) {
+            return [];
+        }
+
+        $sql = 'SELECT * FROM deployments';
+        $types = '';
+        $params = [];
+        if ($status !== null && in_array($status, EQUIPMENT_DEPLOYMENT_STATUSES, true)) {
+            $sql .= ' WHERE status = ?';
+            $types = 's';
+            $params[] = $status;
+        }
+        $sql .= ' ORDER BY id DESC';
+
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            return [];
+        }
+        if ($types !== '') {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $rows = [];
+        while ($result && $row = mysqli_fetch_assoc($result)) {
+            $row['items'] = get_deployment_items((int)($row['id'] ?? 0));
+            $rows[] = $row;
+        }
+        $stmt->close();
+
+        return $rows;
+    }
+}
+function master_asset_query_rows(mysqli $connection, string $sql, int $limit = 5): array
+{
+    $result = mysqli_query($connection, $sql);
+    return master_rows_from_result($result, $limit);
+}
+
+function master_payables_connect(string $payablesDir): ?mysqli
+{
+    return master_connect_from_env(master_read_env_file($payablesDir . DIRECTORY_SEPARATOR . '.env'), 'DB_DATABASE', 3);
+}
+
 function master_motorpool_status_counts(): array
 {
     global $conn;
+    if (!$conn instanceof mysqli) {
+        return ['pending' => 0, 'in_progress' => 0, 'completed' => 0];
+    }
+
     $sql = "SELECT
             SUM(status = 'Pending') AS pending,
             SUM(status = 'In Progress') AS in_progress,
@@ -99,9 +401,14 @@ function master_motorpool_status_counts(): array
         'completed' => master_safe_number($row['completed'] ?? 0),
     ];
 }
+
 function master_motorpool_daily_repairs(int $limit = 7): array
 {
     global $conn;
+    if (!$conn instanceof mysqli) {
+        return [];
+    }
+
     $limit = max(1, $limit);
     $sql = "SELECT DATE(repair_date) AS repair_day, COUNT(*) AS repair_count
         FROM motorpool_repair
@@ -111,6 +418,7 @@ function master_motorpool_daily_repairs(int $limit = 7): array
     $result = mysqli_query($conn, $sql);
     return master_rows_from_result($result, $limit);
 }
+
 function master_payables_summary(string $payablesDir): array
 {
     $summary = [
@@ -169,7 +477,6 @@ function master_payables_summary(string $payablesDir): array
     return $summary;
 }
 
-$assetConn = $conn;
 $assetMetrics = get_dashboard_metrics();
 $motorpoolStatusCounts = master_motorpool_status_counts();
 

@@ -2,7 +2,46 @@
 require_once __DIR__ . '/master_layout.php';
 master_require_admin();
 
-require_once dirname(__DIR__) . '/advance_request/advance_po_db.php';
+function advance_db_value(string $source, string $name): string
+{
+    if (preg_match('/\$' . preg_quote($name, '/') . '\s*=\s*(["\'])(.*?)\1\s*;/', $source, $matches)) {
+        return $matches[2];
+    }
+
+    return '';
+}
+
+function advance_connect_from_file(string $dbFile): ?mysqli
+{
+    if (!class_exists('mysqli') || !is_readable($dbFile)) {
+        return null;
+    }
+
+    $source = (string)file_get_contents($dbFile);
+    $host = advance_db_value($source, 'servername');
+    $user = advance_db_value($source, 'username');
+    $pass = advance_db_value($source, 'password');
+    $db = advance_db_value($source, 'dbname');
+    if ($host === '' || $user === '' || $db === '') {
+        return null;
+    }
+
+    mysqli_report(MYSQLI_REPORT_OFF);
+    $connection = mysqli_init();
+    if (!$connection) {
+        return null;
+    }
+    mysqli_options($connection, MYSQLI_OPT_CONNECT_TIMEOUT, 2);
+    if (!@mysqli_real_connect($connection, $host, $user, $pass, $db)) {
+        return null;
+    }
+    $connection->set_charset('utf8mb4');
+
+    return $connection;
+}
+
+$conn = advance_connect_from_file(dirname(__DIR__) . '/advance_request/advance_po_db.php');
+$advanceConnectionAvailable = $conn instanceof mysqli;
 
 $stores = ['BQ', 'BQ BUILDERWARE', 'NODAL', 'JETS MARKETING', 'JJS SEAFOODS', 'CITY TYRE'];
 $search = trim($_GET['search'] ?? '');
@@ -32,7 +71,7 @@ $metricsSql = "
       AND status = 'Pending'
       AND store IN ('BQ', 'BQ BUILDERWARE', 'NODAL', 'JETS MARKETING', 'JJS SEAFOODS', 'CITY TYRE')
     GROUP BY store";
-$metricsResult = mysqli_query($conn, $metricsSql);
+$metricsResult = $advanceConnectionAvailable ? mysqli_query($conn, $metricsSql) : false;
 if ($metricsResult) {
     while ($row = mysqli_fetch_assoc($metricsResult)) {
         if (isset($storeTotals[$row['store']])) {
@@ -54,7 +93,7 @@ $whereSql = implode(' AND ', $where);
 
 $totalRows = 0;
 $countSql = "SELECT COUNT(*) AS total_rows FROM advancePo WHERE {$whereSql}";
-$countStmt = $conn->prepare($countSql);
+$countStmt = $advanceConnectionAvailable ? $conn->prepare($countSql) : false;
 if ($countStmt) {
     if ($types !== '') {
         $countStmt->bind_param($types, ...$params);
@@ -78,7 +117,7 @@ $dataSql = "
     WHERE {$whereSql}
     ORDER BY id DESC
     LIMIT ? OFFSET ?";
-$dataStmt = $conn->prepare($dataSql);
+$dataStmt = $advanceConnectionAvailable ? $conn->prepare($dataSql) : false;
 if ($dataStmt) {
     $dataTypes = $types . 'ii';
     $dataParams = array_merge($params, [$pageSize, $offset]);
@@ -157,6 +196,8 @@ master_page_start('advance_request', 'Advance Request', 'View and search advance
     </div>
 </section>
 <?php
-mysqli_close($conn);
+if ($advanceConnectionAvailable) {
+    mysqli_close($conn);
+}
 master_page_end();
 ?>
