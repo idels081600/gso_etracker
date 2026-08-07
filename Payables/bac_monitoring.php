@@ -5,6 +5,29 @@ $full_name = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : '';
 require_once 'transmit_db.php';
 require_once 'payables_helpers.php';
 
+function bac_monitoring_ensure_date_column(mysqli $conn, string $column): void
+{
+    $stmt = $conn->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'bac_monitoring' AND COLUMN_NAME = ? LIMIT 1");
+    if (!$stmt) {
+        payables_log_error('Unable to inspect BAC monitoring column ' . $column . ': ' . $conn->error);
+        return;
+    }
+
+    $stmt->bind_param('s', $column);
+    $stmt->execute();
+    $exists = $stmt->get_result();
+    $hasColumn = $exists && $exists->num_rows > 0;
+    $stmt->close();
+
+    if (!$hasColumn && !$conn->query("ALTER TABLE bac_monitoring ADD COLUMN {$column} DATE NULL")) {
+        payables_log_error('Unable to add BAC monitoring column ' . $column . ': ' . $conn->error);
+    }
+}
+
+foreach (['pre_procurement', 'pre_bid', 'evaluation'] as $bacDateColumn) {
+    bac_monitoring_ensure_date_column($conn, $bacDateColumn);
+}
+
 $formErrors = [];
 $formValues = [
     'id' => '',
@@ -13,7 +36,10 @@ $formValues = [
     'abc' => '',
     'final_amount' => '',
     'bidder' => '',
+    'pre_procurement' => '',
+    'pre_bid' => '',
     'date_of_bidding' => '',
+    'evaluation' => '',
     'post_qual' => '',
     'status' => '',
     'date_transmitted_from_bac' => '',
@@ -43,13 +69,16 @@ $validateBacForm = function (array $values): array {
     if ($values['bidder'] === '') {
         $errors[] = 'Bidder is required.';
     }
-    if ($values['date_of_bidding'] !== '') {
-        $date = DateTime::createFromFormat('Y-m-d', $values['date_of_bidding']);
-        if (!$date || $date->format('Y-m-d') !== $values['date_of_bidding']) {
-            $errors[] = 'Date of bidding must be a valid date.';
-        }
-    }
-    foreach (['date_transmitted_from_bac' => 'Date transmitted from BAC', 'noa_no' => 'NOA date', 'notice_to_proceed_date' => 'Notice to proceed date', 'contract_date' => 'Contract date'] as $key => $label) {
+    foreach ([
+        'pre_procurement' => 'Pre Procurement',
+        'pre_bid' => 'Pre Bid',
+        'date_of_bidding' => 'Date of bidding',
+        'evaluation' => 'Evaluation',
+        'date_transmitted_from_bac' => 'Date transmitted from BAC',
+        'noa_no' => 'NOA date',
+        'notice_to_proceed_date' => 'Notice to proceed date',
+        'contract_date' => 'Contract date',
+    ] as $key => $label) {
         if ($values[$key] !== '') {
             $date = DateTime::createFromFormat('Y-m-d', $values[$key]);
             if (!$date || $date->format('Y-m-d') !== $values[$key]) {
@@ -73,7 +102,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
         'abc' => trim($_POST['abc'] ?? ''),
         'final_amount' => trim($_POST['final_amount'] ?? ''),
         'bidder' => trim($_POST['bidder'] ?? ''),
+        'pre_procurement' => trim($_POST['pre_procurement'] ?? ''),
+        'pre_bid' => trim($_POST['pre_bid'] ?? ''),
         'date_of_bidding' => trim($_POST['date_of_bidding'] ?? ''),
+        'evaluation' => trim($_POST['evaluation'] ?? ''),
         'post_qual' => trim($_POST['post_qual'] ?? ''),
         'status' => trim($_POST['status'] ?? ''),
         'date_transmitted_from_bac' => trim($_POST['date_transmitted_from_bac'] ?? ''),
@@ -130,7 +162,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
             $finalAmount = $abc;
             $formValues['final_amount'] = number_format($abc, 2, '.', '');
         }
+        $preProcurement = $formValues['pre_procurement'] !== '' ? $formValues['pre_procurement'] : null;
+        $preBid = $formValues['pre_bid'] !== '' ? $formValues['pre_bid'] : null;
         $dateOfBidding = $formValues['date_of_bidding'] !== '' ? $formValues['date_of_bidding'] : null;
+        $evaluation = $formValues['evaluation'] !== '' ? $formValues['evaluation'] : null;
         $dateTransmittedFromBac = $formValues['date_transmitted_from_bac'] !== '' ? $formValues['date_transmitted_from_bac'] : null;
         $noaDate = $formValues['noa_no'] !== '' ? $formValues['noa_no'] : null;
         $noticeToProceedDate = $formValues['notice_to_proceed_date'] !== '' ? $formValues['notice_to_proceed_date'] : null;
@@ -139,21 +174,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
         if (!$formErrors && $action === 'add_bac_monitoring') {
             $stmt = $conn->prepare("
                 INSERT INTO bac_monitoring (
-                    ib_no, project_name, abc, final_amount, bidder, date_of_bidding, post_qual, status,
+                    ib_no, project_name, abc, final_amount, bidder,
+                    pre_procurement, pre_bid, date_of_bidding, evaluation, post_qual, status,
                     date_transmitted_from_bac, office, noa_no, notice_to_proceed_date, contract_date,
                     calendar_days_delivery, deadline, received_by
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             if ($stmt) {
                 $stmt->bind_param(
-                    'ssddssssssssssss',
+                    'ssddsssssssssssssss',
                     $formValues['ib_no'],
                     $formValues['project_name'],
                     $abc,
                     $finalAmount,
                     $formValues['bidder'],
+                    $preProcurement,
+                    $preBid,
                     $dateOfBidding,
+                    $evaluation,
                     $formValues['post_qual'],
                     $formValues['status'],
                     $dateTransmittedFromBac,
@@ -187,7 +226,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
                     abc = ?,
                     final_amount = ?,
                     bidder = ?,
+                    pre_procurement = ?,
+                    pre_bid = ?,
                     date_of_bidding = ?,
+                    evaluation = ?,
                     post_qual = ?,
                     status = ?,
                     date_transmitted_from_bac = ?,
@@ -203,13 +245,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
             ");
             if ($stmt) {
                 $stmt->bind_param(
-                    'ssddssssssssssssi',
+                    'ssddsssssssssssssssi',
                     $formValues['ib_no'],
                     $formValues['project_name'],
                     $abc,
                     $finalAmount,
                     $formValues['bidder'],
+                    $preProcurement,
+                    $preBid,
                     $dateOfBidding,
+                    $evaluation,
                     $formValues['post_qual'],
                     $formValues['status'],
                     $dateTransmittedFromBac,
@@ -269,9 +314,9 @@ $params = [];
 
 if ($searchTerm !== '') {
     $searchLike = '%' . $searchTerm . '%';
-    $where[] = "(ib_no LIKE ? OR project_name LIKE ? OR bidder LIKE ? OR CAST(abc AS CHAR) LIKE ? OR CAST(final_amount AS CHAR) LIKE ? OR post_qual LIKE ? OR status LIKE ? OR office LIKE ? OR noa_no LIKE ? OR contract_date LIKE ? OR received_by LIKE ?)";
-    $types .= 'sssssssssss';
-    array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
+    $where[] = "(ib_no LIKE ? OR project_name LIKE ? OR bidder LIKE ? OR CAST(abc AS CHAR) LIKE ? OR CAST(final_amount AS CHAR) LIKE ? OR CAST(pre_procurement AS CHAR) LIKE ? OR CAST(pre_bid AS CHAR) LIKE ? OR CAST(date_of_bidding AS CHAR) LIKE ? OR CAST(evaluation AS CHAR) LIKE ? OR post_qual LIKE ? OR status LIKE ? OR office LIKE ? OR noa_no LIKE ? OR contract_date LIKE ? OR received_by LIKE ?)";
+    $types .= 'sssssssssssssss';
+    array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
 }
 
 $whereSql = implode(' AND ', $where);
@@ -321,7 +366,10 @@ $bacSql = "
         abc,
         final_amount,
         bidder,
+        pre_procurement,
+        pre_bid,
         date_of_bidding,
+        evaluation,
         post_qual,
         status,
         date_transmitted_from_bac,
@@ -419,7 +467,10 @@ if ($bacStmt) {
                     <div>ABC</div>
                     <div>Final Amount</div>
                     <div>Bidder</div>
+                    <div>Pre Procurement</div>
+                    <div>Pre Bid</div>
                     <div>Date of Bidding</div>
+                    <div>Evaluation</div>
                     <div>Post Qual.</div>
                     <div>Status</div>
                     <div>Date Transmitted From BAC</div>
@@ -435,8 +486,14 @@ if ($bacStmt) {
                 <?php if ($bacRows): ?>
                     <?php foreach ($bacRows as $row): ?>
                         <?php
+                        $preProcurementValue = $row['pre_procurement'] ?? '';
+                        $displayPreProcurement = $preProcurementValue ? date('M d, Y', strtotime((string)$preProcurementValue)) : '-';
+                        $preBidValue = $row['pre_bid'] ?? '';
+                        $displayPreBid = $preBidValue ? date('M d, Y', strtotime((string)$preBidValue)) : '-';
                         $dateValue = $row['date_of_bidding'] ?? '';
                         $displayDate = $dateValue ? date('M d, Y', strtotime((string)$dateValue)) : '-';
+                        $evaluationValue = $row['evaluation'] ?? '';
+                        $displayEvaluation = $evaluationValue ? date('M d, Y', strtotime((string)$evaluationValue)) : '-';
                         $postQual = trim((string)($row['post_qual'] ?? ''));
                         $hasPostQual = $postQual !== '';
                         $status = trim((string)($row['status'] ?? ''));
@@ -463,7 +520,10 @@ if ($bacStmt) {
                             <div class="bac-amount">&#8369;<?php echo number_format((float)($row['abc'] ?? 0), 2); ?></div>
                             <div class="bac-amount">&#8369;<?php echo number_format((float)($row['final_amount'] ?? 0), 2); ?></div>
                             <div class="bac-bidder"><?php echo htmlspecialchars($row['bidder'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="bac-date"><?php echo htmlspecialchars($displayPreProcurement, ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="bac-date"><?php echo htmlspecialchars($displayPreBid, ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-date"><?php echo htmlspecialchars($displayDate, ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="bac-date"><?php echo htmlspecialchars($displayEvaluation, ENT_QUOTES, 'UTF-8'); ?></div>
                             <div>
                                 <span class="post-qual-badge <?php echo $hasPostQual ? 'is-done' : 'is-pending'; ?>">
                                     <?php echo htmlspecialchars($hasPostQual ? $postQual : '', ENT_QUOTES, 'UTF-8'); ?>
@@ -494,7 +554,10 @@ if ($bacStmt) {
                                     data-abc="<?php echo htmlspecialchars((string)($row['abc'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                     data-final-amount="<?php echo htmlspecialchars((string)($row['final_amount'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                     data-bidder="<?php echo htmlspecialchars($row['bidder'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-pre-procurement="<?php echo htmlspecialchars($row['pre_procurement'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-pre-bid="<?php echo htmlspecialchars($row['pre_bid'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     data-date-of-bidding="<?php echo htmlspecialchars($row['date_of_bidding'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-evaluation="<?php echo htmlspecialchars($row['evaluation'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     data-post-qual="<?php echo htmlspecialchars($row['post_qual'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     data-status="<?php echo htmlspecialchars($row['status'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     data-date-transmitted-from-bac="<?php echo htmlspecialchars($row['date_transmitted_from_bac'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
@@ -588,8 +651,20 @@ if ($bacStmt) {
                             <input type="text" name="bidder" value="<?php echo htmlspecialchars($formValues['bidder'], ENT_QUOTES, 'UTF-8'); ?>" required>
                         </label>
                         <label>
+                            <span>Pre Procurement</span>
+                            <input type="date" name="pre_procurement" value="<?php echo htmlspecialchars($formValues['pre_procurement'], ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+                        <label>
+                            <span>Pre Bid</span>
+                            <input type="date" name="pre_bid" value="<?php echo htmlspecialchars($formValues['pre_bid'], ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+                        <label>
                             <span>Date of Bidding</span>
                             <input type="date" name="date_of_bidding" value="<?php echo htmlspecialchars($formValues['date_of_bidding'], ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+                        <label>
+                            <span>Evaluation</span>
+                            <input type="date" name="evaluation" value="<?php echo htmlspecialchars($formValues['evaluation'], ENT_QUOTES, 'UTF-8'); ?>">
                         </label>
                         <label>
                             <span>Post Qual.</span>
@@ -678,8 +753,20 @@ if ($bacStmt) {
                             <input type="text" name="bidder" id="editBacBidder" value="<?php echo htmlspecialchars($showEditModal ? $formValues['bidder'] : '', ENT_QUOTES, 'UTF-8'); ?>" required>
                         </label>
                         <label>
+                            <span>Pre Procurement</span>
+                            <input type="date" name="pre_procurement" id="editBacPreProcurement" value="<?php echo htmlspecialchars($showEditModal ? $formValues['pre_procurement'] : '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+                        <label>
+                            <span>Pre Bid</span>
+                            <input type="date" name="pre_bid" id="editBacPreBid" value="<?php echo htmlspecialchars($showEditModal ? $formValues['pre_bid'] : '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+                        <label>
                             <span>Date of Bidding</span>
                             <input type="date" name="date_of_bidding" id="editBacDateOfBidding" value="<?php echo htmlspecialchars($showEditModal ? $formValues['date_of_bidding'] : '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+                        <label>
+                            <span>Evaluation</span>
+                            <input type="date" name="evaluation" id="editBacEvaluation" value="<?php echo htmlspecialchars($showEditModal ? $formValues['evaluation'] : '', ENT_QUOTES, 'UTF-8'); ?>">
                         </label>
                         <label>
                             <span>Post Qual.</span>
@@ -736,7 +823,10 @@ if ($bacStmt) {
                 document.getElementById("editBacAbc").value = button.dataset.abc || "";
                 document.getElementById("editBacFinalAmount").value = button.dataset.finalAmount || "";
                 document.getElementById("editBacBidder").value = button.dataset.bidder || "";
+                document.getElementById("editBacPreProcurement").value = button.dataset.preProcurement || "";
+                document.getElementById("editBacPreBid").value = button.dataset.preBid || "";
                 document.getElementById("editBacDateOfBidding").value = button.dataset.dateOfBidding || "";
+                document.getElementById("editBacEvaluation").value = button.dataset.evaluation || "";
                 document.getElementById("editBacPostQual").value = button.dataset.postQual || "";
                 document.getElementById("editBacStatus").value = button.dataset.status || "";
                 document.getElementById("editBacDateTransmittedFromBac").value = button.dataset.dateTransmittedFromBac || "";

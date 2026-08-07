@@ -192,10 +192,10 @@ body.sidebar-collapsed .bac-monitoring-content {
 
 .bac-monitoring-row {
   display: grid;
-  grid-template-columns: minmax(95px, 0.48fr) minmax(235px, 1.15fr) minmax(118px, 0.48fr) minmax(125px, 0.5fr) minmax(170px, 0.76fr) minmax(122px, 0.5fr) minmax(105px, 0.43fr) minmax(145px, 0.58fr) minmax(150px, 0.56fr) minmax(140px, 0.54fr) minmax(118px, 0.46fr) minmax(150px, 0.56fr) minmax(130px, 0.5fr) minmax(150px, 0.56fr) minmax(110px, 0.44fr) minmax(135px, 0.54fr) minmax(86px, 0.34fr);
+  grid-template-columns: 110px 260px 130px 130px 190px 140px 120px 135px 120px 115px 150px 180px 130px 120px 175px 140px 185px 120px 150px 92px;
   gap: 12px;
   align-items: center;
-  min-width: 2550px;
+  min-width: 3150px;
   min-height: 54px;
   border: 1px solid #edf0f4;
   border-radius: 8px;
@@ -216,6 +216,17 @@ body.sidebar-collapsed .bac-monitoring-content {
   font-weight: 850;
   padding-block: 0 10px;
   box-shadow: 0 8px 10px rgba(255, 255, 255, 0.96);
+}
+
+.bac-monitoring-row-head > div,
+.bac-monitoring-row > div {
+  min-width: 0;
+}
+
+.bac-monitoring-row-head > div {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bac-ref,
