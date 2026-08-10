@@ -566,7 +566,7 @@ if ($bacStmt) {
                                 <?php elseif ($prCount === 1): ?>
                                     <span class="bac-pr-single"><?php echo htmlspecialchars($prNumbers[0], ENT_QUOTES, 'UTF-8'); ?></span>
                                 <?php else: ?>
-                                    <button type="button" class="bac-pr-trigger" aria-label="<?php echo htmlspecialchars('Show PR numbers for IB ' . ($row['ib_no'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                                    <button type="button" class="bac-pr-trigger" aria-label="<?php echo htmlspecialchars('Show PR numbers for IB ' . ($row['ib_no'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" aria-expanded="false">
                                         <span><?php echo htmlspecialchars($prNumbers[0], ENT_QUOTES, 'UTF-8'); ?></span>
                                         <strong>+<?php echo $prCount - 1; ?> more</strong>
                                     </button>
@@ -919,6 +919,97 @@ if ($bacStmt) {
                 }
             });
         });
+
+        (function () {
+            var floatingPrList = document.createElement("div");
+            var activeTrigger = null;
+            var hideTimer = null;
+
+            floatingPrList.className = "bac-pr-floating";
+            floatingPrList.setAttribute("role", "list");
+            floatingPrList.setAttribute("aria-label", "PR numbers included");
+            document.body.appendChild(floatingPrList);
+
+            function hidePrList() {
+                if (activeTrigger) {
+                    activeTrigger.setAttribute("aria-expanded", "false");
+                }
+                activeTrigger = null;
+                floatingPrList.classList.remove("is-visible");
+                floatingPrList.innerHTML = "";
+            }
+
+            function queueHidePrList() {
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(hidePrList, 120);
+            }
+
+            function positionPrList(trigger) {
+                var rect = trigger.getBoundingClientRect();
+                var width = Math.max(190, Math.min(280, floatingPrList.offsetWidth || 220));
+                var left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+                var top = rect.bottom + 8;
+
+                if (top + floatingPrList.offsetHeight + 12 > window.innerHeight) {
+                    top = Math.max(12, rect.top - floatingPrList.offsetHeight - 8);
+                }
+
+                floatingPrList.style.left = left + "px";
+                floatingPrList.style.top = top + "px";
+            }
+
+            function showPrList(trigger) {
+                var sourceList = trigger.parentElement.querySelector(".bac-pr-dropdown");
+                if (!sourceList) {
+                    return;
+                }
+
+                clearTimeout(hideTimer);
+                activeTrigger = trigger;
+                floatingPrList.innerHTML = sourceList.innerHTML;
+                floatingPrList.classList.add("is-visible");
+                trigger.setAttribute("aria-expanded", "true");
+                positionPrList(trigger);
+            }
+
+            document.querySelectorAll(".bac-pr-trigger").forEach(function (trigger) {
+                trigger.addEventListener("mouseenter", function () {
+                    showPrList(trigger);
+                });
+                trigger.addEventListener("focus", function () {
+                    showPrList(trigger);
+                });
+                trigger.addEventListener("mouseleave", queueHidePrList);
+                trigger.addEventListener("blur", queueHidePrList);
+                trigger.addEventListener("click", function () {
+                    if (activeTrigger === trigger && floatingPrList.classList.contains("is-visible")) {
+                        hidePrList();
+                    } else {
+                        showPrList(trigger);
+                    }
+                });
+            });
+
+            floatingPrList.addEventListener("mouseenter", function () {
+                clearTimeout(hideTimer);
+            });
+            floatingPrList.addEventListener("mouseleave", queueHidePrList);
+            window.addEventListener("scroll", function () {
+                if (activeTrigger) {
+                    positionPrList(activeTrigger);
+                }
+            }, true);
+            window.addEventListener("resize", function () {
+                if (activeTrigger) {
+                    positionPrList(activeTrigger);
+                }
+            });
+            document.addEventListener("keydown", function (event) {
+                if (event.key === "Escape") {
+                    hidePrList();
+                }
+            });
+        })();
     </script>
     <?php if ($showAddModal): ?>
         <script>

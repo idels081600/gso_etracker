@@ -310,9 +310,12 @@ body.sidebar-collapsed .bac-monitoring-content {
 }
 
 .bac-pr-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
+  display: none;
+}
+
+.bac-pr-floating {
+  position: fixed;
+  z-index: 9999;
   display: none;
   min-width: 190px;
   max-width: 280px;
@@ -325,13 +328,12 @@ body.sidebar-collapsed .bac-monitoring-content {
   padding: 8px;
 }
 
-.bac-pr-cell:hover .bac-pr-dropdown,
-.bac-pr-cell:focus-within .bac-pr-dropdown {
+.bac-pr-floating.is-visible {
   display: grid;
   gap: 6px;
 }
 
-.bac-pr-dropdown span {
+.bac-pr-floating span {
   border-radius: 6px;
   background: #f8fafc;
   color: #202432;
