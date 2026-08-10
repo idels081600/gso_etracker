@@ -2,17 +2,18 @@ document.addEventListener("DOMContentLoaded", function () {
   const csrfToken =
     document.querySelector('meta[name="payables-csrf-token"]')?.content || "";
   const filterButtons = document.querySelectorAll("[data-status-filter]");
-  const rows = document.querySelectorAll(".payables-row[data-main-status]");
-  const transmitButtons = document.querySelectorAll(".transmit-budget-btn");
-  const checklistButtons = document.querySelectorAll(".gso-check-chip");
-  const locationSelects = document.querySelectorAll(".accounting-location-select");
-  const locationHistoryButtons = document.querySelectorAll(".location-history-btn");
-  const remarksHistoryButtons = document.querySelectorAll(".remarks-history-btn");
-  const remarksEditButtons = document.querySelectorAll(
+  const taskPanel = document.querySelector(".task-panel");
+  let rows = document.querySelectorAll(".payables-row[data-main-status]");
+  let transmitButtons = document.querySelectorAll(".transmit-budget-btn");
+  let checklistButtons = document.querySelectorAll(".gso-check-chip");
+  let locationSelects = document.querySelectorAll(".accounting-location-select");
+  let locationHistoryButtons = document.querySelectorAll(".location-history-btn");
+  let remarksHistoryButtons = document.querySelectorAll(".remarks-history-btn");
+  let remarksEditButtons = document.querySelectorAll(
     ".workflow-remarks-edit, .workflow-remarks-action"
   );
-  const releaseCheckboxes = document.querySelectorAll(".cto-release-checkbox");
-  const taskTable = document.querySelector(".task-table");
+  let releaseCheckboxes = document.querySelectorAll(".cto-release-checkbox");
+  let taskTable = document.querySelector(".task-table");
   const detailHeader = document.getElementById("workflowDetailHeader");
   const actionHeader = document.getElementById("workflowActionHeader");
   const searchInput = document.getElementById("monitoringSearchInput");
@@ -72,6 +73,130 @@ document.addEventListener("DOMContentLoaded", function () {
     CTO: "CTO",
   };
 
+  function refreshTableRefs() {
+    rows = document.querySelectorAll(".payables-row[data-main-status]");
+    transmitButtons = document.querySelectorAll(".transmit-budget-btn");
+    checklistButtons = document.querySelectorAll(".gso-check-chip");
+    locationSelects = document.querySelectorAll(".accounting-location-select");
+    locationHistoryButtons = document.querySelectorAll(".location-history-btn");
+    remarksHistoryButtons = document.querySelectorAll(".remarks-history-btn");
+    remarksEditButtons = document.querySelectorAll(
+      ".workflow-remarks-edit, .workflow-remarks-action"
+    );
+    releaseCheckboxes = document.querySelectorAll(".cto-release-checkbox");
+    taskTable = document.querySelector(".task-table");
+  }
+
+  function normalizeDashboardStatus(status) {
+    return ["GSO", "BUDGET", "ACCOUNTING", "CTO"].includes(status)
+      ? status
+      : "GSO";
+  }
+
+  function buildDashboardUrl(status, page, search, endpoint) {
+    const params = new URLSearchParams();
+    params.set("status", normalizeDashboardStatus(status));
+    params.set("page", String(page || 1));
+    if (search && search.trim() !== "") {
+      params.set("search", search.trim());
+    }
+    return (endpoint || "bac_dashboard.php") + "?" + params.toString();
+  }
+
+  function endpointFromPageUrl(url) {
+    const parsed = new URL(url, window.location.href);
+    parsed.pathname = parsed.pathname.replace(/bac_dashboard\.php$/, "bac_dashboard_table.php");
+    if (!/bac_dashboard_table\.php$/.test(parsed.pathname)) {
+      parsed.pathname = parsed.pathname.replace(/\/?$/, "/bac_dashboard_table.php");
+    }
+    return parsed.pathname + parsed.search;
+  }
+
+  function setActiveTab(status, isSearch) {
+    filterButtons.forEach(function (button) {
+      button.classList.toggle(
+        "active",
+        !isSearch && button.dataset.statusFilter === status
+      );
+    });
+  }
+
+  function setTableLoading(isLoading) {
+    if (!taskPanel) return;
+    taskPanel.classList.toggle("is-table-loading", isLoading);
+    taskPanel.setAttribute("aria-busy", isLoading ? "true" : "false");
+  }
+
+  function replaceTableHtml(html) {
+    const template = document.createElement("template");
+    template.innerHTML = (html || "").trim();
+    const nextTable = template.content.querySelector(".task-table");
+    const nextPagination = template.content.querySelector(".task-pagination");
+    const currentTable = document.querySelector(".task-table");
+    const currentPagination = document.querySelector(".task-pagination");
+
+    if (!nextTable || !nextPagination || !currentTable || !currentPagination) {
+      throw new Error("The refreshed table was incomplete.");
+    }
+
+    currentTable.replaceWith(nextTable);
+    currentPagination.replaceWith(nextPagination);
+    refreshTableRefs();
+  }
+
+  function loadDashboardTable(pageUrl, options) {
+    const settings = options || {};
+    const endpointUrl = endpointFromPageUrl(pageUrl);
+    const parsed = new URL(pageUrl, window.location.href);
+    const nextStatus = normalizeDashboardStatus(parsed.searchParams.get("status") || "GSO");
+    const nextSearch = parsed.searchParams.get("search") || "";
+
+    setActiveTab(nextStatus, nextSearch.trim() !== "");
+    updateHeaders(nextSearch.trim() !== "" ? "SEARCH" : nextStatus);
+    setTableLoading(true);
+
+    return fetch(endpointUrl, {
+      headers: {
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("Unable to load dashboard records.");
+        }
+        return parseJsonResponse(response);
+      })
+      .then(function (data) {
+        if (!data.success || !data.html) {
+          throw new Error(data.error || "Unable to load dashboard records.");
+        }
+
+        replaceTableHtml(data.html);
+        setActiveTab(data.status || nextStatus, (data.search || "").trim() !== "");
+        updateHeaders(data.tableStatus || data.status || nextStatus);
+        bindDynamicTableEvents();
+
+        if (settings.push !== false) {
+          window.history.pushState(
+            {
+              status: data.status || nextStatus,
+              tableStatus: data.tableStatus || nextStatus,
+              search: data.search || nextSearch,
+            },
+            "",
+            pageUrl
+          );
+        }
+      })
+      .catch(function () {
+        window.location.href = pageUrl;
+      })
+      .finally(function () {
+        setTableLoading(false);
+      });
+  }
+
   function updateHeaders(status) {
     const labels = stageLabels[status] || stageLabels.GSO;
     if (detailHeader) detailHeader.textContent = labels.detail;
@@ -96,7 +221,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       params.set("status", activeStatus === "SEARCH" ? "GSO" : activeStatus);
     }
-    window.location.href = "bac_dashboard.php?" + params.toString();
+    loadDashboardTable("bac_dashboard.php?" + params.toString());
   }
 
   function getCheckedKeys(row) {
@@ -576,9 +701,104 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
+  function bindDynamicTableEvents() {
+    refreshTableRefs();
+
+    transmitButtons.forEach(function (button) {
+      if (button.dataset.boundTransmit === "1") return;
+      button.dataset.boundTransmit = "1";
+      button.addEventListener("click", function () {
+        if (button.disabled) return;
+
+        const row = button.closest(".payables-row");
+        const currentStatus = row ? row.dataset.mainStatus || "GSO" : "GSO";
+        const nextStatus = nextStatusMap[currentStatus];
+        if (!nextStatus) return;
+        pendingTransmitButton = button;
+        if (successAlert) successAlert.classList.add("d-none");
+        if (confirmSubtitle) {
+          confirmSubtitle.textContent = "This will move the record to " + statusLabelMap[nextStatus] + ".";
+        }
+        if (confirmMessage) {
+          const reference = row?.querySelector(".task-name strong")?.textContent || "this record";
+          confirmMessage.textContent =
+            "Transmit " + reference + " to " + statusLabelMap[nextStatus] + "?";
+        }
+        bootstrap.Modal.getOrCreateInstance(confirmModalEl).show();
+      });
+    });
+
+    checklistButtons.forEach(function (chip) {
+      if (chip.dataset.boundChecklist === "1") return;
+      chip.dataset.boundChecklist = "1";
+      chip.addEventListener("click", function () {
+        const row = chip.closest(".payables-row");
+        if (!row || row.dataset.mainStatus !== "GSO" || chip.disabled) return;
+
+        const isComplete = chip.classList.toggle("is-complete");
+        chip.classList.toggle("is-missing", !isComplete);
+        chip.setAttribute("aria-pressed", isComplete ? "true" : "false");
+        chip.querySelector("i")?.classList.toggle("fa-check", isComplete);
+        chip.querySelector("i")?.classList.toggle("fa-minus", !isComplete);
+        updateTransmitButtonState(row);
+        saveChecklist(row, chip);
+      });
+    });
+
+    locationSelects.forEach(function (select) {
+      if (select.dataset.boundLocation === "1") return;
+      select.dataset.boundLocation = "1";
+      select.dataset.previousLocation = select.value;
+      select.addEventListener("change", function () {
+        saveLocation(select);
+      });
+    });
+
+    locationHistoryButtons.forEach(function (button) {
+      if (button.dataset.boundLocationHistory === "1") return;
+      button.dataset.boundLocationHistory = "1";
+      button.addEventListener("click", function () {
+        renderLocationHistory(button.dataset.reference, parseHistory(button));
+        bootstrap.Modal.getOrCreateInstance(locationHistoryModalEl).show();
+      });
+    });
+
+    remarksHistoryButtons.forEach(function (button) {
+      if (button.dataset.boundRemarksHistory === "1") return;
+      button.dataset.boundRemarksHistory = "1";
+      button.addEventListener("click", function () {
+        renderRemarksHistory(button.dataset.reference, parseRemarksHistory(button));
+        bootstrap.Modal.getOrCreateInstance(locationHistoryModalEl).show();
+      });
+    });
+
+    remarksEditButtons.forEach(function (button) {
+      if (button.dataset.boundRemarksEdit === "1") return;
+      button.dataset.boundRemarksEdit = "1";
+      button.addEventListener("click", function () {
+        openRemarksEditor(button);
+      });
+    });
+
+    releaseCheckboxes.forEach(function (checkbox) {
+      if (checkbox.dataset.boundRelease === "1") return;
+      checkbox.dataset.boundRelease = "1";
+      checkbox.addEventListener("change", function () {
+        saveReleaseStatus(checkbox);
+      });
+    });
+
+    rows.forEach(updateTransmitButtonState);
+  }
+
   filterButtons.forEach(function (button) {
     button.addEventListener("click", function () {
-      window.location.href = button.dataset.statusUrl || "bac_dashboard.php";
+      if (searchInput) {
+        searchInput.value = "";
+      }
+      loadDashboardTable(
+        buildDashboardUrl(button.dataset.statusFilter || "GSO", 1, "", "bac_dashboard.php")
+      );
     });
   });
 
@@ -595,28 +815,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  transmitButtons.forEach(function (button) {
-    button.addEventListener("click", function () {
-      if (button.disabled) return;
-
-      const row = button.closest(".payables-row");
-      const currentStatus = row ? row.dataset.mainStatus || "GSO" : "GSO";
-      const nextStatus = nextStatusMap[currentStatus];
-      if (!nextStatus) return;
-      pendingTransmitButton = button;
-      if (successAlert) successAlert.classList.add("d-none");
-      if (confirmSubtitle) {
-        confirmSubtitle.textContent = "This will move the record to " + statusLabelMap[nextStatus] + ".";
-      }
-      if (confirmMessage) {
-        const reference = row?.querySelector(".task-name strong")?.textContent || "this record";
-        confirmMessage.textContent =
-          "Transmit " + reference + " to " + statusLabelMap[nextStatus] + "?";
-      }
-      bootstrap.Modal.getOrCreateInstance(confirmModalEl).show();
-    });
-  });
-
   if (confirmButton) {
     confirmButton.addEventListener("click", function () {
       if (pendingTransmitButton) {
@@ -625,48 +823,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  checklistButtons.forEach(function (chip) {
-    chip.addEventListener("click", function () {
-      const row = chip.closest(".payables-row");
-      if (!row || row.dataset.mainStatus !== "GSO" || chip.disabled) return;
-
-      const isComplete = chip.classList.toggle("is-complete");
-      chip.classList.toggle("is-missing", !isComplete);
-      chip.setAttribute("aria-pressed", isComplete ? "true" : "false");
-      chip.querySelector("i")?.classList.toggle("fa-check", isComplete);
-      chip.querySelector("i")?.classList.toggle("fa-minus", !isComplete);
-      updateTransmitButtonState(row);
-      saveChecklist(row, chip);
-    });
-  });
-
-  locationSelects.forEach(function (select) {
-    select.dataset.previousLocation = select.value;
-    select.addEventListener("change", function () {
-      saveLocation(select);
-    });
-  });
-
-  locationHistoryButtons.forEach(function (button) {
-    button.addEventListener("click", function () {
-      renderLocationHistory(button.dataset.reference, parseHistory(button));
-      bootstrap.Modal.getOrCreateInstance(locationHistoryModalEl).show();
-    });
-  });
-
-  remarksHistoryButtons.forEach(function (button) {
-    button.addEventListener("click", function () {
-      renderRemarksHistory(button.dataset.reference, parseRemarksHistory(button));
-      bootstrap.Modal.getOrCreateInstance(locationHistoryModalEl).show();
-    });
-  });
-
-  remarksEditButtons.forEach(function (button) {
-    button.addEventListener("click", function () {
-      openRemarksEditor(button);
-    });
-  });
-
   if (remarksEditForm) {
     remarksEditForm.addEventListener("submit", function (event) {
       event.preventDefault();
@@ -674,13 +830,17 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  releaseCheckboxes.forEach(function (checkbox) {
-    checkbox.addEventListener("change", function () {
-      saveReleaseStatus(checkbox);
-    });
+  document.addEventListener("click", function (event) {
+    const pageLink = event.target.closest(".task-page-buttons a");
+    if (!pageLink || pageLink.classList.contains("is-disabled")) return;
+    event.preventDefault();
+    loadDashboardTable(pageLink.href);
   });
 
-  rows.forEach(updateTransmitButtonState);
+  window.addEventListener("popstate", function () {
+    loadDashboardTable(window.location.href, { push: false });
+  });
 
+  bindDynamicTableEvents();
   applyStatusFilter(taskTable?.dataset.activeStatus || "GSO");
 });
