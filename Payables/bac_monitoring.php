@@ -415,8 +415,8 @@ if ($bacStmt) {
         <section class="bac-monitoring-shell" aria-label="BAC monitoring list">
             <div class="bac-monitoring-header">
                 <div>
-                    <span class="bac-monitoring-eyebrow">IB/RFQ Monitoring</span>
-                    <h1>Active IB/RFQ</h1>
+                    <span class="bac-monitoring-eyebrow">IB Monitoring</span>
+                    <h1>Active IB</h1>
                 </div>
                 <div class="bac-monitoring-actions">
                     <a class="bac-print-button" href="print_bac_not_received.php" target="_blank" rel="noopener">
