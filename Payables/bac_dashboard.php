@@ -40,6 +40,10 @@ if ($searchTerm !== '') {
 }
 
 $whereSql = implode(' AND ', $where);
+$editedFirstStatuses = ['BUDGET', 'ACCOUNTING', 'CTO'];
+$payablesOrderBySql = (!$isGlobalSearch && in_array($activeStatus, $editedFirstStatuses, true))
+    ? 'pws.updated_at DESC, tb.id DESC'
+    : 'tb.id DESC';
 
 $totalRows = 0;
 $countSql = "
@@ -131,7 +135,7 @@ $payablesSql = "
         ON pws.record_type = 'bac_monitoring'
        AND pws.record_id = tb.id
     WHERE {$whereSql}
-    ORDER BY tb.id DESC
+    ORDER BY {$payablesOrderBySql}
     LIMIT ? OFFSET ?";
 $pageTypes = $types . 'ii';
 $pageParams = array_merge($params, [$perPage, $offset]);

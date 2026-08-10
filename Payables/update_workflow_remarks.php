@@ -56,6 +56,23 @@ if ($remarks !== $oldRemarks) {
     payables_record_remarks_history('bac_monitoring', $recordId, $remarks, $updatedBy);
 }
 
+payables_ensure_workflow_table();
+$touchStmt = $conn->prepare("INSERT INTO payables_workflow_status (
+    record_type, record_id, main_status, updated_by
+) VALUES ('bac_monitoring', ?, 'GSO', ?)
+ON DUPLICATE KEY UPDATE
+    updated_by = VALUES(updated_by),
+    updated_at = CURRENT_TIMESTAMP");
+if ($touchStmt) {
+    $touchStmt->bind_param('is', $recordId, $updatedBy);
+    if (!$touchStmt->execute()) {
+        payables_log_error('Workflow remarks timestamp touch failed: ' . $touchStmt->error);
+    }
+    $touchStmt->close();
+} else {
+    payables_log_error('Workflow remarks timestamp touch prepare failed: ' . $conn->error);
+}
+
 $historyMap = payables_get_remarks_history_map('bac_monitoring', [$recordId]);
 $history = $historyMap[$recordId] ?? [];
 if (!$history) {
