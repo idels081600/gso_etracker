@@ -3,9 +3,9 @@ $payablesActivePage = $payablesActivePage ?? '';
 $payablesFullName = $full_name ?? '';
 $payablesNav = [
     'monitoring' => ['href' => 'bac_dashboard.php', 'icon' => 'fas fa-th-large', 'label' => 'Dashboard'],
-    'bac_monitoring' => ['href' => 'bac_monitoring.php', 'icon' => 'fas fa-table', 'label' => 'IB/RFQ Monitoring'],
+    'bac_monitoring' => ['href' => 'bac_monitoring.php', 'icon' => 'fas fa-table', 'label' => 'IB Monitoring'],
     'food_tracking' => ['href' => 'food_tracking.php', 'icon' => 'fas fa-utensils', 'label' => 'Food Tracking'],
-    'po' => ['href' => 'Po_sap.php', 'icon' => 'fas fa-shopping-cart', 'label' => 'Purchase Order'],
+    'po' => ['href' => 'Po_sap.php', 'icon' => 'fas fa-shopping-cart', 'label' => 'RFQ Monitoring'],
 ];
 ?>
 <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar" aria-expanded="true">
