@@ -163,3 +163,139 @@ function login_throttle_message($remainingSeconds)
 
     return "Too many failed login attempts. Please try again in {$minutes} minute" . ($minutes === 1 ? '.' : 's.');
 }
+
+function security_admin_roles()
+{
+    return ['Admin', 'master_admin', 'Pay_admin', 'fuel_admin'];
+}
+
+function security_role_requires_2fa($role)
+{
+    return in_array((string) $role, security_admin_roles(), true);
+}
+
+function security_audit_log($action, array $metadata = [])
+{
+    $entry = [
+        'timestamp' => date('c'),
+        'action' => $action,
+        'username' => $_SESSION['username'] ?? ($_SESSION['_pending_login']['username'] ?? null),
+        'role' => $_SESSION['role'] ?? ($_SESSION['_pending_login']['role'] ?? null),
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+        'metadata' => $metadata,
+    ];
+
+    $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'cgso_security_audit.log';
+    @file_put_contents($path, json_encode($entry, JSON_UNESCAPED_SLASHES) . PHP_EOL, FILE_APPEND | LOCK_EX);
+}
+
+function admin_2fa_code_path()
+{
+    return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'cgso_admin_2fa_code.txt';
+}
+
+function current_admin_2fa_code()
+{
+    $envCode = trim((string) (getenv('CGSO_ADMIN_2FA_CODE') ?: ''));
+    if (preg_match('/^\d{6}$/', $envCode)) {
+        return $envCode;
+    }
+
+    $path = admin_2fa_code_path();
+    $code = is_file($path) ? trim((string) @file_get_contents($path)) : '';
+
+    if (!preg_match('/^\d{6}$/', $code)) {
+        $code = (string) random_int(100000, 999999);
+        @file_put_contents($path, $code, LOCK_EX);
+        @chmod($path, 0600);
+    }
+
+    return $code;
+}
+
+function verify_admin_2fa_code($providedCode)
+{
+    $providedCode = preg_replace('/\D+/', '', (string) $providedCode);
+    return $providedCode !== '' && hash_equals(current_admin_2fa_code(), $providedCode);
+}
+
+function login_redirect_for_role($role)
+{
+    switch ($role) {
+        case "Admin": return "passlip/super_admin/index.php";
+        case "Employee": return "passlip/requestor/add_req_emp.php";
+        case "TCWS Division Head": return "index_tcws.php";
+        case "TCWS Employee": return "passlip/requestor/add_req_emp.php";
+        case "Admin2": return "passlip/admin_r/index_r.php";
+        case "Admin1": return "passlip/admin_approver/index_desk.php";
+        case "TCWS Scanner": return "qrcode_scanner_desk_tcws.php";
+        case "SAP": return "sir_bayong.php";
+        case "ASSET2": return "asset_tracker_dashboard/dashboard_asset_tracker.php";
+        case "ASSET": return "dashboard_asset_tracker.php";
+        case "TENT INSTALLERS": return "asset_tracker_dashboard/tent_installers.php";
+        case "SUPPLIES": return "LogiSys/Logi_Sys_Dashboard.php";
+        case "Pay_admin": return "Payables/bac_dashboard.php";
+        case "fuel_admin": return "fuel_tracker/fuel_dashboard.php";
+        case "gas_checker": return "fuel_tracker/gas_checker.php";
+        case "advance_PO": return "advance_request/dashboard.php";
+        case "pr_admin": return "prtracking/dashboard.php";
+        case "Docu_admin": return "document_tracker/dashboard.php";
+        case "super_admin": return "document_tracker/super_admin.php";
+        case "Fuel_admin": return "subsidy/fuel/select_station.php";
+        case "FOOD_VERIFIER": return "subsidy/food/select_station.php";
+        case "FOOD_REDEEMER": return "subsidy/food/redeem_batch.php";
+        case "print_admin": return "fuel_tracker/personnel_printing.php";
+        case "RICE_VERIFIER": return "subsidy/food/releasing_rice.php";
+        case "coa_admin": return "fuel_tracker/sub_admin.php";
+        case "master_admin": return "master_dashboard/dashboard.php";
+        default: return "login_v2.php";
+    }
+}
+
+function begin_pending_admin_login(array $row)
+{
+    $_SESSION['_pending_login'] = [
+        'username' => $row['username'],
+        'role' => $row['role'],
+        'office' => $row['office'] ?? 'ASSET',
+        'pay_name' => $row['name'] ?? '',
+        'station_id' => $row['station_id'] ?? null,
+        'redirect' => login_redirect_for_role($row['role']),
+        'created_at' => time(),
+    ];
+    $_SESSION['logged_in'] = false;
+    current_admin_2fa_code();
+}
+
+function has_pending_admin_login()
+{
+    $pending = $_SESSION['_pending_login'] ?? null;
+    return is_array($pending)
+        && !empty($pending['username'])
+        && !empty($pending['role'])
+        && !empty($pending['created_at'])
+        && (time() - (int) $pending['created_at']) <= 600;
+}
+
+function complete_pending_admin_login()
+{
+    if (!has_pending_admin_login()) {
+        return null;
+    }
+
+    $pending = $_SESSION['_pending_login'];
+    unset($_SESSION['_pending_login']);
+
+    $_SESSION['username'] = $pending['username'];
+    $_SESSION['role'] = $pending['role'];
+    $_SESSION['office'] = $pending['office'] ?? 'ASSET';
+    $_SESSION['pay_name'] = $pending['pay_name'] ?? '';
+    $_SESSION['station_id'] = $pending['station_id'] ?? null;
+    $_SESSION['logged_in'] = true;
+    $_SESSION['_login_time'] = time();
+    $_SESSION['_last_activity'] = time();
+    $_SESSION['_heartbeat_count'] = 0;
+
+    return $pending['redirect'] ?? login_redirect_for_role($pending['role']);
+}

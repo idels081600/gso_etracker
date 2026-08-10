@@ -1,5 +1,16 @@
+DirectoryIndex login_v2.php
+Options -Indexes
+
 RewriteEngine On
 RewriteBase /
+
+# Block secrets, logs, backups, database dumps, dependency artifacts, and debug/reset tools.
+<FilesMatch "(^\.env$|^\.ht|\.log$|\.bak$|\.sql$|\.sqlite$|\.db$|\.ini$|\.phar$|^debug_login\.php$|^reset_asset_password\.php$)">
+    Require all denied
+</FilesMatch>
+
+# Do not serve hidden files or directories, except Apache's own allowed handling.
+RewriteRule (^|/)\.(?!well-known/) - [F,L]
 
 # Rewrite rule to hide .php extensions
 RewriteCond %{REQUEST_FILENAME} !-d

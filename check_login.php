@@ -2,157 +2,109 @@
 require_once 'auth_security.php';
 start_secure_session();
 
-$full_name = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : '';
 require_once 'passlip/dbh.php';
 
 if ($conn === false) {
     die("Connection error");
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $input = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    header("location:login_v2.php");
+    exit;
+}
 
-    $throttle = current_login_throttle($input);
-    if ($throttle['locked']) {
-        $_SESSION['LoginMessage'] = login_throttle_message($throttle['remaining_seconds']);
-        header("location:login_v2.php");
+if (isset($_POST['two_factor_code'])) {
+    if (!has_pending_admin_login()) {
+        $_SESSION['LoginMessage'] = 'Your security verification expired. Please log in again.';
+        security_audit_log('admin_2fa_expired');
         mysqli_close($conn);
+        header("location:login_v2.php");
         exit;
     }
 
-    // UPDATED: We only search by ID/Username. We do NOT check password in SQL anymore.
-    if (is_numeric($input)) {
-        $sql = "SELECT * FROM logindb WHERE id = ?";
-        $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "i", $input);
-    } else {
-        $sql = "SELECT * FROM logindb WHERE BINARY username = ?";
-        $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "s", $input);
+    if (!verify_admin_2fa_code($_POST['two_factor_code'] ?? '')) {
+        $_SESSION['LoginMessage'] = 'Invalid security code.';
+        security_audit_log('admin_2fa_failed');
+        mysqli_close($conn);
+        header("location:login_v2.php?two_factor=1");
+        exit;
     }
 
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $row = mysqli_fetch_array($result);
+    session_regenerate_id(true);
+    $redirect = complete_pending_admin_login();
+    security_audit_log('admin_2fa_success', ['redirect' => $redirect]);
+    mysqli_close($conn);
+    header('location:' . ($redirect ?: 'login_v2.php'));
+    exit;
+}
 
-    // UPDATED: Use password_verify to check the Bcrypt hash
-    if ($row && password_verify($password, $row['password'])) {
-        clear_login_attempts($input);
-        session_regenerate_id(true);
+$input = trim($_POST['username'] ?? '');
+$password = $_POST['password'] ?? '';
 
-        // User found and password matches
-        $_SESSION['username'] = $row['username'];
-        $_SESSION['role'] = $row['role'];
-        $_SESSION['office'] = isset($row['office']) ? $row['office'] : 'ASSET';
-        $_SESSION['pay_name'] = $row['name'];
-        $_SESSION['station_id'] = $row['station_id'];
-        $_SESSION['logged_in'] = true;
+$throttle = current_login_throttle($input);
+if ($throttle['locked']) {
+    $_SESSION['LoginMessage'] = login_throttle_message($throttle['remaining_seconds']);
+    security_audit_log('login_locked', ['input' => $input]);
+    header("location:login_v2.php");
+    mysqli_close($conn);
+    exit;
+}
 
-        $_SESSION['_login_time'] = time();
-        $_SESSION['_last_activity'] = time();
-        $_SESSION['_heartbeat_count'] = 0;
+if (is_numeric($input)) {
+    $sql = "SELECT * FROM logindb WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "i", $input);
+} else {
+    $sql = "SELECT * FROM logindb WHERE BINARY username = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "s", $input);
+}
 
-        // Close database before redirect
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$row = mysqli_fetch_array($result);
+
+if ($row && password_verify($password, $row['password'])) {
+    clear_login_attempts($input);
+    session_regenerate_id(true);
+
+    if (security_role_requires_2fa($row['role'])) {
+        begin_pending_admin_login($row);
+        security_audit_log('admin_2fa_challenge_created');
         mysqli_stmt_close($stmt);
         mysqli_close($conn);
-
-        // Redirect based on role
-        switch ($row['role']) {
-            case "Admin":
-                header("location:passlip/super_admin/index.php");
-                exit;
-            case "Employee":
-                header("location:passlip/requestor/add_req_emp.php");
-                exit;
-            case "TCWS Division Head":
-                header("location:index_tcws.php");
-                exit;
-            case "TCWS Employee":
-                header("location:passlip/requestor/add_req_emp.php");
-                exit;
-            case "Admin2":
-                header("location:passlip/admin_r/index_r.php");
-                exit;
-            case "Admin1":
-                header("location:passlip/admin_approver/index_desk.php");
-                exit;
-            case "TCWS Scanner":
-                header("location:qrcode_scanner_desk_tcws.php");
-                exit;
-            case "SAP":
-                header("location:sir_bayong.php");
-                exit;
-            case "ASSET2":
-                header("location:asset_tracker_dashboard/dashboard_asset_tracker.php");
-                exit;
-            case "ASSET":
-                header("location:dashboard_asset_tracker.php");
-                exit;
-            case "TENT INSTALLERS":
-                header("location:asset_tracker_dashboard/tent_installers.php");
-                exit;  
-            case "SUPPLIES":
-                header("location:LogiSys/Logi_Sys_Dashboard.php");
-                exit;
-            case "Pay_admin":
-                header("location:Payables/bac_dashboard.php");
-                exit;
-            case "fuel_admin":
-                header("location:fuel_tracker/fuel_dashboard.php");
-                exit;
-            case "gas_checker":
-                header("location:fuel_tracker/gas_checker.php");
-                exit;
-            case "advance_PO":
-                header("location:advance_request/dashboard.php");
-                exit;
-            case "pr_admin":
-                header("location:prtracking/dashboard.php");
-                exit;
-            case "Docu_admin":
-                header("location:document_tracker/dashboard.php");
-                exit;
-            case "super_admin":
-                header("location:document_tracker/super_admin.php");
-                exit;
-            case "Fuel_admin":
-                header("location:subsidy/fuel/select_station.php");
-                exit;
-            case "FOOD_VERIFIER":
-                header("location:subsidy/food/select_station.php");
-                exit;
-            case "RICE_VERIFIER":
-                header("location:subsidy/food/releasing_rice.php");
-                exit;
-            case "FOOD_REDEEMER":
-                header("location:subsidy/food/redeem_batch.php");
-                exit;
-            case "print_admin":
-                header("location:fuel_tracker/personnel_printing.php");
-                exit;
-            case "coa_admin":
-                header("location:fuel_tracker/sub_admin.php");
-                exit;
-            case "master_admin":
-                header("location:master_dashboard/dashboard.php");
-                exit;
-            default:
-                header("location:login_v2.php");
-                exit;
-        }
-    } else {
-        $throttle = register_failed_login($input);
-
-        // Invalid credentials
-        $_SESSION['LoginMessage'] = $throttle['locked']
-            ? login_throttle_message($throttle['remaining_seconds'])
-            : "Invalid username or password";
-        header("location:login_v2.php");
-
-        // Cleanup before exit
-        if (isset($stmt)) mysqli_stmt_close($stmt);
-        mysqli_close($conn);
+        header("location:login_v2.php?two_factor=1");
         exit;
     }
+
+    $_SESSION['username'] = $row['username'];
+    $_SESSION['role'] = $row['role'];
+    $_SESSION['office'] = isset($row['office']) ? $row['office'] : 'ASSET';
+    $_SESSION['pay_name'] = $row['name'];
+    $_SESSION['station_id'] = $row['station_id'];
+    $_SESSION['logged_in'] = true;
+    $_SESSION['_login_time'] = time();
+    $_SESSION['_last_activity'] = time();
+    $_SESSION['_heartbeat_count'] = 0;
+
+    $redirect = login_redirect_for_role($row['role']);
+    security_audit_log('login_success', ['redirect' => $redirect]);
+
+    mysqli_stmt_close($stmt);
+    mysqli_close($conn);
+    header('location:' . $redirect);
+    exit;
 }
+
+$throttle = register_failed_login($input);
+$_SESSION['LoginMessage'] = $throttle['locked']
+    ? login_throttle_message($throttle['remaining_seconds'])
+    : "Invalid username or password";
+security_audit_log('login_failed', ['input' => $input]);
+header("location:login_v2.php");
+
+if (isset($stmt)) {
+    mysqli_stmt_close($stmt);
+}
+mysqli_close($conn);
+exit;

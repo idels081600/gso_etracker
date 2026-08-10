@@ -2,6 +2,7 @@
 require_once 'auth_security.php';
 require_once 'passlip/dbh.php';
 start_secure_session();
+$twoFactorPending = has_pending_admin_login();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -468,8 +469,8 @@ start_secure_session();
         </a>
 
         <div class="form-wrap">
-          <h1>Welcome Back!</h1>
-          <p class="intro">Open your dashboard and continue managing CGSO requests, records, and operations.</p>
+          <h1><?php echo $twoFactorPending ? 'Security Check' : 'Welcome Back!'; ?></h1>
+          <p class="intro"><?php echo $twoFactorPending ? 'Enter the admin security code to finish signing in.' : 'Open your dashboard and continue managing CGSO operations.'; ?></p>
 
           <?php if (isset($_SESSION['LoginMessage'])) : ?>
             <div class="alert alert-danger" id="error-alert" role="alert">
@@ -478,33 +479,52 @@ start_secure_session();
             <?php unset($_SESSION['LoginMessage']); ?>
           <?php endif; ?>
 
-          <form action="check_login.php" method="POST">
-            <div class="form-group">
-              <label class="form-label" for="usr">Username or ID number</label>
-              <div class="input-shell">
-                <i class="fas fa-user" aria-hidden="true"></i>
-                <input type="text" class="form-control" id="usr" name="username" autocomplete="username" placeholder="Enter your username or ID" required autofocus>
+          <?php if ($twoFactorPending) : ?>
+            <form action="check_login.php" method="POST">
+              <div class="form-group">
+                <label class="form-label" for="two_factor_code">Admin security code</label>
+                <div class="input-shell">
+                  <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                  <input type="text" class="form-control" id="two_factor_code" name="two_factor_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="Enter 6-digit code" required autofocus>
+                </div>
               </div>
-            </div>
 
-            <div class="form-group">
-              <label class="form-label" for="pwd">Password</label>
-              <div class="input-shell">
-                <i class="fas fa-lock" aria-hidden="true"></i>
-                <input type="password" class="form-control" id="pwd" name="password" autocomplete="current-password" placeholder="Enter your password" required>
-                <button class="password-toggle" type="button" aria-label="Show password" title="Show password">
-                  <i class="fas fa-eye" aria-hidden="true"></i>
+              <div class="login-actions">
+                <button type="submit" class="btn-login">
+                  <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                  <span>Verify</span>
                 </button>
               </div>
-            </div>
+            </form>
+          <?php else : ?>
+            <form action="check_login.php" method="POST">
+              <div class="form-group">
+                <label class="form-label" for="usr">Username or ID number</label>
+                <div class="input-shell">
+                  <i class="fas fa-user" aria-hidden="true"></i>
+                  <input type="text" class="form-control" id="usr" name="username" autocomplete="username" placeholder="Enter your username or ID" required autofocus>
+                </div>
+              </div>
 
-            <div class="login-actions">
-              <button type="submit" name="login" id="login_btn" class="btn-login">
-                <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
-                <span>Login</span>
-              </button>
-            </div>
-          </form>
+              <div class="form-group">
+                <label class="form-label" for="pwd">Password</label>
+                <div class="input-shell">
+                  <i class="fas fa-lock" aria-hidden="true"></i>
+                  <input type="password" class="form-control" id="pwd" name="password" autocomplete="current-password" placeholder="Enter your password" required>
+                  <button class="password-toggle" type="button" aria-label="Show password" title="Show password">
+                    <i class="fas fa-eye" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="login-actions">
+                <button type="submit" name="login" id="login_btn" class="btn-login">
+                  <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                  <span>Login</span>
+                </button>
+              </div>
+            </form>
+          <?php endif; ?>
 
           <div class="support-row" aria-label="CGSO links">
             <a href="https://www.facebook.com/tagbilarancitygso" target="_blank" rel="noopener noreferrer">
@@ -559,3 +579,5 @@ start_secure_session();
 </body>
 
 </html>
+
+
