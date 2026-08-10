@@ -471,7 +471,7 @@ if ($bacStmt) {
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <input type="search" name="search" value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Search IB, project, bidder, office, or status" aria-label="Search BAC documents">
+                        <input type="search" name="search" value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Search IB, PR no., project, bidder, office, or status" aria-label="Search BAC documents by IB, PR number, project, bidder, office, or status">
                         <button type="submit" aria-label="Search">
                             <i class="fas fa-search"></i>
                         </button>
