@@ -166,7 +166,7 @@ function login_throttle_message($remainingSeconds)
 
 function security_admin_roles()
 {
-    return ['Admin', 'master_admin', 'Pay_admin', 'fuel_admin'];
+    return ['Admin', 'master_admin', 'Pay_admin', 'fuel_admin', 'advance_PO'];
 }
 
 function security_role_requires_2fa($role)
