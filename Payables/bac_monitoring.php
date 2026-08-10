@@ -24,14 +24,45 @@ function bac_monitoring_ensure_date_column(mysqli $conn, string $column): void
     }
 }
 
+function bac_monitoring_ensure_text_column(mysqli $conn, string $column): void
+{
+    $stmt = $conn->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'bac_monitoring' AND COLUMN_NAME = ? LIMIT 1");
+    if (!$stmt) {
+        payables_log_error('Unable to inspect BAC monitoring column ' . $column . ': ' . $conn->error);
+        return;
+    }
+
+    $stmt->bind_param('s', $column);
+    $stmt->execute();
+    $exists = $stmt->get_result();
+    $hasColumn = $exists && $exists->num_rows > 0;
+    $stmt->close();
+
+    if (!$hasColumn && !$conn->query("ALTER TABLE bac_monitoring ADD COLUMN {$column} TEXT NULL")) {
+        payables_log_error('Unable to add BAC monitoring column ' . $column . ': ' . $conn->error);
+    }
+}
+
+function bac_monitoring_pr_numbers(?string $value): array
+{
+    $parts = preg_split('/\s*,\s*/', trim((string)$value));
+    if (!$parts) {
+        return [];
+    }
+
+    return array_values(array_filter(array_map('trim', $parts), static fn ($part) => $part !== ''));
+}
+
 foreach (['pre_procurement', 'pre_bid', 'evaluation'] as $bacDateColumn) {
     bac_monitoring_ensure_date_column($conn, $bacDateColumn);
 }
+bac_monitoring_ensure_text_column($conn, 'pr_included');
 
 $formErrors = [];
 $formValues = [
     'id' => '',
     'ib_no' => '',
+    'pr_included' => '',
     'project_name' => '',
     'abc' => '',
     'final_amount' => '',
@@ -98,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
     $formValues = [
         'id' => trim($_POST['id'] ?? ''),
         'ib_no' => trim($_POST['ib_no'] ?? ''),
+        'pr_included' => trim($_POST['pr_included'] ?? ''),
         'project_name' => trim($_POST['project_name'] ?? ''),
         'abc' => trim($_POST['abc'] ?? ''),
         'final_amount' => trim($_POST['final_amount'] ?? ''),
@@ -174,17 +206,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
         if (!$formErrors && $action === 'add_bac_monitoring') {
             $stmt = $conn->prepare("
                 INSERT INTO bac_monitoring (
-                    ib_no, project_name, abc, final_amount, bidder,
+                    ib_no, pr_included, project_name, abc, final_amount, bidder,
                     pre_procurement, pre_bid, date_of_bidding, evaluation, post_qual, status,
                     date_transmitted_from_bac, office, noa_no, notice_to_proceed_date, contract_date,
                     calendar_days_delivery, deadline, received_by
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             if ($stmt) {
                 $stmt->bind_param(
-                    'ssddsssssssssssssss',
+                    'sssddsssssssssssssss',
                     $formValues['ib_no'],
+                    $formValues['pr_included'],
                     $formValues['project_name'],
                     $abc,
                     $finalAmount,
@@ -222,6 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
                 UPDATE bac_monitoring
                 SET
                     ib_no = ?,
+                    pr_included = ?,
                     project_name = ?,
                     abc = ?,
                     final_amount = ?,
@@ -245,8 +279,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
             ");
             if ($stmt) {
                 $stmt->bind_param(
-                    'ssddsssssssssssssssi',
+                    'sssddsssssssssssssssi',
                     $formValues['ib_no'],
+                    $formValues['pr_included'],
                     $formValues['project_name'],
                     $abc,
                     $finalAmount,
@@ -314,9 +349,9 @@ $params = [];
 
 if ($searchTerm !== '') {
     $searchLike = '%' . $searchTerm . '%';
-    $where[] = "(ib_no LIKE ? OR project_name LIKE ? OR bidder LIKE ? OR CAST(abc AS CHAR) LIKE ? OR CAST(final_amount AS CHAR) LIKE ? OR CAST(pre_procurement AS CHAR) LIKE ? OR CAST(pre_bid AS CHAR) LIKE ? OR CAST(date_of_bidding AS CHAR) LIKE ? OR CAST(evaluation AS CHAR) LIKE ? OR post_qual LIKE ? OR status LIKE ? OR office LIKE ? OR noa_no LIKE ? OR contract_date LIKE ? OR received_by LIKE ?)";
-    $types .= 'sssssssssssssss';
-    array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
+    $where[] = "(ib_no LIKE ? OR pr_included LIKE ? OR project_name LIKE ? OR bidder LIKE ? OR CAST(abc AS CHAR) LIKE ? OR CAST(final_amount AS CHAR) LIKE ? OR CAST(pre_procurement AS CHAR) LIKE ? OR CAST(pre_bid AS CHAR) LIKE ? OR CAST(date_of_bidding AS CHAR) LIKE ? OR CAST(evaluation AS CHAR) LIKE ? OR post_qual LIKE ? OR status LIKE ? OR office LIKE ? OR noa_no LIKE ? OR contract_date LIKE ? OR received_by LIKE ?)";
+    $types .= 'ssssssssssssssss';
+    array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
 }
 
 $whereSql = implode(' AND ', $where);
@@ -362,6 +397,7 @@ $bacSql = "
     SELECT
         id,
         ib_no,
+        pr_included,
         project_name,
         abc,
         final_amount,
@@ -467,6 +503,7 @@ if ($bacStmt) {
             <div class="bac-monitoring-table" role="table" aria-label="BAC documents not final">
                 <div class="bac-monitoring-row bac-monitoring-row-head" role="row">
                     <div>IB No.</div>
+                    <div>Pr Included</div>
                     <div>Name of Project</div>
                     <div>ABC</div>
                     <div>Final Amount</div>
@@ -517,9 +554,29 @@ if ($bacStmt) {
                         $contractDateValue = $row['contract_date'] ?? '';
                         $contractDateTimestamp = $contractDateValue ? strtotime((string)$contractDateValue) : false;
                         $displayContractDate = $contractDateTimestamp ? date('M d, Y', $contractDateTimestamp) : '-';
+                        $prIncluded = trim((string)($row['pr_included'] ?? ''));
+                        $prNumbers = bac_monitoring_pr_numbers($prIncluded);
+                        $prCount = count($prNumbers);
                         ?>
                         <div class="bac-monitoring-row" role="row">
                             <div class="bac-ref"><?php echo htmlspecialchars($row['ib_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="bac-pr-cell">
+                                <?php if ($prCount === 0): ?>
+                                    <span class="bac-pr-empty">-</span>
+                                <?php elseif ($prCount === 1): ?>
+                                    <span class="bac-pr-single"><?php echo htmlspecialchars($prNumbers[0], ENT_QUOTES, 'UTF-8'); ?></span>
+                                <?php else: ?>
+                                    <button type="button" class="bac-pr-trigger" aria-label="<?php echo htmlspecialchars('Show PR numbers for IB ' . ($row['ib_no'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                                        <span><?php echo htmlspecialchars($prNumbers[0], ENT_QUOTES, 'UTF-8'); ?></span>
+                                        <strong>+<?php echo $prCount - 1; ?> more</strong>
+                                    </button>
+                                    <div class="bac-pr-dropdown" role="list" aria-label="PR numbers included">
+                                        <?php foreach ($prNumbers as $prNumber): ?>
+                                            <span role="listitem"><?php echo htmlspecialchars($prNumber, ENT_QUOTES, 'UTF-8'); ?></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                             <div class="bac-project"><?php echo htmlspecialchars($row['project_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-amount">&#8369;<?php echo number_format((float)($row['abc'] ?? 0), 2); ?></div>
                             <div class="bac-amount">&#8369;<?php echo number_format((float)($row['final_amount'] ?? 0), 2); ?></div>
@@ -554,6 +611,7 @@ if ($bacStmt) {
                                     aria-label="<?php echo htmlspecialchars('Edit ' . ($row['ib_no'] ?? 'record'), ENT_QUOTES, 'UTF-8'); ?>"
                                     data-id="<?php echo (int)$row['id']; ?>"
                                     data-ib-no="<?php echo htmlspecialchars($row['ib_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-pr-included="<?php echo htmlspecialchars($row['pr_included'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     data-project-name="<?php echo htmlspecialchars($row['project_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     data-abc="<?php echo htmlspecialchars((string)($row['abc'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                     data-final-amount="<?php echo htmlspecialchars((string)($row['final_amount'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
@@ -637,6 +695,10 @@ if ($bacStmt) {
                         <label>
                             <span>IB No.</span>
                             <input type="text" name="ib_no" value="<?php echo htmlspecialchars($formValues['ib_no'], ENT_QUOTES, 'UTF-8'); ?>" required>
+                        </label>
+                        <label>
+                            <span>Pr Included</span>
+                            <textarea name="pr_included" rows="2" placeholder="1234-1234, 4567-45789"><?php echo htmlspecialchars($formValues['pr_included'], ENT_QUOTES, 'UTF-8'); ?></textarea>
                         </label>
                         <label>
                             <span>ABC</span>
@@ -741,6 +803,10 @@ if ($bacStmt) {
                             <input type="text" name="ib_no" id="editBacIbNo" value="<?php echo htmlspecialchars($showEditModal ? $formValues['ib_no'] : '', ENT_QUOTES, 'UTF-8'); ?>" required>
                         </label>
                         <label>
+                            <span>Pr Included</span>
+                            <textarea name="pr_included" id="editBacPrIncluded" rows="2" placeholder="1234-1234, 4567-45789"><?php echo htmlspecialchars($showEditModal ? $formValues['pr_included'] : '', ENT_QUOTES, 'UTF-8'); ?></textarea>
+                        </label>
+                        <label>
                             <span>ABC</span>
                             <input type="text" name="abc" id="editBacAbc" value="<?php echo htmlspecialchars($showEditModal ? $formValues['abc'] : '', ENT_QUOTES, 'UTF-8'); ?>" inputmode="decimal" required>
                         </label>
@@ -823,6 +889,7 @@ if ($bacStmt) {
             button.addEventListener("click", function () {
                 document.getElementById("editBacId").value = button.dataset.id || "";
                 document.getElementById("editBacIbNo").value = button.dataset.ibNo || "";
+                document.getElementById("editBacPrIncluded").value = button.dataset.prIncluded || "";
                 document.getElementById("editBacProjectName").value = button.dataset.projectName || "";
                 document.getElementById("editBacAbc").value = button.dataset.abc || "";
                 document.getElementById("editBacFinalAmount").value = button.dataset.finalAmount || "";
