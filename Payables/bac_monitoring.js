@@ -125,6 +125,45 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!taskPanel) return;
     taskPanel.classList.toggle("is-table-loading", isLoading);
     taskPanel.setAttribute("aria-busy", isLoading ? "true" : "false");
+
+    const currentTable = document.querySelector(".task-table");
+    if (!currentTable) return;
+
+    currentTable.querySelector(".task-skeleton-frame")?.remove();
+    if (!isLoading) return;
+
+    const skeleton = document.createElement("div");
+    skeleton.className = "task-skeleton-frame";
+    skeleton.setAttribute("aria-hidden", "true");
+
+    const activeStatus = currentTable.dataset.activeStatus || "GSO";
+    const columnCount = ["ACCOUNTING", "CTO", "SEARCH"].includes(activeStatus) ? 6 : 5;
+
+    for (let rowIndex = 0; rowIndex < 7; rowIndex += 1) {
+      const row = document.createElement("div");
+      row.className = "task-skeleton-row";
+
+      for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+        const cell = document.createElement("div");
+        cell.className = "task-skeleton-cell";
+
+        const primary = document.createElement("span");
+        primary.className = "task-skeleton-line";
+        cell.appendChild(primary);
+
+        if (columnIndex < 2) {
+          const secondary = document.createElement("span");
+          secondary.className = "task-skeleton-line is-short";
+          cell.appendChild(secondary);
+        }
+
+        row.appendChild(cell);
+      }
+
+      skeleton.appendChild(row);
+    }
+
+    currentTable.appendChild(skeleton);
   }
 
   function replaceTableHtml(html) {

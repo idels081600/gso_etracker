@@ -225,24 +225,91 @@
 }
 
 .task-panel.is-table-loading .task-table {
-  opacity: 0.45;
   pointer-events: none;
 }
 
-.task-panel.is-table-loading::after {
-  content: "Loading records...";
+.task-panel.is-table-loading .payables-row {
+  opacity: 0;
+}
+
+.task-skeleton-frame {
   position: absolute;
-  right: 18px;
-  bottom: 48px;
-  z-index: 20;
-  border: 1px solid #d7f2ed;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
-  color: #11796f;
-  font-size: 0.74rem;
-  font-weight: 800;
-  padding: 9px 12px;
+  inset: 46px 4px 4px 0;
+  z-index: 10;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 920px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), #fff 18%);
+}
+
+.task-skeleton-row {
+  display: grid;
+  grid-template-columns: minmax(115px, 0.75fr) minmax(235px, 1.35fr) minmax(100px, 0.58fr) minmax(280px, max-content) minmax(88px, 0.4fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 58px;
+  border: 1px solid #edf0f4;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 14px;
+}
+
+.task-table[data-active-status="CTO"] .task-skeleton-row {
+  grid-template-columns: minmax(115px, 0.75fr) minmax(235px, 1.2fr) minmax(100px, 0.55fr) minmax(210px, 1fr) minmax(88px, 0.35fr) minmax(118px, 0.52fr);
+}
+
+.task-table[data-active-status="ACCOUNTING"] .task-skeleton-row {
+  grid-template-columns: minmax(115px, 0.7fr) minmax(220px, 1.15fr) minmax(100px, 0.5fr) minmax(190px, 0.9fr) minmax(130px, 0.5fr) minmax(88px, 0.38fr);
+}
+
+.task-table[data-active-status="SEARCH"] .task-skeleton-row {
+  grid-template-columns: minmax(115px, 0.7fr) minmax(220px, 1.1fr) minmax(100px, 0.48fr) minmax(108px, 0.42fr) minmax(190px, 0.86fr) minmax(92px, 0.34fr);
+}
+
+.task-skeleton-cell {
+  display: grid;
+  gap: 8px;
+}
+
+.task-skeleton-line {
+  display: block;
+  width: 76%;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #edf1f5 0%, #f7f9fb 44%, #edf1f5 88%);
+  background-size: 220% 100%;
+  animation: taskSkeletonShimmer 1.05s ease-in-out infinite;
+}
+
+.task-skeleton-cell:nth-child(2) .task-skeleton-line:first-child {
+  width: 86%;
+}
+
+.task-skeleton-cell:nth-child(3) .task-skeleton-line,
+.task-skeleton-cell:nth-child(5) .task-skeleton-line {
+  width: 58%;
+}
+
+.task-skeleton-line.is-short {
+  width: 44%;
+  height: 8px;
+}
+
+@keyframes taskSkeletonShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-skeleton-line {
+    animation: none;
+  }
 }
 
 .task-header {
