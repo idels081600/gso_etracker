@@ -26,25 +26,28 @@ if (
         'status',
     ])
 ) {
+    payables_ensure_date_column($conn, 'PO_sap', 'award');
     $date_received = payables_post_date_or_now('date_received');
+    $award = payables_post_nullable_date('award');
     
     $amount = (float)payables_sanitize_amount($_POST['amount'] ?? '');
     
     $stmt = $conn->prepare("INSERT INTO PO_sap (
-        RFQ_no, supplier, description, amount, date_received, office, received_by, status, delete_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)");
+        RFQ_no, supplier, description, amount, date_received, award, office, received_by, status, delete_status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)");
     
     if (!$stmt) {
         log_error('Prepare failed: ' . $conn->error);
         $error_message = 'An error occurred while preparing the statement.';
     } else {
         $stmt->bind_param(
-            "sssdssss",
+            "sssdsssss",
             $_POST['rfq_no'],
             $_POST['supplier'],
             $_POST['description'],
             $amount,
             $date_received,
+            $award,
             $_POST['office'],
             $_POST['received_by'],
             $_POST['status']

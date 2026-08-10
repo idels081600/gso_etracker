@@ -5,6 +5,8 @@ $full_name = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : '';
 require_once 'transmit_db.php';
 require_once 'payables_helpers.php';
 
+payables_ensure_date_column($conn, 'PO_sap', 'award');
+
 $searchTerm = trim($_GET['search'] ?? '');
 $currentPage = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT) ?: 1;
 $perPage = 25;
@@ -43,7 +45,7 @@ $perPage = 25;
                         <span>Receive</span>
                     </button>
                     <form class="rfq-search" method="get" role="search">
-                        <input type="search" id="searchInput" name="search" placeholder="Search RFQ records" aria-label="Search RFQ records" value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="search" id="searchInput" name="search" placeholder="Search RFQ, supplier, award, office, or status" aria-label="Search RFQ records" value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>">
                         <button type="submit" id="searchButton" aria-label="Search">
                             <i class="fas fa-search"></i>
                         </button>
@@ -65,6 +67,7 @@ $perPage = 25;
                             <th>Description</th>
                             <th>Amount</th>
                             <th>Date Received</th>
+                            <th>Award</th>
                             <th>Office</th>
                             <th>Received by</th>
                             <th>Status</th>
@@ -103,6 +106,10 @@ $perPage = 25;
                             <div class="col-md-6">
                                 <label for="date_received" class="form-label">Date Received</label>
                                 <input type="date" class="form-control" id="date_received" name="date_received">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="award" class="form-label">Award</label>
+                                <input type="date" class="form-control" id="award" name="award">
                             </div>
                             <div class="col-md-6">
                                 <label for="office" class="form-label">Office</label>
@@ -158,6 +165,10 @@ $perPage = 25;
                             <div class="col-md-6">
                                 <label for="edit_date_received" class="form-label">Date Received</label>
                                 <input type="date" class="form-control" id="edit_date_received" name="date_received">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_award" class="form-label">Award</label>
+                                <input type="date" class="form-control" id="edit_award" name="award">
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_office" class="form-label">Office</label>

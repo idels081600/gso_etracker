@@ -98,6 +98,7 @@ document.addEventListener("DOMContentLoaded", function () {
             "edit_date_received",
             data.row.date_received ? data.row.date_received.split(" ")[0] : ""
           );
+          setValue("edit_award", data.row.award ? data.row.award.split(" ")[0] : "");
           setValue("edit_office", data.row.office);
           setValue("edit_received_by", data.row.received_by);
           setValue("edit_status", data.row.status);

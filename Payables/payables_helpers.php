@@ -130,6 +130,36 @@ function payables_post_date_or_now(string $field): string
     return $date !== '' ? $date . ' 00:00:00' : payables_current_datetime();
 }
 
+function payables_post_nullable_date(string $field): ?string
+{
+    $date = payables_normalize_date_or_empty((string)($_POST[$field] ?? ''));
+    return $date !== '' ? $date : null;
+}
+
+function payables_ensure_date_column(mysqli $conn, string $table, string $column): void
+{
+    if (!preg_match('/^[A-Za-z0-9_]+$/', $table) || !preg_match('/^[A-Za-z0-9_]+$/', $column)) {
+        payables_log_error('Invalid table or column requested for date column check.');
+        return;
+    }
+
+    $stmt = $conn->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1");
+    if (!$stmt) {
+        payables_log_error('Unable to inspect column ' . $table . '.' . $column . ': ' . $conn->error);
+        return;
+    }
+
+    $stmt->bind_param('ss', $table, $column);
+    $stmt->execute();
+    $exists = $stmt->get_result();
+    $hasColumn = $exists && $exists->num_rows > 0;
+    $stmt->close();
+
+    if (!$hasColumn && !$conn->query("ALTER TABLE {$table} ADD COLUMN {$column} DATE NULL")) {
+        payables_log_error('Unable to add column ' . $table . '.' . $column . ': ' . $conn->error);
+    }
+}
+
 function payables_calculate_deadline(string $noticeProceed, string $calendarDays): array
 {
     $noticeProceed = payables_normalize_date_or_empty($noticeProceed);

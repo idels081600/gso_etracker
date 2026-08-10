@@ -57,7 +57,10 @@ if (!$existsResult || !$existsResult->fetch_assoc()) {
 }
 $existsStmt->close();
 
-$stmt = $conn->prepare("UPDATE PO_sap SET RFQ_no=?, description=?, office=?, received_by=?, supplier=?, amount=?, date_received=?, status=? WHERE id=? AND delete_status=0");
+
+payables_ensure_date_column($conn, 'PO_sap', 'award');
+
+$stmt = $conn->prepare("UPDATE PO_sap SET RFQ_no=?, description=?, office=?, received_by=?, supplier=?, amount=?, date_received=?, award=?, status=? WHERE id=? AND delete_status=0");
 
 if (!$stmt) {
     log_error('Prepare failed: ' . $conn->error);
@@ -67,10 +70,12 @@ if (!$stmt) {
 
 $amount = (float)payables_sanitize_amount($_POST['amount']);
 $date_received = payables_post_date_or_now('date_received');
+
+$award = payables_post_nullable_date('award');
 $status = $_POST['status'];
 
 $stmt->bind_param(
-    "sssssdssi",
+    "sssssdsssi",
     $_POST['rfq_no'],
     $_POST['description'],
     $_POST['office'],
@@ -78,6 +83,7 @@ $stmt->bind_param(
     $_POST['supplier'],
     $amount,
     $date_received,
+    $award,
     $status,
     $id
 );
