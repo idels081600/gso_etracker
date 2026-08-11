@@ -30,6 +30,8 @@ document.addEventListener("DOMContentLoaded", function () {
   let cameraRunning = false;
   let lastCameraCode = "";
   let lastCameraAt = 0;
+  let usbScanTimer = null;
+  let usbScanProcessing = false;
 
   function parseJsonResponse(response) {
     return response.text().then(function (text) {
@@ -326,6 +328,38 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
+  function splitScannedValues(value) {
+    return String(value || "")
+      .split(/[,\n\r\t]+/)
+      .map(function (item) { return item.trim(); })
+      .filter(Boolean);
+  }
+
+  function processUsbInputQueue() {
+    if (!input || usbScanProcessing) return;
+    const values = splitScannedValues(input.value);
+    if (!values.length) return;
+
+    usbScanProcessing = true;
+    input.value = "";
+    values
+      .reduce(function (chain, value) {
+        return chain.then(function () {
+          return processCode(value, "USB");
+        });
+      }, Promise.resolve())
+      .finally(function () {
+        usbScanProcessing = false;
+        input.focus();
+      });
+  }
+
+  function scheduleUsbScanProcessing() {
+    if (!isBulkMode() || !input) return;
+    window.clearTimeout(usbScanTimer);
+    usbScanTimer = window.setTimeout(processUsbInputQueue, 160);
+  }
+
   function stopCamera() {
     cameraRunning = false;
     if (cameraStream) {
@@ -413,7 +447,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   form?.addEventListener("submit", function (event) {
     event.preventDefault();
-    processCode(input.value, "USB");
+    window.clearTimeout(usbScanTimer);
+    processUsbInputQueue();
+  });
+
+  input?.addEventListener("input", function () {
+    if (!isBulkMode()) return;
+    if (/[,\n\r\t]/.test(input.value)) {
+      window.clearTimeout(usbScanTimer);
+      processUsbInputQueue();
+      return;
+    }
+    scheduleUsbScanProcessing();
   });
 
   toggleCameraBtn?.addEventListener("click", function () {
