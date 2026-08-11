@@ -94,8 +94,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             payables_log_error('Barcode label generate prepare failed: ' . $conn->error);
         } else {
             $created = 0;
-            for ($index = 1; $index <= $count; $index++) {
-                $barcodeCode = 'PBL-' . date('ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+            $attempts = 0;
+            while ($created < $count && $attempts < ($count * 8)) {
+                $attempts++;
+                $barcodeCode = 'B' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
                 $stmt->bind_param('sss', $barcodeCode, $batchCode, $createdBy);
                 if ($stmt->execute()) {
                     $created++;
