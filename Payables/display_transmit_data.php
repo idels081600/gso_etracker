@@ -162,6 +162,7 @@ function display_transmittal_rfq_data(string $searchTerm = '', int $page = 1, in
     global $conn;
 
     payables_ensure_date_column($conn, 'PO_sap', 'award');
+    payables_ensure_text_column($conn, 'PO_sap', 'pr_included');
     payables_ensure_listing_indexes();
     $page = payables_clamp_page($page);
     $where = ['delete_status = 0'];
@@ -171,9 +172,9 @@ function display_transmittal_rfq_data(string $searchTerm = '', int $page = 1, in
 
     if ($searchTerm !== '') {
         $searchLike = '%' . $searchTerm . '%';
-        $where[] = "(RFQ_no LIKE ? OR supplier LIKE ? OR description LIKE ? OR office LIKE ? OR received_by LIKE ? OR status LIKE ? OR CAST(amount AS CHAR) LIKE ? OR CAST(award AS CHAR) LIKE ?)";
-        $types .= 'ssssssss';
-        array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
+        $where[] = "(RFQ_no LIKE ? OR pr_included LIKE ? OR supplier LIKE ? OR description LIKE ? OR office LIKE ? OR received_by LIKE ? OR status LIKE ? OR CAST(amount AS CHAR) LIKE ? OR CAST(award AS CHAR) LIKE ?)";
+        $types .= 'sssssssss';
+        array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
     }
 
     $whereSql = implode(' AND ', $where);
@@ -182,7 +183,7 @@ function display_transmittal_rfq_data(string $searchTerm = '', int $page = 1, in
     $page = min($page, $totalPages);
     $offset = ($page - 1) * $perPage;
 
-    $sql = "SELECT id, RFQ_no, supplier, description, amount, date_received, award, office, received_by, status
+    $sql = "SELECT id, RFQ_no, pr_included, supplier, description, amount, date_received, award, office, received_by, status
             FROM PO_sap
             WHERE {$whereSql}
             ORDER BY id DESC
@@ -190,7 +191,7 @@ function display_transmittal_rfq_data(string $searchTerm = '', int $page = 1, in
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         payables_log_error('RFQ list prepare failed: ' . $conn->error);
-        echo '<tr><td colspan="10" class="text-center text-danger">Unable to load records.</td></tr>';
+        echo '<tr><td colspan="11" class="text-center text-danger">Unable to load records.</td></tr>';
         return ['page' => $page, 'per_page' => $perPage, 'total_rows' => $totalRows];
     }
 
@@ -208,9 +209,28 @@ function display_transmittal_rfq_data(string $searchTerm = '', int $page = 1, in
             if ($statusClass === '') {
                 $statusClass = 'pending';
             }
+            $prNumbers = payables_split_comma_values($row['pr_included'] ?? '');
+            $prCount = count($prNumbers);
 
             echo '<tr>';
             echo '<td class="rfq-ref">' . htmlspecialchars($row['RFQ_no'] ?? '') . '</td>';
+            echo '<td class="rfq-pr-cell">';
+            if ($prCount === 0) {
+                echo '<span class="rfq-pr-empty">-</span>';
+            } elseif ($prCount === 1) {
+                echo '<span class="rfq-pr-single">' . htmlspecialchars($prNumbers[0], ENT_QUOTES, 'UTF-8') . '</span>';
+            } else {
+                echo '<button type="button" class="rfq-pr-trigger" aria-label="' . htmlspecialchars('Show PR numbers for RFQ ' . ($row['RFQ_no'] ?? ''), ENT_QUOTES, 'UTF-8') . '" aria-expanded="false">';
+                echo '<span>' . htmlspecialchars($prNumbers[0], ENT_QUOTES, 'UTF-8') . '</span>';
+                echo '<strong>+' . ($prCount - 1) . ' more</strong>';
+                echo '</button>';
+                echo '<div class="rfq-pr-dropdown" role="list" aria-label="PR numbers included">';
+                foreach ($prNumbers as $prNumber) {
+                    echo '<span role="listitem">' . htmlspecialchars($prNumber, ENT_QUOTES, 'UTF-8') . '</span>';
+                }
+                echo '</div>';
+            }
+            echo '</td>';
             echo '<td class="rfq-supplier">' . htmlspecialchars($row['supplier'] ?? '') . '</td>';
             echo '<td class="rfq-description">' . htmlspecialchars($row['description'] ?? '') . '</td>';
             echo '<td class="rfq-amount">&#8369;' . number_format((float)$row['amount'], 2) . '</td>';
@@ -226,7 +246,7 @@ function display_transmittal_rfq_data(string $searchTerm = '', int $page = 1, in
             echo '</tr>';
         }
     } else {
-        echo '<tr><td colspan="10" class="rfq-empty">' . ($searchTerm !== '' ? 'No matching RFQ records found.' : 'No RFQ records found.') . '</td></tr>';
+        echo '<tr><td colspan="11" class="rfq-empty">' . ($searchTerm !== '' ? 'No matching RFQ records found.' : 'No RFQ records found.') . '</td></tr>';
     }
 
     $stmt->close();

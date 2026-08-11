@@ -6,6 +6,7 @@ require_once 'transmit_db.php';
 require_once 'payables_helpers.php';
 
 payables_ensure_date_column($conn, 'PO_sap', 'award');
+payables_ensure_text_column($conn, 'PO_sap', 'pr_included');
 
 $searchTerm = trim($_GET['search'] ?? '');
 $currentPage = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT) ?: 1;
@@ -45,7 +46,7 @@ $perPage = 25;
                         <span>Receive</span>
                     </button>
                     <form class="rfq-search" method="get" role="search">
-                        <input type="search" id="searchInput" name="search" placeholder="Search RFQ, supplier, award, office, or status" aria-label="Search RFQ records" value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="search" id="searchInput" name="search" placeholder="Search RFQ, PR, supplier, award, office, or status" aria-label="Search RFQ records" value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>">
                         <button type="submit" id="searchButton" aria-label="Search">
                             <i class="fas fa-search"></i>
                         </button>
@@ -63,6 +64,7 @@ $perPage = 25;
                     <thead>
                         <tr>
                             <th>RFQ No.</th>
+                            <th>PR Included</th>
                             <th>Supplier</th>
                             <th>Description</th>
                             <th>Amount</th>
@@ -98,6 +100,10 @@ $perPage = 25;
                             <div class="col-md-6">
                                 <label for="rfq_no" class="form-label">RFQ No.</label>
                                 <input type="text" class="form-control" id="rfq_no" name="rfq_no" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="pr_included" class="form-label">PR Included</label>
+                                <textarea class="form-control" id="pr_included" name="pr_included" rows="2" placeholder="1234-1234, 4567-45789"></textarea>
                             </div>
                             <div class="col-md-6">
                                 <label for="description" class="form-label">Description</label>
@@ -157,6 +163,10 @@ $perPage = 25;
                             <div class="col-md-6">
                                 <label for="edit_rfq_no" class="form-label">RFQ No.</label>
                                 <input type="text" class="form-control" id="edit_rfq_no" name="rfq_no">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_pr_included" class="form-label">PR Included</label>
+                                <textarea class="form-control" id="edit_pr_included" name="pr_included" rows="2" placeholder="1234-1234, 4567-45789"></textarea>
                             </div>
                             <div class="col-md-6">
                                 <label for="edit_description" class="form-label">Description</label>

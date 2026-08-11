@@ -15,10 +15,10 @@ if (!$id || $id < 1) {
     exit;
 }
 
-
 payables_ensure_date_column($conn, 'PO_sap', 'award');
+payables_ensure_text_column($conn, 'PO_sap', 'pr_included');
 
-$stmt = $conn->prepare("SELECT id, RFQ_no, supplier, description, amount, date_received, award, office, received_by, status FROM PO_sap WHERE id = ? AND delete_status = 0 LIMIT 1");
+$stmt = $conn->prepare("SELECT id, RFQ_no, pr_included, supplier, description, amount, date_received, award, office, received_by, status FROM PO_sap WHERE id = ? AND delete_status = 0 LIMIT 1");
 if (!$stmt) {
     payables_log_error('RFQ fetch prepare failed: ' . $conn->error);
     echo json_encode(['success' => false, 'error' => 'Unable to fetch this record right now.']);

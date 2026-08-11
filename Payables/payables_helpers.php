@@ -160,6 +160,40 @@ function payables_ensure_date_column(mysqli $conn, string $table, string $column
     }
 }
 
+function payables_ensure_text_column(mysqli $conn, string $table, string $column): void
+{
+    if (!preg_match('/^[A-Za-z0-9_]+$/', $table) || !preg_match('/^[A-Za-z0-9_]+$/', $column)) {
+        payables_log_error('Invalid table or column requested for text column check.');
+        return;
+    }
+
+    $stmt = $conn->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1");
+    if (!$stmt) {
+        payables_log_error('Unable to inspect column ' . $table . '.' . $column . ': ' . $conn->error);
+        return;
+    }
+
+    $stmt->bind_param('ss', $table, $column);
+    $stmt->execute();
+    $exists = $stmt->get_result();
+    $hasColumn = $exists && $exists->num_rows > 0;
+    $stmt->close();
+
+    if (!$hasColumn && !$conn->query("ALTER TABLE {$table} ADD COLUMN {$column} TEXT NULL")) {
+        payables_log_error('Unable to add column ' . $table . '.' . $column . ': ' . $conn->error);
+    }
+}
+
+function payables_split_comma_values(?string $value): array
+{
+    $parts = preg_split('/\s*,\s*/', trim((string)$value));
+    if (!$parts) {
+        return [];
+    }
+
+    return array_values(array_filter(array_map('trim', $parts), static fn ($part) => $part !== ''));
+}
+
 function payables_calculate_deadline(string $noticeProceed, string $calendarDays): array
 {
     $noticeProceed = payables_normalize_date_or_empty($noticeProceed);

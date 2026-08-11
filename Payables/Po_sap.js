@@ -76,6 +76,92 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  const floatingPrList = document.createElement("div");
+  floatingPrList.className = "rfq-pr-floating";
+  floatingPrList.setAttribute("role", "list");
+  floatingPrList.setAttribute("aria-label", "PR numbers included");
+  document.body.appendChild(floatingPrList);
+  let activePrTrigger = null;
+  let prHideTimer = null;
+
+  function hidePrList() {
+    if (activePrTrigger) {
+      activePrTrigger.setAttribute("aria-expanded", "false");
+    }
+    activePrTrigger = null;
+    floatingPrList.classList.remove("is-visible");
+    floatingPrList.innerHTML = "";
+  }
+
+  function queueHidePrList() {
+    window.clearTimeout(prHideTimer);
+    prHideTimer = window.setTimeout(hidePrList, 120);
+  }
+
+  function positionPrList(trigger) {
+    const rect = trigger.getBoundingClientRect();
+    const width = Math.max(190, Math.min(280, floatingPrList.offsetWidth || 220));
+    const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+    let top = rect.bottom + 8;
+
+    if (top + floatingPrList.offsetHeight + 12 > window.innerHeight) {
+      top = Math.max(12, rect.top - floatingPrList.offsetHeight - 8);
+    }
+
+    floatingPrList.style.left = left + "px";
+    floatingPrList.style.top = top + "px";
+  }
+
+  function showPrList(trigger) {
+    const sourceList = trigger.parentElement.querySelector(".rfq-pr-dropdown");
+    if (!sourceList) return;
+
+    window.clearTimeout(prHideTimer);
+    activePrTrigger = trigger;
+    floatingPrList.innerHTML = sourceList.innerHTML;
+    floatingPrList.classList.add("is-visible");
+    trigger.setAttribute("aria-expanded", "true");
+    positionPrList(trigger);
+  }
+
+  document.querySelectorAll(".rfq-pr-trigger").forEach(function (trigger) {
+    trigger.addEventListener("mouseenter", function () {
+      showPrList(trigger);
+    });
+    trigger.addEventListener("focus", function () {
+      showPrList(trigger);
+    });
+    trigger.addEventListener("mouseleave", queueHidePrList);
+    trigger.addEventListener("blur", queueHidePrList);
+    trigger.addEventListener("click", function () {
+      if (activePrTrigger === trigger && floatingPrList.classList.contains("is-visible")) {
+        hidePrList();
+      } else {
+        showPrList(trigger);
+      }
+    });
+  });
+
+  floatingPrList.addEventListener("mouseenter", function () {
+    window.clearTimeout(prHideTimer);
+  });
+  floatingPrList.addEventListener("mouseleave", queueHidePrList);
+  window.addEventListener("scroll", function () {
+    if (activePrTrigger) {
+      positionPrList(activePrTrigger);
+    }
+  }, true);
+  window.addEventListener("resize", function () {
+    if (activePrTrigger) {
+      positionPrList(activePrTrigger);
+    }
+  });
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      hidePrList();
+    }
+  });
+
   document.addEventListener("click", function (event) {
     const editButton = event.target.closest(".edit-btn");
     if (editButton) {
@@ -91,6 +177,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
           setValue("edit_id", data.row.id);
           setValue("edit_rfq_no", data.row.RFQ_no);
+          setValue("edit_pr_included", data.row.pr_included);
           setValue("edit_supplier", data.row.supplier);
           setValue("edit_description", data.row.description);
           setValue("edit_amount", formatAmountValue(data.row.amount));
