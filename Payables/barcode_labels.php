@@ -46,6 +46,11 @@ function barcode_label_document_options(mysqli $conn): array
     return $options;
 }
 
+function barcode_label_document_label(array $option): string
+{
+    return trim(($option['type'] ?? '') . ' ' . ($option['number'] ?? '') . ' - ' . ($option['title'] ?? ''));
+}
+
 function barcode_label_recent(mysqli $conn): array
 {
     payables_ensure_document_barcodes_table();
@@ -102,6 +107,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'assign_label') {
         $barcodeCode = payables_normalize_barcode_code($_POST['barcode_code'] ?? '');
         $documentValue = trim($_POST['document_ref'] ?? '');
+        $documentSearch = trim($_POST['document_search'] ?? '');
+        if ($documentValue === '' && $documentSearch !== '') {
+            foreach (barcode_label_document_options($conn) as $option) {
+                if (strcasecmp($documentSearch, barcode_label_document_label($option)) === 0) {
+                    $documentValue = $option['value'];
+                    break;
+                }
+            }
+        }
         [$recordType, $recordIdText] = array_pad(explode(':', $documentValue, 2), 2, '');
         $recordType = strtoupper(trim($recordType));
         $recordId = (int)$recordIdText;
@@ -235,7 +249,17 @@ $recentLabels = barcode_label_recent($conn);
                         <?php echo payables_csrf_input(); ?>
                         <input type="hidden" name="action" value="assign_label">
                         <label><span>Sticker barcode</span><input type="text" name="barcode_code" placeholder="Scan sticker barcode" autocomplete="off" autofocus required></label>
-                        <label><span>Document</span><select name="document_ref" required><option value="">Select existing IB/RFQ</option><?php foreach ($documentOptions as $option): ?><option value="<?php echo htmlspecialchars($option['value'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($option['type'] . ' ' . $option['number'] . ' - ' . $option['title'], ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></label>
+                        <label>
+                            <span>Document</span>
+                            <input type="text" name="document_search" list="barcodeDocumentSuggestions" placeholder="Type IB/RFQ no., project, or supplier" autocomplete="off" required>
+                            <input type="hidden" name="document_ref" id="documentRefValue">
+                            <datalist id="barcodeDocumentSuggestions">
+                                <?php foreach ($documentOptions as $option): ?>
+                                    <?php $optionLabel = barcode_label_document_label($option); ?>
+                                    <option value="<?php echo htmlspecialchars($optionLabel, ENT_QUOTES, 'UTF-8'); ?>" data-value="<?php echo htmlspecialchars($option['value'], ENT_QUOTES, 'UTF-8'); ?>"></option>
+                                <?php endforeach; ?>
+                            </datalist>
+                        </label>
                         <button type="submit"><i class="fas fa-link"></i> Register Barcode</button>
                     </form>
                 </section>
@@ -271,5 +295,6 @@ $recentLabels = barcode_label_recent($conn);
             </section>
         </section>
     </main>
+    <script src="barcode-label-document-picker.js"></script>
 </body>
 </html>
