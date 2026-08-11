@@ -17,7 +17,14 @@ document.addEventListener("DOMContentLoaded", function () {
   const cameraPanel = document.getElementById("cameraPanel");
   const video = document.getElementById("scannerVideo");
   const cameraHelp = document.getElementById("cameraHelp");
+  const bulkModeToggle = document.getElementById("bulkModeToggle");
+  const bulkPanel = document.getElementById("bulkPanel");
+  const bulkList = document.getElementById("bulkList");
+  const bulkCount = document.getElementById("bulkCount");
+  const clearBulkBtn = document.getElementById("clearBulkBtn");
+  const saveBulkBtn = document.getElementById("saveBulkBtn");
   let activeDirection = "IN";
+  let bulkItems = [];
   let cameraStream = null;
   let cameraDetector = null;
   let cameraRunning = false;
@@ -47,6 +54,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function setStatus(message, type) {
+    if (!statusEl) return;
     statusEl.textContent = message;
     statusEl.classList.toggle("is-success", type === "success");
     statusEl.classList.toggle("is-error", type === "error");
@@ -118,6 +126,115 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  function isBulkMode() {
+    return Boolean(bulkModeToggle && bulkModeToggle.checked);
+  }
+
+  function bulkKey(match) {
+    return (match.record_type || "") + ":" + (match.record_id || "");
+  }
+
+  function updateBulkPanel() {
+    if (!bulkPanel || !bulkList || !bulkCount || !saveBulkBtn) return;
+    const enabled = isBulkMode();
+    bulkPanel.classList.toggle("d-none", !enabled);
+    bulkCount.textContent = bulkItems.length + (bulkItems.length === 1 ? " document ready" : " documents ready");
+    saveBulkBtn.disabled = !enabled || bulkItems.length === 0;
+
+    if (!bulkItems.length) {
+      bulkList.innerHTML = '<div class="scanner-bulk-empty">No documents in batch yet.</div>';
+      return;
+    }
+
+    bulkList.innerHTML = bulkItems
+      .map(function (item, index) {
+        return (
+          '<div class="scanner-bulk-row">' +
+          '<div><strong>' + escapeHtml(item.record_type + " " + item.document_no) + "</strong><span>" + escapeHtml(item.title || item.party || "Document") + "</span></div>" +
+          '<button type="button" data-remove-bulk="' + index + '" aria-label="Remove ' + escapeHtml(item.document_no) + '"><i class="fas fa-times"></i></button>' +
+          "</div>"
+        );
+      })
+      .join("");
+  }
+
+  function addBulkItem(match, source) {
+    const key = bulkKey(match);
+    if (bulkItems.some(function (item) { return bulkKey(item) === key; })) {
+      setStatus(match.document_no + " is already in the batch.", "error");
+      input.value = "";
+      input.focus();
+      return;
+    }
+
+    bulkItems.push(Object.assign({}, match, { scan_source: source || "USB" }));
+    updateBulkPanel();
+    setStatus(match.document_no + " added to batch.", "success");
+    if (emptyResult) emptyResult.classList.add("d-none");
+    if (resultPanel) resultPanel.classList.remove("d-none");
+    if (matchChoicePanel) matchChoicePanel.classList.add("d-none");
+    if (latestScanTime) latestScanTime.textContent = "Pending batch";
+    resultValue("record_type", match.record_type);
+    resultValue("document_no", match.document_no);
+    resultValue("direction", activeDirection + " pending");
+    resultValue("office", selectedOffice());
+    resultValue("title", match.title || match.party || "Document");
+    resultValue("scanned_by", "Pending save");
+    input.value = "";
+    input.focus();
+  }
+
+  function clearBulkItems() {
+    bulkItems = [];
+    updateBulkPanel();
+    setStatus("Batch cleared.", "");
+    input.focus();
+  }
+
+  function saveBulkBatch() {
+    if (!bulkItems.length) {
+      setStatus("Scan at least one document before saving the batch.", "error");
+      input.focus();
+      return;
+    }
+
+    const body = new URLSearchParams();
+    body.set("csrf_token", csrfToken);
+    body.set("direction", activeDirection);
+    body.set("office", selectedOffice());
+    body.set("items", JSON.stringify(bulkItems));
+    saveBulkBtn.disabled = true;
+    setStatus("Saving " + bulkItems.length + " documents...", "");
+
+    fetch("scan_bulk_save.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    })
+      .then(parseJsonResponse)
+      .then(function (data) {
+        if (!data.success) {
+          throw new Error(data.error || "Unable to save batch.");
+        }
+        (data.events || []).slice().reverse().forEach(function (event) {
+          prependHistory(event);
+        });
+        if (data.events && data.events.length) {
+          showResult(data.events[0]);
+        }
+        bulkItems = [];
+        updateBulkPanel();
+        setStatus((data.saved_count || 0) + " documents saved.", "success");
+        input.focus();
+      })
+      .catch(function (error) {
+        setStatus(error.message || "Unable to save batch.", "error");
+      })
+      .finally(function () {
+        updateBulkPanel();
+      });
+  }
+
   function saveScan(match, source) {
     const body = new URLSearchParams();
     body.set("csrf_token", csrfToken);
@@ -163,7 +280,12 @@ document.addEventListener("DOMContentLoaded", function () {
     resultPanel?.classList.add("d-none");
     matchChoices.querySelectorAll("[data-match-index]").forEach(function (button) {
       button.addEventListener("click", function () {
-        saveScan(matches[Number(button.dataset.matchIndex)], source).catch(function (error) {
+        const match = matches[Number(button.dataset.matchIndex)];
+        if (isBulkMode()) {
+          addBulkItem(match, source);
+          return;
+        }
+        saveScan(match, source).catch(function (error) {
           setStatus(error.message || "Unable to save scan.", "error");
         });
       });
@@ -188,10 +310,15 @@ document.addEventListener("DOMContentLoaded", function () {
           throw new Error(data.error || "No document found.");
         }
         if (data.matches.length === 1) {
+          if (isBulkMode()) {
+            addBulkItem(data.matches[0], source);
+            return null;
+          }
           return saveScan(data.matches[0], source);
         }
         setStatus("Choose the matching document.", "");
         showMatches(data.matches, source);
+        return null;
       })
       .catch(function (error) {
         setStatus(error.message || "Unable to scan document.", "error");
@@ -297,6 +424,23 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  bulkModeToggle?.addEventListener("change", function () {
+    updateBulkPanel();
+    setStatus(isBulkMode() ? "Bulk Scan Mode is on." : "Ready to scan", isBulkMode() ? "success" : "");
+    input?.focus();
+  });
+
+  clearBulkBtn?.addEventListener("click", clearBulkItems);
+  saveBulkBtn?.addEventListener("click", saveBulkBatch);
+  bulkList?.addEventListener("click", function (event) {
+    const removeButton = event.target.closest("[data-remove-bulk]");
+    if (!removeButton) return;
+    bulkItems.splice(Number(removeButton.dataset.removeBulk), 1);
+    updateBulkPanel();
+    input?.focus();
+  });
+
   window.addEventListener("beforeunload", stopCamera);
+  updateBulkPanel();
   setDirection("IN");
 });

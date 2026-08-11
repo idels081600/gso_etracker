@@ -64,6 +64,10 @@ function scanner_event_row(array $event): string
                         <h2>Scan Document</h2>
                         <span>IB and RFQ barcodes</span>
                     </div>
+                    <label class="scanner-bulk-toggle">
+                        <input type="checkbox" id="bulkModeToggle">
+                        <span>Bulk Scan Mode</span>
+                    </label>
                     <div class="scanner-mode-group" aria-label="Scan direction">
                         <button type="button" class="is-active" data-scan-direction="IN"><i class="fas fa-sign-in-alt"></i> Scan In</button>
                         <button type="button" data-scan-direction="OUT"><i class="fas fa-sign-out-alt"></i> Scan Out</button>
@@ -90,6 +94,21 @@ function scanner_event_row(array $event): string
                         <video id="scannerVideo" muted playsinline></video>
                         <div class="scanner-camera-line"></div>
                         <p id="cameraHelp">Point the camera at a Code 128 barcode.</p>
+                    </div>
+                    <div class="scanner-bulk-panel d-none" id="bulkPanel">
+                        <div class="scanner-bulk-head">
+                            <div>
+                                <strong>Pending Batch</strong>
+                                <span id="bulkCount">0 documents ready</span>
+                            </div>
+                            <div class="scanner-bulk-actions">
+                                <button type="button" id="clearBulkBtn"><i class="fas fa-times"></i> Clear</button>
+                                <button type="button" id="saveBulkBtn" disabled><i class="fas fa-save"></i> Save Batch</button>
+                            </div>
+                        </div>
+                        <div class="scanner-bulk-list" id="bulkList">
+                            <div class="scanner-bulk-empty">No documents in batch yet.</div>
+                        </div>
                     </div>
                 </section>
 
