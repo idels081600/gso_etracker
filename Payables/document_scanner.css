@@ -6,12 +6,12 @@
 .scanner-content {
   min-height: 100vh;
   overflow: hidden;
-  padding: clamp(16px, 2vw, 32px);
+  padding: clamp(16px, 2vw, 32px) clamp(16px, 2vw, 32px) clamp(16px, 2vw, 32px) calc(var(--sidebar-width, 250px) + clamp(16px, 2vw, 32px));
   background: #f6f8fb;
 }
 
 body.sidebar-collapsed .scanner-content {
-  padding-left: clamp(16px, 2vw, 32px);
+  padding-left: calc(var(--sidebar-collapsed-width, 78px) + clamp(16px, 2vw, 32px));
 }
 
 .scanner-shell {
@@ -477,6 +477,13 @@ body.sidebar-collapsed .scanner-content {
 
   .scanner-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .scanner-content,
+  body.sidebar-collapsed .scanner-content {
+    padding-left: clamp(16px, 2vw, 32px);
   }
 }
 
