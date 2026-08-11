@@ -47,11 +47,11 @@ if (!$labels) {
         .print-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
         .print-actions strong { font-size: 14px; }
         .print-actions button { border: 0; border-radius: 8px; background: #20a797; color: #fff; cursor: pointer; font-weight: 800; padding: 9px 14px; }
-        .sheet { width: 194mm; min-height: 281mm; margin: 0 auto 18px; display: grid; grid-template-columns: repeat(5, 1fr); align-content: start; gap: 3mm; background: #fff; padding: 4mm; }
-        .label { height: 18mm; display: grid; align-content: center; justify-items: center; overflow: hidden; border: 1px dashed #d0d5dd; border-radius: 3px; padding: 1.6mm 1.2mm 1mm; break-inside: avoid; }
-        .barcode { width: 100%; height: 10mm; }
-        .code { margin-top: 1mm; font-family: "Courier New", monospace; font-size: 8px; font-weight: 900; letter-spacing: 0.2px; text-align: center; }
-        .hint { color: #667085; font-size: 6.5px; font-weight: 700; text-align: center; }
+        .sheet { width: 194mm; min-height: 281mm; margin: 0 auto 18px; display: grid; grid-template-columns: repeat(4, 1fr); align-content: start; gap: 4mm; background: #fff; padding: 4mm; }
+        .label { height: 28mm; display: grid; align-content: center; justify-items: center; overflow: hidden; border: 1px dashed #d0d5dd; border-radius: 3px; padding: 2.2mm 1.8mm 1.4mm; break-inside: avoid; }
+        .barcode { width: 100%; height: 17mm; }
+        .code { margin-top: 1.2mm; font-family: "Courier New", monospace; font-size: 10px; font-weight: 900; letter-spacing: 0.2px; text-align: center; }
+        .hint { color: #667085; font-size: 7px; font-weight: 700; text-align: center; }
         @media print {
             body { background: #fff; }
             .print-actions { display: none; }
@@ -77,7 +77,7 @@ if (!$labels) {
     <script src="payables_code128.js"></script>
     <script>
         document.querySelectorAll('[data-barcode-value]').forEach(function (element) {
-            window.PayablesCode128.render(element, element.dataset.barcodeValue, { height: 36, moduleWidth: 1, quiet: 4 });
+            window.PayablesCode128.render(element, element.dataset.barcodeValue, { height: 62, moduleWidth: 1.35, quiet: 6 });
         });
     </script>
 </body>
