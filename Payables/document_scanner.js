@@ -112,7 +112,6 @@ document.addEventListener("DOMContentLoaded", function () {
       '<td class="scanner-doc-cell"><strong>' + escapeHtml(event.document_no) + "</strong><span>" + escapeHtml(event.title) + "</span></td>" +
       '<td><span class="scanner-direction ' + directionClass(event.direction) + '">' + escapeHtml(event.direction) + "</span></td>" +
       "<td>" + escapeHtml(event.office) + "</td>" +
-      "<td>" + escapeHtml(event.scan_source) + "</td>" +
       "<td>" + escapeHtml(event.scanned_by) + "</td>" +
       "<td>" + escapeHtml(event.scanned_at) + "</td>" +
       "</tr>"

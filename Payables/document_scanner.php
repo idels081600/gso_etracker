@@ -26,7 +26,6 @@ function scanner_event_row(array $event): string
         <td class="scanner-doc-cell"><strong><?php echo htmlspecialchars($event['document_no'], ENT_QUOTES, 'UTF-8'); ?></strong><span><?php echo htmlspecialchars($event['title'], ENT_QUOTES, 'UTF-8'); ?></span></td>
         <td><span class="scanner-direction <?php echo $directionClass; ?>"><?php echo htmlspecialchars($event['direction'], ENT_QUOTES, 'UTF-8'); ?></span></td>
         <td><?php echo htmlspecialchars($event['office'], ENT_QUOTES, 'UTF-8'); ?></td>
-        <td><?php echo htmlspecialchars($event['scan_source'], ENT_QUOTES, 'UTF-8'); ?></td>
         <td><?php echo htmlspecialchars($event['scanned_by'], ENT_QUOTES, 'UTF-8'); ?></td>
         <td><?php echo htmlspecialchars($event['scanned_at'], ENT_QUOTES, 'UTF-8'); ?></td>
     </tr>
@@ -175,7 +174,6 @@ function scanner_event_row(array $event): string
                                 <th>Document</th>
                                 <th>Direction</th>
                                 <th>Office</th>
-                                <th>Source</th>
                                 <th>Scanned by</th>
                                 <th>Timestamp</th>
                             </tr>
@@ -186,7 +184,7 @@ function scanner_event_row(array $event): string
                                     <?php echo scanner_event_row($event); ?>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr class="scanner-empty-row"><td colspan="7">No scan history found.</td></tr>
+                                <tr class="scanner-empty-row"><td colspan="6">No scan history found.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

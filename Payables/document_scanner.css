@@ -377,7 +377,7 @@ body.sidebar-collapsed .scanner-content {
 
 .scanner-history-table {
   width: 100%;
-  min-width: 980px;
+  min-width: 860px;
   border-collapse: separate;
   border-spacing: 0 8px;
 }
@@ -491,7 +491,7 @@ body.sidebar-collapsed .scanner-content {
 .scanner-bulk-toggle {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
   margin-bottom: 12px;
   border: 1px solid #d9dee8;
