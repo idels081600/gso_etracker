@@ -61,7 +61,7 @@ function scanner_event_row(array $event): string
                 <section class="scanner-card scanner-control-card">
                     <div class="scanner-card-head">
                         <h2>Scan Document</h2>
-                        <span>IB and RFQ barcodes</span>
+                        <span>Registered barcode stickers</span>
                     </div>
                     <label class="scanner-bulk-toggle">
                         <input type="checkbox" id="bulkModeToggle">
@@ -81,8 +81,8 @@ function scanner_event_row(array $event): string
                     </label>
                     <form id="scannerForm" class="scanner-input-row">
                         <label>
-                            <span>Barcode / Document No.</span>
-                            <input type="text" id="scannerInput" placeholder="Scan or type IB/RFQ no." autocomplete="off" autofocus>
+                            <span>Registered Barcode</span>
+                            <input type="text" id="scannerInput" placeholder="Scan registered sticker barcode" autocomplete="off" autofocus>
                         </label>
                         <button type="submit"><i class="fas fa-barcode"></i> Save Scan</button>
                     </form>
@@ -92,7 +92,7 @@ function scanner_event_row(array $event): string
                     <div class="scanner-camera-panel" id="cameraPanel" hidden>
                         <video id="scannerVideo" muted playsinline></video>
                         <div class="scanner-camera-line"></div>
-                        <p id="cameraHelp">Point the camera at a Code 128 barcode.</p>
+                        <p id="cameraHelp">Point the camera at a registered sticker barcode.</p>
                     </div>
                     <div class="scanner-bulk-panel d-none" id="bulkPanel">
                         <div class="scanner-bulk-head">
@@ -119,7 +119,7 @@ function scanner_event_row(array $event): string
                     <div class="scanner-empty-result" id="emptyResult">
                         <i class="fas fa-barcode"></i>
                         <strong>Waiting for document</strong>
-                        <span>Scan an IB or RFQ barcode to record routing.</span>
+                        <span>Scan a registered sticker barcode to record routing.</span>
                     </div>
                     <div class="scanner-result d-none" id="scanResult">
                         <div><span>Type</span><strong data-result="record_type"></strong></div>

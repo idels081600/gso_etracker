@@ -296,19 +296,19 @@ document.addEventListener("DOMContentLoaded", function () {
   function processCode(code, source) {
     const value = String(code || "").trim();
     if (!value) {
-      setStatus("Scan or enter a document number.", "error");
+      setStatus("Scan or enter a registered barcode.", "error");
       input.focus();
       return Promise.resolve();
     }
 
-    setStatus("Looking up " + value + "...", "");
+    setStatus("Checking barcode " + value + "...", "");
     return fetch("scan_lookup.php?code=" + encodeURIComponent(value), {
       headers: { Accept: "application/json" },
     })
       .then(parseJsonResponse)
       .then(function (data) {
         if (!data.success || !Array.isArray(data.matches) || !data.matches.length) {
-          throw new Error(data.error || "No document found.");
+          throw new Error(data.error || "No registered barcode found.");
         }
         if (data.matches.length === 1) {
           if (isBulkMode()) {
@@ -428,7 +428,7 @@ document.addEventListener("DOMContentLoaded", function () {
           toggleCameraBtn.innerHTML = '<i class="fas fa-stop"></i> Close Camera Scanner';
         }
         if (cameraHelp) {
-          cameraHelp.textContent = "Point the camera at a Code 128 barcode.";
+          cameraHelp.textContent = "Point the camera at a registered sticker barcode.";
         }
         cameraLoop();
       })
