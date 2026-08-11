@@ -4,7 +4,8 @@ require_once 'auth_payables.php';
 require_once 'transmit_db.php';
 require_once 'payables_document_tracking.php';
 
-$documentNo = trim($_GET['code'] ?? '');
+$rawDocumentNo = trim($_GET['code'] ?? '');
+$documentNo = payables_normalize_scanned_document_no($rawDocumentNo);
 if ($documentNo === '') {
     payables_json_response(['success' => false, 'error' => 'Scan or enter a document number.'], 422);
 }

@@ -15,6 +15,7 @@ if (!$document) {
 }
 
 $label = $recordType === 'IB' ? 'IB Document' : 'RFQ Document';
+$barcodeValue = rtrim($document['document_no'], ',') . ',';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -51,14 +52,14 @@ $label = $recordType === 'IB' ? 'IB Document' : 'RFQ Document';
         <section class="barcode-card">
             <div class="barcode-meta">
                 <div><span>Document Type</span><strong><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></strong></div>
-                <div><span>Code Value</span><strong><?php echo htmlspecialchars($document['document_no'], ENT_QUOTES, 'UTF-8'); ?></strong></div>
+                <div><span>Code Value</span><strong><?php echo htmlspecialchars($barcodeValue, ENT_QUOTES, 'UTF-8'); ?></strong></div>
             </div>
             <div class="barcode-title">
                 <h1><?php echo htmlspecialchars($document['title'], ENT_QUOTES, 'UTF-8'); ?></h1>
                 <p><?php echo htmlspecialchars($document['party'], ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
-            <div class="barcode-render" data-barcode-value="<?php echo htmlspecialchars($document['document_no'], ENT_QUOTES, 'UTF-8'); ?>"></div>
-            <div class="barcode-number"><?php echo htmlspecialchars($document['document_no'], ENT_QUOTES, 'UTF-8'); ?></div>
+            <div class="barcode-render" data-barcode-value="<?php echo htmlspecialchars($barcodeValue, ENT_QUOTES, 'UTF-8'); ?>"></div>
+            <div class="barcode-number"><?php echo htmlspecialchars($barcodeValue, ENT_QUOTES, 'UTF-8'); ?></div>
         </section>
     </main>
     <script src="payables_code128.js"></script>

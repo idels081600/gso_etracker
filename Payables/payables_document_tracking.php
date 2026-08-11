@@ -54,11 +54,16 @@ function payables_normalize_scan_source(string $source): string
     return in_array($source, PAYABLES_SCAN_SOURCES, true) ? $source : 'MANUAL';
 }
 
+function payables_normalize_scanned_document_no(string $documentNo): string
+{
+    return rtrim(trim($documentNo), ", \t\n\r\0\x0B");
+}
+
 function payables_find_documents_by_number(string $documentNo): array
 {
     global $conn;
 
-    $documentNo = trim($documentNo);
+    $documentNo = payables_normalize_scanned_document_no($documentNo);
     if ($documentNo === '') {
         return [];
     }
