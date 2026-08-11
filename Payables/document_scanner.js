@@ -55,6 +55,16 @@ document.addEventListener("DOMContentLoaded", function () {
       .replace(/'/g, "&#039;");
   }
 
+  function normalizeBarcodeValue(value) {
+    return String(value ?? "")
+      .normalize("NFKC")
+      .replace(/[\u0000-\u001F\u007F\u200B-\u200D\u2060\uFEFF]/g, "")
+      .trim()
+      .replace(/^\]C[0-9]/i, "")
+      .replace(/^[,\s]+|[,\s]+$/g, "")
+      .toUpperCase();
+  }
+
   function setStatus(message, type) {
     if (!statusEl) return;
     statusEl.textContent = message;
@@ -295,7 +305,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function processCode(code, source) {
-    const value = String(code || "").trim();
+    const value = normalizeBarcodeValue(code);
     if (!value) {
       setStatus("Scan or enter a registered barcode.", "error");
       input.focus();
@@ -380,7 +390,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .detect(video)
       .then(function (codes) {
         if (codes && codes.length) {
-          const code = codes[0].rawValue || "";
+          const code = normalizeBarcodeValue(codes[0].rawValue || "");
           const now = Date.now();
           if (code && (code !== lastCameraCode || now - lastCameraAt > 2500)) {
             lastCameraCode = code;

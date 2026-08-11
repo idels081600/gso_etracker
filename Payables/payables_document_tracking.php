@@ -87,7 +87,10 @@ function payables_ensure_document_barcodes_table(): void
 
 function payables_normalize_barcode_code(string $barcodeCode): string
 {
-    return strtoupper(rtrim(trim($barcodeCode), ", \t\n\r\0\x0B"));
+    $barcodeCode = preg_replace('/[\x00-\x1F\x7F\x{200B}-\x{200D}\x{2060}\x{FEFF}]/u', '', $barcodeCode) ?? '';
+    $barcodeCode = preg_replace('/^\]C[0-9]/i', '', trim($barcodeCode)) ?? '';
+
+    return strtoupper(trim($barcodeCode, ", \t\n\r\0\x0B"));
 }
 
 function payables_find_assigned_document_by_barcode(string $barcodeCode): ?array
