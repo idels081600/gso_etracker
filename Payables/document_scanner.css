@@ -377,7 +377,7 @@ body.sidebar-collapsed .scanner-content {
 
 .scanner-history-table {
   width: 100%;
-  min-width: 860px;
+  min-width: 930px;
   border-collapse: separate;
   border-spacing: 0 8px;
 }
@@ -470,6 +470,28 @@ body.sidebar-collapsed .scanner-content {
   text-align: center;
 }
 
+.scanner-undo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #fedf89;
+  border-radius: 8px;
+  background: #fffaeb;
+  color: #b54708;
+}
+
+.scanner-undo-button:hover,
+.scanner-undo-button:focus-visible {
+  border-color: #f79009;
+  outline: none;
+}
+
+.scanner-undo-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
 @media (max-width: 1120px) {
   .scanner-shell {
     height: auto;

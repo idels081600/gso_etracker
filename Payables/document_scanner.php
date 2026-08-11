@@ -21,13 +21,14 @@ function scanner_event_row(array $event): string
     $directionClass = $event['direction'] === 'IN' ? 'is-in' : 'is-out';
     ob_start();
     ?>
-    <tr>
+    <tr data-scan-event-id="<?php echo (int)($event['id'] ?? 0); ?>">
         <td><span class="scanner-type-badge"><?php echo htmlspecialchars($event['record_type'], ENT_QUOTES, 'UTF-8'); ?></span></td>
         <td class="scanner-doc-cell"><strong><?php echo htmlspecialchars($event['document_no'], ENT_QUOTES, 'UTF-8'); ?></strong><span><?php echo htmlspecialchars($event['title'], ENT_QUOTES, 'UTF-8'); ?></span></td>
         <td><span class="scanner-direction <?php echo $directionClass; ?>"><?php echo htmlspecialchars($event['direction'], ENT_QUOTES, 'UTF-8'); ?></span></td>
         <td><?php echo htmlspecialchars($event['office'], ENT_QUOTES, 'UTF-8'); ?></td>
         <td><?php echo htmlspecialchars($event['scanned_by'], ENT_QUOTES, 'UTF-8'); ?></td>
         <td><?php echo htmlspecialchars($event['scanned_at'], ENT_QUOTES, 'UTF-8'); ?></td>
+        <td><button type="button" class="scanner-undo-button" data-undo-scan="<?php echo (int)($event['id'] ?? 0); ?>" title="Undo scan" aria-label="Undo scan for <?php echo htmlspecialchars($event['document_no'] ?? 'scan', ENT_QUOTES, 'UTF-8'); ?>"><i class="fas fa-undo"></i></button></td>
     </tr>
     <?php
     return trim(ob_get_clean());
@@ -176,6 +177,7 @@ function scanner_event_row(array $event): string
                                 <th>Office</th>
                                 <th>Scanned by</th>
                                 <th>Timestamp</th>
+                                <th>Undo</th>
                             </tr>
                         </thead>
                         <tbody id="scanHistoryBody">
@@ -184,7 +186,7 @@ function scanner_event_row(array $event): string
                                     <?php echo scanner_event_row($event); ?>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr class="scanner-empty-row"><td colspan="6">No scan history found.</td></tr>
+                                <tr class="scanner-empty-row"><td colspan="7">No scan history found.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

@@ -107,13 +107,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function historyRow(event) {
     return (
-      "<tr>" +
+      '<tr data-scan-event-id="' + escapeHtml(event.id) + '">' +
       '<td><span class="scanner-type-badge">' + escapeHtml(event.record_type) + "</span></td>" +
       '<td class="scanner-doc-cell"><strong>' + escapeHtml(event.document_no) + "</strong><span>" + escapeHtml(event.title) + "</span></td>" +
       '<td><span class="scanner-direction ' + directionClass(event.direction) + '">' + escapeHtml(event.direction) + "</span></td>" +
       "<td>" + escapeHtml(event.office) + "</td>" +
       "<td>" + escapeHtml(event.scanned_by) + "</td>" +
       "<td>" + escapeHtml(event.scanned_at) + "</td>" +
+      '<td><button type="button" class="scanner-undo-button" data-undo-scan="' + escapeHtml(event.id) + '" title="Undo scan" aria-label="Undo scan for ' + escapeHtml(event.document_no) + '"><i class="fas fa-undo"></i></button></td>' +
       "</tr>"
     );
   }
@@ -484,6 +485,41 @@ document.addEventListener("DOMContentLoaded", function () {
     input?.focus();
   });
 
+  historyBody?.addEventListener("click", function (event) {
+    const undoButton = event.target.closest("[data-undo-scan]");
+    if (!undoButton) return;
+    const eventId = undoButton.dataset.undoScan || "";
+    if (!eventId) return;
+    if (!window.confirm("Undo this scan history entry?")) return;
+
+    const body = new URLSearchParams();
+    body.set("csrf_token", csrfToken);
+    body.set("scan_event_id", eventId);
+    undoButton.disabled = true;
+    setStatus("Undoing scan...", "");
+
+    fetch("scan_undo.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    })
+      .then(parseJsonResponse)
+      .then(function (data) {
+        if (!data.success) {
+          throw new Error(data.error || "Unable to undo scan.");
+        }
+        const row = undoButton.closest("tr");
+        row?.remove();
+        if (historyBody && !historyBody.children.length) {
+          historyBody.innerHTML = '<tr class="scanner-empty-row"><td colspan="7">No scan history found.</td></tr>';
+        }
+        setStatus("Scan history entry removed.", "success");
+      })
+      .catch(function (error) {
+        undoButton.disabled = false;
+        setStatus(error.message || "Unable to undo scan.", "error");
+      });
+  });
   window.addEventListener("beforeunload", stopCamera);
   updateBulkPanel();
   setDirection("IN");
