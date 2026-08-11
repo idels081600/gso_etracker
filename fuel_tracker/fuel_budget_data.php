@@ -346,37 +346,198 @@ function fuelBudgetAutoAllocationPlan(mysqli $conn): array
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
+function fuelBudgetActualUsageFromWeeklyPrices(mysqli $conn): array
+{
+    fuelBudgetEnsureTables($conn);
+
+    $sql = "
+        SELECT
+            CASE WHEN LOWER(COALESCE(gi.fuel_type, v.fuel_type, '')) LIKE '%diesel%' THEN 'diesel' ELSE 'unleaded' END AS fuel_bucket,
+            COUNT(*) AS record_count,
+            SUM(COALESCE(gi.actual_liters_fueled, gi.authorized_liters, 0)) AS liters,
+            SUM(
+                CASE
+                    WHEN LOWER(COALESCE(gi.fuel_type, v.fuel_type, '')) LIKE '%diesel%'
+                        THEN COALESCE(gi.actual_liters_fueled, gi.authorized_liters, 0) * COALESCE(wfp.diesel_price, 0)
+                    ELSE COALESCE(gi.actual_liters_fueled, gi.authorized_liters, 0) * COALESCE(wfp.unleaded_price, 0)
+                END
+            ) AS amount,
+            SUM(
+                CASE
+                    WHEN wfp.id IS NULL THEN 1
+                    WHEN LOWER(COALESCE(gi.fuel_type, v.fuel_type, '')) LIKE '%diesel%' AND COALESCE(wfp.diesel_price, 0) <= 0 THEN 1
+                    WHEN LOWER(COALESCE(gi.fuel_type, v.fuel_type, '')) NOT LIKE '%diesel%' AND COALESCE(wfp.unleaded_price, 0) <= 0 THEN 1
+                    ELSE 0
+                END
+            ) AS missing_price_count
+        FROM gas_issuances gi
+        INNER JOIN vehicles v ON v.id = gi.vehicle_id
+        LEFT JOIN vehicle_odometer_logs vol
+            ON vol.id = (
+                SELECT MAX(inner_vol.id)
+                FROM vehicle_odometer_logs inner_vol
+                WHERE inner_vol.gas_issuance_id = gi.id
+            )
+        LEFT JOIN weekly_fuel_prices wfp
+            ON wfp.week_start = DATE_SUB(
+                DATE(COALESCE(vol.recorded_at, gi.updated_at, gi.issue_date)),
+                INTERVAL (WEEKDAY(DATE(COALESCE(vol.recorded_at, gi.updated_at, gi.issue_date))) - 1) DAY
+            )
+        WHERE LOWER(COALESCE(gi.status, '')) = 'used'
+            AND LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) <> 'private'
+        GROUP BY fuel_bucket
+    ";
+
+    $result = $conn->query($sql);
+    if (!$result) {
+        throw new RuntimeException('Unable to calculate actual weekly-price fuel usage: ' . $conn->error);
+    }
+
+    $summary = [
+        'actual_used_budget' => 0.0,
+        'actual_used_diesel_budget' => 0.0,
+        'actual_used_unleaded_budget' => 0.0,
+        'actual_diesel_liters' => 0.0,
+        'actual_unleaded_liters' => 0.0,
+        'actual_diesel_records' => 0,
+        'actual_unleaded_records' => 0,
+        'actual_missing_price_count' => 0,
+    ];
+
+    foreach ($result->fetch_all(MYSQLI_ASSOC) as $row) {
+        $bucket = (string) ($row['fuel_bucket'] ?? 'unleaded');
+        $liters = (float) ($row['liters'] ?? 0);
+        $amount = (float) ($row['amount'] ?? 0);
+        $records = (int) ($row['record_count'] ?? 0);
+        $missingPrices = (int) ($row['missing_price_count'] ?? 0);
+
+        if ($bucket === 'diesel') {
+            $summary['actual_used_diesel_budget'] = $amount;
+            $summary['actual_diesel_liters'] = $liters;
+            $summary['actual_diesel_records'] = $records;
+        } else {
+            $summary['actual_used_unleaded_budget'] = $amount;
+            $summary['actual_unleaded_liters'] = $liters;
+            $summary['actual_unleaded_records'] = $records;
+        }
+
+        $summary['actual_used_budget'] += $amount;
+        $summary['actual_missing_price_count'] += $missingPrices;
+    }
+
+    return $summary;
+}
+
+function fuelBudgetWeeklyActualUsageTrend(mysqli $conn, int $limit = 16): array
+{
+    fuelBudgetEnsureTables($conn);
+    $limit = max(1, min(52, $limit));
+
+    $sql = "
+        SELECT *
+        FROM (
+            SELECT
+                usage_rows.week_start,
+                COUNT(*) AS record_count,
+                SUM(CASE WHEN usage_rows.fuel_bucket = 'diesel' THEN usage_rows.liters ELSE 0 END) AS diesel_liters,
+                SUM(CASE WHEN usage_rows.fuel_bucket = 'unleaded' THEN usage_rows.liters ELSE 0 END) AS unleaded_liters,
+                SUM(CASE WHEN usage_rows.fuel_bucket = 'diesel' THEN usage_rows.amount ELSE 0 END) AS diesel_amount,
+                SUM(CASE WHEN usage_rows.fuel_bucket = 'unleaded' THEN usage_rows.amount ELSE 0 END) AS unleaded_amount,
+                SUM(usage_rows.amount) AS total_amount,
+                MAX(usage_rows.diesel_price) AS diesel_price,
+                MAX(usage_rows.unleaded_price) AS unleaded_price,
+                SUM(usage_rows.missing_price) AS missing_price_count
+            FROM (
+                SELECT
+                    DATE_SUB(
+                        DATE(COALESCE(vol.recorded_at, gi.updated_at, gi.issue_date)),
+                        INTERVAL (WEEKDAY(DATE(COALESCE(vol.recorded_at, gi.updated_at, gi.issue_date))) - 1) DAY
+                    ) AS week_start,
+                    CASE WHEN LOWER(COALESCE(gi.fuel_type, v.fuel_type, '')) LIKE '%diesel%' THEN 'diesel' ELSE 'unleaded' END AS fuel_bucket,
+                    COALESCE(gi.actual_liters_fueled, gi.authorized_liters, 0) AS liters,
+                    COALESCE(wfp.diesel_price, 0) AS diesel_price,
+                    COALESCE(wfp.unleaded_price, 0) AS unleaded_price,
+                    CASE
+                        WHEN LOWER(COALESCE(gi.fuel_type, v.fuel_type, '')) LIKE '%diesel%'
+                            THEN COALESCE(gi.actual_liters_fueled, gi.authorized_liters, 0) * COALESCE(wfp.diesel_price, 0)
+                        ELSE COALESCE(gi.actual_liters_fueled, gi.authorized_liters, 0) * COALESCE(wfp.unleaded_price, 0)
+                    END AS amount,
+                    CASE
+                        WHEN wfp.id IS NULL THEN 1
+                        WHEN LOWER(COALESCE(gi.fuel_type, v.fuel_type, '')) LIKE '%diesel%' AND COALESCE(wfp.diesel_price, 0) <= 0 THEN 1
+                        WHEN LOWER(COALESCE(gi.fuel_type, v.fuel_type, '')) NOT LIKE '%diesel%' AND COALESCE(wfp.unleaded_price, 0) <= 0 THEN 1
+                        ELSE 0
+                    END AS missing_price
+                FROM gas_issuances gi
+                INNER JOIN vehicles v ON v.id = gi.vehicle_id
+                LEFT JOIN vehicle_odometer_logs vol
+                    ON vol.id = (
+                        SELECT MAX(inner_vol.id)
+                        FROM vehicle_odometer_logs inner_vol
+                        WHERE inner_vol.gas_issuance_id = gi.id
+                    )
+                LEFT JOIN weekly_fuel_prices wfp
+                    ON wfp.week_start = DATE_SUB(
+                        DATE(COALESCE(vol.recorded_at, gi.updated_at, gi.issue_date)),
+                        INTERVAL (WEEKDAY(DATE(COALESCE(vol.recorded_at, gi.updated_at, gi.issue_date))) - 1) DAY
+                    )
+                WHERE LOWER(COALESCE(gi.status, '')) = 'used'
+                    AND LOWER(TRIM(COALESCE(gi.issuance_scope, 'government'))) <> 'private'
+            ) usage_rows
+            GROUP BY usage_rows.week_start
+            ORDER BY usage_rows.week_start DESC
+            LIMIT {$limit}
+        ) weekly_usage
+        ORDER BY week_start ASC
+    ";
+
+    $result = $conn->query($sql);
+    if (!$result) {
+        throw new RuntimeException('Unable to load weekly actual fuel usage trend: ' . $conn->error);
+    }
+
+    return $result->fetch_all(MYSQLI_ASSOC);
+}
+
 function fuelBudgetSummary(mysqli $conn): array
 {
     $budgets = fuelBudgetFetchBudgets($conn, false);
+    $actualUsage = fuelBudgetActualUsageFromWeeklyPrices($conn);
     $totalBudget = 0.0;
-    $usedBudget = 0.0;
+    $deductedBudget = 0.0;
     $totalDieselBudget = 0.0;
     $totalUnleadedBudget = 0.0;
-    $usedDieselBudget = 0.0;
-    $usedUnleadedBudget = 0.0;
+    $deductedDieselBudget = 0.0;
+    $deductedUnleadedBudget = 0.0;
 
     foreach ($budgets as $budget) {
         $totalBudget += (float) ($budget['budget_amount'] ?? 0);
-        $usedBudget += (float) ($budget['used_amount'] ?? 0);
+        $deductedBudget += (float) ($budget['used_amount'] ?? 0);
         $totalDieselBudget += (float) ($budget['diesel_allocation'] ?? 0);
         $totalUnleadedBudget += (float) ($budget['unleaded_allocation'] ?? 0);
-        $usedDieselBudget += (float) ($budget['used_diesel_amount'] ?? 0);
-        $usedUnleadedBudget += (float) ($budget['used_unleaded_amount'] ?? 0);
+        $deductedDieselBudget += (float) ($budget['used_diesel_amount'] ?? 0);
+        $deductedUnleadedBudget += (float) ($budget['used_unleaded_amount'] ?? 0);
     }
 
-    return [
+    $actualUsedBudget = (float) ($actualUsage['actual_used_budget'] ?? 0);
+    $actualUsedDieselBudget = (float) ($actualUsage['actual_used_diesel_budget'] ?? 0);
+    $actualUsedUnleadedBudget = (float) ($actualUsage['actual_used_unleaded_budget'] ?? 0);
+
+    return array_merge($actualUsage, [
         'total_budget' => $totalBudget,
-        'used_budget' => $usedBudget,
-        'remaining_budget' => $totalBudget - $usedBudget,
+        'deducted_budget' => $deductedBudget,
+        'used_budget' => $actualUsedBudget,
+        'remaining_budget' => max(0.0, $totalBudget - $actualUsedBudget),
         'total_diesel_budget' => $totalDieselBudget,
         'total_unleaded_budget' => $totalUnleadedBudget,
-        'used_diesel_budget' => $usedDieselBudget,
-        'used_unleaded_budget' => $usedUnleadedBudget,
-        'remaining_diesel_budget' => max(0.0, $totalDieselBudget - $usedDieselBudget),
-        'remaining_unleaded_budget' => max(0.0, $totalUnleadedBudget - $usedUnleadedBudget),
+        'deducted_diesel_budget' => $deductedDieselBudget,
+        'deducted_unleaded_budget' => $deductedUnleadedBudget,
+        'used_diesel_budget' => $actualUsedDieselBudget,
+        'used_unleaded_budget' => $actualUsedUnleadedBudget,
+        'remaining_diesel_budget' => max(0.0, $totalDieselBudget - $actualUsedDieselBudget),
+        'remaining_unleaded_budget' => max(0.0, $totalUnleadedBudget - $actualUsedUnleadedBudget),
         'budgets' => $budgets,
-    ];
+    ]);
 }
 
 function fuelBudgetRecordDeduction(

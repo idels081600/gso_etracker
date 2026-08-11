@@ -46,6 +46,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (prefersReducedMotion) {
     drawLineCharts();
+    drawFuelCharts();
     initializeWorkspaceInteractions();
     return;
   }
@@ -75,12 +76,16 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   drawLineCharts();
+  drawFuelCharts();
   initializeWorkspaceInteractions();
 
   let resizeTimer;
   window.addEventListener("resize", function () {
     window.clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(drawLineCharts, 120);
+    resizeTimer = window.setTimeout(function () {
+      drawLineCharts();
+      drawFuelCharts();
+    }, 120);
   });
 
   function parseChartData(canvas) {
@@ -99,6 +104,306 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = parseChartData(canvas);
       drawLineChart(canvas, data.labels, data.values);
     });
+  }
+
+  function parseFuelChartData(canvas) {
+    function parseNumberArray(name) {
+      try {
+        return JSON.parse(canvas.dataset[name] || "[]").map(Number);
+      } catch (error) {
+        return [];
+      }
+    }
+
+    try {
+      return {
+        labels: JSON.parse(canvas.dataset.labels || "[]"),
+        dieselAmounts: parseNumberArray("dieselAmounts"),
+        unleadedAmounts: parseNumberArray("unleadedAmounts"),
+        dieselLiters: parseNumberArray("dieselLiters"),
+        unleadedLiters: parseNumberArray("unleadedLiters"),
+        dieselPrices: parseNumberArray("dieselPrices"),
+        unleadedPrices: parseNumberArray("unleadedPrices"),
+      };
+    } catch (error) {
+      return {
+        labels: [],
+        dieselAmounts: [],
+        unleadedAmounts: [],
+        dieselLiters: [],
+        unleadedLiters: [],
+        dieselPrices: [],
+        unleadedPrices: [],
+      };
+    }
+  }
+
+  function drawFuelCharts() {
+    document.querySelectorAll(".master-fuel-chart").forEach(function (canvas) {
+      drawFuelChart(canvas, parseFuelChartData(canvas));
+      initFuelChartTooltip(canvas);
+    });
+  }
+
+  function formatTooltipPeso(value) {
+    return "\u20b1" + Number(value || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function ensureFuelTooltip() {
+    let tooltip = document.getElementById("masterFuelChartTooltip");
+    if (!tooltip) {
+      tooltip = document.createElement("div");
+      tooltip.id = "masterFuelChartTooltip";
+      tooltip.className = "master-fuel-tooltip";
+      tooltip.setAttribute("role", "status");
+      tooltip.setAttribute("aria-live", "polite");
+      document.body.appendChild(tooltip);
+    }
+    return tooltip;
+  }
+
+  function positionFuelTooltip(tooltip, event) {
+    const offset = 14;
+    const width = tooltip.offsetWidth || 260;
+    const height = tooltip.offsetHeight || 160;
+    let left = event.clientX + offset;
+    let top = event.clientY + offset;
+
+    if (left + width > window.innerWidth - 10) {
+      left = event.clientX - width - offset;
+    }
+    if (top + height > window.innerHeight - 10) {
+      top = event.clientY - height - offset;
+    }
+
+    tooltip.style.left = Math.max(10, left) + "px";
+    tooltip.style.top = Math.max(10, top) + "px";
+  }
+
+  function renderFuelTooltipContent(point) {
+    const total = Number(point.dieselAmount || 0) + Number(point.unleadedAmount || 0);
+    return [
+      `<div class="fuel-tooltip-title">${point.label}</div>`,
+      `<div class="fuel-tooltip-total"><span>Total deduction</span><strong>${formatTooltipPeso(total)}</strong></div>`,
+      `<div class="fuel-tooltip-grid">`,
+      `<span>Diesel deduction</span><strong>${formatTooltipPeso(point.dieselAmount)}</strong>`,
+      `<span>Diesel liters</span><strong>${Number(point.dieselLiters || 0).toFixed(2)} L</strong>`,
+      `<span>Diesel price/L</span><strong>${formatTooltipPeso(point.dieselPrice)}</strong>`,
+      `<span>Unleaded deduction</span><strong>${formatTooltipPeso(point.unleadedAmount)}</strong>`,
+      `<span>Unleaded liters</span><strong>${Number(point.unleadedLiters || 0).toFixed(2)} L</strong>`,
+      `<span>Unleaded price/L</span><strong>${formatTooltipPeso(point.unleadedPrice)}</strong>`,
+      `</div>`,
+    ].join("");
+  }
+
+  function initFuelChartTooltip(canvas) {
+    if (canvas.dataset.tooltipReady === "1") return;
+    canvas.dataset.tooltipReady = "1";
+
+    canvas.addEventListener("mousemove", function (event) {
+      const hover = canvas._fuelChartHover;
+      if (!hover || !hover.points || !hover.points.length) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const inChart =
+        x >= hover.chartArea.left &&
+        x <= hover.chartArea.right &&
+        y >= hover.chartArea.top &&
+        y <= hover.chartArea.bottom;
+
+      const point = hover.points.reduce(function (closest, candidate) {
+        const distance = Math.abs(candidate.x - x);
+        if (!closest || distance < closest.distance) {
+          return { point: candidate, distance };
+        }
+        return closest;
+      }, null);
+
+      const tooltip = ensureFuelTooltip();
+      if (!inChart || !point || point.distance > hover.step / 2) {
+        tooltip.classList.remove("is-visible");
+        return;
+      }
+
+      tooltip.innerHTML = renderFuelTooltipContent(point.point);
+      tooltip.classList.add("is-visible");
+      positionFuelTooltip(tooltip, event);
+    });
+
+    canvas.addEventListener("mouseleave", function () {
+      const tooltip = ensureFuelTooltip();
+      tooltip.classList.remove("is-visible");
+    });
+  }
+
+  function formatCompactPeso(value) {
+    const amount = Number(value || 0);
+    if (amount >= 1000000) return "\u20b1" + (amount / 1000000).toFixed(1) + "M";
+    if (amount >= 1000) return "\u20b1" + Math.round(amount / 1000) + "K";
+    return "\u20b1" + Math.round(amount);
+  }
+
+  function drawDashedLine(context, points, color) {
+    context.save();
+    context.setLineDash([5, 4]);
+    context.strokeStyle = color;
+    context.lineWidth = 2;
+    context.lineJoin = "round";
+    context.lineCap = "round";
+    context.beginPath();
+    points.forEach(function (point, index) {
+      if (index === 0) context.moveTo(point.x, point.y);
+      else context.lineTo(point.x, point.y);
+    });
+    context.stroke();
+    context.setLineDash([]);
+    points.forEach(function (point) {
+      context.beginPath();
+      context.arc(point.x, point.y, 3, 0, Math.PI * 2);
+      context.fillStyle = "#fff";
+      context.fill();
+      context.strokeStyle = color;
+      context.lineWidth = 2;
+      context.stroke();
+    });
+    context.restore();
+  }
+
+  function drawFuelChart(canvas, data) {
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    const width = Math.max(360, Math.floor(rect.width || canvas.width));
+    const height = Math.max(210, Math.floor(rect.height || canvas.height));
+
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    context.clearRect(0, 0, width, height);
+
+    const labels = data.labels || [];
+    const dieselAmounts = data.dieselAmounts || [];
+    const unleadedAmounts = data.unleadedAmounts || [];
+    const dieselLiters = data.dieselLiters || [];
+    const unleadedLiters = data.unleadedLiters || [];
+    const dieselPrices = data.dieselPrices || [];
+    const unleadedPrices = data.unleadedPrices || [];
+    const count = labels.length;
+
+    if (!count) {
+      context.fillStyle = "#667085";
+      context.font = "700 12px Arial, Helvetica, sans-serif";
+      context.textAlign = "center";
+      context.fillText("No weekly fuel data", width / 2, height / 2);
+      return;
+    }
+
+    const padding = { top: 18, right: 54, bottom: 36, left: 58 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    const totals = labels.map(function (_, index) {
+      return Number(dieselAmounts[index] || 0) + Number(unleadedAmounts[index] || 0);
+    });
+    const maxAmount = Math.max(1, ...totals);
+    const priceValues = dieselPrices.concat(unleadedPrices).filter(function (value) {
+      return Number(value || 0) > 0;
+    });
+    const maxPrice = Math.max(1, ...priceValues);
+    const minPrice = Math.max(0, Math.min(...priceValues, maxPrice) - 2);
+    const priceRange = Math.max(1, maxPrice - minPrice);
+    const step = chartWidth / count;
+    const barWidth = Math.max(12, Math.min(38, step * 0.48));
+
+    context.font = "700 11px Arial, Helvetica, sans-serif";
+    context.textBaseline = "middle";
+
+    for (let i = 0; i <= 4; i += 1) {
+      const y = padding.top + (chartHeight / 4) * i;
+      const amountValue = maxAmount - (maxAmount / 4) * i;
+      const priceValue = maxPrice - ((maxPrice - minPrice) / 4) * i;
+
+      context.strokeStyle = "#e8edf3";
+      context.lineWidth = 1;
+      context.beginPath();
+      context.moveTo(padding.left, y);
+      context.lineTo(width - padding.right, y);
+      context.stroke();
+
+      context.fillStyle = "#667085";
+      context.textAlign = "right";
+      context.fillText(formatCompactPeso(amountValue), padding.left - 8, y);
+      context.textAlign = "left";
+      context.fillText("\u20b1" + priceValue.toFixed(0), width - padding.right + 8, y);
+    }
+
+    const dieselPoints = [];
+    const unleadedPoints = [];
+    const hoverPoints = [];
+
+    labels.forEach(function (label, index) {
+      const centerX = padding.left + step * index + step / 2;
+      const baseY = padding.top + chartHeight;
+      const dieselHeight = (Number(dieselAmounts[index] || 0) / maxAmount) * chartHeight;
+      const unleadedHeight = (Number(unleadedAmounts[index] || 0) / maxAmount) * chartHeight;
+      const barX = centerX - barWidth / 2;
+
+      context.fillStyle = "#f5b301";
+      context.fillRect(barX, baseY - dieselHeight, barWidth, dieselHeight);
+      context.fillStyle = "#198754";
+      context.fillRect(barX, baseY - dieselHeight - unleadedHeight, barWidth, unleadedHeight);
+
+      hoverPoints.push({
+        label: label,
+        x: centerX,
+        dieselAmount: Number(dieselAmounts[index] || 0),
+        unleadedAmount: Number(unleadedAmounts[index] || 0),
+        dieselLiters: Number(dieselLiters[index] || 0),
+        unleadedLiters: Number(unleadedLiters[index] || 0),
+        dieselPrice: Number(dieselPrices[index] || 0),
+        unleadedPrice: Number(unleadedPrices[index] || 0),
+      });
+
+      const dieselPrice = Number(dieselPrices[index] || 0);
+      const unleadedPrice = Number(unleadedPrices[index] || 0);
+      if (dieselPrice > 0) {
+        dieselPoints.push({
+          x: centerX,
+          y: padding.top + chartHeight - ((dieselPrice - minPrice) / priceRange) * chartHeight,
+        });
+      }
+      if (unleadedPrice > 0) {
+        unleadedPoints.push({
+          x: centerX,
+          y: padding.top + chartHeight - ((unleadedPrice - minPrice) / priceRange) * chartHeight,
+        });
+      }
+
+      if (count <= 8 || index % Math.ceil(count / 8) === 0 || index === count - 1) {
+        context.fillStyle = "#667085";
+        context.textAlign = "center";
+        context.fillText(String(label).slice(0, 6), centerX, height - 16);
+      }
+    });
+
+    if (dieselPoints.length > 1) drawDashedLine(context, dieselPoints, "#a36b00");
+    if (unleadedPoints.length > 1) drawDashedLine(context, unleadedPoints, "#0f6840");
+    canvas._fuelChartHover = {
+      chartArea: {
+        left: padding.left,
+        right: width - padding.right,
+        top: padding.top,
+        bottom: padding.top + chartHeight,
+      },
+      points: hoverPoints,
+      step: step,
+    };
   }
 
   function drawLineChart(canvas, labels, values) {

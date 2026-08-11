@@ -46,7 +46,7 @@ try {
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container-fluid">
             <!-- Brand/Logo -->
-            <a class="navbar-brand d-flex align-items-center" href="#">
+            <a class="navbar-brand d-flex align-items-center" href="fuel_dashboard.php">
                 <i class="fas fa-gas-pump text-primary me-2"></i>
                 <span class="fw-bold text-dark">Fuel Tracker</span>
             </a>
@@ -61,7 +61,7 @@ try {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="#">
+                        <a class="nav-link active" aria-current="page" href="fuel_dashboard.php">
                             <i class="fas fa-tachometer-alt me-1"></i>Dashboard
                         </a>
                     </li>
@@ -95,7 +95,7 @@ try {
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
                             role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <img src="../logo.png" alt="User" class="rounded-circle me-2" width="32" height="32">
-                            <span class="text-dark"><?php echo isset($_SESSION['pay_name']) ? htmlspecialchars($_SESSION['pay_name']) : 'User'; ?></span>
+                            <span class="text-dark"><?php echo htmlspecialchars((string) ($_SESSION['pay_name'] ?? 'User'), ENT_QUOTES, 'UTF-8'); ?></span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
@@ -492,6 +492,12 @@ try {
                         $unleadedRemaining = (float) ($budgetSummary['remaining_unleaded_budget'] ?? 0);
                         $unleadedTotal = (float) ($budgetSummary['total_unleaded_budget'] ?? 0);
                         $unleadedPercent = $unleadedTotal > 0 ? max(0, min(100, ($unleadedRemaining / $unleadedTotal) * 100)) : 0;
+                        $actualUsedTotal = (float) ($budgetSummary['used_budget'] ?? 0);
+                        $actualDieselUsed = (float) ($budgetSummary['used_diesel_budget'] ?? 0);
+                        $actualUnleadedUsed = (float) ($budgetSummary['used_unleaded_budget'] ?? 0);
+                        $actualDieselLiters = (float) ($budgetSummary['actual_diesel_liters'] ?? 0);
+                        $actualUnleadedLiters = (float) ($budgetSummary['actual_unleaded_liters'] ?? 0);
+                        $actualMissingPrices = (int) ($budgetSummary['actual_missing_price_count'] ?? 0);
                         ?>
                         <div class="summary-card-head budget-card-head">
                             <div class="summary-icon summary-icon-budget">
@@ -510,7 +516,7 @@ try {
                                         </div>
                                         <small class="budget-progress-meta">
                                             <span id="budgetDieselPercent"><?php echo htmlspecialchars(number_format($dieselPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
-                                            <span id="budgetDieselTotal">of &#8369;<?php echo htmlspecialchars(number_format($dieselTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                            <span id="budgetDieselTotal">used &#8369;<?php echo htmlspecialchars(number_format((float) ($budgetSummary['used_diesel_budget'] ?? 0), 2), ENT_QUOTES, 'UTF-8'); ?> of &#8369;<?php echo htmlspecialchars(number_format($dieselTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
                                         </small>
                                     </div>
                                     <div class="budget-progress-item">
@@ -523,7 +529,7 @@ try {
                                         </div>
                                         <small class="budget-progress-meta">
                                             <span id="budgetUnleadedPercent"><?php echo htmlspecialchars(number_format($unleadedPercent, 0), ENT_QUOTES, 'UTF-8'); ?>% left</span>
-                                            <span id="budgetUnleadedTotal">of &#8369;<?php echo htmlspecialchars(number_format($unleadedTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                            <span id="budgetUnleadedTotal">used &#8369;<?php echo htmlspecialchars(number_format((float) ($budgetSummary['used_unleaded_budget'] ?? 0), 2), ENT_QUOTES, 'UTF-8'); ?> of &#8369;<?php echo htmlspecialchars(number_format($unleadedTotal, 2), ENT_QUOTES, 'UTF-8'); ?></span>
                                         </small>
                                     </div>
                                 </div>
@@ -535,10 +541,11 @@ try {
                                 <span id="budgetTotal">&#8369;<?php echo htmlspecialchars(number_format((float) $budgetSummary['total_budget'], 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
                             <div class="budget-context-item">
-                                <small>Deducted</small>
+                                <small>Actual Used</small>
                                 <span class="text-danger" id="budgetUsed">&#8369;<?php echo htmlspecialchars(number_format((float) $budgetSummary['used_budget'], 2), ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
                         </div>
+                        <small class="budget-draft-note d-block mt-2" id="actualBudgetPriceNote">Actual used amount uses used gas issuance dates matched to saved weekly pump prices.</small>
                         <div class="budget-card-actions mt-3">
                             <button type="button" class="btn btn-outline-primary btn-sm" id="openAddBudgetBtn" data-bs-toggle="modal" data-bs-target="#addBudgetModal">
                                 <i class="fas fa-plus-circle me-1"></i>Add IB
@@ -603,6 +610,59 @@ try {
                         </div>
 
                         <small class="budget-draft-note" id="budgetDraftNote">Reserved estimate uses approved/valid scheduled issuances.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm actual-weekly-card">
+                    <div class="card-body">
+                        <div class="actual-weekly-layout">
+                            <div class="actual-weekly-summary">
+                                <div class="budget-compact-header">
+                                    <h5 class="card-title text-muted mb-0">
+                                        <i class="fas fa-chart-column text-primary me-2"></i>Actual Weekly Deductions
+                                    </h5>
+                                    <small class="text-muted">Used gas issuances priced by the weekly pump price saved for each used date.</small>
+                                </div>
+                                <div class="actual-usage-panel">
+                                    <div class="actual-usage-panel-head">
+                                        <span>Total Actual Used</span>
+                                        <strong id="actualUsedTotalAmount">&#8369;<?php echo htmlspecialchars(number_format($actualUsedTotal, 2), ENT_QUOTES, 'UTF-8'); ?></strong>
+                                    </div>
+                                    <div class="actual-usage-grid">
+                                        <div class="actual-usage-item actual-usage-diesel">
+                                            <small>Diesel</small>
+                                            <span id="actualUsedDieselAmount">&#8369;<?php echo htmlspecialchars(number_format($actualDieselUsed, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                            <em id="actualUsedDieselLiters"><?php echo htmlspecialchars(number_format($actualDieselLiters, 2), ENT_QUOTES, 'UTF-8'); ?> L</em>
+                                        </div>
+                                        <div class="actual-usage-item actual-usage-unleaded">
+                                            <small>Unleaded</small>
+                                            <span id="actualUsedUnleadedAmount">&#8369;<?php echo htmlspecialchars(number_format($actualUnleadedUsed, 2), ENT_QUOTES, 'UTF-8'); ?></span>
+                                            <em id="actualUsedUnleadedLiters"><?php echo htmlspecialchars(number_format($actualUnleadedLiters, 2), ENT_QUOTES, 'UTF-8'); ?> L</em>
+                                        </div>
+                                    </div>
+                                    <small class="actual-usage-warning <?php echo $actualMissingPrices > 0 ? '' : 'd-none'; ?>" id="actualUsedMissingPrices">
+                                        <?php echo htmlspecialchars($actualMissingPrices . ' used record(s) need weekly pump prices before they can be fully costed.', ENT_QUOTES, 'UTF-8'); ?>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="actual-weekly-chart-panel">
+                                <div class="actual-weekly-chart-head">
+                                    <div class="budget-section-mini-title">Deductions Per Week</div>
+                                    <small id="weeklyDeductionChartSummary">Loading weekly deductions...</small>
+                                </div>
+                                <div class="actual-weekly-chart-wrap">
+                                    <canvas id="weeklyBudgetDeductionChart" height="170" aria-label="Weekly budget deductions by fuel type"></canvas>
+                                    <div class="chart-empty-state actual-weekly-chart-empty d-none" id="weeklyBudgetDeductionEmpty">
+                                        <i class="fas fa-chart-column"></i>
+                                        <span>No weekly used gas issuance deductions yet.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

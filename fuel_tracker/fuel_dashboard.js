@@ -784,6 +784,7 @@ let dashboardDraftIssuances = {
 };
 let dashboardFuelPriceHistory = [];
 let fuelPriceTrendChart = null;
+let weeklyBudgetDeductionChart = null;
 
 async function fetchDraftBudgetIssuances() {
   const response = await fetch("get_fuel_data.php?action=draft_budget_issuances");
@@ -811,6 +812,20 @@ async function fetchWeeklyFuelPrices() {
   }
 
   return payload.data || { latest: null, history: [] };
+}
+
+async function fetchWeeklyBudgetDeductions() {
+  const response = await fetch("get_fuel_data.php?action=weekly_budget_deductions");
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  if (!payload.success) {
+    throw new Error(payload.message || "Unable to load weekly budget deductions.");
+  }
+
+  return Array.isArray(payload.data) ? payload.data : [];
 }
 
 function draftBudgetPercent(remaining, total) {
@@ -980,6 +995,16 @@ async function saveWeeklyFuelPrices() {
       latest: payload.latest || null,
       history: payload.history || [],
     });
+    const [summaryResult, weeklyDeductionResult] = await Promise.allSettled([
+      fetchFuelBudgetSummary(),
+      fetchWeeklyBudgetDeductions(),
+    ]);
+    if (summaryResult.status === "fulfilled") {
+      updateFuelBudgetSummary(summaryResult.value);
+    }
+    if (weeklyDeductionResult.status === "fulfilled") {
+      renderWeeklyBudgetDeductions(weeklyDeductionResult.value);
+    }
     showNotification(payload.message || "Weekly fuel prices saved.", "success");
   } catch (error) {
     showNotification(error.message || "Unable to save weekly fuel prices.", "danger");
@@ -1162,6 +1187,12 @@ function renderActualFuelBudget() {
   const unleadedTotalText = document.getElementById("budgetUnleadedTotal");
   const total = document.getElementById("budgetTotal");
   const used = document.getElementById("budgetUsed");
+  const actualUsedTotal = document.getElementById("actualUsedTotalAmount");
+  const actualDieselAmount = document.getElementById("actualUsedDieselAmount");
+  const actualDieselLitersText = document.getElementById("actualUsedDieselLiters");
+  const actualUnleadedAmount = document.getElementById("actualUsedUnleadedAmount");
+  const actualUnleadedLitersText = document.getElementById("actualUsedUnleadedLiters");
+  const actualMissingPrices = document.getElementById("actualUsedMissingPrices");
   const dieselTotal = Number(dashboardBudgetSummary.total_diesel_budget || 0) || 0;
   const dieselLeft = Number(dashboardBudgetSummary.remaining_diesel_budget || 0) || 0;
   const unleadedTotal = Number(dashboardBudgetSummary.total_unleaded_budget || 0) || 0;
@@ -1181,10 +1212,31 @@ function renderActualFuelBudget() {
   }
   if (dieselPercentText) dieselPercentText.textContent = `${Math.round(dieselPercent)}% left`;
   if (unleadedPercentText) unleadedPercentText.textContent = `${Math.round(unleadedPercent)}% left`;
-  if (dieselTotalText) dieselTotalText.textContent = `of ${formatPeso(dieselTotal)}`;
-  if (unleadedTotalText) unleadedTotalText.textContent = `of ${formatPeso(unleadedTotal)}`;
+  const dieselUsed = Number(dashboardBudgetSummary.used_diesel_budget || 0) || 0;
+  const unleadedUsed = Number(dashboardBudgetSummary.used_unleaded_budget || 0) || 0;
+  const dieselLiters = Number(dashboardBudgetSummary.actual_diesel_liters || 0) || 0;
+  const unleadedLiters = Number(dashboardBudgetSummary.actual_unleaded_liters || 0) || 0;
+  const missing = Number(dashboardBudgetSummary.actual_missing_price_count || 0) || 0;
+  if (dieselTotalText) dieselTotalText.textContent = `used ${formatPeso(dieselUsed)} of ${formatPeso(dieselTotal)}`;
+  if (unleadedTotalText) unleadedTotalText.textContent = `used ${formatPeso(unleadedUsed)} of ${formatPeso(unleadedTotal)}`;
   if (total) total.textContent = formatPeso(dashboardBudgetSummary.total_budget || 0);
   if (used) used.textContent = formatPeso(dashboardBudgetSummary.used_budget || 0);
+  if (actualUsedTotal) actualUsedTotal.textContent = formatPeso(dashboardBudgetSummary.used_budget || 0);
+  if (actualDieselAmount) actualDieselAmount.textContent = formatPeso(dieselUsed);
+  if (actualDieselLitersText) actualDieselLitersText.textContent = `${dieselLiters.toFixed(2)} L`;
+  if (actualUnleadedAmount) actualUnleadedAmount.textContent = formatPeso(unleadedUsed);
+  if (actualUnleadedLitersText) actualUnleadedLitersText.textContent = `${unleadedLiters.toFixed(2)} L`;
+  if (actualMissingPrices) {
+    actualMissingPrices.classList.toggle("d-none", missing === 0);
+    actualMissingPrices.textContent = missing
+      ? `${missing} used record(s) need weekly pump prices before they can be fully costed.`
+      : "";
+  }
+
+  const note = document.getElementById("actualBudgetPriceNote");
+  if (note) {
+    note.textContent = `Actual used: ${dieselLiters.toFixed(2)} L diesel and ${unleadedLiters.toFixed(2)} L unleaded, priced by the weekly pump price saved for each used date.${missing ? ` ${missing} used record(s) have no matching weekly price yet.` : ""}`;
+  }
 }
 
 let officeConsumptionChart = null;
@@ -1213,11 +1265,12 @@ async function fetchConsumptionRankings() {
 }
 
 async function loadDashboardVisuals() {
-  const [summaryResult, draftResult, rankingsResult, fuelPriceResult] = await Promise.allSettled([
+  const [summaryResult, draftResult, rankingsResult, fuelPriceResult, weeklyDeductionResult] = await Promise.allSettled([
     fetchFuelBudgetSummary(),
     fetchDraftBudgetIssuances(),
     fetchConsumptionRankings(),
     fetchWeeklyFuelPrices(),
+    fetchWeeklyBudgetDeductions(),
   ]);
 
   requestAnimationFrame(() => {
@@ -1245,6 +1298,13 @@ async function loadDashboardVisuals() {
       renderConsumptionRankings(rankingsResult.value);
     } else {
       console.error("Error loading consumption rankings:", rankingsResult.reason);
+    }
+
+    if (weeklyDeductionResult.status === "fulfilled") {
+      renderWeeklyBudgetDeductions(weeklyDeductionResult.value);
+    } else {
+      console.error("Error loading weekly budget deductions:", weeklyDeductionResult.reason);
+      renderWeeklyBudgetDeductions([]);
     }
   });
 }
@@ -1409,6 +1469,184 @@ function renderFuelPriceTrend(history) {
           },
           grid: {
             color: "rgba(15, 23, 42, 0.06)",
+          },
+        },
+      },
+    },
+  });
+}
+
+function renderWeeklyBudgetDeductions(rows) {
+  const canvas = document.getElementById("weeklyBudgetDeductionChart");
+  const empty = document.getElementById("weeklyBudgetDeductionEmpty");
+  const summary = document.getElementById("weeklyDeductionChartSummary");
+  if (!canvas || typeof Chart === "undefined") {
+    return;
+  }
+
+  const chartRows = (rows || [])
+    .map((row) => ({
+      week_start: row.week_start || "",
+      diesel_amount: Number(row.diesel_amount || 0),
+      unleaded_amount: Number(row.unleaded_amount || 0),
+      total_amount: Number(row.total_amount || 0),
+      diesel_liters: Number(row.diesel_liters || 0),
+      unleaded_liters: Number(row.unleaded_liters || 0),
+      diesel_price: Number(row.diesel_price || 0),
+      unleaded_price: Number(row.unleaded_price || 0),
+      missing_price_count: Number(row.missing_price_count || 0),
+    }))
+    .filter((row) => row.week_start && (row.total_amount > 0 || row.missing_price_count > 0));
+
+  canvas.classList.toggle("d-none", chartRows.length === 0);
+  if (empty) empty.classList.toggle("d-none", chartRows.length > 0);
+
+  if (weeklyBudgetDeductionChart) {
+    weeklyBudgetDeductionChart.destroy();
+    weeklyBudgetDeductionChart = null;
+  }
+
+  const totalAmount = chartRows.reduce((sum, row) => sum + row.total_amount, 0);
+  const missingCount = chartRows.reduce((sum, row) => sum + row.missing_price_count, 0);
+  if (summary) {
+    summary.textContent = chartRows.length
+      ? `${chartRows.length} week${chartRows.length === 1 ? "" : "s"} shown · ${formatPeso(totalAmount)} total${missingCount ? ` · ${missingCount} missing price` : ""}`
+      : "No used gas issuance deductions yet.";
+  }
+
+  if (chartRows.length === 0) {
+    return;
+  }
+
+  weeklyBudgetDeductionChart = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: chartRows.map((row) => formatShortDate(row.week_start)),
+      datasets: [
+        {
+          label: "Diesel Deduction",
+          data: chartRows.map((row) => row.diesel_amount),
+          backgroundColor: "rgba(245, 179, 1, 0.86)",
+          borderColor: "#d99a00",
+          borderWidth: 1,
+          stack: "weekly-deductions",
+          order: 2,
+        },
+        {
+          label: "Unleaded Deduction",
+          data: chartRows.map((row) => row.unleaded_amount),
+          backgroundColor: "rgba(25, 135, 84, 0.84)",
+          borderColor: "#198754",
+          borderWidth: 1,
+          stack: "weekly-deductions",
+          order: 2,
+        },
+        {
+          label: "Diesel Price/L",
+          type: "line",
+          data: chartRows.map((row) => row.diesel_price || null),
+          borderColor: "#a36b00",
+          backgroundColor: "rgba(163, 107, 0, 0.12)",
+          borderDash: [5, 4],
+          borderWidth: 2,
+          pointRadius: 2.5,
+          pointHoverRadius: 4,
+          spanGaps: true,
+          tension: 0.25,
+          yAxisID: "price",
+          order: 1,
+        },
+        {
+          label: "Unleaded Price/L",
+          type: "line",
+          data: chartRows.map((row) => row.unleaded_price || null),
+          borderColor: "#0f6840",
+          backgroundColor: "rgba(15, 104, 64, 0.12)",
+          borderDash: [5, 4],
+          borderWidth: 2,
+          pointRadius: 2.5,
+          pointHoverRadius: 4,
+          spanGaps: true,
+          tension: 0.25,
+          yAxisID: "price",
+          order: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 700,
+        easing: "easeOutQuart",
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: "bottom",
+          labels: {
+            boxWidth: 10,
+            boxHeight: 10,
+            usePointStyle: true,
+            pointStyle: "rectRounded",
+          },
+        },
+        tooltip: {
+          callbacks: {
+            title: (items) => {
+              const index = items[0]?.dataIndex ?? 0;
+              return formatFullDate(chartRows[index]?.week_start || "");
+            },
+            label: (context) => {
+              const row = chartRows[context.dataIndex] || {};
+              if (context.dataset.yAxisID === "price") {
+                return `${context.dataset.label}: ${formatPeso(context.raw)}`;
+              }
+              const isDiesel = context.dataset.label.includes("Diesel");
+              const liters = isDiesel ? row.diesel_liters : row.unleaded_liters;
+              const price = isDiesel ? row.diesel_price : row.unleaded_price;
+              return `${context.dataset.label}: ${formatPeso(context.raw)} (${Number(liters || 0).toFixed(2)} L @ ${formatPeso(price)}/L)`;
+            },
+            footer: (items) => {
+              const row = chartRows[items[0]?.dataIndex ?? 0] || {};
+              return `Week total: ${formatPeso(row.total_amount || 0)}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: {
+            display: false,
+          },
+          ticks: {
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 8,
+          },
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          position: "left",
+          ticks: {
+            callback: (value) => `\u20b1${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+            maxTicksLimit: 6,
+          },
+          grid: {
+            color: "rgba(15, 23, 42, 0.06)",
+          },
+        },
+        price: {
+          beginAtZero: false,
+          grid: {
+            drawOnChartArea: false,
+          },
+          position: "right",
+          ticks: {
+            callback: (value) => `\u20b1${Number(value).toFixed(0)}`,
+            maxTicksLimit: 5,
           },
         },
       },

@@ -19,6 +19,92 @@ function peso($value): string
     return '&#8369;' . number_format((float)$value, 2);
 }
 
+function dashboard_short_week($value): string
+{
+    $time = strtotime((string)$value);
+    return $time ? date('M j', $time) : (string)$value;
+}
+
+function dashboard_fuel_env(string $path): array
+{
+    if (!is_readable($path)) {
+        return [];
+    }
+
+    $values = parse_ini_file($path, false, INI_SCANNER_RAW);
+    return is_array($values) ? $values : [];
+}
+
+function dashboard_fuel_connect(string $fuelDir): ?mysqli
+{
+    if (!class_exists('mysqli')) {
+        return null;
+    }
+
+    $env = dashboard_fuel_env($fuelDir . DIRECTORY_SEPARATOR . '.env');
+    $host = $env['FUEL_DB_HOST'] ?? 'localhost';
+    $user = $env['FUEL_DB_USER'] ?? 'root';
+    $pass = $env['FUEL_DB_PASS'] ?? '';
+    $db = $env['FUEL_DB_NAME'] ?? 'fuel_tracker';
+    $port = isset($env['FUEL_DB_PORT']) ? (int)$env['FUEL_DB_PORT'] : 3306;
+    $charset = $env['FUEL_DB_CHARSET'] ?? 'utf8mb4';
+
+    $connection = mysqli_init();
+    if (!$connection) {
+        return null;
+    }
+
+    mysqli_options($connection, MYSQLI_OPT_CONNECT_TIMEOUT, 2);
+    if (!@mysqli_real_connect($connection, $host, $user, $pass, $db, $port)) {
+        return null;
+    }
+
+    $connection->set_charset($charset);
+    return $connection;
+}
+
+function dashboard_fuel_budget_snapshot(string $fuelDir): array
+{
+    $empty = [
+        'available' => false,
+        'summary' => [
+            'used_budget' => 0,
+            'used_diesel_budget' => 0,
+            'used_unleaded_budget' => 0,
+            'actual_diesel_liters' => 0,
+            'actual_unleaded_liters' => 0,
+            'actual_missing_price_count' => 0,
+        ],
+        'weekly' => [],
+    ];
+
+    $fuelBudgetFile = $fuelDir . DIRECTORY_SEPARATOR . 'fuel_budget_data.php';
+    if (!is_readable($fuelBudgetFile)) {
+        return $empty;
+    }
+
+    try {
+        require_once $fuelBudgetFile;
+        $fuelConn = dashboard_fuel_connect($fuelDir);
+        if (!$fuelConn instanceof mysqli) {
+            return $empty;
+        }
+
+        $summary = fuelBudgetSummary($fuelConn);
+        $weekly = fuelBudgetWeeklyActualUsageTrend($fuelConn, 16);
+        mysqli_close($fuelConn);
+
+        return [
+            'available' => true,
+            'summary' => $summary,
+            'weekly' => $weekly,
+        ];
+    } catch (Throwable $e) {
+        error_log('Master dashboard fuel snapshot error: ' . $e->getMessage());
+        return $empty;
+    }
+}
+
 function dashboard_advance_db_value(string $source, string $name): string
 {
     if (preg_match('/\$' . preg_quote($name, '/') . '\s*=\s*(["\'])(.*?)\1\s*;/', $source, $matches)) {
@@ -143,6 +229,18 @@ foreach ($chairsEquipmentTypes as $type) {
     }
 }
 
+$fuelBudgetSnapshot = dashboard_fuel_budget_snapshot(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'fuel_tracker');
+$fuelBudgetSummary = $fuelBudgetSnapshot['summary'];
+$fuelWeeklyRows = $fuelBudgetSnapshot['weekly'];
+$fuelWeeklyLabels = array_map(static fn(array $row): string => dashboard_short_week((string)($row['week_start'] ?? '')), $fuelWeeklyRows);
+$fuelWeeklyDieselAmounts = array_map(static fn(array $row): float => (float)($row['diesel_amount'] ?? 0), $fuelWeeklyRows);
+$fuelWeeklyUnleadedAmounts = array_map(static fn(array $row): float => (float)($row['unleaded_amount'] ?? 0), $fuelWeeklyRows);
+$fuelWeeklyDieselLiters = array_map(static fn(array $row): float => (float)($row['diesel_liters'] ?? 0), $fuelWeeklyRows);
+$fuelWeeklyUnleadedLiters = array_map(static fn(array $row): float => (float)($row['unleaded_liters'] ?? 0), $fuelWeeklyRows);
+$fuelWeeklyDieselPrices = array_map(static fn(array $row): float => (float)($row['diesel_price'] ?? 0), $fuelWeeklyRows);
+$fuelWeeklyUnleadedPrices = array_map(static fn(array $row): float => (float)($row['unleaded_price'] ?? 0), $fuelWeeklyRows);
+$fuelWeeklyTotal = array_sum(array_map(static fn(array $row): float => (float)($row['total_amount'] ?? 0), $fuelWeeklyRows));
+$fuelWeeklyMissingPrices = array_sum(array_map(static fn(array $row): int => (int)($row['missing_price_count'] ?? 0), $fuelWeeklyRows));
 
 ?>
 <!DOCTYPE html>
@@ -246,6 +344,87 @@ foreach ($chairsEquipmentTypes as $type) {
                         </div>
                     <?php else: ?>
                         <div class="empty-state">No pending advance request expenses.</div>
+                    <?php endif; ?>
+                </section>
+
+                <section class="dashboard-card module-card reveal-on-load">
+                    <div class="card-header">
+                        <div>
+                            <span class="section-kicker">Fuel Tracker</span>
+                            <h2>Fuel Budget Actual Usage</h2>
+                        </div>
+                        <a class="module-link" href="../fuel_tracker/fuel_dashboard.php">Open workspace <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <?php if ($fuelBudgetSnapshot['available']): ?>
+                        <div class="fuel-master-layout">
+                            <div class="fuel-master-overview">
+                                <div class="fuel-total-panel">
+                                    <span class="fuel-panel-label">Actual Used</span>
+                                    <strong><?php echo peso($fuelBudgetSummary['used_budget'] ?? 0); ?></strong>
+                                    <em>Based on used gas issuances, actual liters, and saved weekly pump prices.</em>
+                                </div>
+                                <div class="fuel-breakdown-list">
+                                    <div class="fuel-breakdown-row diesel">
+                                        <div>
+                                            <span>Diesel</span>
+                                            <strong><?php echo peso($fuelBudgetSummary['used_diesel_budget'] ?? 0); ?></strong>
+                                        </div>
+                                        <em><?php echo h(number_format((float)($fuelBudgetSummary['actual_diesel_liters'] ?? 0), 2)); ?> L</em>
+                                    </div>
+                                    <div class="fuel-breakdown-row unleaded">
+                                        <div>
+                                            <span>Unleaded</span>
+                                            <strong><?php echo peso($fuelBudgetSummary['used_unleaded_budget'] ?? 0); ?></strong>
+                                        </div>
+                                        <em><?php echo h(number_format((float)($fuelBudgetSummary['actual_unleaded_liters'] ?? 0), 2)); ?> L</em>
+                                    </div>
+                                    <?php if ((int)($fuelBudgetSummary['actual_missing_price_count'] ?? 0) > 0): ?>
+                                        <div class="fuel-breakdown-alert"><?php echo n($fuelBudgetSummary['actual_missing_price_count']); ?> used record(s) need a weekly pump price.</div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="fuel-master-chart-panel">
+                                <div class="fuel-chart-heading">
+                                    <div>
+                                        <span class="fuel-panel-label">Deductions per Week</span>
+                                        <strong><?php echo h(count($fuelWeeklyRows)); ?> weeks shown</strong>
+                                    </div>
+                                    <div class="fuel-chart-total">
+                                        <span>Total</span>
+                                        <strong><?php echo peso($fuelWeeklyTotal); ?></strong>
+                                    </div>
+                                </div>
+                                <?php if ($fuelWeeklyRows): ?>
+                                    <canvas
+                                        class="master-fuel-chart"
+                                        width="760"
+                                        height="260"
+                                        aria-label="Weekly fuel budget deductions and pump prices"
+                                        role="img"
+                                        data-labels="<?php echo h(json_encode($fuelWeeklyLabels)); ?>"
+                                        data-diesel-amounts="<?php echo h(json_encode($fuelWeeklyDieselAmounts)); ?>"
+                                        data-unleaded-amounts="<?php echo h(json_encode($fuelWeeklyUnleadedAmounts)); ?>"
+                                        data-diesel-liters="<?php echo h(json_encode($fuelWeeklyDieselLiters)); ?>"
+                                        data-unleaded-liters="<?php echo h(json_encode($fuelWeeklyUnleadedLiters)); ?>"
+                                        data-diesel-prices="<?php echo h(json_encode($fuelWeeklyDieselPrices)); ?>"
+                                        data-unleaded-prices="<?php echo h(json_encode($fuelWeeklyUnleadedPrices)); ?>"
+                                    ></canvas>
+                                    <div class="fuel-chart-legend" aria-hidden="true">
+                                        <span><i class="diesel-fill"></i> Diesel deduction</span>
+                                        <span><i class="unleaded-fill"></i> Unleaded deduction</span>
+                                        <span><i class="diesel-line"></i> Diesel price/L</span>
+                                        <span><i class="unleaded-line"></i> Unleaded price/L</span>
+                                    </div>
+                                    <?php if ($fuelWeeklyMissingPrices > 0): ?>
+                                        <div class="fuel-master-note"><?php echo n($fuelWeeklyMissingPrices); ?> used record(s) in the shown weeks need a matching weekly pump price.</div>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <div class="empty-state">No weekly used gas issuance deductions yet.</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <div class="empty-state prominent">Fuel Tracker budget data is unavailable right now.</div>
                     <?php endif; ?>
                 </section>
 

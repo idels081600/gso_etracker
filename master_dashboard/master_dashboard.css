@@ -920,6 +920,285 @@ a {
   height: 180px;
 }
 
+.fuel-master-layout {
+  align-items: stretch;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(280px, 0.56fr) minmax(460px, 1.44fr);
+}
+
+.fuel-master-overview {
+  align-content: start;
+  display: grid;
+  gap: 12px;
+}
+
+.fuel-total-panel {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-left: 4px solid #15803d;
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.fuel-panel-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fuel-total-panel strong {
+  color: #101828;
+  font-size: clamp(1.35rem, 2.1vw, 1.9rem);
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.fuel-total-panel em {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.fuel-breakdown-list {
+  display: grid;
+  gap: 8px;
+}
+
+.fuel-breakdown-row {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 72px;
+  padding: 12px;
+}
+
+.fuel-breakdown-row.diesel {
+  border-left: 4px solid #f5b301;
+}
+
+.fuel-breakdown-row.unleaded {
+  border-left: 4px solid #198754;
+}
+
+.fuel-breakdown-row span {
+  color: var(--muted);
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.fuel-breakdown-row strong {
+  color: #101828;
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.1;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+.fuel-breakdown-row em {
+  color: #344054;
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 900;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.fuel-breakdown-alert,
+.fuel-master-note {
+  color: #b42318;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.fuel-master-chart-panel {
+  background: #fbfcfe;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  min-height: 330px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.fuel-chart-heading {
+  align-items: start;
+  border-bottom: 1px solid #e8edf3;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding-bottom: 10px;
+}
+
+.fuel-chart-heading strong {
+  color: #101828;
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 900;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.fuel-chart-total {
+  text-align: right;
+}
+
+.fuel-chart-total span {
+  color: var(--muted);
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.fuel-chart-total strong {
+  color: #101828;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.master-fuel-chart {
+  display: block;
+  height: 224px;
+  width: 100%;
+}
+
+.fuel-chart-legend {
+  border-top: 1px solid #e8edf3;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.76rem;
+  font-weight: 800;
+  gap: 8px 14px;
+  padding-top: 9px;
+}
+
+.fuel-chart-legend span {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.fuel-chart-legend i {
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.fuel-chart-legend .diesel-fill,
+.fuel-chart-legend .unleaded-fill {
+  border-radius: 3px;
+  height: 12px;
+  width: 12px;
+}
+
+.fuel-chart-legend .diesel-fill {
+  background: #f5b301;
+}
+
+.fuel-chart-legend .unleaded-fill {
+  background: #198754;
+}
+
+.fuel-chart-legend .diesel-line,
+.fuel-chart-legend .unleaded-line {
+  border-top: 2px dashed currentColor;
+  height: 0;
+  width: 18px;
+}
+
+.fuel-chart-legend .diesel-line {
+  color: #a36b00;
+}
+
+.fuel-chart-legend .unleaded-line {
+  color: #0f6840;
+}
+
+.master-fuel-tooltip {
+  background: #101828;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.24);
+  color: #fff;
+  font-size: 0.78rem;
+  max-width: 290px;
+  opacity: 0;
+  padding: 10px;
+  pointer-events: none;
+  position: fixed;
+  transform: translateY(4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  visibility: hidden;
+  z-index: 9999;
+}
+
+.master-fuel-tooltip.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+.fuel-tooltip-title {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 0.82rem;
+  font-weight: 900;
+  margin-bottom: 8px;
+  padding-bottom: 7px;
+}
+
+.fuel-tooltip-total {
+  align-items: baseline;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.fuel-tooltip-total span,
+.fuel-tooltip-grid span {
+  color: #cbd5e1;
+  font-weight: 800;
+}
+
+.fuel-tooltip-total strong {
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.fuel-tooltip-grid {
+  display: grid;
+  gap: 5px 14px;
+  grid-template-columns: minmax(110px, 1fr) auto;
+}
+
+.fuel-tooltip-grid strong {
+  color: #fff;
+  font-weight: 900;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .rank-list {
   padding: 14px;
   border: 1px solid var(--border);
@@ -1120,6 +1399,10 @@ body.sidebar-collapsed .logout-item {
     grid-template-columns: 1fr;
   }
 
+  .fuel-master-layout {
+    grid-template-columns: 1fr;
+  }
+
   .side-rail {
     position: static;
     grid-template-columns: repeat(2, 1fr);
@@ -1168,9 +1451,19 @@ body.sidebar-collapsed .logout-item {
 @media (max-width: 760px) {
   .page-header,
   .card-header,
+  .fuel-chart-heading,
   .split-grid,
   .side-rail {
     grid-template-columns: 1fr;
+  }
+
+  .fuel-chart-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .fuel-chart-total {
+    text-align: left;
   }
 
   .kpi-grid,
@@ -1212,6 +1505,18 @@ body.sidebar-collapsed .logout-item {
   .module-card,
   .side-rail .dashboard-card {
     padding: 14px;
+  }
+
+  .fuel-breakdown-row {
+    grid-template-columns: 1fr;
+  }
+
+  .fuel-breakdown-row em {
+    text-align: left;
+  }
+
+  .master-fuel-chart {
+    height: 250px;
   }
 }
 

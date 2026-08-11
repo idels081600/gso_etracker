@@ -421,6 +421,134 @@ body {
   padding-top: 0.9rem;
 }
 
+.actual-usage-panel {
+  background: #f8fafc;
+  border: 1px solid #e5eaf0;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.actual-usage-panel-head {
+  align-items: baseline;
+  border-bottom: 1px solid #e5eaf0;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.55rem;
+}
+
+.actual-usage-panel-head span {
+  color: var(--dashboard-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.actual-usage-panel-head strong {
+  color: #dc3545;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: right;
+}
+
+.actual-usage-grid {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.actual-usage-item {
+  background: #fff;
+  border: 1px solid #e5eaf0;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+  padding: 0.55rem;
+}
+
+.actual-usage-item small {
+  color: var(--dashboard-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.actual-usage-item span {
+  color: #101828;
+  font-size: 0.92rem;
+  font-weight: 900;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.actual-usage-item em {
+  color: var(--dashboard-muted);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.actual-usage-warning {
+  color: #b42318;
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-top: 0.55rem;
+}
+
+.actual-weekly-card {
+  border-left: 4px solid var(--dashboard-primary) !important;
+}
+
+.actual-weekly-layout {
+  align-items: stretch;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(300px, 0.7fr) minmax(420px, 1.3fr);
+}
+
+.actual-weekly-summary {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.actual-weekly-chart-panel {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.actual-weekly-chart-head {
+  align-items: baseline;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.actual-weekly-chart-head small {
+  color: var(--dashboard-muted);
+  font-size: 0.74rem;
+  text-align: right;
+}
+
+.actual-weekly-chart-wrap {
+  height: 240px;
+  min-height: 240px;
+  position: relative;
+}
+
+.actual-weekly-chart-empty {
+  font-size: 0.82rem;
+  inset: 0;
+  min-height: 0;
+  position: absolute;
+}
+
 .budget-price-grid {
   display: grid;
   gap: 0.65rem;
@@ -651,6 +779,10 @@ body {
   .weekly-price-layout {
     grid-template-columns: 1fr;
   }
+
+  .actual-weekly-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 575.98px) {
@@ -677,6 +809,21 @@ body {
   .weekly-price-history-btn {
     min-width: 0;
     width: 100%;
+  }
+
+  .actual-weekly-chart-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .actual-weekly-chart-head small {
+    text-align: left;
+  }
+
+  .actual-weekly-chart-wrap {
+    height: 280px;
+    min-height: 280px;
   }
 }
 
@@ -1131,6 +1278,10 @@ body {
   }
 
   .budget-card-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .actual-usage-grid {
     grid-template-columns: 1fr;
   }
 }
