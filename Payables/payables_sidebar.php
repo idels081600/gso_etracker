@@ -4,6 +4,7 @@ $payablesFullName = $full_name ?? '';
 $payablesNav = [
     'monitoring' => ['href' => 'bac_dashboard.php', 'icon' => 'fas fa-th-large', 'label' => 'Dashboard'],
     'bac_monitoring' => ['href' => 'bac_monitoring.php', 'icon' => 'fas fa-table', 'label' => 'IB Monitoring'],
+    'document_scanner' => ['href' => 'document_scanner.php', 'icon' => 'fas fa-barcode', 'label' => 'Document Scanner'],
     'food_tracking' => ['href' => 'food_tracking.php', 'icon' => 'fas fa-utensils', 'label' => 'Food Tracking'],
     'po' => ['href' => 'Po_sap.php', 'icon' => 'fas fa-shopping-cart', 'label' => 'RFQ Monitoring'],
 ];

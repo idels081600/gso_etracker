@@ -334,6 +334,7 @@ body.sidebar-collapsed .receiving-content {
   background: #fff;
   color: #475467;
   font-size: 0.74rem;
+  text-decoration: none;
   transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 

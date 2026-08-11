@@ -604,6 +604,16 @@ if ($bacStmt) {
                             <div class="bac-date"><?php echo htmlspecialchars($row['deadline'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-bidder"><?php echo htmlspecialchars($receivedBy, ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-row-actions">
+                                <a
+                                    class="bac-icon-button"
+                                    href="print_document_barcode.php?type=IB&id=<?php echo (int)$row['id']; ?>"
+                                    target="_blank"
+                                    rel="noopener"
+                                    title="Print barcode"
+                                    aria-label="<?php echo htmlspecialchars('Print barcode for ' . ($row['ib_no'] ?? 'record'), ENT_QUOTES, 'UTF-8'); ?>"
+                                >
+                                    <i class="fas fa-barcode"></i>
+                                </a>
                                 <button
                                     type="button"
                                     class="bac-icon-button bac-edit-row"

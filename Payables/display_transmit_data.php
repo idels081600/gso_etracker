@@ -240,6 +240,7 @@ function display_transmittal_rfq_data(string $searchTerm = '', int $page = 1, in
             echo '<td class="rfq-person">' . htmlspecialchars($row['received_by'] ?? '') . '</td>';
             echo '<td><span class="rfq-status-badge is-' . htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($status !== '' ? $status : 'Pending') . '</span></td>';
             echo '<td class="text-center action-cell">';
+            echo '<a class="rfq-icon-button" href="print_document_barcode.php?type=RFQ&id=' . (int)$row['id'] . '" target="_blank" rel="noopener" title="Print barcode" aria-label="Print RFQ barcode"><i class="fas fa-barcode"></i></a> ';
             echo '<button type="button" class="rfq-icon-button edit-btn" data-id="' . (int)$row['id'] . '" title="Edit" aria-label="Edit RFQ"><i class="fas fa-edit"></i></button> ';
             echo '<button type="button" class="rfq-icon-button is-danger delete-btn" data-id="' . (int)$row['id'] . '" title="Delete" aria-label="Delete RFQ"><i class="fas fa-trash-alt"></i></button>';
             echo '</td>';
