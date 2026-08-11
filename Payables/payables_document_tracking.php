@@ -59,6 +59,79 @@ function payables_normalize_scanned_document_no(string $documentNo): string
     return rtrim(trim($documentNo), ", \t\n\r\0\x0B");
 }
 
+
+function payables_ensure_document_barcodes_table(): void
+{
+    global $conn;
+
+    $sql = "CREATE TABLE IF NOT EXISTS payables_document_barcodes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        barcode_code VARCHAR(80) NOT NULL UNIQUE,
+        batch_code VARCHAR(80) NULL,
+        record_type VARCHAR(10) NULL,
+        record_id INT NULL,
+        assigned_by VARCHAR(150) NULL,
+        assigned_at DATETIME NULL,
+        created_by VARCHAR(150) NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_batch_code (batch_code),
+        INDEX idx_record (record_type, record_id),
+        INDEX idx_assigned_at (assigned_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    if (!$conn->query($sql)) {
+        payables_log_error('Document barcode table creation failed: ' . $conn->error);
+    }
+}
+
+function payables_normalize_barcode_code(string $barcodeCode): string
+{
+    return strtoupper(rtrim(trim($barcodeCode), ", \t\n\r\0\x0B"));
+}
+
+function payables_find_assigned_document_by_barcode(string $barcodeCode): ?array
+{
+    global $conn;
+
+    payables_ensure_document_barcodes_table();
+    $barcodeCode = payables_normalize_barcode_code($barcodeCode);
+    if ($barcodeCode === '') {
+        return null;
+    }
+
+    $stmt = $conn->prepare("
+        SELECT barcode_code, record_type, record_id
+        FROM payables_document_barcodes
+        WHERE barcode_code = ?
+          AND record_type IN ('IB', 'RFQ')
+          AND record_id IS NOT NULL
+        LIMIT 1
+    ");
+    if (!$stmt) {
+        payables_log_error('Assigned barcode lookup prepare failed: ' . $conn->error);
+        return null;
+    }
+
+    $stmt->bind_param('s', $barcodeCode);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+
+    if (!$row) {
+        return null;
+    }
+
+    $document = payables_get_document_by_record((string)$row['record_type'], (int)$row['record_id']);
+    if (!$document) {
+        return null;
+    }
+
+    $document['barcode_code'] = $row['barcode_code'];
+    return $document;
+}
+
 function payables_find_documents_by_number(string $documentNo): array
 {
     global $conn;
@@ -69,6 +142,11 @@ function payables_find_documents_by_number(string $documentNo): array
     }
 
     $matches = [];
+    $assignedDocument = payables_find_assigned_document_by_barcode($documentNo);
+    if ($assignedDocument) {
+        $matches[] = $assignedDocument;
+    }
+
     $bacStmt = $conn->prepare("
         SELECT id, ib_no AS document_no, project_name AS title, bidder AS party
         FROM bac_monitoring
