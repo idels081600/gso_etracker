@@ -30,6 +30,8 @@ document.addEventListener("DOMContentLoaded", function () {
   let cameraRunning = false;
   let lastCameraCode = "";
   let lastCameraAt = 0;
+  let pendingCameraCode = "";
+  let cameraScanTimer = null;
   let usbScanTimer = null;
   let usbScanProcessing = false;
 
@@ -372,6 +374,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function stopCamera() {
     cameraRunning = false;
+    window.clearTimeout(cameraScanTimer);
+    cameraScanTimer = null;
+    pendingCameraCode = "";
     if (cameraStream) {
       cameraStream.getTracks().forEach(function (track) {
         track.stop();
@@ -392,10 +397,22 @@ document.addEventListener("DOMContentLoaded", function () {
         if (codes && codes.length) {
           const code = normalizeBarcodeValue(codes[0].rawValue || "");
           const now = Date.now();
-          if (code && (code !== lastCameraCode || now - lastCameraAt > 2500)) {
-            lastCameraCode = code;
-            lastCameraAt = now;
-            processCode(code, "CAMERA");
+          if (
+            code &&
+            code !== pendingCameraCode &&
+            (code !== lastCameraCode || now - lastCameraAt > 2500)
+          ) {
+            pendingCameraCode = code;
+            setStatus("Barcode detected. Reading in 1 second...", "");
+            window.clearTimeout(cameraScanTimer);
+            cameraScanTimer = window.setTimeout(function () {
+              const confirmedCode = pendingCameraCode;
+              pendingCameraCode = "";
+              cameraScanTimer = null;
+              lastCameraCode = confirmedCode;
+              lastCameraAt = Date.now();
+              processCode(confirmedCode, "CAMERA");
+            }, 1000);
           }
         }
       })
