@@ -10,15 +10,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 payables_verify_csrf_token();
 payables_ensure_scan_events_table();
+payables_ensure_workflow_table();
 
-$recordType = strtoupper(trim($_POST['record_type'] ?? ''));
-$recordId = filter_input(INPUT_POST, 'record_id', FILTER_VALIDATE_INT) ?: 0;
+$barcodeCode = payables_normalize_barcode_code($_POST['barcode_code'] ?? '');
 $direction = payables_normalize_scan_direction($_POST['direction'] ?? '');
 $office = payables_normalize_scan_office($_POST['office'] ?? '');
 $scanSource = payables_normalize_scan_source($_POST['scan_source'] ?? 'MANUAL');
 
-if (!in_array($recordType, ['IB', 'RFQ'], true) || $recordId < 1) {
-    payables_json_response(['success' => false, 'error' => 'Choose a valid document before saving the scan.'], 422);
+if ($barcodeCode === '') {
+    payables_json_response(['success' => false, 'error' => 'Scan a registered barcode before saving.'], 422);
 }
 if ($direction === '') {
     payables_json_response(['success' => false, 'error' => 'Choose Scan In or Scan Out.'], 422);
@@ -27,41 +27,68 @@ if ($office === '') {
     payables_json_response(['success' => false, 'error' => 'Choose a valid office.'], 422);
 }
 
-$document = payables_get_document_by_record($recordType, $recordId);
+$document = payables_find_assigned_document_by_barcode($barcodeCode);
 if (!$document) {
-    payables_json_response(['success' => false, 'error' => 'Document was not found.'], 404);
+    payables_json_response(['success' => false, 'error' => 'The registered barcode is no longer assigned to a document.'], 404);
 }
 
+$recordType = $document['record_type'];
+$recordId = (int)$document['record_id'];
 $scannedBy = $_SESSION['pay_name'] ?? '';
-$stmt = $conn->prepare("
-    INSERT INTO payables_document_scan_events (
-        record_type, record_id, document_no, direction, office, scan_source, scanned_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
-");
-if (!$stmt) {
-    payables_log_error('Scan event insert prepare failed: ' . $conn->error);
-    payables_json_response(['success' => false, 'error' => 'Unable to save scan right now.'], 500);
-}
+$workflow = [
+    'applied' => false,
+    'previous_main_status' => null,
+    'previous_location' => null,
+    'main_status' => null,
+    'location' => null,
+];
+$eventId = 0;
 
-$stmt->bind_param(
-    'sisssss',
-    $recordType,
-    $recordId,
-    $document['document_no'],
-    $direction,
-    $office,
-    $scanSource,
-    $scannedBy
-);
-if (!$stmt->execute()) {
-    payables_log_error('Scan event insert failed: ' . $stmt->error);
+$conn->begin_transaction();
+try {
+    $workflow = payables_apply_scan_workflow($document, $direction, $office, $scannedBy);
+
+    $stmt = $conn->prepare("
+        INSERT INTO payables_document_scan_events (
+            record_type, record_id, document_no, direction, office, scan_source, scanned_by,
+            previous_main_status, previous_location, result_main_status, result_location
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    if (!$stmt) {
+        throw new RuntimeException('Unable to prepare scan event.');
+    }
+
+    $previousStatus = $workflow['previous_main_status'];
+    $previousLocation = $workflow['previous_location'];
+    $resultStatus = $workflow['main_status'];
+    $resultLocation = $workflow['location'];
+    $stmt->bind_param(
+        'sisssssssss',
+        $recordType,
+        $recordId,
+        $document['document_no'],
+        $direction,
+        $office,
+        $scanSource,
+        $scannedBy,
+        $previousStatus,
+        $previousLocation,
+        $resultStatus,
+        $resultLocation
+    );
+    if (!$stmt->execute()) {
+        throw new RuntimeException('Unable to save scan event.');
+    }
+    $eventId = $stmt->insert_id;
     $stmt->close();
-    payables_json_response(['success' => false, 'error' => 'Unable to save scan right now.'], 500);
+    $conn->commit();
+} catch (Throwable $error) {
+    $conn->rollback();
+    payables_log_error('Scan save failed: ' . $error->getMessage());
+    payables_json_response(['success' => false, 'error' => 'Unable to save the scan and workflow update right now.'], 500);
 }
-$eventId = $stmt->insert_id;
-$stmt->close();
 
-$event = [[
+$event = [
     'id' => $eventId,
     'record_type' => $recordType,
     'record_id' => $recordId,
@@ -73,7 +100,12 @@ $event = [[
     'scanned_at' => payables_current_datetime(),
     'title' => $document['title'],
     'party' => $document['party'],
-]];
+    'workflow' => [
+        'updated' => !empty($workflow['applied']),
+        'main_status' => $workflow['main_status'],
+        'location' => $workflow['location'],
+    ],
+];
 
 $eventStmt = $conn->prepare("
     SELECT
@@ -95,12 +127,12 @@ if ($eventStmt) {
     $eventStmt->execute();
     $eventResult = $eventStmt->get_result();
     if ($eventResult && $eventRow = $eventResult->fetch_assoc()) {
-        $event = [payables_format_scan_event($eventRow)];
+        $event = payables_format_scan_event($eventRow);
     }
     $eventStmt->close();
 }
 
 payables_json_response([
     'success' => true,
-    'event' => $event[0],
+    'event' => $event,
 ]);

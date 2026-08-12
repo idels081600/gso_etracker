@@ -1,5 +1,6 @@
 <?php
 require_once 'payables_helpers.php';
+require_once 'payables_workflow.php';
 
 const PAYABLES_SCAN_OFFICES = ['BAC', 'GSO', 'Budget', 'Accounting', 'CTO', 'Receiving'];
 const PAYABLES_SCAN_DIRECTIONS = ['IN', 'OUT'];
@@ -19,6 +20,10 @@ function payables_ensure_scan_events_table(): void
         scan_source VARCHAR(20) NOT NULL DEFAULT 'MANUAL',
         scanned_by VARCHAR(150) NULL,
         scanned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        previous_main_status TEXT NULL,
+        previous_location TEXT NULL,
+        result_main_status TEXT NULL,
+        result_location TEXT NULL,
         INDEX idx_record (record_type, record_id),
         INDEX idx_document_no (document_no),
         INDEX idx_scanned_at (scanned_at),
@@ -27,6 +32,11 @@ function payables_ensure_scan_events_table(): void
 
     if (!$conn->query($sql)) {
         payables_log_error('Scan events table creation failed: ' . $conn->error);
+        return;
+    }
+
+    foreach (['previous_main_status', 'previous_location', 'result_main_status', 'result_location'] as $column) {
+        payables_ensure_text_column($conn, 'payables_document_scan_events', $column);
     }
 }
 
@@ -247,6 +257,111 @@ function payables_get_document_by_record(string $recordType, int $recordId): ?ar
     ];
 }
 
+function payables_apply_scan_workflow(array $document, string $direction, string $office, string $changedBy): array
+{
+    global $conn;
+
+    $result = [
+        'applied' => false,
+        'previous_main_status' => null,
+        'previous_location' => null,
+        'main_status' => null,
+        'location' => null,
+    ];
+
+    if (($document['record_type'] ?? '') !== 'IB' || $direction !== 'IN') {
+        return $result;
+    }
+
+    $officeKey = strtoupper(trim($office));
+    if (!in_array($officeKey, ['GSO', 'BUDGET', 'ACCOUNTING', 'CTO'], true)) {
+        return $result;
+    }
+
+    $recordId = (int)($document['record_id'] ?? 0);
+    if ($recordId < 1) {
+        throw new RuntimeException('Invalid IB workflow record.');
+    }
+
+    $lookup = $conn->prepare("SELECT main_status, current_location FROM payables_workflow_status WHERE record_type = 'bac_monitoring' AND record_id = ? LIMIT 1 FOR UPDATE");
+    if (!$lookup) {
+        throw new RuntimeException('Unable to prepare workflow lookup.');
+    }
+    $lookup->bind_param('i', $recordId);
+    if (!$lookup->execute()) {
+        $lookup->close();
+        throw new RuntimeException('Unable to load the current workflow.');
+    }
+    $lookupResult = $lookup->get_result();
+    $current = $lookupResult ? $lookupResult->fetch_assoc() : null;
+    $lookup->close();
+
+    $previousStatus = in_array($current['main_status'] ?? '', PAYABLES_WORKFLOW_STATUSES, true)
+        ? $current['main_status']
+        : 'GSO';
+    $previousLocation = payables_normalize_location($current['current_location'] ?? 'ACCOUNTING');
+    $targetStatus = $previousStatus;
+    $targetLocation = $previousLocation;
+
+    if ($officeKey === 'GSO') {
+        if ($previousStatus === 'ACCOUNTING') {
+            $targetStatus = 'ACCOUNTING';
+            $targetLocation = 'GSO';
+        } else {
+            $targetStatus = 'GSO';
+            $targetLocation = 'GSO';
+        }
+    } elseif ($officeKey === 'BUDGET') {
+        $targetStatus = 'BUDGET';
+    } elseif ($officeKey === 'ACCOUNTING') {
+        $targetStatus = 'ACCOUNTING';
+        $targetLocation = 'ACCOUNTING';
+    } elseif ($officeKey === 'CTO') {
+        $targetStatus = 'CTO';
+    }
+
+    $upsert = $conn->prepare("INSERT INTO payables_workflow_status (
+        record_type, record_id, main_status, current_location, updated_by
+    ) VALUES ('bac_monitoring', ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+        main_status = VALUES(main_status),
+        current_location = VALUES(current_location),
+        updated_by = VALUES(updated_by),
+        updated_at = CURRENT_TIMESTAMP");
+    if (!$upsert) {
+        throw new RuntimeException('Unable to prepare workflow update.');
+    }
+    $upsert->bind_param('isss', $recordId, $targetStatus, $targetLocation, $changedBy);
+    if (!$upsert->execute()) {
+        $upsert->close();
+        throw new RuntimeException('Unable to update the IB workflow.');
+    }
+    $upsert->close();
+
+    if ($targetLocation !== $previousLocation) {
+        $historyBy = trim($changedBy . ' (Document Scanner)');
+        $history = $conn->prepare("INSERT INTO payables_location_history (
+            record_type, record_id, location, changed_by
+        ) VALUES ('bac_monitoring', ?, ?, ?)");
+        if (!$history) {
+            throw new RuntimeException('Unable to prepare location history.');
+        }
+        $history->bind_param('iss', $recordId, $targetLocation, $historyBy);
+        if (!$history->execute()) {
+            $history->close();
+            throw new RuntimeException('Unable to save location history.');
+        }
+        $history->close();
+    }
+
+    return [
+        'applied' => true,
+        'previous_main_status' => $previousStatus,
+        'previous_location' => $previousLocation,
+        'main_status' => $targetStatus,
+        'location' => $targetLocation,
+    ];
+}
 function payables_format_scan_event(array $row): array
 {
     return [
@@ -261,6 +376,11 @@ function payables_format_scan_event(array $row): array
         'scanned_at' => $row['scanned_at'] ?? '',
         'title' => $row['title'] ?? '',
         'party' => $row['party'] ?? '',
+        'workflow' => [
+            'updated' => !empty($row['result_main_status']),
+            'main_status' => $row['result_main_status'] ?? null,
+            'location' => $row['result_location'] ?? null,
+        ],
     ];
 }
 

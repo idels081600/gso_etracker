@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 payables_verify_csrf_token();
 payables_ensure_scan_events_table();
+payables_ensure_workflow_table();
 
 $direction = payables_normalize_scan_direction($_POST['direction'] ?? '');
 $office = payables_normalize_scan_office($_POST['office'] ?? '');
@@ -31,22 +32,20 @@ if (count($items) > 100) {
 
 $documents = [];
 foreach ($items as $item) {
-    $recordType = strtoupper(trim((string)($item['record_type'] ?? '')));
-    $recordId = (int)($item['record_id'] ?? 0);
+    $barcodeCode = payables_normalize_barcode_code((string)($item['barcode_code'] ?? ''));
     $scanSource = payables_normalize_scan_source((string)($item['scan_source'] ?? 'MANUAL'));
-
-    if (!in_array($recordType, ['IB', 'RFQ'], true) || $recordId < 1) {
-        payables_json_response(['success' => false, 'error' => 'One scanned item is invalid. Remove it and try again.'], 422);
+    if ($barcodeCode === '') {
+        payables_json_response(['success' => false, 'error' => 'One batch item has no registered barcode. Scan it again.'], 422);
     }
 
-    $key = $recordType . ':' . $recordId;
+    $document = payables_find_assigned_document_by_barcode($barcodeCode);
+    if (!$document) {
+        payables_json_response(['success' => false, 'error' => 'Barcode ' . $barcodeCode . ' is no longer assigned. Remove it and try again.'], 404);
+    }
+
+    $key = $document['record_type'] . ':' . (int)$document['record_id'];
     if (isset($documents[$key])) {
         continue;
-    }
-
-    $document = payables_get_document_by_record($recordType, $recordId);
-    if (!$document) {
-        payables_json_response(['success' => false, 'error' => 'A scanned document was not found. Remove it and try again.'], 404);
     }
 
     $document['scan_source'] = $scanSource;
@@ -64,8 +63,9 @@ $conn->begin_transaction();
 try {
     $stmt = $conn->prepare("
         INSERT INTO payables_document_scan_events (
-            record_type, record_id, document_no, direction, office, scan_source, scanned_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            record_type, record_id, document_no, direction, office, scan_source, scanned_by,
+            previous_main_status, previous_location, result_main_status, result_location
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     if (!$stmt) {
         throw new RuntimeException('Unable to prepare scan batch.');
@@ -76,15 +76,25 @@ try {
         $recordId = (int)$document['record_id'];
         $documentNo = $document['document_no'];
         $scanSource = $document['scan_source'];
+        $workflow = payables_apply_scan_workflow($document, $direction, $office, $scannedBy);
+        $previousStatus = $workflow['previous_main_status'];
+        $previousLocation = $workflow['previous_location'];
+        $resultStatus = $workflow['main_status'];
+        $resultLocation = $workflow['location'];
+
         $stmt->bind_param(
-            'sisssss',
+            'sisssssssss',
             $recordType,
             $recordId,
             $documentNo,
             $direction,
             $office,
             $scanSource,
-            $scannedBy
+            $scannedBy,
+            $previousStatus,
+            $previousLocation,
+            $resultStatus,
+            $resultLocation
         );
         if (!$stmt->execute()) {
             throw new RuntimeException('Unable to save one scan in the batch.');
@@ -101,6 +111,11 @@ try {
             'scanned_at' => payables_current_datetime(),
             'title' => $document['title'],
             'party' => $document['party'],
+            'workflow' => [
+                'updated' => !empty($workflow['applied']),
+                'main_status' => $workflow['main_status'],
+                'location' => $workflow['location'],
+            ],
         ];
     }
     $stmt->close();
@@ -108,7 +123,7 @@ try {
 } catch (Throwable $error) {
     $conn->rollback();
     payables_log_error('Scan batch save failed: ' . $error->getMessage());
-    payables_json_response(['success' => false, 'error' => 'Unable to save the batch right now.'], 500);
+    payables_json_response(['success' => false, 'error' => 'Unable to save the batch and workflow updates right now.'], 500);
 }
 
 payables_json_response([

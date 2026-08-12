@@ -238,7 +238,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         bulkItems = [];
         updateBulkPanel();
-        setStatus((data.saved_count || 0) + " documents saved.", "success");
+        const workflowUpdates = (data.events || []).filter(function (event) {
+          return event.workflow?.updated;
+        }).length;
+        const workflowMessage = workflowUpdates
+          ? " " + workflowUpdates + " IB workflow" + (workflowUpdates === 1 ? "" : "s") + " updated."
+          : "";
+        setStatus((data.saved_count || 0) + " documents saved." + workflowMessage, "success");
         input.focus();
       })
       .catch(function (error) {
@@ -252,8 +258,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function saveScan(match, source) {
     const body = new URLSearchParams();
     body.set("csrf_token", csrfToken);
-    body.set("record_type", match.record_type || "");
-    body.set("record_id", match.record_id || "");
+    body.set("barcode_code", match.barcode_code || "");
     body.set("direction", activeDirection);
     body.set("office", selectedOffice());
     body.set("scan_source", source || "USB");
@@ -271,7 +276,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         showResult(data.event);
         prependHistory(data.event);
-        setStatus(data.event.document_no + " saved " + data.event.direction + " at " + data.event.office + ".", "success");
+        const workflowMessage = data.event.workflow?.updated
+          ? " Workflow: " + data.event.workflow.main_status +
+            (data.event.workflow.location ? " / " + data.event.workflow.location : "") + "."
+          : "";
+        setStatus(
+          data.event.document_no + " saved " + data.event.direction + " at " +
+            data.event.office + "." + workflowMessage,
+          "success"
+        );
         input.value = "";
         input.focus();
       });
@@ -540,7 +553,12 @@ document.addEventListener("DOMContentLoaded", function () {
         if (historyBody && !historyBody.children.length) {
           historyBody.innerHTML = '<tr class="scanner-empty-row"><td colspan="7">No scan history found.</td></tr>';
         }
-        setStatus("Scan history entry removed.", "success");
+        setStatus(
+          data.workflow_restored
+            ? "Scan removed and previous IB workflow restored."
+            : "Scan history entry removed.",
+          "success"
+        );
       })
       .catch(function (error) {
         undoButton.disabled = false;
