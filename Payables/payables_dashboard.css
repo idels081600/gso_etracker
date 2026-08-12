@@ -260,7 +260,8 @@
   grid-template-columns: minmax(115px, 0.75fr) minmax(235px, 1.2fr) minmax(100px, 0.55fr) minmax(210px, 1fr) minmax(88px, 0.35fr) minmax(118px, 0.52fr);
 }
 
-.task-table[data-active-status="ACCOUNTING"] .task-skeleton-row {
+.task-table[data-active-status="ACCOUNTING"] .task-skeleton-row,
+.task-table[data-active-status="GSO_LOCATION"] .task-skeleton-row {
   grid-template-columns: minmax(115px, 0.7fr) minmax(220px, 1.15fr) minmax(100px, 0.5fr) minmax(190px, 0.9fr) minmax(130px, 0.5fr) minmax(88px, 0.38fr);
 }
 
@@ -508,7 +509,8 @@
   min-width: 990px;
 }
 
-.task-table[data-active-status="ACCOUNTING"] .task-row {
+.task-table[data-active-status="ACCOUNTING"] .task-row,
+.task-table[data-active-status="GSO_LOCATION"] .task-row {
   grid-template-columns: minmax(115px, 0.7fr) minmax(220px, 1.15fr) minmax(100px, 0.5fr) minmax(190px, 0.9fr) minmax(130px, 0.5fr) minmax(88px, 0.38fr);
   min-width: 1020px;
 }
@@ -556,7 +558,9 @@
 .task-table[data-active-status="SEARCH"] .search-status-head,
 .task-table[data-active-status="SEARCH"] .search-status-cell,
 .task-table[data-active-status="ACCOUNTING"] .accounting-location-head,
-.task-table[data-active-status="ACCOUNTING"] .accounting-location-cell {
+.task-table[data-active-status="ACCOUNTING"] .accounting-location-cell,
+.task-table[data-active-status="GSO_LOCATION"] .accounting-location-head,
+.task-table[data-active-status="GSO_LOCATION"] .accounting-location-cell {
   display: flex;
   align-items: center;
 }
@@ -762,7 +766,8 @@
   transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
-.task-table[data-active-status="ACCOUNTING"] .location-history-btn {
+.task-table[data-active-status="ACCOUNTING"] .location-history-btn,
+.task-table[data-active-status="GSO_LOCATION"] .location-history-btn {
   display: inline-flex;
 }
 
@@ -1074,6 +1079,7 @@
 
 .task-table[data-active-status="BUDGET"] .gso-checklist-strip,
 .task-table[data-active-status="ACCOUNTING"] .gso-checklist-strip,
+.task-table[data-active-status="GSO_LOCATION"] .gso-checklist-strip,
 .task-table[data-active-status="CTO"] .gso-checklist-strip {
   display: none;
 }
@@ -1085,6 +1091,7 @@
 .task-table[data-active-status="SEARCH"] .payables-row:not([data-main-status="GSO"]) .budget-remarks,
 .task-table[data-active-status="BUDGET"] .budget-remarks,
 .task-table[data-active-status="ACCOUNTING"] .budget-remarks,
+.task-table[data-active-status="GSO_LOCATION"] .budget-remarks,
 .task-table[data-active-status="CTO"] .budget-remarks {
   display: grid;
 }
@@ -1095,6 +1102,7 @@
 
 .task-table[data-active-status="BUDGET"] .budget-remarks [data-remark-for="BUDGET"],
 .task-table[data-active-status="ACCOUNTING"] .budget-remarks [data-remark-for="ACCOUNTING"],
+.task-table[data-active-status="GSO_LOCATION"] .budget-remarks [data-remark-for="ACCOUNTING"],
 .task-table[data-active-status="CTO"] .budget-remarks [data-remark-for="CTO"],
 .task-table[data-active-status="SEARCH"] .payables-row[data-main-status="BUDGET"] .budget-remarks [data-remark-for="BUDGET"],
 .task-table[data-active-status="SEARCH"] .payables-row[data-main-status="ACCOUNTING"] .budget-remarks [data-remark-for="ACCOUNTING"],
@@ -1490,7 +1498,8 @@
     grid-template-columns: minmax(110px, 0.75fr) minmax(210px, 1.15fr) minmax(95px, 0.52fr) minmax(190px, 0.9fr) minmax(84px, 0.35fr) minmax(112px, 0.5fr);
   }
 
-  .task-table[data-active-status="ACCOUNTING"] .task-row {
+  .task-table[data-active-status="ACCOUNTING"] .task-row,
+  .task-table[data-active-status="GSO_LOCATION"] .task-row {
     grid-template-columns: minmax(110px, 0.7fr) minmax(210px, 1.05fr) minmax(95px, 0.48fr) minmax(180px, 0.85fr) minmax(126px, 0.48fr) minmax(84px, 0.36fr);
   }
 }

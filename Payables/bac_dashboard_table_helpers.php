@@ -31,7 +31,7 @@ function payables_dashboard_render_table_block(array $context): string
                     ? 'Action'
                     : ($activeStatus === 'BUDGET'
                         ? 'To Accounting'
-                        : ($activeStatus === 'ACCOUNTING'
+                        : (in_array($activeStatus, ['ACCOUNTING', 'GSO_LOCATION'], true)
                             ? 'To CTO'
                             : ($activeStatus === 'CTO' ? 'Completed' : 'Transmit to Budget')));
             ?></div>

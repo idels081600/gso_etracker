@@ -8,8 +8,9 @@ require_once 'bac_dashboard_table_helpers.php';
 payables_ensure_workflow_table();
 
 $workflowStatuses = PAYABLES_WORKFLOW_STATUSES;
+$dashboardStatuses = array_merge($workflowStatuses, ['GSO_LOCATION']);
 $activeStatus = strtoupper(trim($_GET['status'] ?? 'GSO'));
-if (!in_array($activeStatus, $workflowStatuses, true)) {
+if (!in_array($activeStatus, $dashboardStatuses, true)) {
     $activeStatus = 'GSO';
 }
 
@@ -28,9 +29,18 @@ $types = '';
 $params = [];
 
 if (!$isGlobalSearch) {
-    $where[] = "COALESCE(pws.main_status, 'GSO') = ?";
-    $types .= 's';
-    $params[] = $activeStatus;
+    if ($activeStatus === 'GSO_LOCATION') {
+        $where[] = "COALESCE(pws.main_status, 'GSO') = 'ACCOUNTING'";
+        $where[] = "UPPER(TRIM(COALESCE(pws.current_location, 'ACCOUNTING'))) = 'GSO'";
+    } else {
+        $where[] = "COALESCE(pws.main_status, 'GSO') = ?";
+        $types .= 's';
+        $params[] = $activeStatus;
+
+        if ($activeStatus === 'ACCOUNTING') {
+            $where[] = "UPPER(TRIM(COALESCE(pws.current_location, 'ACCOUNTING'))) <> 'GSO'";
+        }
+    }
 }
 
 if ($searchTerm !== '') {
@@ -41,7 +51,7 @@ if ($searchTerm !== '') {
 }
 
 $whereSql = implode(' AND ', $where);
-$editedFirstStatuses = ['BUDGET', 'ACCOUNTING', 'CTO'];
+$editedFirstStatuses = ['BUDGET', 'ACCOUNTING', 'GSO_LOCATION', 'CTO'];
 $payablesOrderBySql = (!$isGlobalSearch && in_array($activeStatus, $editedFirstStatuses, true))
     ? 'pws.updated_at DESC, tb.id DESC'
     : 'tb.id DESC';

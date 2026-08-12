@@ -51,6 +51,10 @@ document.addEventListener("DOMContentLoaded", function () {
       detail: "Remarks",
       action: "To CTO",
     },
+    GSO_LOCATION: {
+      detail: "Remarks",
+      action: "To CTO",
+    },
     CTO: {
       detail: "Remarks",
       action: "Completed",
@@ -88,7 +92,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function normalizeDashboardStatus(status) {
-    return ["GSO", "BUDGET", "ACCOUNTING", "CTO"].includes(status)
+    return ["GSO", "BUDGET", "ACCOUNTING", "GSO_LOCATION", "CTO"].includes(status)
       ? status
       : "GSO";
   }
@@ -137,7 +141,7 @@ document.addEventListener("DOMContentLoaded", function () {
     skeleton.setAttribute("aria-hidden", "true");
 
     const activeStatus = currentTable.dataset.activeStatus || "GSO";
-    const columnCount = ["ACCOUNTING", "CTO", "SEARCH"].includes(activeStatus) ? 6 : 5;
+    const columnCount = ["ACCOUNTING", "GSO_LOCATION", "CTO", "SEARCH"].includes(activeStatus) ? 6 : 5;
 
     for (let rowIndex = 0; rowIndex < 7; rowIndex += 1) {
       const row = document.createElement("div");
@@ -478,6 +482,14 @@ document.addEventListener("DOMContentLoaded", function () {
         const historyButton = row?.querySelector(".location-history-btn");
         if (historyButton && Array.isArray(data.history)) {
           historyButton.dataset.locationHistory = JSON.stringify(data.history);
+        }
+
+        const activeTableStatus = taskTable?.dataset.activeStatus || "";
+        const movedOutOfCurrentView =
+          (activeTableStatus === "ACCOUNTING" && data.location === "GSO") ||
+          (activeTableStatus === "GSO_LOCATION" && data.location !== "GSO");
+        if (movedOutOfCurrentView) {
+          loadDashboardTable(window.location.href, { push: false });
         }
       })
       .catch(function (error) {

@@ -9,8 +9,9 @@ require_once 'bac_dashboard_table_helpers.php';
 payables_ensure_workflow_table();
 
 $workflowStatuses = PAYABLES_WORKFLOW_STATUSES;
+$dashboardStatuses = array_merge($workflowStatuses, ['GSO_LOCATION']);
 $activeStatus = strtoupper(trim($_GET['status'] ?? 'GSO'));
-if (!in_array($activeStatus, $workflowStatuses, true)) {
+if (!in_array($activeStatus, $dashboardStatuses, true)) {
     $activeStatus = 'GSO';
 }
 $searchTerm = trim($_GET['search'] ?? '');
@@ -28,9 +29,18 @@ $types = '';
 $params = [];
 
 if (!$isGlobalSearch) {
-    $where[] = "COALESCE(pws.main_status, 'GSO') = ?";
-    $types .= 's';
-    $params[] = $activeStatus;
+    if ($activeStatus === 'GSO_LOCATION') {
+        $where[] = "COALESCE(pws.main_status, 'GSO') = 'ACCOUNTING'";
+        $where[] = "UPPER(TRIM(COALESCE(pws.current_location, 'ACCOUNTING'))) = 'GSO'";
+    } else {
+        $where[] = "COALESCE(pws.main_status, 'GSO') = ?";
+        $types .= 's';
+        $params[] = $activeStatus;
+
+        if ($activeStatus === 'ACCOUNTING') {
+            $where[] = "UPPER(TRIM(COALESCE(pws.current_location, 'ACCOUNTING'))) <> 'GSO'";
+        }
+    }
 }
 
 if ($searchTerm !== '') {
@@ -41,7 +51,7 @@ if ($searchTerm !== '') {
 }
 
 $whereSql = implode(' AND ', $where);
-$editedFirstStatuses = ['BUDGET', 'ACCOUNTING', 'CTO'];
+$editedFirstStatuses = ['BUDGET', 'ACCOUNTING', 'GSO_LOCATION', 'CTO'];
 $payablesOrderBySql = (!$isGlobalSearch && in_array($activeStatus, $editedFirstStatuses, true))
     ? 'pws.updated_at DESC, tb.id DESC'
     : 'tb.id DESC';
@@ -180,7 +190,7 @@ if ($latestResult) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="payables-csrf-token" content="<?php echo htmlspecialchars(payables_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
     <link rel="stylesheet" href="sidebar_asset.css">
-    <link rel="stylesheet" href="payables_dashboard.css">
+    <link rel="stylesheet" href="payables_dashboard.css?v=<?php echo urlencode((string)filemtime(__DIR__ . '/payables_dashboard.css')); ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Payables - Dashboard</title>
@@ -242,6 +252,7 @@ if ($latestResult) {
                             <button type="button" class="<?php echo !$isGlobalSearch && $activeStatus === 'GSO' ? 'active' : ''; ?>" data-status-filter="GSO" data-status-url="<?php echo htmlspecialchars($buildPageUrl('GSO'), ENT_QUOTES, 'UTF-8'); ?>">GSO Checklist</button>
                             <button type="button" class="<?php echo !$isGlobalSearch && $activeStatus === 'BUDGET' ? 'active' : ''; ?>" data-status-filter="BUDGET" data-status-url="<?php echo htmlspecialchars($buildPageUrl('BUDGET'), ENT_QUOTES, 'UTF-8'); ?>">Budget</button>
                             <button type="button" class="<?php echo !$isGlobalSearch && $activeStatus === 'ACCOUNTING' ? 'active' : ''; ?>" data-status-filter="ACCOUNTING" data-status-url="<?php echo htmlspecialchars($buildPageUrl('ACCOUNTING'), ENT_QUOTES, 'UTF-8'); ?>">Accounting</button>
+                            <button type="button" class="<?php echo !$isGlobalSearch && $activeStatus === 'GSO_LOCATION' ? 'active' : ''; ?>" data-status-filter="GSO_LOCATION" data-status-url="<?php echo htmlspecialchars($buildPageUrl('GSO_LOCATION'), ENT_QUOTES, 'UTF-8'); ?>" title="Accounting records currently located at GSO">GSO</button>
                             <button type="button" class="<?php echo !$isGlobalSearch && $activeStatus === 'CTO' ? 'active' : ''; ?>" data-status-filter="CTO" data-status-url="<?php echo htmlspecialchars($buildPageUrl('CTO'), ENT_QUOTES, 'UTF-8'); ?>">CTO</button>
                         </div>
                         <div class="task-search" role="search" data-active-status="<?php echo htmlspecialchars($tableStatus, ENT_QUOTES, 'UTF-8'); ?>">
@@ -370,7 +381,7 @@ if ($latestResult) {
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="bac_monitoring.js"></script>
+    <script src="bac_monitoring.js?v=<?php echo urlencode((string)filemtime(__DIR__ . '/bac_monitoring.js')); ?>"></script>
 </body>
 </html>
 
