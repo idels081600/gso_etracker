@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 require_once 'auth_payables.php';
 require_once 'transmit_db.php';
@@ -47,16 +47,16 @@ if (!$labels) {
         .print-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
         .print-actions strong { font-size: 14px; }
         .print-actions button { border: 0; border-radius: 8px; background: #20a797; color: #fff; cursor: pointer; font-weight: 800; padding: 9px 14px; }
-        .sheet { width: 194mm; min-height: 281mm; margin: 0 auto 18px; display: grid; grid-template-columns: repeat(4, 1fr); align-content: start; gap: 4mm; background: #fff; padding: 4mm; }
-        .label { height: 28mm; display: grid; align-content: center; justify-items: center; overflow: hidden; border: 1px dashed #d0d5dd; border-radius: 3px; padding: 2.2mm 1.8mm 1.4mm; break-inside: avoid; }
+        .sheet { width: 194mm; min-height: 281mm; margin: 0 auto 18px; display: grid; grid-template-columns: repeat(4, 1fr); align-content: start; gap: 0; background: #fff; padding: 4mm; }
+        .label { height: 28mm; display: grid; align-content: center; justify-items: center; overflow: hidden; outline: 1px solid #98a2b3; outline-offset: -1px; padding: 2.2mm 1.8mm 1.4mm; break-inside: avoid; }
         .barcode { width: 100%; height: 17mm; }
         .code { margin-top: 1.2mm; font-family: "Courier New", monospace; font-size: 10px; font-weight: 900; letter-spacing: 0.2px; text-align: center; }
         .hint { color: #667085; font-size: 7px; font-weight: 700; text-align: center; }
         @media print {
             body { background: #fff; }
             .print-actions { display: none; }
-            .sheet { width: auto; min-height: 0; margin: 0; padding: 0; gap: 2mm; }
-            .label { border-color: #cbd5e1; }
+            .sheet { width: auto; min-height: 0; margin: 0; padding: 0; gap: 0; }
+            .label { outline: 0.2mm solid #7b8492; outline-offset: -0.1mm; }
         }
     </style>
 </head>

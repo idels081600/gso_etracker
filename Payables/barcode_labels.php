@@ -173,6 +173,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
+    } elseif ($action === 'delete_unregistered') {
+        $delete = $conn->prepare("
+            DELETE FROM payables_document_barcodes
+            WHERE (record_type IS NULL OR TRIM(record_type) = '')
+              AND (record_id IS NULL OR record_id <= 0)
+        ");
+        if (!$delete) {
+            $error = 'Unable to delete unregistered barcodes right now.';
+            payables_log_error('Unregistered barcode delete prepare failed: ' . $conn->error);
+        } elseif (!$delete->execute()) {
+            $error = 'Unable to delete unregistered barcodes right now.';
+            payables_log_error('Unregistered barcode delete failed: ' . $delete->error);
+            $delete->close();
+        } else {
+            $deleted = $delete->affected_rows;
+            $delete->close();
+            barcode_label_redirect(['deleted_unregistered' => $deleted]);
+        }
     } elseif ($action === 'unassign_label') {
         $barcodeId = filter_input(INPUT_POST, 'barcode_id', FILTER_VALIDATE_INT) ?: 0;
         if ($barcodeId > 0) {
@@ -194,6 +212,22 @@ if (isset($_GET['generated'])) {
     $notice = 'Sticker ' . htmlspecialchars($_GET['assigned'], ENT_QUOTES, 'UTF-8') . ' assigned.';
 } elseif (isset($_GET['unassigned'])) {
     $notice = 'Sticker assignment removed.';
+} elseif (isset($_GET['deleted_unregistered'])) {
+    $deletedCount = max(0, (int)$_GET['deleted_unregistered']);
+    $notice = $deletedCount === 1
+        ? '1 unregistered barcode deleted.'
+        : $deletedCount . ' unregistered barcodes deleted.';
+}
+
+$unregisteredCount = 0;
+$countResult = $conn->query("
+    SELECT COUNT(*) AS total
+    FROM payables_document_barcodes
+    WHERE (record_type IS NULL OR TRIM(record_type) = '')
+      AND (record_id IS NULL OR record_id <= 0)
+");
+if ($countResult && $countRow = $countResult->fetch_assoc()) {
+    $unregisteredCount = (int)$countRow['total'];
 }
 
 $documentOptions = barcode_label_document_options($conn);
@@ -268,9 +302,20 @@ $recentLabels = barcode_label_recent($conn);
             </div>
 
             <section class="barcode-card barcode-table-card">
-                <div class="barcode-card-head">
-                    <h2>Recent Sticker Labels</h2>
-                    <span>Assigned and available sticker barcodes.</span>
+                <div class="barcode-card-head barcode-table-head">
+                    <div class="barcode-table-head-copy">
+                        <h2>Recent Sticker Labels</h2>
+                        <span>Assigned and available sticker barcodes.</span>
+                    </div>
+                    <form method="post" class="barcode-cleanup-form" onsubmit="return confirm('Delete all <?php echo (int)$unregisteredCount; ?> unregistered barcodes? Registered barcodes will not be affected.');">
+                        <?php echo payables_csrf_input(); ?>
+                        <input type="hidden" name="action" value="delete_unregistered">
+                        <button type="submit" class="barcode-delete-unregistered" <?php echo $unregisteredCount < 1 ? 'disabled' : ''; ?>>
+                            <i class="fas fa-trash-alt"></i>
+                            Delete Unregistered
+                            <span class="barcode-cleanup-count"><?php echo number_format($unregisteredCount); ?></span>
+                        </button>
+                    </form>
                 </div>
                 <div class="barcode-table-wrap">
                     <table class="barcode-table">
@@ -300,3 +345,4 @@ $recentLabels = barcode_label_recent($conn);
     <script src="barcode-label-document-picker.js"></script>
 </body>
 </html>
+

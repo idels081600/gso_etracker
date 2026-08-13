@@ -152,6 +152,63 @@ body.sidebar-collapsed .barcode-labels-content {
   min-height: 0;
 }
 
+.barcode-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.barcode-table-head-copy {
+  min-width: 0;
+}
+
+.barcode-cleanup-form {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.barcode-delete-unregistered {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  border: 1px solid #f1b7b3;
+  border-radius: 8px;
+  background: #fff;
+  color: #b42318;
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 0 11px;
+}
+
+.barcode-delete-unregistered:hover:not(:disabled),
+.barcode-delete-unregistered:focus-visible:not(:disabled) {
+  border-color: #d92d20;
+  background: #fff1f1;
+  outline: none;
+}
+
+.barcode-delete-unregistered:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.barcode-cleanup-count {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  min-height: 22px;
+  border-radius: 50%;
+  background: #fee4e2;
+  color: #b42318 !important;
+  font-size: 0.68rem !important;
+  line-height: 1;
+  padding: 0 6px;
+}
+
 .barcode-table-wrap {
   overflow: auto;
 }
@@ -259,5 +316,14 @@ body.sidebar-collapsed .barcode-labels-content {
   .barcode-labels-header {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .barcode-table-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .barcode-delete-unregistered {
+    width: 100%;
   }
 }
