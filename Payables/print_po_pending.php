@@ -3,13 +3,24 @@ session_start();
 require_once 'auth_payables.php';
 require_once 'transmit_db.php';
 
+function pending_rfq_month_label($value): string
+{
+    $value = trim((string)$value);
+    if ($value === '') {
+        return 'No Date Received';
+    }
+
+    $timestamp = strtotime($value);
+    return $timestamp ? date('F Y', $timestamp) : 'No Date Received';
+}
+
 $rows = [];
 $stmt = $conn->prepare("
     SELECT RFQ_no, supplier, description, amount, date_received, office, received_by, status
     FROM PO_sap
     WHERE delete_status = 0
         AND (status IS NULL OR TRIM(status) = '' OR LOWER(TRIM(status)) = 'pending')
-    ORDER BY id DESC
+    ORDER BY date_received IS NULL ASC, date_received DESC, id DESC
 ");
 if ($stmt) {
     $stmt->execute();
@@ -34,6 +45,7 @@ if ($stmt) {
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
         th, td { border: 1px solid #d0d5dd; padding: 7px 8px; text-align: left; vertical-align: top; }
         th { background: #f2f4f7; font-weight: 800; }
+        .month-row td { border-color: #98a2b3; background: #e8f5f2; color: #00695c; font-size: 12px; font-weight: 800; padding: 8px; break-after: avoid; }
         .amount { text-align: right; white-space: nowrap; }
         .empty { padding: 24px; text-align: center; }
         .print-actions { margin-bottom: 14px; text-align: right; }
@@ -51,7 +63,13 @@ if ($stmt) {
         <thead><tr><th>RFQ No.</th><th>Supplier</th><th>Description</th><th>Amount</th><th>Date Received</th><th>Office</th><th>Received by</th><th>Status</th></tr></thead>
         <tbody>
             <?php if ($rows): ?>
+                <?php $currentMonth = null; ?>
                 <?php foreach ($rows as $row): ?>
+                    <?php $monthLabel = pending_rfq_month_label($row['date_received'] ?? ''); ?>
+                    <?php if ($monthLabel !== $currentMonth): ?>
+                        <?php $currentMonth = $monthLabel; ?>
+                        <tr class="month-row"><td colspan="8"><?php echo htmlspecialchars($monthLabel, ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                    <?php endif; ?>
                     <tr>
                         <td><?php echo htmlspecialchars($row['RFQ_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
                         <td><?php echo htmlspecialchars($row['supplier'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>

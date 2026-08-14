@@ -13,16 +13,27 @@ function print_date_value($value): string
     return $timestamp ? date('M d, Y', $timestamp) : $value;
 }
 
+function not_received_month_label($value): string
+{
+    $value = trim((string)$value);
+    if ($value === '') {
+        return 'No Upload Date';
+    }
+
+    $timestamp = strtotime($value);
+    return $timestamp ? date('F Y', $timestamp) : 'No Upload Date';
+}
+
 $rows = [];
 $stmt = $conn->prepare("
     SELECT ib_no, project_name, abc, final_amount, bidder,
         pre_procurement, pre_bid, date_of_bidding, evaluation, post_qual, status,
         date_transmitted_from_bac, office, noa_no, notice_to_proceed_date, contract_date,
-        calendar_days_delivery, deadline, received_by
+        calendar_days_delivery, deadline, received_by, created_at
     FROM bac_monitoring
     WHERE LOWER(TRIM(COALESCE(status, ''))) = 'not yet received'
         OR TRIM(COALESCE(received_by, '')) = ''
-    ORDER BY date_transmitted_from_bac IS NULL ASC, date_transmitted_from_bac DESC, id DESC
+    ORDER BY created_at IS NULL ASC, created_at DESC, id DESC
 ");
 if ($stmt) {
     $stmt->execute();
@@ -48,6 +59,7 @@ if ($stmt) {
         table { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; }
         th, td { border: 1px solid #d0d5dd; padding: 5px 6px; text-align: left; vertical-align: top; word-break: break-word; }
         th { background: #f2f4f7; font-weight: 800; }
+        .month-row td { border-color: #98a2b3; background: #e8f5f2; color: #00695c; font-size: 10px; font-weight: 800; padding: 7px 6px; break-after: avoid; }
         .amount { text-align: right; white-space: nowrap; }
         .empty { padding: 24px; text-align: center; }
         .print-actions { margin-bottom: 14px; text-align: right; }
@@ -94,13 +106,19 @@ if ($stmt) {
         </thead>
         <tbody>
             <?php if ($rows): ?>
+                <?php $currentMonth = null; ?>
                 <?php foreach ($rows as $row): ?>
                     <?php
+                    $monthLabel = not_received_month_label($row['created_at'] ?? '');
                     $displayStatus = trim((string)($row['status'] ?? '')) !== '' ? $row['status'] : 'Not Yet Received';
                     if (trim((string)($row['received_by'] ?? '')) === '') {
                         $displayStatus = 'Not Yet Received';
                     }
                     ?>
+                    <?php if ($monthLabel !== $currentMonth): ?>
+                        <?php $currentMonth = $monthLabel; ?>
+                        <tr class="month-row"><td colspan="19"><?php echo htmlspecialchars($monthLabel, ENT_QUOTES, 'UTF-8'); ?></td></tr>
+                    <?php endif; ?>
                     <tr>
                         <td><?php echo htmlspecialchars($row['ib_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
                         <td><?php echo htmlspecialchars($row['project_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
