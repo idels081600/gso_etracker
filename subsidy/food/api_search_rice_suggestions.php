@@ -16,6 +16,8 @@ if (!isset($_GET['q']) || strlen(trim($_GET['q'])) < 2) {
 }
 
 $query = trim($_GET['q']);
+$source = isset($_GET['source']) ? trim($_GET['source']) : 'first_wave';
+$household_table = $source === 'next_wave' ? 'rice_claimed_households' : 'rice_households';
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $per_page = 10;
 $offset = ($page - 1) * $per_page;
@@ -23,7 +25,7 @@ $like = $query . '%';
 
 $count_stmt = $conn->prepare(
     "SELECT COUNT(*) AS total
-     FROM rice_households
+     FROM {$household_table}
      WHERE household_code LIKE ?
         OR household_name LIKE ?"
 );
@@ -34,10 +36,12 @@ $total = $count_result ? (int)$count_result->fetch_assoc()['total'] : 0;
 
 $stmt = $conn->prepare(
     "SELECT id, household_code, household_name, is_claimed, status
-     FROM rice_households
+     FROM {$household_table}
      WHERE household_code LIKE ?
         OR household_name LIKE ?
-     ORDER BY household_code ASC
+     ORDER BY household_code_prefix ASC,
+              household_code_number ASC,
+              household_code ASC
      LIMIT ? OFFSET ?"
 );
 $stmt->bind_param('ssii', $like, $like, $per_page, $offset);

@@ -18,7 +18,7 @@ $station_name = 'Rice Assistance Verification';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Next-Wave Rice Assistance Releasing</title>
+    <title>First-Wave Rice Assistance Releasing</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.4/font/bootstrap-icons.css">
     <style>
@@ -66,8 +66,8 @@ $station_name = 'Rice Assistance Verification';
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                         <li class="nav-item"><a class="nav-link" href="dashboard_rice.php">Home</a></li>
-                        <li class="nav-item"><a class="nav-link active" aria-current="page" href="releasing_rice.php">Next-Wave Releasing</a></li>
-                        <li class="nav-item"><a class="nav-link" href="releasing_rice_first_wave.php">First-Wave Releasing</a></li>
+                        <li class="nav-item"><a class="nav-link" href="releasing_rice.php">Next-Wave Releasing</a></li>
+                        <li class="nav-item"><a class="nav-link active" aria-current="page" href="releasing_rice_first_wave.php">First-Wave Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="cross_check_rice.php">Cross Check</a></li>
                         <li class="nav-item"><a class="nav-link text-danger" href="../../logout.php"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
                     </ul>
@@ -84,8 +84,8 @@ $station_name = 'Rice Assistance Verification';
                         <div class="card-body py-5">
                             <div class="row align-items-center">
                                 <div class="col-md-8 mb-4 mb-md-0">
-                                    <h2 class="fw-bold mb-2">Next-Wave Rice Assistance Releasing</h2>
-                                    <p class="text-muted mb-4">Search for a household and confirm the one-time rice voucher release.</p>
+                                    <h2 class="fw-bold mb-2">First-Wave Rice Assistance Releasing</h2>
+                                    <p class="text-muted mb-4">Search the original first-wave household list and complete any remaining rice voucher claim.</p>
                                     <div class="input-group input-group-lg position-relative">
                                         <input id="mainSearch" type="text" class="form-control" placeholder="Search household code" aria-label="Search household" autocomplete="off">
                                         <button class="btn btn-rice-teal" type="button" id="searchBtn"><i class="bi bi-search me-2"></i>Search</button>
@@ -266,7 +266,7 @@ $station_name = 'Rice Assistance Verification';
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>window.RICE_RELEASE_CONFIG = { source: 'next_wave' };</script>
+    <script>window.RICE_RELEASE_CONFIG = { source: 'first_wave' };</script>
     <script src="releasing_rice.js"></script>
     <style>
         @keyframes spin {

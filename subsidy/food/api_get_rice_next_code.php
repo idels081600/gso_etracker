@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/rice_household_code.php';
 $conn = require(__DIR__ . '/config/database.php');
 
 header('Content-Type: application/json');
@@ -16,19 +17,12 @@ if ($barangay === '') {
     exit();
 }
 
-function riceDefaultPrefix($barangay)
-{
-    $prefix = strtoupper(trim((string)$barangay));
-    $prefix = preg_replace('/\s+/', ' ', $prefix);
-    return $prefix;
-}
-
 $stmt = $conn->prepare(
-    "SELECT household_code
+    "SELECT household_code, household_code_prefix, household_code_number
      FROM rice_households
      WHERE address = ?
-     ORDER BY CAST(TRIM(SUBSTRING_INDEX(household_code, '-', -1)) AS UNSIGNED) DESC,
-              household_code DESC
+     ORDER BY household_code_number DESC,
+              household_code ASC
      LIMIT 1"
 );
 $stmt->bind_param('s', $barangay);
@@ -40,11 +34,11 @@ $prefix = riceDefaultPrefix($barangay);
 $last_number = 0;
 
 if ($row && !empty($row['household_code'])) {
-    $parts = explode('-', $row['household_code']);
-    if (count($parts) >= 2) {
-        $prefix = trim(implode('-', array_slice($parts, 0, -1)));
-        $last_number = (int)trim($parts[count($parts) - 1]);
-    }
+    $parsed_code = riceParseHouseholdCode($row['household_code'], $barangay);
+    $prefix = !empty($row['household_code_prefix']) ? $row['household_code_prefix'] : $parsed_code['prefix'];
+    $last_number = isset($row['household_code_number'])
+        ? (int)$row['household_code_number']
+        : $parsed_code['number'];
 }
 
 $next_number = $last_number + 1;
