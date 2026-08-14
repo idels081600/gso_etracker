@@ -21,6 +21,10 @@ $household_code = $input['household_code'] ?? '';
 $claimant_name = trim($input['claimant_name'] ?? '');
 $e_signature = $input['e_signature'] ?? '';
 $verifier_name = $_SESSION['pay_name'] ?? $_SESSION['username'];
+$source = ($input['source'] ?? 'next_wave') === 'first_wave' ? 'first_wave' : 'next_wave';
+$household_table = $source === 'first_wave' ? 'rice_households' : 'rice_claimed_households';
+$claim_table = $source === 'first_wave' ? 'rice_voucher_claims' : 'rice_next_wave_claims';
+$wave_label = $source === 'first_wave' ? 'First-wave' : 'Next-wave';
 
 function riceSignatureHasInk($signature) {
     if (!is_string($signature) || !preg_match('/^data:image\/(?:png|jpeg|jpg);base64,/', $signature)) {
@@ -70,12 +74,14 @@ if (!riceSignatureHasInk($e_signature)) {
     exit();
 }
 
+
+
 try {
     $conn->begin_transaction();
 
     $household_stmt = $conn->prepare(
         "SELECT id, household_name, status, is_claimed
-         FROM rice_households
+         FROM {$household_table}
          WHERE household_code = ?
          FOR UPDATE"
     );
@@ -99,7 +105,7 @@ try {
     $household_id = (int)$household['id'];
 
     $insert_stmt = $conn->prepare(
-        "INSERT INTO rice_voucher_claims (household_id, claimant_name, e_signature, verifier_name)
+        "INSERT INTO {$claim_table} (household_id, claimant_name, e_signature, verifier_name)
          VALUES (?, ?, ?, ?)"
     );
     $insert_stmt->bind_param('isss', $household_id, $claimant_name, $e_signature, $verifier_name);
@@ -108,7 +114,7 @@ try {
     }
 
     $update_stmt = $conn->prepare(
-        "UPDATE rice_households
+        "UPDATE {$household_table}
          SET is_claimed = 1, claimed_at = NOW()
          WHERE id = ?"
     );
@@ -120,7 +126,7 @@ try {
     $conn->commit();
     echo json_encode([
         'success' => true,
-        'message' => 'Rice voucher claimed successfully.',
+        'message' => $wave_label . ' rice voucher claimed successfully.',
         'household_name' => $household['household_name']
     ]);
 } catch (Throwable $e) {

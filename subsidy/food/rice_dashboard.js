@@ -39,7 +39,7 @@ function renderRiceTable(records, startIndex = 0) {
     if (!records.length) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center text-muted py-4">No rice household records found.</td>
+                <td colspan="7" class="text-center text-muted py-4">No next-wave rice household records found.</td>
             </tr>
         `;
         return;
@@ -50,9 +50,16 @@ function renderRiceTable(records, startIndex = 0) {
         const statusBadge = record.status === 'Active'
             ? '<span class="badge bg-success">Active</span>'
             : '<span class="badge bg-secondary">Not Active</span>';
-        const claimBadge = record.is_claimed === 1
-            ? '<span class="badge bg-success">Claimed</span>'
-            : '<span class="badge bg-warning text-dark">Unclaimed</span>';
+        const previousWaveBadge = record.previous_wave_exists !== 1
+            ? '<span class="badge bg-danger">Not Found</span>'
+            : record.previous_wave_is_claimed === 1
+                ? '<span class="badge bg-success">Claimed</span>'
+                : '<span class="badge bg-secondary">Not Claimed</span>';
+        const claimBadge = record.next_wave_exists !== 1
+            ? '<span class="badge bg-secondary">Not in Next Wave</span>'
+            : record.is_claimed === 1
+                ? '<span class="badge bg-success">Claimed</span>'
+                : '<span class="badge bg-warning text-dark">Unclaimed</span>';
         const claimDate = record.claimed_at
             ? new Date(record.claimed_at).toLocaleString()
             : 'N/A';
@@ -62,6 +69,7 @@ function renderRiceTable(records, startIndex = 0) {
             <td><strong>${record.household_code}</strong></td>
             <td>${record.household_name}</td>
             <td>${statusBadge}</td>
+            <td>${previousWaveBadge}</td>
             <td>${claimBadge}</td>
             <td>${claimDate}</td>
         `;
@@ -112,7 +120,8 @@ function applyTableSearch() {
                 record.household_code,
                 record.household_name,
                 record.status,
-                record.is_claimed === 1 ? 'claimed' : 'unclaimed',
+                record.previous_wave_exists !== 1 ? 'first wave not found' : (record.previous_wave_is_claimed === 1 ? 'first wave claimed' : 'first wave not claimed'),
+                record.next_wave_exists !== 1 ? 'not in next wave' : (record.is_claimed === 1 ? 'next wave claimed' : 'next wave unclaimed'),
                 record.claimed_at || ''
             ].join(' ').toLowerCase().includes(searchTerm)
         );
@@ -261,7 +270,55 @@ if (saveHouseholdBtn) {
     });
 }
 
+const dashboardWaveInputs = document.querySelectorAll('input[name="dashboardWave"]');
+const metricTotalHouseholds = document.getElementById('metricTotalHouseholds');
+const metricClaimed = document.getElementById('metricClaimed');
+const metricNotClaimed = document.getElementById('metricNotClaimed');
+const metricTotalDescription = document.getElementById('metricTotalDescription');
+const metricClaimedDescription = document.getElementById('metricClaimedDescription');
+const metricNotClaimedDescription = document.getElementById('metricNotClaimedDescription');
+const DASHBOARD_WAVE_SETTING_KEY = 'rice_dashboard_wave';
+
+function renderDashboardWave(wave) {
+    const selectedWave = wave === 'next_wave' ? 'next_wave' : 'first_wave';
+    const metrics = window.RICE_DASHBOARD_METRICS?.[selectedWave];
+    if (!metrics) {
+        return;
+    }
+
+    const formatter = new Intl.NumberFormat();
+    metricTotalHouseholds.textContent = formatter.format(metrics.total || 0);
+    metricClaimed.textContent = formatter.format(metrics.claimed || 0);
+    metricNotClaimed.textContent = formatter.format(metrics.not_claimed || 0);
+
+    const isNextWave = selectedWave === 'next_wave';
+    metricTotalDescription.textContent = isNextWave
+        ? 'Households in the next-wave list'
+        : 'Households in the first-wave list';
+    metricClaimedDescription.textContent = isNextWave
+        ? 'Next-wave households already claimed'
+        : 'First-wave households already claimed';
+    metricNotClaimedDescription.textContent = isNextWave
+        ? 'Active next-wave households not yet claimed'
+        : 'Active first-wave households not yet claimed';
+
+    dashboardWaveInputs.forEach((input) => {
+        input.checked = input.value === selectedWave;
+    });
+
+    localStorage.setItem(DASHBOARD_WAVE_SETTING_KEY, selectedWave);
+}
+
+dashboardWaveInputs.forEach((input) => {
+    input.addEventListener('change', () => {
+        if (input.checked) {
+            renderDashboardWave(input.value);
+        }
+    });
+});
 document.addEventListener('DOMContentLoaded', () => {
+    const savedWave = localStorage.getItem(DASHBOARD_WAVE_SETTING_KEY) || 'first_wave';
+    renderDashboardWave(savedWave);
     loadRiceRecords();
     resetAddHouseholdForm();
 });

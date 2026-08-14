@@ -1,3 +1,5 @@
+const RICE_RELEASE_SOURCE = window.RICE_RELEASE_CONFIG?.source === 'first_wave' ? 'first_wave' : 'next_wave';
+
 let currentHouseholdCode = '';
 let currentHouseholdName = '';
 let currentClaimData = null;
@@ -14,6 +16,12 @@ const claimStateText = document.getElementById('claimStateText');
 const claimStateHint = document.getElementById('claimStateHint');
 const reviewClaimBtn = document.getElementById('reviewClaimBtn');
 const viewProofBtn = document.getElementById('viewProofBtn');
+const signatureRequiredToggle = document.getElementById('signatureRequiredToggle');
+const signatureOptionalNotice = document.getElementById('signatureOptionalNotice');
+const signatureCanvasWrapper = document.getElementById('signatureCanvasWrapper');
+const clearSignatureWrapper = document.getElementById('clearSignatureWrapper');
+const confirmSignatureOptionalText = document.getElementById('confirmSignatureOptionalText');
+
 
 let searchDebounceTimer = null;
 let currentPage = 1;
@@ -82,7 +90,7 @@ async function searchHousehold(householdLookup) {
             query = `household_code=${encodeURIComponent(householdLookup)}`;
         }
 
-        const response = await fetch(`api_get_rice_claim.php?${query}`);
+        const response = await fetch(`api_get_rice_claim.php?${query}&source=${encodeURIComponent(RICE_RELEASE_SOURCE)}`);
         const data = await response.json();
 
         if (data.success) {
@@ -136,7 +144,7 @@ async function loadSearchResults(query, page, append) {
     }
 
     try {
-        const response = await fetch(`api_search_rice_suggestions.php?q=${encodeURIComponent(query)}&page=${page}`);
+        const response = await fetch(`api_search_rice_suggestions.php?q=${encodeURIComponent(query)}&page=${page}&source=${encodeURIComponent(RICE_RELEASE_SOURCE)}`);
         const data = await response.json();
 
         if (append) {
@@ -207,6 +215,46 @@ function showSearchDropdown() {
 
 function hideSearchDropdown() {
     searchDropdown.style.display = 'none';
+}
+
+function isSignatureRequired() {
+    return true;
+}
+
+function updateSignatureRequirementUI() {
+    const required = isSignatureRequired();
+
+    if (signatureRequiredToggle) {
+        signatureRequiredToggle.checked = required;
+    }
+
+    if (signatureOptionalNotice) {
+        signatureOptionalNotice.classList.toggle('d-none', required);
+    }
+
+    if (signatureCanvasWrapper) {
+        signatureCanvasWrapper.classList.toggle('d-none', !required);
+    }
+
+    if (clearSignatureWrapper) {
+        clearSignatureWrapper.classList.toggle('d-none', !required);
+    }
+
+    if (confirmSignatureOptionalText) {
+        confirmSignatureOptionalText.classList.toggle('d-none', required);
+    }
+
+    const preview = document.getElementById('confirmSignaturePreview');
+    if (!required) {
+        ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+        pendingSignatureData = '';
+        if (preview) {
+            preview.src = '';
+            preview.style.display = 'none';
+        }
+    } else if (preview) {
+        preview.style.display = preview.src ? 'block' : 'none';
+    }
 }
 
 const signatureCanvas = document.getElementById('signatureCanvas');
@@ -309,6 +357,7 @@ function populateProofModal() {
 document.addEventListener('DOMContentLoaded', () => {
     resetClaimView();
     resizeCanvas();
+    updateSignatureRequirementUI();
 });
 
 window.addEventListener('resize', resizeCanvas);
@@ -423,17 +472,24 @@ document.getElementById('confirmSubmit').addEventListener('click', () => {
         return;
     }
 
-    if (!hasSignature()) {
+    if (isSignatureRequired() && !hasSignature()) {
         alert('Please provide your e-signature on the canvas.');
         return;
     }
 
-    pendingSignatureData = signatureCanvas.toDataURL('image/png');
+    pendingSignatureData = isSignatureRequired() ? signatureCanvas.toDataURL('image/png') : '';
     document.getElementById('claimantName').value = claimantName;
     document.getElementById('confirmHouseholdCode').textContent = currentHouseholdCode;
     document.getElementById('confirmHouseholdName').textContent = currentHouseholdName;
     document.getElementById('confirmClaimantName').textContent = claimantName;
-    document.getElementById('confirmSignaturePreview').src = pendingSignatureData;
+    const signaturePreview = document.getElementById('confirmSignaturePreview');
+    if (isSignatureRequired()) {
+        signaturePreview.src = pendingSignatureData;
+        signaturePreview.style.display = 'block';
+    } else {
+        signaturePreview.src = '';
+        signaturePreview.style.display = 'none';
+    }
 
     const claimModal = bootstrap.Modal.getInstance(document.getElementById('claimModal'));
     claimModal.hide();
@@ -442,7 +498,7 @@ document.getElementById('confirmSubmit').addEventListener('click', () => {
 
 document.getElementById('finalConfirmSubmit').addEventListener('click', async () => {
     const claimantName = document.getElementById('claimantName').value;
-    if (!pendingSignatureData) {
+    if (isSignatureRequired() && !pendingSignatureData) {
         alert('Missing e-signature. Please review the signature again before submitting.');
         return;
     }
@@ -456,7 +512,8 @@ document.getElementById('finalConfirmSubmit').addEventListener('click', async ()
             body: JSON.stringify({
                 household_code: currentHouseholdCode,
                 claimant_name: claimantName,
-                e_signature: pendingSignatureData
+                e_signature: pendingSignatureData,
+                source: RICE_RELEASE_SOURCE
             })
         });
 

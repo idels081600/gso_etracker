@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/rice_household_code.php';
 $conn = require(__DIR__ . '/config/database.php');
 
 if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -12,19 +13,20 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'RICE_VERIFIER') {
     exit();
 }
 
-$filter = isset($_GET['filter']) ? strtolower(trim($_GET['filter'])) : 'unclaimed';
+$filter = isset($_GET['filter']) ? strtolower(trim($_GET['filter'])) : 'all';
 $allowed_filters = ['all', 'unclaimed', 'claimed'];
 if (!in_array($filter, $allowed_filters, true)) {
-    $filter = 'unclaimed';
+    $filter = 'all';
 }
 
-$sort = isset($_GET['sort']) ? strtolower(trim($_GET['sort'])) : 'address';
+$sort = isset($_GET['sort']) ? strtolower(trim($_GET['sort'])) : 'name';
 $allowed_sorts = ['address', 'code', 'name'];
 if (!in_array($sort, $allowed_sorts, true)) {
-    $sort = 'address';
+    $sort = 'name';
 }
 
 $barangay = isset($_GET['barangay']) ? trim($_GET['barangay']) : '';
+$household_code = isset($_GET['household_code']) ? trim($_GET['household_code']) : '';
 
 $where_clauses = ["status = 'Active'"];
 if ($filter === 'unclaimed') {
@@ -40,19 +42,24 @@ if ($barangay !== '') {
     $types .= 's';
     $params[] = $barangay;
 }
+if ($household_code !== '') {
+    $where_clauses[] = "household_code = ?";
+    $types .= 's';
+    $params[] = $household_code;
+}
 
 $where_sql = 'WHERE ' . implode(' AND ', $where_clauses);
 
-$natural_code_order = "ORDER BY TRIM(SUBSTRING_INDEX(household_code, '-', 1)) ASC, CAST(TRIM(SUBSTRING_INDEX(household_code, '-', -1)) AS UNSIGNED) ASC, household_code ASC";
+$natural_code_order = "ORDER BY household_code_prefix ASC, household_code_number ASC, household_code ASC";
 $order_sql = $natural_code_order;
 if ($sort === 'address') {
-    $order_sql = "ORDER BY (address IS NULL OR TRIM(address) = ''), address ASC, TRIM(SUBSTRING_INDEX(household_code, '-', 1)) ASC, CAST(TRIM(SUBSTRING_INDEX(household_code, '-', -1)) AS UNSIGNED) ASC, household_code ASC";
+    $order_sql = "ORDER BY (address IS NULL OR TRIM(address) = ''), address ASC, household_code_prefix ASC, household_code_number ASC, household_code ASC";
 } elseif ($sort === 'name') {
-    $order_sql = "ORDER BY household_name ASC, household_code ASC";
+    $order_sql = "ORDER BY household_name ASC, household_code_prefix ASC, household_code_number ASC, household_code ASC";
 }
 
 $sql = "SELECT household_code, household_name, address, is_claimed
-        FROM rice_households
+        FROM rice_claimed_households
         $where_sql
         $order_sql";
 
@@ -70,6 +77,35 @@ if ($result) {
     while ($row = mysqli_fetch_assoc($result)) {
         $records[] = $row;
     }
+}
+
+if ($sort === 'code' || $sort === 'address') {
+    usort($records, function (array $left, array $right) use ($sort): int {
+        if ($sort === 'address') {
+            $left_address = trim((string)($left['address'] ?? ''));
+            $right_address = trim((string)($right['address'] ?? ''));
+
+            if ($left_address === '' && $right_address !== '') {
+                return 1;
+            }
+
+            if ($left_address !== '' && $right_address === '') {
+                return -1;
+            }
+
+            $address_compare = strnatcasecmp($left_address, $right_address);
+            if ($address_compare !== 0) {
+                return $address_compare;
+            }
+        }
+
+        return riceCompareHouseholdCodes(
+            (string)$left['household_code'],
+            (string)$right['household_code'],
+            isset($left['address']) ? (string)$left['address'] : null,
+            isset($right['address']) ? (string)$right['address'] : null
+        );
+    });
 }
 
 $filter_title = [
@@ -233,7 +269,7 @@ function riceVoucherNameClass($name)
 
         .voucher-name,
         .voucher-code {
-            color: #b0002a;
+            color: var(--claimed);
             font-weight: 700;
             text-transform: uppercase;
             line-height: 1;
@@ -313,6 +349,9 @@ function riceVoucherNameClass($name)
             <span class="badge"><?php echo htmlspecialchars($filter_title[$filter]); ?></span>
             <?php if ($barangay !== ''): ?>
                 <span class="badge"><?php echo htmlspecialchars($barangay); ?></span>
+            <?php endif; ?>
+            <?php if ($household_code !== ''): ?>
+                <span class="badge"><?php echo htmlspecialchars($household_code); ?></span>
             <?php endif; ?>
             <span class="badge"><?php echo htmlspecialchars($sort_title[$sort]); ?></span>
             <span><?php echo number_format(count($records)); ?> voucher<?php echo count($records) === 1 ? '' : 's'; ?></span>

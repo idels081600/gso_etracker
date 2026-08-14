@@ -13,7 +13,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'RICE_VERIFIER') {
 
 require_once '../../fpdf/fpdf.php';
 
-function ricePdfText($text)
+function riceClaimedPdfText($text)
 {
     $text = trim((string)$text);
     if ($text === '') {
@@ -24,17 +24,13 @@ function ricePdfText($text)
     return $converted !== false ? $converted : $text;
 }
 
-$sql = "SELECT rh.household_code,
-               rh.household_name,
-               rh.address,
+$sql = "SELECT rh.household_name,
+               rvc.claim_date,
                rvc.e_signature
-        FROM rice_households rh
-        INNER JOIN rice_voucher_claims rvc ON rvc.household_id = rh.id
+        FROM rice_voucher_claims rvc
+        INNER JOIN rice_households rh ON rvc.household_id = rh.id
         WHERE rh.is_claimed = 1
-        ORDER BY rh.address ASC,
-                 rh.household_code_prefix ASC,
-                 rh.household_code_number ASC,
-                 rh.household_code ASC";
+        ORDER BY rvc.claim_date ASC, rh.household_name ASC";
 
 $result = mysqli_query($conn, $sql);
 $records = [];
@@ -44,20 +40,20 @@ if ($result) {
     }
 }
 
-define('RICE_COL_CODE', 35);
-define('RICE_COL_NAME', 70);
-define('RICE_COL_BRGY', 55);
-define('RICE_COL_SIG', 110);
-define('RICE_LINE_HEIGHT', 5);
-define('RICE_MIN_ROW_HEIGHT', 20);
-define('RICE_LEFT_MARGIN', 10);
+define('RICE_CLAIMED_COL_NO', 20);
+define('RICE_CLAIMED_COL_NAME', 70);
+define('RICE_CLAIMED_COL_DATE', 50);
+define('RICE_CLAIMED_COL_SIG', 130);
+define('RICE_CLAIMED_LINE_HEIGHT', 5);
+define('RICE_CLAIMED_MIN_ROW_HEIGHT', 20);
+define('RICE_CLAIMED_LEFT_MARGIN', 10);
 
-class RiceBeneficiariesPDF extends FPDF
+class RiceClaimedDataPDF extends FPDF
 {
     function Header()
     {
         $this->SetFont('Arial', 'B', 16);
-        $this->Cell(0, 10, 'RICE ASSISTANCE', 0, 1, 'C');
+        $this->Cell(0, 10, 'RICE CLAIMED DATA', 0, 1, 'C');
         $this->Ln(2);
         $this->drawTableHeader();
     }
@@ -73,11 +69,11 @@ class RiceBeneficiariesPDF extends FPDF
     {
         $this->SetFillColor(200, 200, 200);
         $this->SetFont('Arial', 'B', 10);
-        $this->SetXY(RICE_LEFT_MARGIN, $this->GetY());
-        $this->Cell(RICE_COL_CODE, 10, 'Household Code', 1, 0, 'C', true);
-        $this->Cell(RICE_COL_NAME, 10, 'Name', 1, 0, 'C', true);
-        $this->Cell(RICE_COL_BRGY, 10, 'Barangay', 1, 0, 'C', true);
-        $this->Cell(RICE_COL_SIG, 10, 'Signature', 1, 1, 'C', true);
+        $this->SetXY(RICE_CLAIMED_LEFT_MARGIN, $this->GetY());
+        $this->Cell(RICE_CLAIMED_COL_NO, 10, '#', 1, 0, 'C', true);
+        $this->Cell(RICE_CLAIMED_COL_NAME, 10, 'Name', 1, 0, 'C', true);
+        $this->Cell(RICE_CLAIMED_COL_DATE, 10, 'Claimed Date', 1, 0, 'C', true);
+        $this->Cell(RICE_CLAIMED_COL_SIG, 10, 'Signature', 1, 1, 'C', true);
         $this->SetFont('Arial', '', 9);
     }
 
@@ -106,7 +102,7 @@ class RiceBeneficiariesPDF extends FPDF
         return $lines;
     }
 
-    function calcRowHeight($txt, $colW, $lineH = RICE_LINE_HEIGHT, $minH = RICE_MIN_ROW_HEIGHT)
+    function calcRowHeight($txt, $colW, $lineH = RICE_CLAIMED_LINE_HEIGHT, $minH = RICE_CLAIMED_MIN_ROW_HEIGHT)
     {
         $innerW = $colW - 6;
         $lines = $this->wordWrapText($txt, $innerW);
@@ -114,7 +110,7 @@ class RiceBeneficiariesPDF extends FPDF
         return max($minH, $needed);
     }
 
-    function fixedCell($x, $y, $w, $h, $txt, $lineH = RICE_LINE_HEIGHT)
+    function fixedCell($x, $y, $w, $h, $txt, $lineH = RICE_CLAIMED_LINE_HEIGHT)
     {
         $this->Rect($x, $y, $w, $h);
 
@@ -135,40 +131,40 @@ class RiceBeneficiariesPDF extends FPDF
     }
 }
 
-$pdf = new RiceBeneficiariesPDF('L', 'mm', 'A4');
+$pdf = new RiceClaimedDataPDF('L', 'mm', 'A4');
 $pdf->AliasNbPages();
-$pdf->SetMargins(RICE_LEFT_MARGIN, 10, 10);
+$pdf->SetMargins(RICE_CLAIMED_LEFT_MARGIN, 10, 10);
 $pdf->AddPage();
 $pdf->SetFont('Arial', '', 9);
 
 if (empty($records)) {
-    $pdf->Cell(RICE_COL_CODE + RICE_COL_NAME + RICE_COL_BRGY + RICE_COL_SIG, 10, 'No claimed rice beneficiaries found.', 1, 1, 'C');
+    $pdf->Cell(RICE_CLAIMED_COL_NO + RICE_CLAIMED_COL_NAME + RICE_CLAIMED_COL_DATE + RICE_CLAIMED_COL_SIG, 10, 'No claimed rice data found.', 1, 1, 'C');
 } else {
-    foreach ($records as $record) {
-        $code = ricePdfText($record['household_code']);
-        $name = ricePdfText($record['household_name']);
-        $barangay = ricePdfText($record['address']);
+    foreach ($records as $index => $record) {
+        $rowNumber = (string)($index + 1);
+        $name = riceClaimedPdfText($record['household_name']);
+        $claimedDate = riceClaimedPdfText($record['claim_date']);
 
-        $h1 = $pdf->calcRowHeight($code, RICE_COL_CODE);
-        $h2 = $pdf->calcRowHeight($name, RICE_COL_NAME);
-        $h3 = $pdf->calcRowHeight($barangay, RICE_COL_BRGY);
-        $rowH = max($h1, $h2, $h3, RICE_MIN_ROW_HEIGHT);
+        $h1 = $pdf->calcRowHeight($rowNumber, RICE_CLAIMED_COL_NO);
+        $h2 = $pdf->calcRowHeight($name, RICE_CLAIMED_COL_NAME);
+        $h3 = $pdf->calcRowHeight($claimedDate, RICE_CLAIMED_COL_DATE);
+        $rowH = max($h1, $h2, $h3, RICE_CLAIMED_MIN_ROW_HEIGHT);
 
         if ($pdf->GetY() + $rowH > $pdf->GetPageHeight() - 20) {
             $pdf->AddPage();
         }
 
-        $rowX = RICE_LEFT_MARGIN;
+        $rowX = RICE_CLAIMED_LEFT_MARGIN;
         $rowY = $pdf->GetY();
-        $xCode = $rowX;
-        $xName = $xCode + RICE_COL_CODE;
-        $xBrgy = $xName + RICE_COL_NAME;
-        $xSig = $xBrgy + RICE_COL_BRGY;
+        $xNo = $rowX;
+        $xName = $xNo + RICE_CLAIMED_COL_NO;
+        $xDate = $xName + RICE_CLAIMED_COL_NAME;
+        $xSig = $xDate + RICE_CLAIMED_COL_DATE;
 
-        $pdf->fixedCell($xCode, $rowY, RICE_COL_CODE, $rowH, $code);
-        $pdf->fixedCell($xName, $rowY, RICE_COL_NAME, $rowH, $name);
-        $pdf->fixedCell($xBrgy, $rowY, RICE_COL_BRGY, $rowH, $barangay);
-        $pdf->Rect($xSig, $rowY, RICE_COL_SIG, $rowH);
+        $pdf->fixedCell($xNo, $rowY, RICE_CLAIMED_COL_NO, $rowH, $rowNumber);
+        $pdf->fixedCell($xName, $rowY, RICE_CLAIMED_COL_NAME, $rowH, $name);
+        $pdf->fixedCell($xDate, $rowY, RICE_CLAIMED_COL_DATE, $rowH, $claimedDate);
+        $pdf->Rect($xSig, $rowY, RICE_CLAIMED_COL_SIG, $rowH);
 
         if (!empty($record['e_signature']) && strpos($record['e_signature'], 'data:image') === 0) {
             preg_match('/data:image\/(\w+);base64,/', $record['e_signature'], $typeMatch);
@@ -177,12 +173,12 @@ if (empty($records)) {
             $imageData = base64_decode($base64String);
 
             if ($imageData !== false) {
-                $tempFile = tempnam(sys_get_temp_dir(), 'rice_sig_') . '.' . $imageType;
+                $tempFile = tempnam(sys_get_temp_dir(), 'rice_claim_sig_') . '.' . $imageType;
                 file_put_contents($tempFile, $imageData);
 
-                $imgW = 60;
+                $imgW = 72;
                 $imgH = min(16, $rowH - 4);
-                $imgX = $xSig + (RICE_COL_SIG - $imgW) / 2;
+                $imgX = $xSig + (RICE_CLAIMED_COL_SIG - $imgW) / 2;
                 $imgY = $rowY + ($rowH - $imgH) / 2;
                 $pdf->Image($tempFile, $imgX, $imgY, $imgW, $imgH);
                 @unlink($tempFile);
@@ -193,7 +189,7 @@ if (empty($records)) {
     }
 }
 
-$filename = 'Rice_Beneficiaries_' . date('Y-m-d') . '.pdf';
+$filename = 'Rice_Claimed_Data_' . date('Y-m-d') . '.pdf';
 $pdf->Output('I', $filename);
 exit();
 ?>
