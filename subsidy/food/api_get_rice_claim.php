@@ -12,7 +12,11 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
 
 $household_id = isset($_GET['household_id']) ? (int)$_GET['household_id'] : 0;
 $household_code = isset($_GET['household_code']) ? trim($_GET['household_code']) : '';
-$source = isset($_GET['source']) ? trim($_GET['source']) : 'first_wave';
+$source = isset($_GET['source']) ? trim($_GET['source']) : '';
+if (!in_array($source, ['first_wave', 'next_wave'], true)) {
+    echo json_encode(['success' => false, 'message' => 'A valid release wave is required']);
+    exit();
+}
 $is_next_wave = $source === 'next_wave';
 $household_table = $is_next_wave ? 'rice_claimed_households' : 'rice_households';
 $claim_table = $is_next_wave ? 'rice_next_wave_claims' : 'rice_voucher_claims';

@@ -1,3 +1,5 @@
+const RICE_CROSS_CHECK_SOURCE = 'first_wave';
+
 let currentHousehold = null;
 let searchDebounceTimer = null;
 let currentPage = 1;
@@ -114,7 +116,7 @@ async function loadHousehold(householdLookup) {
             query = `household_code=${encodeURIComponent(householdLookup)}`;
         }
 
-        const response = await fetch(`api_get_rice_claim.php?${query}`);
+        const response = await fetch(`api_get_rice_claim.php?${query}&source=${RICE_CROSS_CHECK_SOURCE}`, { cache: 'no-store' });
         const data = await response.json();
 
         if (data.success) {
@@ -215,7 +217,7 @@ async function loadSearchResults(query, page, append) {
     }
 
     try {
-        const response = await fetch(`api_search_rice_suggestions.php?q=${encodeURIComponent(query)}&page=${page}`);
+        const response = await fetch(`api_search_rice_suggestions.php?q=${encodeURIComponent(query)}&page=${page}&source=${RICE_CROSS_CHECK_SOURCE}`, { cache: 'no-store' });
         const data = await response.json();
 
         if (append) {

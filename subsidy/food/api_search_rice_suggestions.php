@@ -16,7 +16,11 @@ if (!isset($_GET['q']) || strlen(trim($_GET['q'])) < 2) {
 }
 
 $query = trim($_GET['q']);
-$source = isset($_GET['source']) ? trim($_GET['source']) : 'first_wave';
+$source = isset($_GET['source']) ? trim($_GET['source']) : '';
+if (!in_array($source, ['first_wave', 'next_wave'], true)) {
+    echo json_encode(['success' => false, 'message' => 'A valid release wave is required']);
+    exit();
+}
 $household_table = $source === 'next_wave' ? 'rice_claimed_households' : 'rice_households';
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $per_page = 10;

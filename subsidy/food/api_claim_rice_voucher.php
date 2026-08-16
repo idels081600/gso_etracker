@@ -21,7 +21,11 @@ $household_code = $input['household_code'] ?? '';
 $claimant_name = trim($input['claimant_name'] ?? '');
 $e_signature = $input['e_signature'] ?? '';
 $verifier_name = $_SESSION['pay_name'] ?? $_SESSION['username'];
-$source = ($input['source'] ?? 'next_wave') === 'first_wave' ? 'first_wave' : 'next_wave';
+$source = $input['source'] ?? '';
+if (!in_array($source, ['first_wave', 'next_wave'], true)) {
+    echo json_encode(['success' => false, 'message' => 'A valid release wave is required']);
+    exit();
+}
 $household_table = $source === 'first_wave' ? 'rice_households' : 'rice_claimed_households';
 $claim_table = $source === 'first_wave' ? 'rice_voucher_claims' : 'rice_next_wave_claims';
 $wave_label = $source === 'first_wave' ? 'First-wave' : 'Next-wave';

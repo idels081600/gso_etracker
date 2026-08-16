@@ -183,6 +183,6 @@ $station_name = 'Rice Assistance Verification';
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="cross_check_rice.js"></script>
+    <script src="cross_check_rice.js?v=<?php echo rawurlencode((string)filemtime(__DIR__ . '/cross_check_rice.js')); ?>"></script>
 </body>
 </html>

@@ -2,6 +2,9 @@
 session_start();
 $conn = require(__DIR__ . '/config/database.php');
 
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+
 if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: ../../login_v2.php");
     exit();
@@ -267,7 +270,7 @@ $station_name = 'Rice Assistance Verification';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>window.RICE_RELEASE_CONFIG = { source: 'next_wave' };</script>
-    <script src="releasing_rice.js"></script>
+    <script src="releasing_rice.js?v=<?php echo rawurlencode((string)filemtime(__DIR__ . '/releasing_rice.js')); ?>"></script>
     <style>
         @keyframes spin {
             from { transform: rotate(0deg); }

@@ -1,4 +1,8 @@
-const RICE_RELEASE_SOURCE = window.RICE_RELEASE_CONFIG?.source === 'first_wave' ? 'first_wave' : 'next_wave';
+const RICE_RELEASE_SOURCE = window.RICE_RELEASE_CONFIG?.source;
+
+if (!['first_wave', 'next_wave'].includes(RICE_RELEASE_SOURCE)) {
+    throw new Error('Rice release source is missing or invalid.');
+}
 
 let currentHouseholdCode = '';
 let currentHouseholdName = '';
@@ -90,7 +94,7 @@ async function searchHousehold(householdLookup) {
             query = `household_code=${encodeURIComponent(householdLookup)}`;
         }
 
-        const response = await fetch(`api_get_rice_claim.php?${query}&source=${encodeURIComponent(RICE_RELEASE_SOURCE)}`);
+        const response = await fetch(`api_get_rice_claim.php?${query}&source=${encodeURIComponent(RICE_RELEASE_SOURCE)}`, { cache: 'no-store' });
         const data = await response.json();
 
         if (data.success) {
@@ -144,7 +148,7 @@ async function loadSearchResults(query, page, append) {
     }
 
     try {
-        const response = await fetch(`api_search_rice_suggestions.php?q=${encodeURIComponent(query)}&page=${page}&source=${encodeURIComponent(RICE_RELEASE_SOURCE)}`);
+        const response = await fetch(`api_search_rice_suggestions.php?q=${encodeURIComponent(query)}&page=${page}&source=${encodeURIComponent(RICE_RELEASE_SOURCE)}`, { cache: 'no-store' });
         const data = await response.json();
 
         if (append) {

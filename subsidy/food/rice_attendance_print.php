@@ -18,17 +18,17 @@ $sector_options = [
     'pwd' => ['label' => 'PWD', 'address' => 'PWD'],
     'honest_drivers' => ['label' => 'HONEST DRIVERS', 'address' => 'HONEST DRIVERS'],
     'porter' => ['label' => 'PORTER', 'address' => 'PORTER'],
-    'ind' => ['label' => 'IND', 'address' => 'IND'],
-    'ind2' => ['label' => 'IND', 'address' => 'IND'],
-    'indigents' => ['label' => 'IND', 'address' => 'IND'],
+    'ind' => ['label' => 'INDIGENTS', 'address' => 'IND'],
+    'ind2' => ['label' => 'INDIGENTS', 'address' => 'IND'],
+    'indigents' => ['label' => 'INDIGENTS', 'address' => 'IND'],
 ];
 $address_sector_labels = [
     'PWD' => 'PWD',
     'HONEST DRIVERS' => 'HONEST DRIVERS',
     'PORTER' => 'PORTER',
-    'IND' => 'IND',
-    'IND2' => 'IND',
-    'INDIGENTS' => 'IND',
+    'IND' => 'INDIGENTS',
+    'IND2' => 'INDIGENTS',
+    'INDIGENTS' => 'INDIGENTS',
 ];
 $selected_sector = $sector_options[$sector_key] ?? null;
 $selected_address = $selected_sector !== null ? $selected_sector['address'] : $barangay;
@@ -39,7 +39,7 @@ $selected_sector_label = $selected_sector !== null
 $records = [];
 
 if ($selected_address !== '') {
-    $is_ind_sector = $selected_sector !== null && $selected_sector['label'] === 'IND';
+    $is_ind_sector = $selected_sector !== null && $selected_sector['address'] === 'IND';
     $sql = "SELECT household_name, household_code
             FROM rice_claimed_households
             WHERE status = 'Active'
