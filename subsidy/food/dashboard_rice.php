@@ -2,6 +2,9 @@
 session_start();
 $conn = require(__DIR__ . '/config/database.php');
 
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+
 if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: ../../login_v2.php");
     exit();
@@ -91,16 +94,32 @@ if ($claimed_barangay_result) {
             border-color: var(--rice-teal-dark);
             color: #fff;
         }
+        .wave-toggle {
+            width: 100%;
+            max-width: 280px;
+        }
         .wave-toggle .btn {
-            min-width: 112px;
+            flex: 1 1 0;
+            min-width: 0;
             border-color: var(--rice-teal);
             color: var(--rice-teal);
+            touch-action: manipulation;
         }
-        .wave-toggle .btn-check:checked + .btn {
+        .wave-toggle .btn.active,
+        .wave-toggle .btn[aria-pressed="true"] {
             background-color: var(--rice-teal);
             border-color: var(--rice-teal);
             color: #fff;
-        }    </style>
+        }
+        @media (min-width: 576px) {
+            .wave-toggle {
+                width: auto;
+            }
+            .wave-toggle .btn {
+                min-width: 112px;
+            }
+        }
+    </style>
     <script src="./js/session_heartbeat.js"></script>
     <script>
         SessionHeartbeat.init({ apiUrl: './api_heartbeat.php' });
@@ -136,10 +155,8 @@ if ($claimed_barangay_result) {
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
                 <h5 class="text-rice-teal mb-0"><i class="bi bi-basket2 me-2"></i>RICE ASSISTANCE STATISTICS</h5>
                 <div class="btn-group wave-toggle" role="group" aria-label="Select dashboard wave">
-                    <input type="radio" class="btn-check" name="dashboardWave" id="dashboardFirstWave" value="first_wave" autocomplete="off" checked>
-                    <label class="btn btn-outline-success" for="dashboardFirstWave">First Wave</label>
-                    <input type="radio" class="btn-check" name="dashboardWave" id="dashboardNextWave" value="next_wave" autocomplete="off">
-                    <label class="btn btn-outline-success" for="dashboardNextWave">Next Wave</label>
+                    <button type="button" class="btn btn-outline-success active" data-dashboard-wave="first_wave" aria-pressed="true">First Wave</button>
+                    <button type="button" class="btn btn-outline-success" data-dashboard-wave="next_wave" aria-pressed="false">Next Wave</button>
                 </div>
             </div>
             <div class="row g-3 mb-4">
@@ -402,6 +419,6 @@ if ($claimed_barangay_result) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>window.RICE_DASHBOARD_METRICS = <?php echo json_encode($dashboard_metrics, JSON_UNESCAPED_SLASHES); ?>;</script>
-    <script src="rice_dashboard.js"></script>
+    <script src="rice_dashboard.js?v=<?php echo rawurlencode((string)filemtime(__DIR__ . '/rice_dashboard.js')); ?>"></script>
 </body>
 </html>

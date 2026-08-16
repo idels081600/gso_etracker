@@ -270,7 +270,7 @@ if (saveHouseholdBtn) {
     });
 }
 
-const dashboardWaveInputs = document.querySelectorAll('input[name="dashboardWave"]');
+const dashboardWaveButtons = document.querySelectorAll('[data-dashboard-wave]');
 const metricTotalHouseholds = document.getElementById('metricTotalHouseholds');
 const metricClaimed = document.getElementById('metricClaimed');
 const metricNotClaimed = document.getElementById('metricNotClaimed');
@@ -279,8 +279,31 @@ const metricClaimedDescription = document.getElementById('metricClaimedDescripti
 const metricNotClaimedDescription = document.getElementById('metricNotClaimedDescription');
 const DASHBOARD_WAVE_SETTING_KEY = 'rice_dashboard_wave';
 
+function getSavedDashboardWave() {
+    try {
+        return window.localStorage.getItem(DASHBOARD_WAVE_SETTING_KEY) || 'first_wave';
+    } catch (error) {
+        return 'first_wave';
+    }
+}
+
+function saveDashboardWave(wave) {
+    try {
+        window.localStorage.setItem(DASHBOARD_WAVE_SETTING_KEY, wave);
+    } catch (error) {
+        // The toggle still works when mobile privacy settings block local storage.
+    }
+}
+
 function renderDashboardWave(wave) {
     const selectedWave = wave === 'next_wave' ? 'next_wave' : 'first_wave';
+
+    dashboardWaveButtons.forEach((button) => {
+        const isActive = button.dataset.dashboardWave === selectedWave;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+
     const metrics = window.RICE_DASHBOARD_METRICS?.[selectedWave];
     if (!metrics) {
         return;
@@ -302,23 +325,23 @@ function renderDashboardWave(wave) {
         ? 'Active next-wave households not yet claimed'
         : 'Active first-wave households not yet claimed';
 
-    dashboardWaveInputs.forEach((input) => {
-        input.checked = input.value === selectedWave;
-    });
-
-    localStorage.setItem(DASHBOARD_WAVE_SETTING_KEY, selectedWave);
+    saveDashboardWave(selectedWave);
 }
 
-dashboardWaveInputs.forEach((input) => {
-    input.addEventListener('change', () => {
-        if (input.checked) {
-            renderDashboardWave(input.value);
-        }
+dashboardWaveButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+        renderDashboardWave(button.dataset.dashboardWave);
     });
 });
-document.addEventListener('DOMContentLoaded', () => {
-    const savedWave = localStorage.getItem(DASHBOARD_WAVE_SETTING_KEY) || 'first_wave';
-    renderDashboardWave(savedWave);
+
+function initializeRiceDashboard() {
+    renderDashboardWave(getSavedDashboardWave());
     loadRiceRecords();
     resetAddHouseholdForm();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeRiceDashboard, { once: true });
+} else {
+    initializeRiceDashboard();
+}
