@@ -577,7 +577,6 @@ $pdf->Cell($fuelColWidth, $rowHeight, 'FUEL TYPE', 1, 0, 'C', true);
 $pdf->Cell($fuelColWidth, $rowHeight, 'NO. OF TRICYCLE', 1, 0, 'C', true);
 $pdf->Cell($fuelColWidth, $rowHeight, 'NO. OF BOAT', 1, 0, 'C', true);
 $pdf->Cell($fuelColWidth, $rowHeight, 'PUMP PRICE', 1, 0, 'C', true);
-$pdf->Cell($fuelColWidth, $rowHeight, 'NO. OF LITERS', 1, 0, 'C', true);
 $pdf->Cell($fuelColWidth, $rowHeight, 'AMOUNT (PHP)', 1, 1, 'C', true);
 
 $pdf->SetFont('Arial', '', 9);
@@ -586,7 +585,6 @@ foreach (['Silver', 'Platinum', 'Diesel'] as $fuelType) {
     $pdf->Cell($fuelColWidth, $rowHeight, (string)$fuelBreakdown[$fuelType]['tricycle_count'], 1, 0, 'C');
     $pdf->Cell($fuelColWidth, $rowHeight, (string)$fuelBreakdown[$fuelType]['boat_count'], 1, 0, 'C');
     $pdf->Cell($fuelColWidth, $rowHeight, formatPumpPrices($fuelBreakdown[$fuelType]['pump_prices']), 1, 0, 'C');
-    $pdf->Cell($fuelColWidth, $rowHeight, number_format($fuelBreakdown[$fuelType]['liters'], 2), 1, 0, 'C');
     $pdf->Cell($fuelColWidth, $rowHeight, formatRoundedAmount($fuelBreakdown[$fuelType]['amount']), 1, 1, 'C');
 }
 
