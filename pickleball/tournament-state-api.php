@@ -5,7 +5,7 @@ declare(strict_types=1);
 const TOURNAMENT_API_VERSION = 2;
 const MAX_STATE_BYTES = 1048576;
 // Change this private value before deployment; enter the same value on the board and scorer phones.
-const SCORER_ACCESS_CODE = "PB-84QZ-7M2K-9X6R";
+const SCORER_ACCESS_CODE = "PICKLE123";
 const MAX_FAILED_ATTEMPTS = 6;
 const RATE_LIMIT_SECONDS = 900;
 
