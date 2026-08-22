@@ -5,7 +5,7 @@ declare(strict_types=1);
 $app = [
     'name' => 'Pickleball Tournament Board',
     'description' => 'Girls and boys live pickleball scoring with court schedules and automatic division standings.',
-    'version' => '3.3.0',
+    'version' => '3.4.0',
 ];
 
 header('Content-Type: text/html; charset=UTF-8');
@@ -148,6 +148,6 @@ function escape(string $value): string
     </div>
   </dialog>
 
-  <script type="module" src="tournament-app.mjs?v=<?= escape($app['version']) ?>"></script>
+  <script type="module" src="js-module.php?module=tournament-app&amp;v=<?= escape($app['version']) ?>"></script>
 </body>
 </html>

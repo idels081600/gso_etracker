@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$app = ["name" => "Pickleball Phone Scorer", "version" => "3.3.0"];
+$app = ["name" => "Pickleball Phone Scorer", "version" => "3.4.0"];
 header("Content-Type: text/html; charset=UTF-8");
 header("X-Content-Type-Options: nosniff");
 header("Referrer-Policy: same-origin");
@@ -71,6 +71,6 @@ header("Cache-Control: no-cache");
     <div class="dialog-actions"><button class="button button-secondary" type="button" data-close-phone-dialog>Review score</button><button class="button button-primary" id="phone-record-result" type="button">Record result</button></div>
   </dialog>
 
-  <script type="module" src="mobile-scorer.mjs?v=<?= htmlspecialchars($app["version"], ENT_QUOTES, "UTF-8") ?>"></script>
+  <script type="module" src="js-module.php?module=mobile-scorer&amp;v=<?= htmlspecialchars($app["version"], ENT_QUOTES, "UTF-8") ?>"></script>
 </body>
 </html>

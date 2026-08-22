@@ -5,7 +5,7 @@ declare(strict_types=1);
 $app = [
     'name' => 'Pickleball Scorekeeper',
     'description' => 'An offline, manual pickleball match scorekeeper.',
-    'version' => '1.0.0',
+    'version' => '1.1.0',
 ];
 
 header('Content-Type: text/html; charset=UTF-8');
@@ -29,7 +29,7 @@ function escape(string $value): string
   <meta name="application-name" content="<?= escape($app['name']) ?>">
   <title><?= escape($app['name']) ?></title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23e7ee55'/%3E%3Ccircle cx='11' cy='12' r='2' fill='%23171900'/%3E%3Ccircle cx='21' cy='14' r='2' fill='%23171900'/%3E%3Ccircle cx='16' cy='22' r='2' fill='%23171900'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=<?= escape($app['version']) ?>">
 </head>
 <body data-app-version="<?= escape($app['version']) ?>">
   <header class="app-header">
@@ -138,6 +138,6 @@ function escape(string $value): string
     <p class="dialog-note">Shortcuts pause while you type in a field or use a dialog.</p>
   </dialog>
 
-  <script type="module" src="app.mjs"></script>
+  <script type="module" src="js-module.php?module=app&amp;v=<?= escape($app['version']) ?>"></script>
 </body>
 </html>
