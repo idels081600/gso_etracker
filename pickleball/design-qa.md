@@ -73,8 +73,38 @@ No actionable P0, P1, or P2 differences remain. The dark theme and internal tabl
 - Browser result: no JavaScript errors or missing assets. Chromium emitted one non-blocking password-form autofill advisory for the private scorer access-code form; it is unrelated to the server selector.
 - Outcome: no actionable P0, P1, or P2 visual or interaction differences remain.
 
-## Follow-up Polish
+## Serving-Player Team-Header Indication QA
 
+### Evidence
+
+- Supplied reference: `output/references/team-header-server-reference.png` — 962 × 48 px.
+- Desktop implementation: `output/playwright/server-indicator-desktop.png` — 929 × 917 px CSS-density viewport capture; focused final headers `output/playwright/server-indicator-desktop-focus-final.png` and `output/playwright/server-indicator-jane-yap.png` — 242 × 46 px each.
+- Phone implementation: `output/playwright/server-indicator-phone.png` — 390 × 844 px; focused header `output/playwright/server-indicator-phone-focus.png` — 173 × 74 px.
+- Combined normalized comparison: `output/playwright/server-indicator-design-comparison.png` — 994 × 326 px.
+- Density: device scale factor 1; focused regions were compared at their native CSS-pixel sizes without interpolation.
+- State: Girls game 1, Joy & Irah versus Born2x & Jane Yap. Verified Irah serving for Side A, then switched the serving team and verified Jane Yap serving for Side B. The phone capture uses the longer Jane Yap state.
+
+### Required Fidelity Surfaces
+
+- Fonts and typography: The established compact tournament typography is retained. The player name uses normal casing and a heavier optical weight; `Serving` remains the smaller uppercase status label.
+- Spacing and layout rhythm: The two-line badge fits the existing 46 px desktop team header without increasing panel height. The 74 px phone team header preserves the score-card proportions and leaves long team names readable.
+- Colors and visual tokens: The badge uses the existing bright-yellow serve token and dark ink. It remains paired with the serving-side border and explicit `Serving` copy, so status is not communicated by color alone.
+- Image quality and asset fidelity: The reference and implementation contain only native operational UI; no image, icon, logo, or decorative asset substitution was required.
+- Copy and content: Generic `Serving` now becomes the exact player name plus `Serving`—for example, `Irah / Serving` or `Jane Yap / Serving`. The receiving side retains `Set serve`.
+
+### Interaction, Accessibility, And Comparison History
+
+- Changing server number updates the highlighted selector, the score-call third number, and the player name in the serving-team header from the same immutable state.
+- Changing the serving team updates the header badge to that team’s player names; browser evidence confirmed `Jane Yap is serving for Born2x & Jane Yap`.
+- Active team buttons expose player-specific accessible names; inactive controls identify the team they will set as serving.
+- First visual pass P2: inherited compact-header span rules uppercased the player name and applied the division accent color inside the yellow badge.
+- Fix: increased component-specific selector specificity, restored normal player-name casing, removed inherited letter spacing/margin, and forced the badge text to inherit the yellow button’s dark ink.
+- Post-fix evidence: `server-indicator-desktop-focus-final.png`, `server-indicator-jane-yap.png`, and `server-indicator-phone-focus.png` show readable normal-case names with no clipping or wrapping in the status label.
+- Browser console: no JavaScript errors or missing assets. The existing non-blocking Chromium password-form autofill advisory remains unrelated to this component.
+- Outcome: no actionable P0, P1, or P2 visual, responsive, interaction, or accessibility findings remain.
+
+
+## Follow-up Polish
 - P3: If the dashboard is later dedicated to a large TV instead of a laptop operator, an optional expanded court-schedule view could show all 21 Girls rows simultaneously.
 
 final result: passed

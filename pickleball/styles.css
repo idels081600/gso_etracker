@@ -1753,18 +1753,22 @@ kbd {
 .serve-player-state {
   display: block;
   max-width: 82px;
+  margin: 0;
   overflow: hidden;
+  color: inherit;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.serve-player-name {
+.serve-toggle .serve-player-name {
   font-size: 0.62rem;
   font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
-.serve-player-state {
+.serve-toggle .serve-player-state {
   font-size: 0.42rem;
   font-weight: 900;
   letter-spacing: 0.08em;
