@@ -5,7 +5,7 @@ declare(strict_types=1);
 $app = [
     'name' => 'Pickleball Tournament Board',
     'description' => 'Girls and boys live pickleball scoring with court schedules and automatic division standings.',
-    'version' => '3.4.0',
+    'version' => '3.4.1',
 ];
 
 header('Content-Type: text/html; charset=UTF-8');

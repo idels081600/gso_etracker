@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$app = ["name" => "Pickleball Phone Scorer", "version" => "3.4.0"];
+$app = ["name" => "Pickleball Phone Scorer", "version" => "3.4.1"];
 header("Content-Type: text/html; charset=UTF-8");
 header("X-Content-Type-Options: nosniff");
 header("Referrer-Policy: same-origin");

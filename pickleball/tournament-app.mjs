@@ -95,7 +95,7 @@ function setSyncStatus(message, connected = false) {
   document.querySelector("#sync-settings-button").textContent = connected ? "Phone connected" : "Connect phone";
 }
 
-async function flushRemoteSave() {
+async function flushRemoteSave({ throwOnError = false } = {}) {
   if (!syncAccessCode || syncWriting || !syncQueued) return;
   syncWriting = true;
   syncQueued = false;
@@ -111,6 +111,7 @@ async function flushRemoteSave() {
     setSyncStatus("Saved online · Phone sync active", true);
   } catch (error) {
     setSyncStatus("Saved locally · Phone sync offline", false);
+    if (throwOnError) throw error;
   } finally {
     syncWriting = false;
     if (syncQueued) void flushRemoteSave();
@@ -129,7 +130,7 @@ async function reconcileRemoteState({ initial = false } = {}) {
     const remote = await fetchTournamentState(syncAccessCode);
     if (remote === null) {
       syncQueued = true;
-      await flushRemoteSave();
+      await flushRemoteSave({ throwOnError: initial });
       return;
     }
     if ((initial && !hadStoredState) || isStateNewer(remote, state)) {

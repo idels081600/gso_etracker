@@ -8,10 +8,21 @@ function parseRecord(raw) {
   return restored.data;
 }
 
-async function responseError(response) {
+async function responseError(response, raw = null) {
   if (response.status === 401) return new Error("The scorer access code is incorrect.");
   if (response.status === 429) return new Error("Too many incorrect attempts. Wait 15 minutes and try again.");
-  return new Error(`Tournament synchronization failed (${response.status}).`);
+  let code = "";
+  try { code = JSON.parse(raw ?? await response.text())?.error ?? ""; } catch {}
+  const messages = {
+    database_config_missing: "The tournament database configuration is missing on the server.",
+    database_unavailable: "The tournament database is currently unavailable.",
+    database_setup_failed: "The tournament database tables could not be created.",
+    database_query_failed: "The tournament database could not be read.",
+    database_write_failed: "The tournament score could not be saved to the database.",
+    database_transaction_failed: "The tournament database could not complete the score update.",
+    storage_unavailable: "The tournament storage directory is not writable on the server.",
+  };
+  return new Error(messages[code] ?? `Tournament synchronization failed (${response.status}).`);
 }
 
 export function normalizeAccessCode(value) {
@@ -42,6 +53,6 @@ export async function saveTournamentState(state, accessCode, fetchImpl = globalT
   });
   const raw = await response.text();
   if (response.status === 409) return { ok: false, conflict: true, state: parseRecord(raw) };
-  if (!response.ok) throw await responseError(response);
+  if (!response.ok) throw await responseError(response, raw);
   return { ok: true, conflict: false, state: parseRecord(raw) };
 }
