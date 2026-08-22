@@ -1,0 +1,139 @@
+:root { color-scheme: dark; }
+
+.mobile-scorer-body {
+  min-width: 320px;
+  min-height: 100dvh;
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-topbar {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: max(8px, env(safe-area-inset-top)) 12px 8px;
+  border-bottom: 1px solid var(--line);
+  background: #0b0d0c;
+}
+
+.mobile-brand { display: flex; min-width: 0; align-items: center; gap: 9px; }
+.mobile-brand > span:last-child { min-width: 0; }
+.mobile-brand strong, .mobile-brand small { display: block; }
+.mobile-brand strong { font-size: 0.82rem; }
+.mobile-brand small { margin-top: 2px; color: var(--muted); font-size: 0.64rem; }
+.mobile-brand small.connected { color: var(--team-a); }
+.mobile-topbar .brand-mark { width: 28px; height: 28px; flex-basis: 28px; }
+.mobile-topbar .mini-button { white-space: nowrap; }
+
+.mobile-shell { width: min(680px, 100%); margin: 0 auto; padding: 12px max(10px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+
+.phone-access-panel {
+  width: min(430px, 100%);
+  margin: clamp(24px, 9vh, 72px) auto 0;
+  padding: 22px;
+  border: 1px solid var(--line-strong);
+  border-top: 4px solid var(--serve);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.phone-access-panel h1 { margin: 0; font-size: 1.55rem; }
+.phone-access-panel > p { color: var(--muted); line-height: 1.55; }
+.phone-access-panel form { display: grid; gap: 14px; margin-top: 20px; }
+.phone-access-panel .button { min-height: 50px; }
+.access-mark { width: 34px; height: 34px; margin-bottom: 16px; border-radius: 50%; background: var(--serve); color: var(--serve-ink); display: grid; place-items: center; font-size: 0.7rem; }
+.phone-security-note { margin-bottom: 0; font-size: 0.72rem; }
+.phone-security-note.warning { color: #ffad9d; }
+
+.phone-division-bar { position: sticky; z-index: 15; top: 59px; display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; background: var(--bg); }
+.phone-division-switch { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-strong); border-radius: 7px; overflow: hidden; }
+.phone-division-switch button { min-height: 48px; border: 0; background: var(--surface-1); color: var(--muted); font-weight: 900; }
+.phone-division-switch button + button { border-left: 1px solid var(--line-strong); }
+.phone-division-switch button.selected { background: var(--team-a-soft); color: var(--text); box-shadow: inset 0 -3px var(--team-a); }
+.phone-division-switch button[data-select-division="boys"].selected { background: #173443; box-shadow: inset 0 -3px #5bbfe7; }
+.phone-connection-button { min-height: 48px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-1); color: var(--muted); font-size: 0.68rem; font-weight: 800; }
+
+.phone-idle-view, .phone-live-view { --phone-division: var(--team-a); border-top: 3px solid var(--phone-division); }
+.phone-idle-view.division-boys, .phone-live-view.division-boys { --phone-division: #5bbfe7; }
+.phone-idle-view { padding: 16px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); background: var(--surface-1); }
+.phone-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.phone-section-heading span, .phone-match-meta span { color: var(--phone-division); font-size: 0.66rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
+.phone-section-heading h1 { margin: 3px 0 0; font-size: 1.25rem; }
+.phone-section-heading > strong { color: var(--muted); font: 900 1.8rem/1 ui-monospace, Consolas, monospace; }
+.phone-idle-view > p { color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+.phone-match-form { display: grid; gap: 12px; margin-top: 18px; }
+.phone-form-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.phone-start-button { min-height: 52px; margin-top: 4px; }
+
+.phone-live-view { background: var(--surface-1); }
+.phone-match-meta { display: flex; min-height: 54px; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-top: 0; }
+.phone-match-meta span, .phone-match-meta strong { display: block; }
+.phone-match-meta strong { margin-top: 3px; font-size: 0.78rem; }
+.phone-match-meta button { min-width: 66px; min-height: 40px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--bg); color: var(--text); font-weight: 800; }
+
+.phone-score-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 7px; }
+.phone-score-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: #101311; transition: border-color 150ms ease, background 150ms ease; }
+.phone-score-card.is-serving { border-color: var(--serve); background: #171a12; }
+.phone-team-line { display: flex; min-height: 67px; align-items: flex-start; justify-content: space-between; gap: 5px; padding: 9px; border-bottom: 1px solid var(--line); }
+.phone-team-line > div { min-width: 0; }
+.phone-team-line span { color: var(--muted); font-size: 0.58rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+.phone-team-line h2 { margin: 3px 0 0; font-size: clamp(0.72rem, 3.3vw, 0.95rem); line-height: 1.2; overflow-wrap: anywhere; }
+.phone-team-line button { min-width: 62px; min-height: 38px; padding: 0 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); color: var(--muted); font-size: 0.58rem; font-weight: 900; }
+.phone-score-card.is-serving .phone-team-line button { border-color: var(--serve); background: var(--serve); color: var(--serve-ink); }
+.phone-team-line button.active { display: grid; min-width: 72px; place-content: center; gap: 2px; padding: 4px 6px; }
+.phone-team-line button.active .serve-player-name { color: var(--serve-ink); font-size: 0.62rem; letter-spacing: 0; text-transform: none; }
+.phone-team-line button.active .serve-player-state { color: var(--serve-ink); font-size: 0.42rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.phone-score-value { display: grid; height: 112px; place-items: center; color: var(--text); font: 950 clamp(4.6rem, 24vw, 7.4rem)/1 ui-monospace, Consolas, monospace; letter-spacing: -0.12em; }
+.phone-score-buttons { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 1px; border-top: 1px solid var(--line); background: var(--line); }
+.phone-score-buttons button { min-height: 70px; border: 0; background: #242825; color: var(--text); font-size: 2rem; font-weight: 900; touch-action: manipulation; }
+.phone-score-buttons button.add { background: var(--phone-division); color: #07100c; }
+.phone-score-buttons button:active { transform: scale(0.97); }
+
+.phone-score-call { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; margin: 0 7px 7px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+.phone-score-call > div span, .phone-score-call > div strong { display: block; }
+.phone-score-call > div span, .phone-score-call legend { color: var(--muted); font-size: 0.58rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+.phone-score-call > div strong { margin-top: 3px; font: 900 1.25rem/1 ui-monospace, Consolas, monospace; }
+.phone-score-call fieldset { display: grid; min-width: min(52vw, 210px); grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 0; border: 0; }
+.phone-score-call legend { margin-bottom: 4px; }
+.phone-score-call label input { position: absolute; opacity: 0; }
+.phone-score-call label span { display: grid; min-width: 0; min-height: 44px; place-items: center; align-content: center; padding: 5px 7px; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--surface-1); color: var(--muted); line-height: 1; cursor: pointer; }
+.phone-score-call label strong, .phone-score-call label small { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.phone-score-call label strong { font-size: 0.72rem; font-weight: 900; }
+.phone-score-call label small { margin-top: 4px; color: var(--faint); font-size: 0.48rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+.phone-score-call label input:checked + span { border-color: var(--serve); background: var(--serve); color: var(--serve-ink); }
+.phone-score-call label input:checked + span small { color: var(--serve-ink); }
+.phone-score-call label input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+.phone-match-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 0 7px 7px; }
+.phone-match-actions button { min-height: 46px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); color: var(--muted); font-weight: 800; }
+.phone-match-actions button.danger { color: #ff9b88; }
+.phone-record-button { width: calc(100% - 14px); min-height: 50px; margin: 0 7px 7px; }
+
+.phone-dialog { max-height: calc(100dvh - 24px); overflow-y: auto; }
+.phone-toast-region { bottom: max(12px, env(safe-area-inset-bottom)); }
+
+@media (max-width: 360px) {
+  .phone-score-call { grid-template-columns: 1fr; }
+  .phone-score-call fieldset { width: 100%; min-width: 0; }
+}
+
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid var(--serve); outline-offset: 2px; }
+
+@media (max-width: 370px) {
+  .mobile-topbar .mini-button { padding-inline: 7px; font-size: 0.62rem; }
+  .phone-division-bar { grid-template-columns: 1fr; }
+  .phone-connection-button { min-height: 38px; }
+  .phone-score-grid { gap: 4px; padding: 4px; }
+  .phone-team-line { display: block; min-height: 93px; }
+  .phone-team-line button { width: 100%; margin-top: 6px; }
+  .phone-score-value { height: 96px; }
+  .phone-score-buttons button { min-height: 62px; }
+}
+
+@media (prefers-reduced-motion: reduce) { .phone-score-card, .phone-score-buttons button { transition: none; } }

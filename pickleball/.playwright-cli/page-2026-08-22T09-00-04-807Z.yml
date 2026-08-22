@@ -1,0 +1,442 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic "Pickleball Tournament Board" [ref=e3]:
+      - generic [ref=e5]:
+        - strong [ref=e6]: Pickleball
+        - generic [ref=e7]: Tournament Board
+    - navigation "Tournament tools" [ref=e8]:
+      - link "Phone scorer" [ref=e9] [cursor=pointer]:
+        - /url: mobile-scorer.php
+      - button "Connect phone" [ref=e10] [cursor=pointer]
+      - link "Single scorer" [ref=e11] [cursor=pointer]:
+        - /url: single-match.php
+      - button "Fullscreen" [ref=e12] [cursor=pointer]
+      - button "Reset board" [ref=e13] [cursor=pointer]
+  - main [ref=e14]:
+    - generic [ref=e15]:
+      - region [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - generic [ref=e19]: Girls division
+            - heading "Girls Live Scoring" [level=2] [ref=e20]
+          - button "Manage teams" [ref=e21] [cursor=pointer]
+        - generic [ref=e22]:
+          - generic [ref=e23]: 0–0
+          - strong [ref=e24]: No live girls match
+          - paragraph [ref=e25]: Choose two teams to begin courtside scoring.
+          - generic [ref=e26]:
+            - button "Add team" [ref=e27] [cursor=pointer]
+            - button "Start match" [ref=e28] [cursor=pointer]
+      - region [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: Boys division
+            - heading "Boys Live Scoring" [level=2] [ref=e33]
+          - button "Manage teams" [ref=e34] [cursor=pointer]
+        - generic [ref=e35]:
+          - generic [ref=e36]: 0–0
+          - strong [ref=e37]: No live boys match
+          - paragraph [ref=e38]: Choose two teams to begin courtside scoring.
+          - generic [ref=e39]:
+            - button "Add team" [ref=e40] [cursor=pointer]
+            - button "Start match" [ref=e41] [cursor=pointer]
+      - region [ref=e42]:
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]: Avengers 3rd Pickleball Tournament
+            - heading "Court 1 · Girls Games" [level=2] [ref=e46]
+          - generic [ref=e47]:
+            - generic [ref=e48]: 0/21
+            - button "View Live Standings" [ref=e49] [cursor=pointer]
+        - table [ref=e51]:
+          - rowgroup [ref=e52]:
+            - row [ref=e53]:
+              - 'columnheader "Game #" [ref=e54]'
+              - columnheader "Team A" [ref=e55]
+              - columnheader "Score A" [ref=e56]
+              - columnheader "Team B" [ref=e57]
+              - columnheader "Score B" [ref=e58]
+              - columnheader "Winner" [ref=e59]
+              - columnheader "Status" [ref=e60]
+              - columnheader "Notes" [ref=e61]
+          - rowgroup [ref=e62]:
+            - row [ref=e63]:
+              - cell "1" [ref=e64]
+              - cell "Joy & Irah" [ref=e65]
+              - cell "—" [ref=e66]
+              - cell "Born2x & Jane Yap" [ref=e67]
+              - cell "—" [ref=e68]
+              - cell "—" [ref=e69]
+              - cell [ref=e70]:
+                - button "Pending" [ref=e71] [cursor=pointer]
+              - cell "—" [ref=e72]
+            - row [ref=e73]:
+              - cell "2" [ref=e74]
+              - cell "Obe & Kath" [ref=e75]
+              - cell "—" [ref=e76]
+              - cell "Miriam & Mau" [ref=e77]
+              - cell "—" [ref=e78]
+              - cell "—" [ref=e79]
+              - cell [ref=e80]:
+                - button "Pending" [ref=e81] [cursor=pointer]
+              - cell "—" [ref=e82]
+            - row [ref=e83]:
+              - cell "3" [ref=e84]
+              - cell "Born2x & Jane Yap" [ref=e85]
+              - cell "—" [ref=e86]
+              - cell "Gen & Babette" [ref=e87]
+              - cell "—" [ref=e88]
+              - cell "—" [ref=e89]
+              - cell [ref=e90]:
+                - button "Pending" [ref=e91] [cursor=pointer]
+              - cell "—" [ref=e92]
+            - row [ref=e93]:
+              - cell "4" [ref=e94]
+              - cell "Gen & Babette" [ref=e95]
+              - cell "—" [ref=e96]
+              - cell "Anna & Twinkle" [ref=e97]
+              - cell "—" [ref=e98]
+              - cell "—" [ref=e99]
+              - cell [ref=e100]:
+                - button "Pending" [ref=e101] [cursor=pointer]
+              - cell "—" [ref=e102]
+            - row [ref=e103]:
+              - cell "5" [ref=e104]
+              - cell "Margie & Thamar" [ref=e105]
+              - cell "—" [ref=e106]
+              - cell "Anna & Twinkle" [ref=e107]
+              - cell "—" [ref=e108]
+              - cell "—" [ref=e109]
+              - cell [ref=e110]:
+                - button "Pending" [ref=e111] [cursor=pointer]
+              - cell "—" [ref=e112]
+            - row [ref=e113]:
+              - cell "6" [ref=e114]
+              - cell "Anna & Twinkle" [ref=e115]
+              - cell "—" [ref=e116]
+              - cell "Obe & Kath" [ref=e117]
+              - cell "—" [ref=e118]
+              - cell "—" [ref=e119]
+              - cell [ref=e120]:
+                - button "Pending" [ref=e121] [cursor=pointer]
+              - cell "—" [ref=e122]
+            - row [ref=e123]:
+              - cell "7" [ref=e124]
+              - cell "Joy & Irah" [ref=e125]
+              - cell "—" [ref=e126]
+              - cell "Gen & Babette" [ref=e127]
+              - cell "—" [ref=e128]
+              - cell "—" [ref=e129]
+              - cell [ref=e130]:
+                - button "Pending" [ref=e131] [cursor=pointer]
+              - cell "—" [ref=e132]
+            - row [ref=e133]:
+              - cell "8" [ref=e134]
+              - cell "Born2x & Jane Yap" [ref=e135]
+              - cell "—" [ref=e136]
+              - cell "Margie & Thamar" [ref=e137]
+              - cell "—" [ref=e138]
+              - cell "—" [ref=e139]
+              - cell [ref=e140]:
+                - button "Pending" [ref=e141] [cursor=pointer]
+              - cell "—" [ref=e142]
+            - row [ref=e143]:
+              - cell "9" [ref=e144]
+              - cell "Gen & Babette" [ref=e145]
+              - cell "—" [ref=e146]
+              - cell "Margie & Thamar" [ref=e147]
+              - cell "—" [ref=e148]
+              - cell "—" [ref=e149]
+              - cell [ref=e150]:
+                - button "Pending" [ref=e151] [cursor=pointer]
+              - cell "—" [ref=e152]
+            - row [ref=e153]:
+              - cell "10" [ref=e154]
+              - cell "Margie & Thamar" [ref=e155]
+              - cell "—" [ref=e156]
+              - cell "Obe & Kath" [ref=e157]
+              - cell "—" [ref=e158]
+              - cell "—" [ref=e159]
+              - cell [ref=e160]:
+                - button "Pending" [ref=e161] [cursor=pointer]
+              - cell "—" [ref=e162]
+            - row [ref=e163]:
+              - cell "11" [ref=e164]
+              - cell "Anna & Twinkle" [ref=e165]
+              - cell "—" [ref=e166]
+              - cell "Miriam & Mau" [ref=e167]
+              - cell "—" [ref=e168]
+              - cell "—" [ref=e169]
+              - cell [ref=e170]:
+                - button "Pending" [ref=e171] [cursor=pointer]
+              - cell "—" [ref=e172]
+            - row [ref=e173]:
+              - cell "12" [ref=e174]
+              - cell "Joy & Irah" [ref=e175]
+              - cell "—" [ref=e176]
+              - cell "Margie & Thamar" [ref=e177]
+              - cell "—" [ref=e178]
+              - cell "—" [ref=e179]
+              - cell [ref=e180]:
+                - button "Pending" [ref=e181] [cursor=pointer]
+              - cell "—" [ref=e182]
+            - row [ref=e183]:
+              - cell "13" [ref=e184]
+              - cell "Born2x & Jane Yap" [ref=e185]
+              - cell "—" [ref=e186]
+              - cell "Anna & Twinkle" [ref=e187]
+              - cell "—" [ref=e188]
+              - cell "—" [ref=e189]
+              - cell [ref=e190]:
+                - button "Pending" [ref=e191] [cursor=pointer]
+              - cell "—" [ref=e192]
+            - row [ref=e193]:
+              - cell "14" [ref=e194]
+              - cell "Gen & Babette" [ref=e195]
+              - cell "—" [ref=e196]
+              - cell "Obe & Kath" [ref=e197]
+              - cell "—" [ref=e198]
+              - cell "—" [ref=e199]
+              - cell [ref=e200]:
+                - button "Pending" [ref=e201] [cursor=pointer]
+              - cell "—" [ref=e202]
+            - row [ref=e203]:
+              - cell "15" [ref=e204]
+              - cell "Margie & Thamar" [ref=e205]
+              - cell "—" [ref=e206]
+              - cell "Miriam & Mau" [ref=e207]
+              - cell "—" [ref=e208]
+              - cell "—" [ref=e209]
+              - cell [ref=e210]:
+                - button "Pending" [ref=e211] [cursor=pointer]
+              - cell "—" [ref=e212]
+            - row [ref=e213]:
+              - cell "16" [ref=e214]
+              - cell "Joy & Irah" [ref=e215]
+              - cell "—" [ref=e216]
+              - cell "Anna & Twinkle" [ref=e217]
+              - cell "—" [ref=e218]
+              - cell "—" [ref=e219]
+              - cell [ref=e220]:
+                - button "Pending" [ref=e221] [cursor=pointer]
+              - cell "—" [ref=e222]
+            - row [ref=e223]:
+              - cell "17" [ref=e224]
+              - cell "Born2x & Jane Yap" [ref=e225]
+              - cell "—" [ref=e226]
+              - cell "Obe & Kath" [ref=e227]
+              - cell "—" [ref=e228]
+              - cell "—" [ref=e229]
+              - cell [ref=e230]:
+                - button "Pending" [ref=e231] [cursor=pointer]
+              - cell "—" [ref=e232]
+            - row [ref=e233]:
+              - cell "18" [ref=e234]
+              - cell "Gen & Babette" [ref=e235]
+              - cell "—" [ref=e236]
+              - cell "Miriam & Mau" [ref=e237]
+              - cell "—" [ref=e238]
+              - cell "—" [ref=e239]
+              - cell [ref=e240]:
+                - button "Pending" [ref=e241] [cursor=pointer]
+              - cell "—" [ref=e242]
+            - row [ref=e243]:
+              - cell "19" [ref=e244]
+              - cell "Joy & Irah" [ref=e245]
+              - cell "—" [ref=e246]
+              - cell "Obe & Kath" [ref=e247]
+              - cell "—" [ref=e248]
+              - cell "—" [ref=e249]
+              - cell [ref=e250]:
+                - button "Pending" [ref=e251] [cursor=pointer]
+              - cell "—" [ref=e252]
+            - row [ref=e253]:
+              - cell "20" [ref=e254]
+              - cell "Born2x & Jane Yap" [ref=e255]
+              - cell "—" [ref=e256]
+              - cell "Miriam & Mau" [ref=e257]
+              - cell "—" [ref=e258]
+              - cell "—" [ref=e259]
+              - cell [ref=e260]:
+                - button "Pending" [ref=e261] [cursor=pointer]
+              - cell "—" [ref=e262]
+            - row [ref=e263]:
+              - cell "21" [ref=e264]
+              - cell "Joy & Irah" [ref=e265]
+              - cell "—" [ref=e266]
+              - cell "Miriam & Mau" [ref=e267]
+              - cell "—" [ref=e268]
+              - cell "—" [ref=e269]
+              - cell [ref=e270]:
+                - button "Pending" [ref=e271] [cursor=pointer]
+              - cell "—" [ref=e272]
+      - region [ref=e273]:
+        - generic [ref=e274]:
+          - generic [ref=e275]:
+            - generic [ref=e276]: Avengers 3rd Pickleball Tournament
+            - heading "Court 2 · Boys Games" [level=2] [ref=e277]
+          - generic [ref=e278]:
+            - generic [ref=e279]: 0/15
+            - button "View Live Standings" [ref=e280] [cursor=pointer]
+        - table [ref=e282]:
+          - rowgroup [ref=e283]:
+            - row [ref=e284]:
+              - 'columnheader "Game #" [ref=e285]'
+              - columnheader "Team A" [ref=e286]
+              - columnheader "Score A" [ref=e287]
+              - columnheader "Team B" [ref=e288]
+              - columnheader "Score B" [ref=e289]
+              - columnheader "Winner" [ref=e290]
+              - columnheader "Status" [ref=e291]
+              - columnheader "Notes" [ref=e292]
+          - rowgroup [ref=e293]:
+            - row [ref=e294]:
+              - cell "1" [ref=e295]
+              - cell "Ryan & Try" [ref=e296]
+              - cell "—" [ref=e297]
+              - cell "Ridan & Carl" [ref=e298]
+              - cell "—" [ref=e299]
+              - cell "—" [ref=e300]
+              - cell [ref=e301]:
+                - button "Pending" [ref=e302] [cursor=pointer]
+              - cell "—" [ref=e303]
+            - row [ref=e304]:
+              - cell "2" [ref=e305]
+              - cell "Junax & Baba" [ref=e306]
+              - cell "—" [ref=e307]
+              - cell "Manju & Ian" [ref=e308]
+              - cell "—" [ref=e309]
+              - cell "—" [ref=e310]
+              - cell [ref=e311]:
+                - button "Pending" [ref=e312] [cursor=pointer]
+              - cell "—" [ref=e313]
+            - row [ref=e314]:
+              - cell "3" [ref=e315]
+              - cell "Ridan & Carl" [ref=e316]
+              - cell "—" [ref=e317]
+              - cell "Iven & Jeff" [ref=e318]
+              - cell "—" [ref=e319]
+              - cell "—" [ref=e320]
+              - cell [ref=e321]:
+                - button "Pending" [ref=e322] [cursor=pointer]
+              - cell "—" [ref=e323]
+            - row [ref=e324]:
+              - cell "4" [ref=e325]
+              - cell "Iven & Jeff" [ref=e326]
+              - cell "—" [ref=e327]
+              - cell "Eping & JG" [ref=e328]
+              - cell "—" [ref=e329]
+              - cell "—" [ref=e330]
+              - cell [ref=e331]:
+                - button "Pending" [ref=e332] [cursor=pointer]
+              - cell "—" [ref=e333]
+            - row [ref=e334]:
+              - cell "5" [ref=e335]
+              - cell "Eping & JG" [ref=e336]
+              - cell "—" [ref=e337]
+              - cell "Junax & Baba" [ref=e338]
+              - cell "—" [ref=e339]
+              - cell "—" [ref=e340]
+              - cell [ref=e341]:
+                - button "Pending" [ref=e342] [cursor=pointer]
+              - cell "—" [ref=e343]
+            - row [ref=e344]:
+              - cell "6" [ref=e345]
+              - cell "Ryan & Try" [ref=e346]
+              - cell "—" [ref=e347]
+              - cell "Iven & Jeff" [ref=e348]
+              - cell "—" [ref=e349]
+              - cell "—" [ref=e350]
+              - cell [ref=e351]:
+                - button "Pending" [ref=e352] [cursor=pointer]
+              - cell "—" [ref=e353]
+            - row [ref=e354]:
+              - cell "7" [ref=e355]
+              - cell "Ridan & Carl" [ref=e356]
+              - cell "—" [ref=e357]
+              - cell "Eping & JG" [ref=e358]
+              - cell "—" [ref=e359]
+              - cell "—" [ref=e360]
+              - cell [ref=e361]:
+                - button "Pending" [ref=e362] [cursor=pointer]
+              - cell "—" [ref=e363]
+            - row [ref=e364]:
+              - cell "8" [ref=e365]
+              - cell "Iven & Jeff" [ref=e366]
+              - cell "—" [ref=e367]
+              - cell "Junax & Baba" [ref=e368]
+              - cell "—" [ref=e369]
+              - cell "—" [ref=e370]
+              - cell [ref=e371]:
+                - button "Pending" [ref=e372] [cursor=pointer]
+              - cell "—" [ref=e373]
+            - row [ref=e374]:
+              - cell "9" [ref=e375]
+              - cell "Eping & JG" [ref=e376]
+              - cell "—" [ref=e377]
+              - cell "Manju & Ian" [ref=e378]
+              - cell "—" [ref=e379]
+              - cell "—" [ref=e380]
+              - cell [ref=e381]:
+                - button "Pending" [ref=e382] [cursor=pointer]
+              - cell "—" [ref=e383]
+            - row [ref=e384]:
+              - cell "10" [ref=e385]
+              - cell "Ryan & Try" [ref=e386]
+              - cell "—" [ref=e387]
+              - cell "Eping & JG" [ref=e388]
+              - cell "—" [ref=e389]
+              - cell "—" [ref=e390]
+              - cell [ref=e391]:
+                - button "Pending" [ref=e392] [cursor=pointer]
+              - cell "—" [ref=e393]
+            - row [ref=e394]:
+              - cell "11" [ref=e395]
+              - cell "Ridan & Carl" [ref=e396]
+              - cell "—" [ref=e397]
+              - cell "Junax & Baba" [ref=e398]
+              - cell "—" [ref=e399]
+              - cell "—" [ref=e400]
+              - cell [ref=e401]:
+                - button "Pending" [ref=e402] [cursor=pointer]
+              - cell "—" [ref=e403]
+            - row [ref=e404]:
+              - cell "12" [ref=e405]
+              - cell "Iven & Jeff" [ref=e406]
+              - cell "—" [ref=e407]
+              - cell "Manju & Ian" [ref=e408]
+              - cell "—" [ref=e409]
+              - cell "—" [ref=e410]
+              - cell [ref=e411]:
+                - button "Pending" [ref=e412] [cursor=pointer]
+              - cell "—" [ref=e413]
+            - row [ref=e414]:
+              - cell "13" [ref=e415]
+              - cell "Ryan & Try" [ref=e416]
+              - cell "—" [ref=e417]
+              - cell "Junax & Baba" [ref=e418]
+              - cell "—" [ref=e419]
+              - cell "—" [ref=e420]
+              - cell [ref=e421]:
+                - button "Pending" [ref=e422] [cursor=pointer]
+              - cell "—" [ref=e423]
+            - row [ref=e424]:
+              - cell "14" [ref=e425]
+              - cell "Ridan & Carl" [ref=e426]
+              - cell "—" [ref=e427]
+              - cell "Manju & Ian" [ref=e428]
+              - cell "—" [ref=e429]
+              - cell "—" [ref=e430]
+              - cell [ref=e431]:
+                - button "Pending" [ref=e432] [cursor=pointer]
+              - cell "—" [ref=e433]
+            - row [ref=e434]:
+              - cell "15" [ref=e435]
+              - cell "Ryan & Try" [ref=e436]
+              - cell "—" [ref=e437]
+              - cell "Manju & Ian" [ref=e438]
+              - cell "—" [ref=e439]
+              - cell "—" [ref=e440]
+              - cell [ref=e441]:
+                - button "Pending" [ref=e442] [cursor=pointer]
+              - cell "—" [ref=e443]
