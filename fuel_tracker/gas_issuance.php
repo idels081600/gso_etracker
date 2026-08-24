@@ -1100,7 +1100,7 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                                         data-id="<?php echo htmlspecialchars((string) $iss['id']); ?>"
                                                         data-serial="<?php echo htmlspecialchars((string) $iss['serial_no']); ?>"
                                                         data-bs-toggle="tooltip"
-                                                        title="Print trip ticket (3 blank copies)"
+                                                        title="Print trip ticket (4 blank copies)"
                                                         aria-label="Print trip ticket <?php echo htmlspecialchars((string) $iss['serial_no']); ?>">
                                                         <i class="fas fa-route"></i>
                                                     </button>
@@ -2630,10 +2630,10 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                     issuance_ids: item.id || tripTicketButton.dataset.id || '',
                     blank_fuel_values: '1',
                     hide_signature: '1',
-                    copies: '3'
+                    copies: '4'
                 });
                 window.open('trip_ticket_batch.php?' + tripParams.toString(), '_blank', 'noopener');
-                showIssuanceToast('Opening 3 blank trip ticket copies for ' + (item.serial_no || 'this record') + '...', 'success');
+                showIssuanceToast('Opening 4 blank trip ticket copies for ' + (item.serial_no || 'this record') + '...', 'success');
             } else if (deleteButton) {
                 var serial = item.serial_no || deleteButton.dataset.serial || 'this issuance';
                 if (!window.confirm('Delete gas issuance ' + serial + '? This cannot be undone.')) {

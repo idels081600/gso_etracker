@@ -5,7 +5,7 @@ declare(strict_types=1);
 $app = [
     'name' => 'Pickleball Tournament Board',
     'description' => 'Girls and boys live pickleball scoring with court schedules and automatic division standings.',
-    'version' => '3.5.0',
+    'version' => '4.0.0',
 ];
 
 header('Content-Type: text/html; charset=UTF-8');
@@ -42,6 +42,8 @@ function escape(string $value): string
       <span id="saved-state-label">Saved locally · Phone sync off</span>
     </div>
     <nav class="tournament-tools" aria-label="Tournament tools">
+      <button class="mini-button" id="add-scoreboard-button" type="button">+ Scoreboard</button>
+      <button class="mini-button" id="schedules-button" type="button">Schedules</button>
       <a class="mini-button" href="mobile-scorer.php">Phone scorer</a>
       <button class="mini-button" id="sync-settings-button" type="button">Connect phone</button>
       <a class="mini-button" href="single-match.php">Single scorer</a>
@@ -54,16 +56,28 @@ function escape(string $value): string
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
   <div class="sr-only" id="score-announcer" aria-live="assertive" aria-atomic="true"></div>
 
+  <dialog id="scoreboard-dialog" class="app-dialog" aria-labelledby="scoreboard-dialog-title">
+    <div class="dialog-heading-row">
+      <div><div class="dialog-kicker">New live court</div><h2 id="scoreboard-dialog-title">Add scoreboard</h2></div>
+      <button class="icon-button" type="button" data-close-dialog aria-label="Close scoreboard setup">×</button>
+    </div>
+    <form id="scoreboard-form">
+      <label class="field"><span>Scoreboard name</span><input id="scoreboard-name" name="name" maxlength="40" placeholder="Court 3" autocomplete="off"></label>
+      <fieldset class="setup-choice"><legend>Division</legend><label><input type="radio" name="divisionId" value="girls" checked><span>Girls</span></label><label><input type="radio" name="divisionId" value="boys"><span>Boys</span></label></fieldset>
+      <fieldset class="setup-choice"><legend>Match format</legend><label><input type="radio" name="matchType" value="doubles" checked><span>Doubles</span></label><label><input type="radio" name="matchType" value="singles"><span>Singles</span></label></fieldset>
+      <div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog>Cancel</button><button class="button button-primary" type="submit">Add scoreboard</button></div>
+    </form>
+  </dialog>
   <dialog id="match-dialog" class="app-dialog app-dialog-wide" aria-labelledby="match-dialog-title">
     <div class="dialog-heading-row">
       <div><div class="dialog-kicker" id="match-dialog-kicker">Division</div><h2 id="match-dialog-title">Start match</h2></div>
       <button class="icon-button" type="button" data-close-dialog aria-label="Close match setup">×</button>
     </div>
     <form id="match-form">
-      <input type="hidden" id="match-division" name="divisionId">
+      <input type="hidden" id="match-scoreboard" name="scoreboardId">
       <div class="dialog-form-grid tournament-dialog-grid">
-        <label class="field"><span>Side A team</span><select id="match-team-a" name="teamAId"></select></label>
-        <label class="field"><span>Side B team</span><select id="match-team-b" name="teamBId"></select></label>
+        <label class="field"><span id="match-side-a-label">Side A</span><select id="match-team-a" name="teamAId"></select></label>
+        <label class="field"><span id="match-side-b-label">Side B</span><select id="match-team-b" name="teamBId"></select></label>
         <label class="field"><span>Points to win</span><select id="match-target" name="targetPoints"><option value="11">11 points</option><option value="15">15 points</option><option value="21">21 points</option></select></label>
         <label class="field"><span>Winning margin</span><select id="match-win-by" name="winBy"><option value="2">Win by 2</option><option value="1">Win by 1</option></select></label>
         <label class="field dialog-span-two"><span>First serving team</span><select id="match-serving-team" name="servingTeamId"></select></label>
@@ -86,6 +100,15 @@ function escape(string $value): string
     <p class="dialog-note">Teams with a live or recorded match are locked to protect the standings.</p>
   </dialog>
 
+  <dialog id="schedule-dialog" class="app-dialog schedule-modal" aria-labelledby="schedule-dialog-title">
+    <div class="dialog-heading-row">
+      <div><div class="dialog-kicker">Tournament games</div><h2 id="schedule-dialog-title">Court schedules</h2></div>
+      <button class="icon-button" type="button" data-close-dialog aria-label="Close schedules">×</button>
+    </div>
+    <div class="schedule-dialog-tabs" role="tablist" aria-label="Schedule division"><button type="button" role="tab" data-schedule-division="girls" aria-selected="true">Girls</button><button type="button" role="tab" data-schedule-division="boys" aria-selected="false">Boys</button></div>
+    <div class="schedule-scroll schedule-modal-scroll"><table class="schedule-table"><thead><tr><th>Game #</th><th>Team A</th><th>Score A</th><th>Team B</th><th>Score B</th><th>Winner</th><th>Status</th><th>Notes</th></tr></thead><tbody id="schedule-modal-body"></tbody></table></div>
+    <div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog>Close</button></div>
+  </dialog>
   <dialog id="standings-dialog" class="app-dialog standings-modal" aria-labelledby="standings-dialog-title">
     <div class="dialog-heading-row standings-modal-heading">
       <div><div class="dialog-kicker" id="standings-dialog-kicker">Division standings</div><h2 id="standings-dialog-title">Live Standings</h2></div>
@@ -95,7 +118,7 @@ function escape(string $value): string
     <div class="standings-scroll standings-modal-scroll">
       <table class="standings-table">
         <thead><tr>
-          <th>Rank</th><th>Team</th><th>P</th><th>W</th><th>L</th><th>PF</th><th>PA</th><th>Diff</th><th>H2H</th><th>Tie-break <small>W / H2H / Diff / PF</small></th><th>Award</th>
+          <th>Rank</th><th id="standings-participant-heading">Team</th><th>P</th><th>W</th><th>L</th><th>PF</th><th>PA</th><th>Diff</th><th>H2H</th><th>Tie-break <small>W / H2H / Diff / PF</small></th><th>Award</th>
         </tr></thead>
         <tbody id="standings-modal-body"></tbody>
       </table>

@@ -2503,3 +2503,35 @@ button.status-pending:focus-visible {
     grid-column: auto;
   }
 }
+
+/* Dynamic multi-court scoreboard workspace */
+.scoreboard-workspace-bar { display: flex; min-height: 46px; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-1); }
+.scoreboard-workspace-bar > div { display: flex; align-items: center; gap: 8px; }
+.scoreboard-workspace-bar span { color: var(--muted); font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.scoreboard-workspace-bar strong { color: var(--serve); font-size: .72rem; }
+.dynamic-scoreboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(460px, 100%), 1fr)); align-items: start; gap: 8px; }
+.scoreboard-panel { --division-color: var(--team-a); display: grid; min-width: 0; min-height: 300px; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border: 1px solid var(--line); border-top: 3px solid var(--division-color); border-radius: var(--radius); background: var(--surface-1); }
+.scoreboard-panel.division-boys { --division-color: #5bbfe7; }
+.scoreboard-panel .scoring-empty { min-height: 245px; }
+.dynamic-score-footer { grid-template-columns: minmax(95px,.65fr) minmax(190px,1.2fr) auto auto minmax(145px,1fr); }
+.scoreboards-empty { display: grid; min-height: calc(100dvh - 150px); place-content: center; justify-items: center; padding: 30px; border: 1px dashed var(--line-strong); border-radius: var(--radius); text-align: center; }
+.scoreboards-empty h1 { margin: 12px 0 4px; font-size: 1.15rem; }
+.scoreboards-empty p { max-width: 430px; margin: 0 0 18px; color: var(--muted); }
+.setup-choice { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px; margin: 14px 0 0; padding: 0; border: 0; }
+.setup-choice legend { margin-bottom: 6px; color: var(--muted); font-size: .7rem; font-weight: 800; }
+.setup-choice label { position: relative; }
+.setup-choice input { position: absolute; opacity: 0; }
+.setup-choice span { display: grid; min-height: 44px; place-items: center; border: 1px solid var(--line); border-radius: 5px; background: var(--surface-2); color: var(--muted); font-weight: 800; cursor: pointer; }
+.setup-choice input:checked + span { border-color: var(--serve); background: #1a1d11; color: var(--serve); }
+.setup-choice input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+.schedule-modal { width: min(1180px, calc(100vw - 28px)); }
+.schedule-modal-scroll { height: min(64dvh, 590px); margin-top: 10px; }
+.schedule-dialog-tabs { display: grid; grid-template-columns: repeat(2,1fr); gap: 5px; }
+.schedule-dialog-tabs button { min-height: 40px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface-2); color: var(--muted); font-weight: 900; }
+.schedule-dialog-tabs button[aria-selected="true"] { border-color: var(--serve); color: var(--serve); }
+@media (min-width: 1550px) { .dynamic-scoreboard-grid { grid-template-columns: repeat(auto-fit, minmax(470px,1fr)); } }
+@media (max-width: 760px) { .scoreboard-workspace-bar { align-items: flex-start; } .scoreboard-workspace-bar > div:last-child { flex-wrap: wrap; justify-content: flex-end; } .dynamic-score-footer { grid-template-columns: 1fr auto auto; } .dynamic-score-footer .inline-server-choice { grid-column: 1 / -1; } .dynamic-score-footer .button { grid-column: 1 / -1; } }
+@media (max-width: 480px) { .scoreboard-workspace-bar { display: grid; } .scoreboard-workspace-bar > div:last-child { justify-content: stretch; } .scoreboard-workspace-bar button { flex: 1; } }#tournament-app { overflow-y: auto; }
+.dynamic-scoreboard-grid { padding-bottom: 8px; }
+/* Dynamic boards keep all match actions available at every viewport. */
+.dynamic-score-footer > .danger-text { display: inline-flex; }

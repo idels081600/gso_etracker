@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$app = ["name" => "Pickleball Phone Scorer", "version" => "3.5.0"];
+$app = ["name" => "Pickleball Phone Scorer", "version" => "4.0.0"];
 header("Content-Type: text/html; charset=UTF-8");
 header("X-Content-Type-Options: nosniff");
 header("Referrer-Policy: same-origin");
@@ -41,10 +41,7 @@ header("Cache-Control: no-cache");
 
     <section class="phone-scorer-panel" id="phone-scorer-panel" hidden>
       <div class="phone-division-bar">
-        <div class="phone-division-switch" role="tablist" aria-label="Select scoring division">
-          <button type="button" role="tab" data-select-division="girls" aria-selected="true">Girls</button>
-          <button type="button" role="tab" data-select-division="boys" aria-selected="false">Boys</button>
-        </div>
+        <label class="phone-board-picker"><span>Scoreboard</span><select id="phone-board-select" aria-label="Select scoreboard"></select></label>
         <button class="phone-connection-button" id="phone-disconnect-button" type="button">Disconnect</button>
       </div>
       <div id="phone-app"></div>

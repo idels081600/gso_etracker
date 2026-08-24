@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-const MODULE_ASSET_VERSION = '3.5.0';
+const MODULE_ASSET_VERSION = '4.0.0';
 
 $modules = [
     'app' => 'app.mjs',

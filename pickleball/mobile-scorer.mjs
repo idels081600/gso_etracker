@@ -1,283 +1,90 @@
 import {
-  adjustLiveScore,
-  discardLiveMatch,
-  liveCourtOrder,
-  recordLiveResult,
-  resetLiveScore,
-  setLiveServer,
-  setLiveServerNumber,
-  servingPlayerName,
-  startMatch,
-  swapLiveCourt,
-  teamPlayerNames,
-  undoLive,
+  adjustScoreboardScore, discardScoreboardMatch, getScoreboards, liveCourtOrder, participantOptions,
+  recordScoreboardResult, resetScoreboard, setScoreboardServer, setScoreboardServerNumber,
+  startScoreboardMatch, swapScoreboardCourt, teamPlayerNames, undoScoreboard,
 } from "./tournament-engine.mjs";
 import { fetchTournamentState, isStateNewer, normalizeAccessCode, saveTournamentState } from "./tournament-sync.mjs";
 
 const ACCESS_KEY = "pickleball.phoneScorerAccess.v1";
-const DIVISION_KEY = "pickleball.phoneScorerDivision.v1";
+const BOARD_KEY = "pickleball.phoneScorerBoard.v1";
 const POLL_MS = 900;
-
-const accessPanel = document.querySelector("#phone-access-panel");
-const scorerPanel = document.querySelector("#phone-scorer-panel");
-const accessForm = document.querySelector("#phone-access-form");
-const phoneApp = document.querySelector("#phone-app");
-const confirmDialog = document.querySelector("#phone-confirm-dialog");
-const winnerDialog = document.querySelector("#phone-winner-dialog");
-const toastRegion = document.querySelector("#phone-toast-region");
-const announcer = document.querySelector("#phone-announcer");
-
+const $ = (selector) => document.querySelector(selector);
+const accessPanel = $("#phone-access-panel");
+const scorerPanel = $("#phone-scorer-panel");
+const phoneApp = $("#phone-app");
+const confirmDialog = $("#phone-confirm-dialog");
+const winnerDialog = $("#phone-winner-dialog");
 let state = null;
 let accessCode = normalizeAccessCode(localStorage.getItem(ACCESS_KEY));
-let selectedDivision = ["girls", "boys"].includes(localStorage.getItem(DIVISION_KEY)) ? localStorage.getItem(DIVISION_KEY) : "girls";
+let selectedBoardId = localStorage.getItem(BOARD_KEY) || "";
 let confirmCallback = null;
 let actionQueue = Promise.resolve();
 let actionInFlight = false;
 
-function escapeHtml(value) {
-  return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+function escapeHtml(value) { return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
+function toast(message, error = false) { const el = document.createElement("div"); el.className = `toast ${error ? "error" : ""}`; el.textContent = message; $("#phone-toast-region").append(el); setTimeout(() => el.remove(), 3200); }
+function announce(message) { $("#phone-announcer").textContent = ""; setTimeout(() => { $("#phone-announcer").textContent = message; }, 20); }
+function connection(message, connected = false) { $("#phone-sync-status").textContent = message; $("#phone-sync-status").classList.toggle("connected", connected); }
+function boards() { return state ? getScoreboards(state) : []; }
+function currentBoard() { return boards().find((item) => item.id === selectedBoardId) ?? boards()[0] ?? null; }
+function participantName(board, id) { return board.live?.participantNames?.[id] ?? participantOptions(state, board.divisionId, board.matchType).find((item) => item.id === id)?.name ?? "Participant"; }
+function selectAvailableBoard() { if (!boards().some((item) => item.id === selectedBoardId)) selectedBoardId = boards()[0]?.id ?? ""; if (selectedBoardId) localStorage.setItem(BOARD_KEY, selectedBoardId); }
+
+function picker() {
+  selectAvailableBoard();
+  $("#phone-board-select").innerHTML = boards().length ? boards().map((board) => `<option value="${board.id}">${escapeHtml(board.name)} · ${board.divisionId === "girls" ? "Girls" : "Boys"} ${board.matchType === "singles" ? "Singles" : "Doubles"}</option>`).join("") : '<option value="">No scoreboards</option>';
+  $("#phone-board-select").value = selectedBoardId;
 }
-
-function showToast(message, type = "info") {
-  const toast = document.createElement("div");
-  toast.className = `toast ${type === "error" ? "error" : ""}`;
-  toast.textContent = message;
-  toastRegion.append(toast);
-  window.setTimeout(() => toast.remove(), 3200);
+function idleMarkup(board) {
+  const participants = participantOptions(state, board.divisionId, board.matchType);
+  const options = participants.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("");
+  return `<section class="phone-idle-view division-${board.divisionId}"><div class="phone-section-heading"><div><span>${board.divisionId === "girls" ? "Girls" : "Boys"} · ${board.matchType}</span><h1>${escapeHtml(board.name)}</h1></div><strong>0–0</strong></div><p>Select two ${board.matchType === "singles" ? "players" : "teams"} and begin scoring.</p><form id="phone-match-form" class="phone-match-form"><label class="field"><span>Left ${board.matchType === "singles" ? "player" : "team"}</span><select name="teamAId" id="phone-team-a">${options}</select></label><label class="field"><span>Right ${board.matchType === "singles" ? "player" : "team"}</span><select name="teamBId" id="phone-team-b">${options}</select></label><div class="phone-form-pair"><label class="field"><span>Points</span><select name="targetPoints"><option>11</option><option>15</option><option>21</option></select></label><label class="field"><span>Win by</span><select name="winBy"><option>2</option><option>1</option></select></label></div><label class="field"><span>First server</span><select name="servingTeamId" id="phone-serving-team"></select></label><button class="button button-primary phone-start-button">Start match</button></form></section>`;
 }
-
-function announce(message) {
-  announcer.textContent = "";
-  window.setTimeout(() => { announcer.textContent = message; }, 20);
+function sideMarkup(board, id, position) {
+  const live = board.live, name = participantName(board, id), serving = live.servingTeamId === id;
+  const server = board.matchType === "singles" ? name : teamPlayerNames(name)[live.serverNumber - 1];
+  return `<article class="phone-score-card ${serving ? "is-serving" : ""}"><div class="phone-team-line"><div><span>Court ${position}</span><h2>${escapeHtml(name)}</h2></div><button class="${serving ? "active" : ""}" data-phone-action="serve" data-team="${id}">${serving ? `<span class="serve-player-name">${escapeHtml(server)}</span><span class="serve-player-state">Serving</span>` : "Set serve"}</button></div><strong class="phone-score-value">${live.scores[id]}</strong><div class="phone-score-buttons"><button data-phone-action="score" data-team="${id}" data-delta="-1">−</button><button class="add" data-phone-action="score" data-team="${id}" data-delta="1">+</button></div></article>`;
 }
-
-function setConnectionStatus(message, connected = false) {
-  const element = document.querySelector("#phone-sync-status");
-  element.textContent = message;
-  element.classList.toggle("connected", connected);
+function liveMarkup(board) {
+  const live = board.live, [left, right] = liveCourtOrder(live), receiver = live.servingTeamId === live.teamAId ? live.teamBId : live.teamAId;
+  const call = `${live.scores[live.servingTeamId]} – ${live.scores[receiver]}${board.matchType === "doubles" ? ` – ${live.serverNumber}` : ""}`;
+  const serverName = participantName(board, live.servingTeamId), servers = board.matchType === "doubles" ? teamPlayerNames(serverName) : [serverName];
+  const winner = live.winnerTeamId ? participantName(board, live.winnerTeamId) : "";
+  return `<section class="phone-live-view division-${board.divisionId}"><div class="phone-match-meta"><div><span>${board.divisionId === "girls" ? "Girls" : "Boys"} · ${board.matchType}</span><strong>${escapeHtml(board.name)} · To ${live.targetPoints}</strong></div><button data-phone-action="undo" ${live.undoStack.length ? "" : "disabled"}>Undo</button></div><div class="phone-score-grid">${sideMarkup(board, left, "Left")}${sideMarkup(board, right, "Right")}</div><div class="phone-score-call"><div><span>Score call</span><strong>${call}</strong></div><fieldset><legend>Serving player</legend>${servers.map((name, index) => `<label><input type="radio" name="phoneServer" value="${index + 1}" data-phone-server ${live.serverNumber === index + 1 ? "checked" : ""} ${board.matchType === "singles" ? "disabled" : ""}><span><strong>${escapeHtml(name)}</strong><small>${live.serverNumber === index + 1 ? "Serving" : "Select"}</small></span></label>`).join("")}</fieldset></div><div class="phone-match-actions"><button data-phone-action="swap">⇄ Swap</button><button data-phone-action="reset">Reset</button><button class="danger" data-phone-action="end">End</button></div><button class="button ${winner ? "button-primary" : "button-secondary"} phone-record-button" data-phone-action="record" ${winner ? "" : "disabled"}>${winner ? `Record ${escapeHtml(winner)} win` : "Awaiting winner"}</button></section>`;
 }
-
-function division(divisionId = selectedDivision) { return state.divisions[divisionId]; }
-function team(teamId, divisionId = selectedDivision) { return division(divisionId).teams.find((item) => item.id === teamId); }
-
-function updateDivisionTabs() {
-  document.querySelectorAll("[data-select-division]").forEach((button) => {
-    const selected = button.dataset.selectDivision === selectedDivision;
-    button.setAttribute("aria-selected", String(selected));
-    button.classList.toggle("selected", selected);
-  });
-}
-
-function idleMatchMarkup(current) {
-  const options = current.teams.map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join("");
-  return `
-    <section class="phone-idle-view division-${selectedDivision}">
-      <div class="phone-section-heading"><div><span>${current.teams.length} teams available</span><h1>${current.label} Live Scoring</h1></div><strong>0–0</strong></div>
-      <p>No live ${current.label.toLowerCase()} match. Select the two teams and begin scoring from this phone.</p>
-      <form id="phone-match-form" class="phone-match-form">
-        <label class="field"><span>Side A team</span><select name="teamAId" id="phone-team-a">${options}</select></label>
-        <label class="field"><span>Side B team</span><select name="teamBId" id="phone-team-b">${options}</select></label>
-        <div class="phone-form-pair">
-          <label class="field"><span>Points</span><select name="targetPoints"><option value="11">11</option><option value="15">15</option><option value="21">21</option></select></label>
-          <label class="field"><span>Win by</span><select name="winBy"><option value="2">2</option><option value="1">1</option></select></label>
-        </div>
-        <label class="field"><span>First serving team</span><select name="servingTeamId" id="phone-serving-team"></select></label>
-        <button class="button button-primary phone-start-button" type="submit">Start ${current.label} match</button>
-      </form>
-    </section>`;
-}
-
-function scoreTeamMarkup(teamId, side) {
-  const live = division().live;
-  const currentTeam = team(teamId);
-  const serving = live.servingTeamId === teamId;
-  const activeServer = serving ? servingPlayerName(currentTeam.name, live.serverNumber) : "";
-  return `
-    <article class="phone-score-card ${serving ? "is-serving" : ""}">
-      <div class="phone-team-line"><div><span>Court ${side}</span><h2>${escapeHtml(currentTeam.name)}</h2></div><button class="${serving ? "active" : ""}" type="button" data-phone-action="serve" data-team="${teamId}" aria-pressed="${serving}" aria-label="${serving ? `${escapeHtml(activeServer)} is serving for ${escapeHtml(currentTeam.name)}` : `Set ${escapeHtml(currentTeam.name)} as serving team`}">${serving ? `<span class="serve-player-name">${escapeHtml(activeServer)}</span><span class="serve-player-state">Serving</span>` : "Set serve"}</button></div>
-      <strong class="phone-score-value">${live.scores[teamId]}</strong>
-      <div class="phone-score-buttons">
-        <button type="button" data-phone-action="score" data-team="${teamId}" data-delta="-1" aria-label="Subtract one from ${escapeHtml(currentTeam.name)}">−</button>
-        <button class="add" type="button" data-phone-action="score" data-team="${teamId}" data-delta="1" aria-label="Add one to ${escapeHtml(currentTeam.name)}">+</button>
-      </div>
-    </article>`;
-}
-
-function liveMatchMarkup(current) {
-  const live = current.live;
-  const [leftTeamId, rightTeamId] = liveCourtOrder(live);
-  const servingScore = live.scores[live.servingTeamId];
-  const receivingId = live.servingTeamId === live.teamAId ? live.teamBId : live.teamAId;
-  const scoreCall = `${servingScore} – ${live.scores[receivingId]} – ${live.serverNumber}`;
-  const winner = live.winnerTeamId ? team(live.winnerTeamId) : null;
-  const servingPlayers = teamPlayerNames(team(live.servingTeamId).name);
-  return `
-    <section class="phone-live-view division-${selectedDivision}">
-      <div class="phone-match-meta"><div><span>${current.label} division</span><strong>To ${live.targetPoints} · Win by ${live.winBy}</strong></div><button type="button" data-phone-action="undo" ${live.undoStack.length ? "" : "disabled"}>Undo</button></div>
-      <div class="phone-score-grid">${scoreTeamMarkup(leftTeamId, "Left")}${scoreTeamMarkup(rightTeamId, "Right")}</div>
-      <div class="phone-score-call"><div><span>Score call</span><strong>${scoreCall}</strong></div><fieldset><legend>Serving player</legend>${servingPlayers.map((playerName, index) => { const number = index + 1; const selected = live.serverNumber === number; return `<label><input type="radio" name="phoneServer" value="${number}" data-phone-server aria-label="Set ${escapeHtml(playerName)} as serving player" ${selected ? "checked" : ""}><span><strong>${escapeHtml(playerName)}</strong><small>${selected ? "Serving" : "Select"}</small></span></label>`; }).join("")}</fieldset></div>
-      <div class="phone-match-actions"><button type="button" data-phone-action="swap" aria-label="Swap the left and right court sides with their scores">⇄ Swap courts</button><button type="button" data-phone-action="reset">Reset score</button><button class="danger" type="button" data-phone-action="end">End match</button></div>
-      <button class="button ${winner ? "button-primary" : "button-secondary"} phone-record-button" type="button" data-phone-action="record" ${winner ? "" : "disabled"}>${winner ? `Record ${escapeHtml(winner.name)} win` : "Awaiting winning score"}</button>
-    </section>`;
-}
-
 function render() {
-  if (!state) return;
-  updateDivisionTabs();
-  phoneApp.innerHTML = division().live ? liveMatchMarkup(division()) : idleMatchMarkup(division());
-  if (!division().live) updateStartServingOptions();
+  if (!state) return; picker(); const board = currentBoard();
+  if (!board) { phoneApp.innerHTML = '<section class="phone-no-boards"><h1>No scoreboards available</h1><p>Add a scoreboard from the tournament controller, then it will appear here automatically.</p></section>'; return; }
+  phoneApp.innerHTML = board.live ? liveMarkup(board) : idleMarkup(board);
+  if (!board.live) updateServingOptions();
 }
-
-function updateStartServingOptions() {
-  const teamA = document.querySelector("#phone-team-a");
-  const teamB = document.querySelector("#phone-team-b");
-  const serving = document.querySelector("#phone-serving-team");
-  if (!teamA || !teamB || !serving) return;
-  if (teamA.value === teamB.value && teamB.options.length > 1) teamB.selectedIndex = teamA.selectedIndex === 0 ? 1 : 0;
-  serving.innerHTML = [teamA.value, teamB.value].map((id) => `<option value="${id}">${escapeHtml(team(id)?.name ?? "Team")}</option>`).join("");
+function updateServingOptions() {
+  const board = currentBoard(), a = $("#phone-team-a"), b = $("#phone-team-b"), serving = $("#phone-serving-team"); if (!a || !b || !serving) return;
+  if (a.value === b.value && b.options.length > 1) b.selectedIndex = a.selectedIndex === 0 ? 1 : 0;
+  const names = new Map(participantOptions(state, board.divisionId, board.matchType).map((item) => [item.id, item.name]));
+  serving.innerHTML = [a.value, b.value].map((id) => `<option value="${id}">${escapeHtml(names.get(id))}</option>`).join("");
 }
-
 async function connect(code) {
-  const normalized = normalizeAccessCode(code);
-  if (!normalized) throw new Error("Enter the scorer access code.");
-  setConnectionStatus("Connecting…");
-  const remote = await fetchTournamentState(normalized);
-  if (remote === null) throw new Error("Connect the main tournament board first so it can initialize shared scoring.");
-  accessCode = normalized;
-  state = remote;
-  localStorage.setItem(ACCESS_KEY, accessCode);
-  accessPanel.hidden = true;
-  scorerPanel.hidden = false;
-  render();
-  setConnectionStatus("Live sync connected", true);
+  const normalized = normalizeAccessCode(code); if (!normalized) throw new Error("Enter the scorer access code."); connection("Connecting…");
+  const remote = await fetchTournamentState(normalized); if (remote === null) throw new Error("Connect the tournament controller first.");
+  accessCode = normalized; state = remote; localStorage.setItem(ACCESS_KEY, accessCode); accessPanel.hidden = true; scorerPanel.hidden = false; render(); connection("Live sync connected", true);
 }
-
-function queueMutation(mutator, message, { celebrate = false, divisionId = selectedDivision } = {}) {
-  actionQueue = actionQueue.then(async () => {
-    actionInFlight = true;
-    const previousWinner = division(divisionId).live?.winnerTeamId;
-    let next = mutator(state);
-    state = next;
-    render();
-    setConnectionStatus("Saving score…", true);
-    let result = await saveTournamentState(state, accessCode);
-    if (result.conflict) {
-      state = result.state;
-      next = mutator(state);
-      state = next;
-      render();
-      result = await saveTournamentState(state, accessCode);
-      if (result.conflict) {
-        state = result.state;
-        render();
-        throw new Error("The score changed elsewhere. The latest shared score was loaded.");
-      }
-    }
-    setConnectionStatus("Live sync connected", true);
-    if (message) announce(message);
-    const newWinner = division(divisionId).live?.winnerTeamId;
-    if (celebrate && !previousWinner && newWinner) openWinnerDialog(divisionId);
-  }).catch((error) => {
-    setConnectionStatus("Sync needs attention");
-    showToast(error.message, "error");
-  }).finally(() => { actionInFlight = false; });
+function mutate(mutator, message, celebrate = false) {
+  const boardId = currentBoard()?.id; if (!boardId) return;
+  actionQueue = actionQueue.then(async () => { actionInFlight = true; const before = currentBoard().live?.winnerTeamId; state = mutator(state, boardId); render(); connection("Saving score…", true); let result = await saveTournamentState(state, accessCode); if (result.conflict) { state = result.state; state = mutator(state, boardId); result = await saveTournamentState(state, accessCode); } state = result.state; render(); connection("Live sync connected", true); announce(message); if (celebrate && !before && currentBoard()?.live?.winnerTeamId) winnerAlert(); }).catch((error) => { connection("Sync needs attention"); toast(error.message, true); }).finally(() => { actionInFlight = false; });
 }
+function confirmAction(title, message, label, callback) { $("#phone-confirm-title").textContent = title; $("#phone-confirm-message").textContent = message; $("#phone-confirm-action").textContent = label; confirmCallback = callback; confirmDialog.showModal(); }
+function winnerAlert() { const board = currentBoard(), live = board.live, winner = participantName(board, live.winnerTeamId); winnerDialog.dataset.board = board.id; $("#phone-winner-kicker").textContent = `${board.name} winning point reached`; $("#phone-winner-title").textContent = `Congratulations, ${winner}!`; $("#phone-winner-message").textContent = "The required winning margin has been reached."; $("#phone-winner-side-a").textContent = participantName(board, live.teamAId); $("#phone-winner-side-b").textContent = participantName(board, live.teamBId); $("#phone-winner-final-score").textContent = `${live.scores[live.teamAId]}–${live.scores[live.teamBId]}`; winnerDialog.showModal(); }
 
-function openConfirm(title, message, label, callback) {
-  document.querySelector("#phone-confirm-title").textContent = title;
-  document.querySelector("#phone-confirm-message").textContent = message;
-  document.querySelector("#phone-confirm-action").textContent = label;
-  confirmCallback = callback;
-  confirmDialog.showModal();
-}
-
-function openWinnerDialog(divisionId = selectedDivision) {
-  const current = division(divisionId);
-  const live = current.live;
-  const winner = team(live.winnerTeamId, divisionId);
-  const sideA = team(live.teamAId, divisionId);
-  const sideB = team(live.teamBId, divisionId);
-  winnerDialog.dataset.division = divisionId;
-  document.querySelector("#phone-winner-kicker").textContent = `${current.label} winning point reached`;
-  document.querySelector("#phone-winner-title").textContent = `Congratulations, ${winner.name}!`;
-  document.querySelector("#phone-winner-message").textContent = `${winner.name} have reached the winning score with the required ${live.winBy}-point margin.`;
-  document.querySelector("#phone-winner-side-a").textContent = sideA.name;
-  document.querySelector("#phone-winner-side-b").textContent = sideB.name;
-  document.querySelector("#phone-winner-final-score").textContent = `${live.scores[live.teamAId]}–${live.scores[live.teamBId]}`;
-  winnerDialog.showModal();
-  document.querySelector("#phone-record-result").focus();
-}
-
-accessForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const button = accessForm.querySelector("button");
-  button.disabled = true;
-  try { await connect(new FormData(accessForm).get("accessCode")); } catch (error) { setConnectionStatus("Not connected"); showToast(error.message, "error"); } finally { button.disabled = false; }
-});
-
-document.querySelectorAll("[data-select-division]").forEach((button) => {
-  button.addEventListener("click", () => {
-    selectedDivision = button.dataset.selectDivision;
-    localStorage.setItem(DIVISION_KEY, selectedDivision);
-    render();
-    announce(`${division().label} division selected.`);
-  });
-});
-
-phoneApp.addEventListener("change", (event) => {
-  if (["phone-team-a", "phone-team-b"].includes(event.target.id)) updateStartServingOptions();
-  if (event.target.matches("[data-phone-server]")) {
-    const divisionId = selectedDivision;
-    const currentLive = division(divisionId).live;
-    const servingTeam = division(divisionId).teams.find((item) => item.id === currentLive.servingTeamId);
-    const playerName = teamPlayerNames(servingTeam.name)[Number(event.target.value) - 1];
-    queueMutation((current) => setLiveServerNumber(current, divisionId, Number(event.target.value)), `${playerName} is serving.`, { divisionId });
-  }
-});
-
-phoneApp.addEventListener("submit", (event) => {
-  if (event.target.id !== "phone-match-form") return;
-  event.preventDefault();
-  const divisionId = selectedDivision;
-  const data = new FormData(event.target);
-  queueMutation((current) => startMatch(current, divisionId, { teamAId: data.get("teamAId"), teamBId: data.get("teamBId"), targetPoints: Number(data.get("targetPoints")), winBy: Number(data.get("winBy")), servingTeamId: data.get("servingTeamId"), serverNumber: 2 }), `${division(divisionId).label} match started.`, { divisionId });
-});
-
-phoneApp.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-phone-action]");
-  if (!button) return;
-  const divisionId = selectedDivision;
-  const action = button.dataset.phoneAction;
-  if (action === "score") queueMutation((current) => adjustLiveScore(current, divisionId, button.dataset.team, Number(button.dataset.delta)), `${team(button.dataset.team, divisionId).name}: score updated.`, { celebrate: true, divisionId });
-  if (action === "serve") queueMutation((current) => setLiveServer(current, divisionId, button.dataset.team), `${team(button.dataset.team, divisionId).name} is serving.`, { divisionId });
-  if (action === "swap") queueMutation((current) => swapLiveCourt(current, divisionId), `${division(divisionId).label} teams and scores swapped court sides.`, { divisionId });
-  if (action === "undo") queueMutation((current) => undoLive(current, divisionId), "Last live-score change undone.", { divisionId });
-  if (action === "reset") openConfirm("Reset this score?", "Both teams return to zero. You can undo the reset afterward.", "Reset score", () => queueMutation((current) => resetLiveScore(current, divisionId), "Score reset.", { divisionId }));
-  if (action === "end") openConfirm("End this match?", "The live score will be discarded and will not affect standings.", "End match", () => queueMutation((current) => discardLiveMatch(current, divisionId), "Live match ended.", { divisionId }));
-  if (action === "record") openWinnerDialog(divisionId);
-});
-
-document.querySelectorAll("[data-close-phone-dialog]").forEach((button) => button.addEventListener("click", () => button.closest("dialog").close()));
-document.querySelector("#phone-confirm-action").addEventListener("click", () => { const callback = confirmCallback; confirmCallback = null; confirmDialog.close(); callback?.(); });
-document.querySelector("#phone-record-result").addEventListener("click", () => {
-  const divisionId = winnerDialog.dataset.division;
-  winnerDialog.close();
-  queueMutation((current) => recordLiveResult(current, divisionId), `${division(divisionId).label} result recorded and standings updated.`, { divisionId });
-});
-
-document.querySelector("#phone-disconnect-button").addEventListener("click", () => {
-  accessCode = ""; state = null; localStorage.removeItem(ACCESS_KEY); scorerPanel.hidden = true; accessPanel.hidden = false; document.querySelector("#phone-access-code").value = ""; setConnectionStatus("Not connected");
-});
-
-async function pollRemote() {
-  if (!accessCode || !state || actionInFlight || document.querySelector("dialog[open]")) return;
-  try {
-    const remote = await fetchTournamentState(accessCode);
-    if (remote && isStateNewer(remote, state)) { state = remote; render(); announce("Score updated from the tournament board."); }
-    setConnectionStatus("Live sync connected", true);
-  } catch { setConnectionStatus("Sync offline"); }
-}
-
-if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") document.querySelector("#phone-https-note").classList.add("warning");
-if (accessCode) connect(accessCode).catch(() => { accessCode = ""; localStorage.removeItem(ACCESS_KEY); setConnectionStatus("Not connected"); });
-window.setInterval(() => { void pollRemote(); }, POLL_MS);
+$("#phone-access-form").addEventListener("submit", async (event) => { event.preventDefault(); try { await connect(new FormData(event.target).get("accessCode")); } catch (error) { connection("Not connected"); toast(error.message, true); } });
+$("#phone-board-select").addEventListener("change", (event) => { selectedBoardId = event.target.value; localStorage.setItem(BOARD_KEY, selectedBoardId); render(); });
+phoneApp.addEventListener("change", (event) => { if (["phone-team-a", "phone-team-b"].includes(event.target.id)) updateServingOptions(); if (event.target.matches("[data-phone-server]")) mutate((state, id) => setScoreboardServerNumber(state, id, Number(event.target.value)), "Serving player updated."); });
+phoneApp.addEventListener("submit", (event) => { if (event.target.id !== "phone-match-form") return; event.preventDefault(); const data = new FormData(event.target); mutate((state, id) => startScoreboardMatch(state, id, { teamAId: data.get("teamAId"), teamBId: data.get("teamBId"), targetPoints: Number(data.get("targetPoints")), winBy: Number(data.get("winBy")), servingTeamId: data.get("servingTeamId"), serverNumber: 2 }), "Match started."); });
+phoneApp.addEventListener("click", (event) => { const el = event.target.closest("[data-phone-action]"); if (!el) return; const action = el.dataset.phoneAction; if (action === "score") mutate((state, id) => adjustScoreboardScore(state, id, el.dataset.team, Number(el.dataset.delta)), "Score updated.", true); if (action === "serve") mutate((state, id) => setScoreboardServer(state, id, el.dataset.team), `${participantName(currentBoard(), el.dataset.team)} is serving.`); if (action === "undo") mutate(undoScoreboard, "Last change undone."); if (action === "swap") mutate(swapScoreboardCourt, "Court sides swapped."); if (action === "reset") confirmAction("Reset score?", "Both scores return to zero.", "Reset", () => mutate(resetScoreboard, "Score reset.")); if (action === "end") confirmAction("End match?", "The unrecorded score will be discarded.", "End", () => mutate(discardScoreboardMatch, "Match ended.")); if (action === "record") winnerAlert(); });
+$("#phone-confirm-action").addEventListener("click", () => { const callback = confirmCallback; confirmCallback = null; confirmDialog.close(); callback?.(); });
+$("#phone-record-result").addEventListener("click", () => { winnerDialog.close(); mutate(recordScoreboardResult, "Result recorded."); });
+document.querySelectorAll("[data-close-phone-dialog]").forEach((el) => el.addEventListener("click", () => el.closest("dialog").close()));
+$("#phone-disconnect-button").addEventListener("click", () => { accessCode = ""; state = null; localStorage.removeItem(ACCESS_KEY); scorerPanel.hidden = true; accessPanel.hidden = false; connection("Not connected"); });
+async function poll() { if (!accessCode || !state || actionInFlight || document.querySelector("dialog[open]")) return; try { const remote = await fetchTournamentState(accessCode); if (remote && isStateNewer(remote, state)) { state = remote; render(); } connection("Live sync connected", true); } catch { connection("Sync offline"); } }
+if (accessCode) connect(accessCode).catch(() => { accessCode = ""; localStorage.removeItem(ACCESS_KEY); connection("Not connected"); });
+setInterval(() => { void poll(); }, POLL_MS);

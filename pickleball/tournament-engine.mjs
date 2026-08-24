@@ -128,6 +128,7 @@ export function createTournament(now = new Date()) {
     schemaVersion: TOURNAMENT_SCHEMA_VERSION,
     createdAt,
     updatedAt: createdAt,
+    scoreboards: [],
     divisions: {
       girls: {
         id: "girls",
@@ -167,9 +168,13 @@ export function removeTeam(state, divisionId, teamId, now) {
   const next = clone(state);
   const division = divisionOf(next, divisionId);
   if (!division.teams.some((team) => team.id === teamId)) throw new Error("Team not found.");
-  const isLive = division.live && [division.live.teamAId, division.live.teamBId].includes(teamId);
+  const boardData = getScoreboards(next).filter((board) => board.divisionId === divisionId);
+  const isLive = Boolean(division.live && [division.live.teamAId, division.live.teamBId].includes(teamId))
+    || boardData.some((board) => board.matchType === "doubles" && board.live && [board.live.teamAId, board.live.teamBId].includes(teamId));
   const hasResults = division.results.some((result) => [result.teamAId, result.teamBId].includes(teamId));
-  if (isLive || hasResults) throw new Error("A team with a live or recorded match cannot be removed.");
+  const hasSinglesData = boardData.some((board) => board.matchType === "singles" && board.live)
+    || division.results.some((result) => result.matchType === "singles");
+  if (isLive || hasResults || hasSinglesData) throw new Error("A team with live or recorded match data cannot be removed.");
   division.teams = division.teams.filter((team) => team.id !== teamId);
   next.updatedAt = nowIso(now);
   return next;
@@ -307,6 +312,188 @@ export function undoLastResult(state, divisionId, now) {
   return next;
 }
 
+export function undoLastResultByType(state, divisionId, matchType = "doubles", now) {
+  const next = clone(state);
+  const division = divisionOf(next, divisionId);
+  const index = division.results.findLastIndex((result) => (result.matchType ?? "doubles") === matchType);
+  if (index < 0) return state;
+  division.results.splice(index, 1);
+  division.finalized = false;
+  next.updatedAt = nowIso(now);
+  return next;
+}
+
+export function participantOptions(state, divisionId, matchType = "doubles") {
+  const division = divisionOf(state, divisionId);
+  if (matchType !== "singles") return division.teams.map((team) => ({ ...team }));
+  const names = [...new Set(division.teams.flatMap((team) => teamPlayerNames(team.name)).filter((name) => name && name !== "Partner"))];
+  return names.map((name) => {
+    let hash = 2166136261;
+    for (const character of name.toLocaleLowerCase()) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+    return { id: `${divisionId}-player-${(hash >>> 0).toString(36)}`, name };
+  });
+}
+
+export function getScoreboards(state) {
+  return Array.isArray(state.scoreboards) ? state.scoreboards : [];
+}
+
+function scoreboardOf(state, scoreboardId) {
+  const board = getScoreboards(state).find((item) => item.id === scoreboardId);
+  if (!board) throw new Error("Scoreboard not found.");
+  return board;
+}
+
+function defaultCourtName(state) {
+  const used = new Set(getScoreboards(state).map((board) => board.name.toLocaleLowerCase()));
+  let number = 1;
+  while (used.has(`court ${number}`)) number += 1;
+  return `Court ${number}`;
+}
+
+export function addScoreboard(state, options = {}, now = new Date()) {
+  const next = clone(state);
+  if (!Array.isArray(next.scoreboards)) next.scoreboards = [];
+  const divisionId = DIVISION_IDS.includes(options.divisionId) ? options.divisionId : "girls";
+  const matchType = options.matchType === "singles" ? "singles" : "doubles";
+  const name = teamName(options.name) || defaultCourtName(next);
+  if (next.scoreboards.some((board) => board.name.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("Use a unique scoreboard name.");
+  const createdAt = nowIso(now);
+  next.scoreboards.push({ id: makeId("scoreboard"), name, divisionId, matchType, live: null, createdAt });
+  next.updatedAt = createdAt;
+  return next;
+}
+
+export function removeScoreboard(state, scoreboardId, now) {
+  const next = clone(state);
+  const before = getScoreboards(next).length;
+  next.scoreboards = getScoreboards(next).filter((board) => board.id !== scoreboardId);
+  if (next.scoreboards.length === before) throw new Error("Scoreboard not found.");
+  next.updatedAt = nowIso(now);
+  return next;
+}
+
+export function startScoreboardMatch(state, scoreboardId, options, now = new Date()) {
+  const next = clone(state);
+  const board = scoreboardOf(next, scoreboardId);
+  const participants = participantOptions(next, board.divisionId, board.matchType);
+  const participantIds = new Set(participants.map((item) => item.id));
+  const teamAId = options.teamAId;
+  const teamBId = options.teamBId;
+  if (teamAId === teamBId) throw new Error("Select two different participants.");
+  if (!participantIds.has(teamAId) || !participantIds.has(teamBId)) throw new Error("Both participants must belong to this division.");
+  const targetPoints = [11, 15, 21].includes(Number(options.targetPoints)) ? Number(options.targetPoints) : 11;
+  const winBy = Number(options.winBy) === 1 ? 1 : 2;
+  const servingTeamId = [teamAId, teamBId].includes(options.servingTeamId) ? options.servingTeamId : teamAId;
+  const startedAt = nowIso(now);
+  board.live = {
+    id: makeId(`${board.divisionId}-${board.matchType}-match`),
+    teamAId,
+    teamBId,
+    participantNames: Object.fromEntries(participants.filter((item) => [teamAId, teamBId].includes(item.id)).map((item) => [item.id, item.name])),
+    courtOrder: [teamAId, teamBId],
+    scores: { [teamAId]: 0, [teamBId]: 0 },
+    targetPoints,
+    winBy,
+    servingTeamId,
+    serverNumber: board.matchType === "singles" ? 1 : (Number(options.serverNumber) === 1 ? 1 : 2),
+    status: "live",
+    winnerTeamId: null,
+    startedAt,
+    updatedAt: startedAt,
+    undoStack: [],
+  };
+  next.updatedAt = startedAt;
+  return next;
+}
+
+function mutateScoreboardLive(state, scoreboardId, mutator, now) {
+  const next = clone(state);
+  const board = scoreboardOf(next, scoreboardId);
+  if (!board.live) throw new Error("There is no active match on this scoreboard.");
+  board.live.undoStack = [...board.live.undoStack, snapshotLive(board.live)].slice(-MAX_LIVE_UNDO);
+  mutator(board.live, board);
+  board.live.winnerTeamId = candidateWinner(board.live);
+  board.live.status = board.live.winnerTeamId ? "ready" : "live";
+  board.live.updatedAt = nowIso(now);
+  next.updatedAt = nowIso(now);
+  return next;
+}
+
+export function adjustScoreboardScore(state, scoreboardId, participantId, delta, now) {
+  return mutateScoreboardLive(state, scoreboardId, (live) => {
+    if (![live.teamAId, live.teamBId].includes(participantId)) throw new Error("Participant is not in this match.");
+    live.scores[participantId] = Math.max(0, live.scores[participantId] + Number(delta));
+  }, now);
+}
+
+export function setScoreboardServer(state, scoreboardId, participantId, now) {
+  return mutateScoreboardLive(state, scoreboardId, (live) => {
+    if (![live.teamAId, live.teamBId].includes(participantId)) throw new Error("Participant is not in this match.");
+    live.servingTeamId = participantId;
+  }, now);
+}
+
+export function setScoreboardServerNumber(state, scoreboardId, number, now) {
+  return mutateScoreboardLive(state, scoreboardId, (live, board) => {
+    live.serverNumber = board.matchType === "singles" ? 1 : (Number(number) === 1 ? 1 : 2);
+  }, now);
+}
+
+export function swapScoreboardCourt(state, scoreboardId, now) {
+  return mutateScoreboardLive(state, scoreboardId, (live) => { live.courtOrder = liveCourtOrder(live).reverse(); }, now);
+}
+
+export function resetScoreboard(state, scoreboardId, now) {
+  return mutateScoreboardLive(state, scoreboardId, (live) => {
+    live.scores[live.teamAId] = 0;
+    live.scores[live.teamBId] = 0;
+  }, now);
+}
+
+export function undoScoreboard(state, scoreboardId, now) {
+  const next = clone(state);
+  const board = scoreboardOf(next, scoreboardId);
+  if (!board.live?.undoStack.length) return state;
+  const previous = board.live.undoStack.pop();
+  board.live = { ...previous, undoStack: board.live.undoStack };
+  board.live.updatedAt = nowIso(now);
+  next.updatedAt = nowIso(now);
+  return next;
+}
+
+export function discardScoreboardMatch(state, scoreboardId, now) {
+  const next = clone(state);
+  scoreboardOf(next, scoreboardId).live = null;
+  next.updatedAt = nowIso(now);
+  return next;
+}
+
+export function recordScoreboardResult(state, scoreboardId, now = new Date()) {
+  const next = clone(state);
+  const board = scoreboardOf(next, scoreboardId);
+  const live = board.live;
+  if (!live) throw new Error("There is no active match to record.");
+  const winnerTeamId = candidateWinner(live);
+  if (!winnerTeamId) throw new Error("Neither side has met the configured win condition.");
+  const completedAt = nowIso(now);
+  divisionOf(next, board.divisionId).results.push({
+    id: live.id,
+    matchType: board.matchType,
+    teamAId: live.teamAId,
+    teamBId: live.teamBId,
+    participantNames: live.participantNames,
+    scoreA: live.scores[live.teamAId],
+    scoreB: live.scores[live.teamBId],
+    winnerTeamId,
+    scoreboardName: board.name,
+    completedAt,
+  });
+  board.live = null;
+  divisionOf(next, board.divisionId).finalized = false;
+  next.updatedAt = completedAt;
+  return next;
+}
 function isSameMatch(match, teamAId, teamBId) {
   return Boolean(match) && (
     (match.teamAId === teamAId && match.teamBId === teamBId)
@@ -321,6 +508,10 @@ function resultScoreFor(result, teamId) {
 export function getSchedule(state, divisionId) {
   const division = divisionOf(state, divisionId);
   const teamByName = new Map(division.teams.map((team) => [team.name.toLocaleLowerCase(), team]));
+  const liveMatches = getScoreboards(state)
+    .filter((board) => board.divisionId === divisionId && board.matchType === "doubles" && board.live)
+    .map((board) => board.live);
+  if (division.live) liveMatches.push(division.live);
   return TOURNAMENT_SCHEDULES[divisionId].map(([teamAName, teamBName], index) => {
     const teamA = teamByName.get(teamAName.toLocaleLowerCase());
     const teamB = teamByName.get(teamBName.toLocaleLowerCase());
@@ -339,19 +530,20 @@ export function getSchedule(state, divisionId) {
     };
     if (!teamA || !teamB) return base;
 
-    if (isSameMatch(division.live, teamA.id, teamB.id)) {
+    const live = liveMatches.find((match) => isSameMatch(match, teamA.id, teamB.id));
+    if (live) {
       return {
         ...base,
-        scoreA: division.live.scores[teamA.id],
-        scoreB: division.live.scores[teamB.id],
-        winnerTeamId: division.live.winnerTeamId,
-        winnerName: division.live.winnerTeamId ? division.teams.find((team) => team.id === division.live.winnerTeamId)?.name ?? "" : "",
+        scoreA: live.scores[teamA.id],
+        scoreB: live.scores[teamB.id],
+        winnerTeamId: live.winnerTeamId,
+        winnerName: live.winnerTeamId ? division.teams.find((team) => team.id === live.winnerTeamId)?.name ?? "" : "",
         status: "live",
         notes: "Scoring now",
       };
     }
 
-    const result = [...division.results].reverse().find((item) => isSameMatch(item, teamA.id, teamB.id));
+    const result = [...division.results].reverse().find((item) => (item.matchType ?? "doubles") === "doubles" && isSameMatch(item, teamA.id, teamB.id));
     if (!result) return base;
     return {
       ...base,
@@ -364,10 +556,12 @@ export function getSchedule(state, divisionId) {
   });
 }
 
-function rawRows(division) {
-  const rows = new Map(division.teams.map((team) => [team.id, {
-    id: team.id,
-    name: team.name,
+function rawRows(state, divisionId, matchType) {
+  const division = divisionOf(state, divisionId);
+  const participants = participantOptions(state, divisionId, matchType);
+  const rows = new Map(participants.map((participant) => [participant.id, {
+    id: participant.id,
+    name: participant.name,
     played: 0,
     wins: 0,
     losses: 0,
@@ -380,7 +574,8 @@ function rawRows(division) {
     award: "",
   }]));
 
-  division.results.forEach((result) => {
+  const results = division.results.filter((result) => (result.matchType ?? "doubles") === matchType);
+  results.forEach((result) => {
     const a = rows.get(result.teamAId);
     const b = rows.get(result.teamBId);
     if (!a || !b) return;
@@ -399,18 +594,18 @@ function rawRows(division) {
     }
   });
   rows.forEach((row) => { row.pointDiff = row.pointsFor - row.pointsAgainst; });
-  return rows;
+  return { rows, results };
 }
 
-export function getStandings(state, divisionId) {
+export function getStandings(state, divisionId, matchType = "doubles") {
   const division = divisionOf(state, divisionId);
-  const rows = rawRows(division);
+  const { rows, results } = rawRows(state, divisionId, matchType);
   const tiedWinGroups = new Map();
   rows.forEach((row) => {
     if (!tiedWinGroups.has(row.wins)) tiedWinGroups.set(row.wins, new Set());
     tiedWinGroups.get(row.wins).add(row.id);
   });
-  division.results.forEach((result) => {
+  results.forEach((result) => {
     const winner = rows.get(result.winnerTeamId);
     const loserId = result.winnerTeamId === result.teamAId ? result.teamBId : result.teamAId;
     if (winner && tiedWinGroups.get(winner.wins)?.has(loserId)) winner.h2hWins += 1;
@@ -433,7 +628,7 @@ export function getStandings(state, divisionId) {
     row.tieBreakScore = `${row.wins} / ${row.h2hWins} / ${row.pointDiff >= 0 ? "+" : ""}${row.pointDiff} / ${row.pointsFor}`;
   });
 
-  if (division.finalized) {
+  if (division.finalized && matchType === "doubles") {
     sorted.forEach((row) => {
       if (row.rank === 1) row.award = "CHAMPION";
       if (row.rank === 2) row.award = "RUNNER-UP";
@@ -472,6 +667,29 @@ function migrateLegacyTournament(data) {
   return migrated;
 }
 
+function normalizeScoreboards(data) {
+  const normalized = clone(data);
+  if (Array.isArray(normalized.scoreboards)) return { data: normalized, migrated: false };
+  normalized.scoreboards = [];
+  DIVISION_IDS.forEach((divisionId, index) => {
+    const division = normalized.divisions[divisionId];
+    if (!division.live) return;
+    const live = division.live;
+    live.participantNames = live.participantNames ?? Object.fromEntries(division.teams.filter((team) => [live.teamAId, live.teamBId].includes(team.id)).map((team) => [team.id, team.name]));
+    live.courtOrder = liveCourtOrder(live);
+    normalized.scoreboards.push({
+      id: `${divisionId}-legacy-scoreboard`,
+      name: `Court ${index + 1}`,
+      divisionId,
+      matchType: "doubles",
+      live,
+      createdAt: live.startedAt ?? normalized.createdAt,
+    });
+    division.live = null;
+  });
+  return { data: normalized, migrated: true };
+}
+
 export function deserializeTournament(raw) {
   if (!raw) return { ok: true, data: createTournament(), error: null, migrated: false };
   try {
@@ -480,9 +698,15 @@ export function deserializeTournament(raw) {
     const valid = parsed.version === TOURNAMENT_SCHEMA_VERSION
       && parsed.data?.schemaVersion === TOURNAMENT_SCHEMA_VERSION
       && hasDivisions;
-    if (valid) return { ok: true, data: parsed.data, error: null, migrated: false };
+    if (valid) {
+      const normalized = normalizeScoreboards(parsed.data);
+      return { ok: true, data: normalized.data, error: null, migrated: normalized.migrated };
+    }
     const legacy = parsed.version === 1 && parsed.data?.schemaVersion === 1 && hasDivisions;
-    if (legacy) return { ok: true, data: migrateLegacyTournament(parsed.data), error: null, migrated: true };
+    if (legacy) {
+      const normalized = normalizeScoreboards(migrateLegacyTournament(parsed.data));
+      return { ok: true, data: normalized.data, error: null, migrated: true };
+    }
     return { ok: false, data: createTournament(), error: "unsupported", migrated: false };
   } catch {
     return { ok: false, data: createTournament(), error: "corrupt", migrated: false };

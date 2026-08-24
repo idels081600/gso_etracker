@@ -137,3 +137,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 }
 
 @media (prefers-reduced-motion: reduce) { .phone-score-card, .phone-score-buttons button { transition: none; } }
+.phone-board-picker { display: grid; gap: 3px; }
+.phone-board-picker span { color: var(--muted); font-size: .52rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.phone-board-picker select { width: 100%; min-height: 40px; padding: 0 34px 0 9px; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--surface-2); color: var(--text); font-weight: 800; }
+.phone-no-boards { display: grid; min-height: 62dvh; place-content: center; padding: 28px; text-align: center; }
+.phone-no-boards h1 { margin: 0 0 8px; font-size: 1.2rem; }
+.phone-no-boards p { max-width: 360px; margin: 0; color: var(--muted); line-height: 1.5; }

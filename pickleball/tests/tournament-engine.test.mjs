@@ -2,19 +2,25 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  addScoreboard,
   addTeam,
+  adjustScoreboardScore,
   adjustLiveScore,
   createTournament,
   deserializeTournament,
   getSchedule,
+  getScoreboards,
   getStandings,
   liveCourtOrder,
+  participantOptions,
   recordLiveResult,
+  recordScoreboardResult,
   removeTeam,
   serializeTournament,
   setDivisionFinalized,
   setLiveServer,
   startMatch,
+  startScoreboardMatch,
   servingPlayerName,
   swapLiveCourt,
   teamPlayerNames,
@@ -151,6 +157,40 @@ test("court swap moves each team with its score and can be undone", () => {
   assert.deepEqual(liveCourtOrder(oldSavedMatch), [a.id, b.id]);
 });
 
+test("runs multiple dynamic boys and girls singles and doubles scoreboards independently", () => {
+  let state = createTournament(T0);
+  state = addScoreboard(state, { name: "Court 1", divisionId: "girls", matchType: "doubles" }, T0);
+  state = addScoreboard(state, { name: "Court 2", divisionId: "boys", matchType: "singles" }, T0);
+  assert.deepEqual(getScoreboards(state).map((board) => [board.name, board.divisionId, board.matchType]), [
+    ["Court 1", "girls", "doubles"],
+    ["Court 2", "boys", "singles"],
+  ]);
+
+  const girls = participantOptions(state, "girls", "doubles");
+  const boys = participantOptions(state, "boys", "singles");
+  assert.ok(boys.some((player) => player.name === "Ryan"));
+  assert.ok(boys.some((player) => player.name === "Try"));
+  state = startScoreboardMatch(state, state.scoreboards[0].id, { teamAId: girls[0].id, teamBId: girls[1].id, servingTeamId: girls[0].id }, T0);
+  state = startScoreboardMatch(state, state.scoreboards[1].id, { teamAId: boys[0].id, teamBId: boys[1].id, servingTeamId: boys[1].id }, T0);
+  state = adjustScoreboardScore(state, state.scoreboards[0].id, girls[0].id, 4);
+  state = adjustScoreboardScore(state, state.scoreboards[1].id, boys[1].id, 7);
+  assert.equal(state.scoreboards[0].live.scores[girls[0].id], 4);
+  assert.equal(state.scoreboards[1].live.scores[boys[1].id], 7);
+  assert.equal(getSchedule(state, "girls")[0].status, "live");
+});
+
+test("records a dynamic singles result in singles standings", () => {
+  let state = addScoreboard(createTournament(T0), { divisionId: "boys", matchType: "singles" }, T0);
+  const [a, b] = participantOptions(state, "boys", "singles");
+  const boardId = state.scoreboards[0].id;
+  state = startScoreboardMatch(state, boardId, { teamAId: a.id, teamBId: b.id, servingTeamId: a.id, targetPoints: 11 }, T0);
+  state = adjustScoreboardScore(state, boardId, a.id, 11);
+  state = recordScoreboardResult(state, boardId);
+  const standings = getStandings(state, "boys", "singles");
+  assert.equal(standings[0].name, a.name);
+  assert.equal(standings[0].wins, 1);
+  assert.equal(state.scoreboards[0].live, null);
+});
 test("detects a winner only after target and margin are met", () => {
   let state = boysWithTeams();
   const [a, b] = state.divisions.boys.teams;
