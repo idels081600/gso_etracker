@@ -8,6 +8,7 @@ import {
   deserializeTournament,
   getSchedule,
   getStandings,
+  liveCourtOrder,
   recordLiveResult,
   removeTeam,
   serializeTournament,
@@ -15,6 +16,7 @@ import {
   setLiveServer,
   startMatch,
   servingPlayerName,
+  swapLiveCourt,
   teamPlayerNames,
   undoLastResult,
   undoLive,
@@ -124,6 +126,29 @@ test("manual live scoring permits either team and clamps at zero", () => {
   assert.equal(state.divisions.boys.live.servingTeamId, a.id);
   state = adjustLiveScore(state, "boys", a.id, -1);
   assert.equal(state.divisions.boys.live.scores[a.id], 0);
+});
+
+test("court swap moves each team with its score and can be undone", () => {
+  let state = boysWithTeams();
+  const [a, b] = state.divisions.boys.teams;
+  state = startBoys(state, a.id, b.id);
+  state = adjustLiveScore(state, "boys", a.id, 3);
+  state = adjustLiveScore(state, "boys", b.id, 1);
+  const scoresBeforeSwap = { ...state.divisions.boys.live.scores };
+
+  assert.deepEqual(liveCourtOrder(state.divisions.boys.live), [a.id, b.id]);
+  state = swapLiveCourt(state, "boys");
+  assert.deepEqual(liveCourtOrder(state.divisions.boys.live), [b.id, a.id]);
+  assert.deepEqual(state.divisions.boys.live.scores, scoresBeforeSwap);
+  assert.equal(state.divisions.boys.live.servingTeamId, a.id);
+
+  state = undoLive(state, "boys");
+  assert.deepEqual(liveCourtOrder(state.divisions.boys.live), [a.id, b.id]);
+  assert.deepEqual(state.divisions.boys.live.scores, scoresBeforeSwap);
+
+  const oldSavedMatch = structuredClone(state.divisions.boys.live);
+  delete oldSavedMatch.courtOrder;
+  assert.deepEqual(liveCourtOrder(oldSavedMatch), [a.id, b.id]);
 });
 
 test("detects a winner only after target and margin are met", () => {

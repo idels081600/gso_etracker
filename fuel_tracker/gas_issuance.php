@@ -1096,6 +1096,15 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                                                         <i class="fas fa-print"></i>
                                                     </button>
                                                     <button type="button"
+                                                        class="btn btn-outline-info btn-sm action-print-trip-ticket"
+                                                        data-id="<?php echo htmlspecialchars((string) $iss['id']); ?>"
+                                                        data-serial="<?php echo htmlspecialchars((string) $iss['serial_no']); ?>"
+                                                        data-bs-toggle="tooltip"
+                                                        title="Print trip ticket (3 blank copies)"
+                                                        aria-label="Print trip ticket <?php echo htmlspecialchars((string) $iss['serial_no']); ?>">
+                                                        <i class="fas fa-route"></i>
+                                                    </button>
+                                                    <button type="button"
                                                         class="btn btn-outline-danger btn-sm action-delete-issuance"
                                                         data-id="<?php echo htmlspecialchars((string) $iss['id']); ?>"
                                                         data-serial="<?php echo htmlspecialchars((string) $iss['serial_no']); ?>"
@@ -2592,8 +2601,9 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
             var viewButton = event.target.closest('.action-view-issuance');
             var editButton = event.target.closest('.action-edit-issuance');
             var printButton = event.target.closest('.action-print-gas');
+            var tripTicketButton = event.target.closest('.action-print-trip-ticket');
             var deleteButton = event.target.closest('.action-delete-issuance');
-            var button = viewButton || editButton || printButton || deleteButton;
+            var button = viewButton || editButton || printButton || tripTicketButton || deleteButton;
 
             if (!button) {
                 return;
@@ -2615,6 +2625,15 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 });
                 window.open('fuel_withdrawal.php?' + params.toString(), '_blank', 'noopener');
                 showIssuanceToast('Opening gas issuance PDF for ' + (item.serial_no || 'this record') + '...', 'success');
+            } else if (tripTicketButton) {
+                var tripParams = new URLSearchParams({
+                    issuance_ids: item.id || tripTicketButton.dataset.id || '',
+                    blank_fuel_values: '1',
+                    hide_signature: '1',
+                    copies: '3'
+                });
+                window.open('trip_ticket_batch.php?' + tripParams.toString(), '_blank', 'noopener');
+                showIssuanceToast('Opening 3 blank trip ticket copies for ' + (item.serial_no || 'this record') + '...', 'success');
             } else if (deleteButton) {
                 var serial = item.serial_no || deleteButton.dataset.serial || 'this issuance';
                 if (!window.confirm('Delete gas issuance ' + serial + '? This cannot be undone.')) {

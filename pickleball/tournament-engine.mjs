@@ -93,6 +93,13 @@ export function servingPlayerName(name, serverNumber) {
   return players[Number(serverNumber) === 2 ? 1 : 0];
 }
 
+export function liveCourtOrder(live) {
+  const teams = [live?.teamAId, live?.teamBId];
+  const order = Array.isArray(live?.courtOrder) ? live.courtOrder : [];
+  const valid = order.length === 2 && new Set(order).size === 2 && teams.every((teamId) => order.includes(teamId));
+  return valid ? [...order] : teams;
+}
+
 function seedTeams(names, divisionId) {
   return names.map((name, index) => ({ id: `${divisionId}-team-${index + 1}`, name }));
 }
@@ -185,6 +192,7 @@ export function startMatch(state, divisionId, options, now = new Date()) {
     id: makeId(`${divisionId}-match`),
     teamAId,
     teamBId,
+    courtOrder: [teamAId, teamBId],
     scores: { [teamAId]: 0, [teamBId]: 0 },
     targetPoints,
     winBy,
@@ -228,6 +236,13 @@ export function setLiveServer(state, divisionId, teamId, now) {
 export function setLiveServerNumber(state, divisionId, number, now) {
   return mutateLive(state, divisionId, (live) => {
     live.serverNumber = Number(number) === 1 ? 1 : 2;
+    live.updatedAt = nowIso(now);
+  }, now);
+}
+
+export function swapLiveCourt(state, divisionId, now) {
+  return mutateLive(state, divisionId, (live) => {
+    live.courtOrder = liveCourtOrder(live).reverse();
     live.updatedAt = nowIso(now);
   }, now);
 }

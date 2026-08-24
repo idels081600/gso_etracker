@@ -110,7 +110,7 @@
 .phone-score-call label input:checked + span { border-color: var(--serve); background: var(--serve); color: var(--serve-ink); }
 .phone-score-call label input:checked + span small { color: var(--serve-ink); }
 .phone-score-call label input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
-.phone-match-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 0 7px 7px; }
+.phone-match-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding: 0 7px 7px; }
 .phone-match-actions button { min-height: 46px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); color: var(--muted); font-weight: 800; }
 .phone-match-actions button.danger { color: #ff9b88; }
 .phone-record-button { width: calc(100% - 14px); min-height: 50px; margin: 0 7px 7px; }

@@ -6,6 +6,7 @@ import {
   discardLiveMatch,
   getSchedule,
   getStandings,
+  liveCourtOrder,
   recordLiveResult,
   removeTeam,
   resetLiveScore,
@@ -15,6 +16,7 @@ import {
   setLiveServerNumber,
   servingPlayerName,
   startMatch,
+  swapLiveCourt,
   teamPlayerNames,
   undoLastResult,
   undoLive,
@@ -196,10 +198,10 @@ function liveTeamMarkup(divisionId, teamId, side) {
   const serving = live.servingTeamId === teamId;
   const activeServer = serving ? servingPlayerName(currentTeam.name, live.serverNumber) : "";
   return `
-    <div class="compact-score-side side-${side.toLowerCase()} ${serving ? "is-serving" : ""}">
+    <div class="compact-score-side side-${teamId === live.teamAId ? "a" : "b"} ${serving ? "is-serving" : ""}">
       <div class="compact-team-head">
         <div>
-          <span>Side ${side}</span>
+          <span>Court ${side}</span>
           <strong title="${escapeHtml(currentTeam.name)}">${escapeHtml(currentTeam.name)}</strong>
         </div>
         <button class="serve-toggle ${serving ? "active" : ""}" type="button" data-action="set-server" data-division="${divisionId}" data-team="${teamId}" aria-pressed="${serving}" aria-label="${serving ? `${escapeHtml(activeServer)} is serving for ${escapeHtml(currentTeam.name)}` : `Set ${escapeHtml(currentTeam.name)} as serving team`}">
@@ -237,9 +239,7 @@ function scoringPanel(divisionId) {
         </div>
       </section>`;
   }
-
-  const sideA = team(divisionId, live.teamAId);
-  const sideB = team(divisionId, live.teamBId);
+  const [leftTeamId, rightTeamId] = liveCourtOrder(live);
   const winner = live.winnerTeamId ? team(divisionId, live.winnerTeamId) : null;
   const servingScore = live.scores[live.servingTeamId];
   const receivingId = live.servingTeamId === live.teamAId ? live.teamBId : live.teamAId;
@@ -251,12 +251,13 @@ function scoringPanel(divisionId) {
         <div><span>${colorLabel} · To ${live.targetPoints}, win by ${live.winBy}</span><h2 id="${divisionId}-scoring-title">${current.label} Live Scoring</h2></div>
         <div class="header-actions">
           <button class="mini-button" type="button" data-action="undo-live" data-division="${divisionId}" ${live.undoStack.length ? "" : "disabled"}>Undo</button>
+          <button class="mini-button" type="button" data-action="swap-court" data-division="${divisionId}" aria-label="Swap the left and right court sides with their scores">⇄ Swap courts</button>
           <button class="mini-button" type="button" data-action="new-match" data-division="${divisionId}">New matchup</button>
         </div>
       </header>
       <div class="compact-scoreboard">
-        ${liveTeamMarkup(divisionId, live.teamAId, "A")}
-        ${liveTeamMarkup(divisionId, live.teamBId, "B")}
+        ${liveTeamMarkup(divisionId, leftTeamId, "Left")}
+        ${liveTeamMarkup(divisionId, rightTeamId, "Right")}
       </div>
       <footer class="compact-score-footer">
         <div class="score-call-compact"><span>Score call</span><strong>${scoreCall}</strong></div>
@@ -475,6 +476,9 @@ app.addEventListener("click", (event) => {
     }
     if (action === "set-server") {
       apply(setLiveServer(state, divisionId, button.dataset.team), `${team(divisionId, button.dataset.team).name} is serving.`);
+    }
+    if (action === "swap-court") {
+      apply(swapLiveCourt(state, divisionId), `${division(divisionId).label} teams and scores swapped court sides.`);
     }
     if (action === "undo-live") {
       const next = undoLive(state, divisionId);

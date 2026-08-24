@@ -1,12 +1,14 @@
 import {
   adjustLiveScore,
   discardLiveMatch,
+  liveCourtOrder,
   recordLiveResult,
   resetLiveScore,
   setLiveServer,
   setLiveServerNumber,
   servingPlayerName,
   startMatch,
+  swapLiveCourt,
   teamPlayerNames,
   undoLive,
 } from "./tournament-engine.mjs";
@@ -92,7 +94,7 @@ function scoreTeamMarkup(teamId, side) {
   const activeServer = serving ? servingPlayerName(currentTeam.name, live.serverNumber) : "";
   return `
     <article class="phone-score-card ${serving ? "is-serving" : ""}">
-      <div class="phone-team-line"><div><span>Side ${side}</span><h2>${escapeHtml(currentTeam.name)}</h2></div><button class="${serving ? "active" : ""}" type="button" data-phone-action="serve" data-team="${teamId}" aria-pressed="${serving}" aria-label="${serving ? `${escapeHtml(activeServer)} is serving for ${escapeHtml(currentTeam.name)}` : `Set ${escapeHtml(currentTeam.name)} as serving team`}">${serving ? `<span class="serve-player-name">${escapeHtml(activeServer)}</span><span class="serve-player-state">Serving</span>` : "Set serve"}</button></div>
+      <div class="phone-team-line"><div><span>Court ${side}</span><h2>${escapeHtml(currentTeam.name)}</h2></div><button class="${serving ? "active" : ""}" type="button" data-phone-action="serve" data-team="${teamId}" aria-pressed="${serving}" aria-label="${serving ? `${escapeHtml(activeServer)} is serving for ${escapeHtml(currentTeam.name)}` : `Set ${escapeHtml(currentTeam.name)} as serving team`}">${serving ? `<span class="serve-player-name">${escapeHtml(activeServer)}</span><span class="serve-player-state">Serving</span>` : "Set serve"}</button></div>
       <strong class="phone-score-value">${live.scores[teamId]}</strong>
       <div class="phone-score-buttons">
         <button type="button" data-phone-action="score" data-team="${teamId}" data-delta="-1" aria-label="Subtract one from ${escapeHtml(currentTeam.name)}">−</button>
@@ -103,6 +105,7 @@ function scoreTeamMarkup(teamId, side) {
 
 function liveMatchMarkup(current) {
   const live = current.live;
+  const [leftTeamId, rightTeamId] = liveCourtOrder(live);
   const servingScore = live.scores[live.servingTeamId];
   const receivingId = live.servingTeamId === live.teamAId ? live.teamBId : live.teamAId;
   const scoreCall = `${servingScore} – ${live.scores[receivingId]} – ${live.serverNumber}`;
@@ -111,9 +114,9 @@ function liveMatchMarkup(current) {
   return `
     <section class="phone-live-view division-${selectedDivision}">
       <div class="phone-match-meta"><div><span>${current.label} division</span><strong>To ${live.targetPoints} · Win by ${live.winBy}</strong></div><button type="button" data-phone-action="undo" ${live.undoStack.length ? "" : "disabled"}>Undo</button></div>
-      <div class="phone-score-grid">${scoreTeamMarkup(live.teamAId, "A")}${scoreTeamMarkup(live.teamBId, "B")}</div>
+      <div class="phone-score-grid">${scoreTeamMarkup(leftTeamId, "Left")}${scoreTeamMarkup(rightTeamId, "Right")}</div>
       <div class="phone-score-call"><div><span>Score call</span><strong>${scoreCall}</strong></div><fieldset><legend>Serving player</legend>${servingPlayers.map((playerName, index) => { const number = index + 1; const selected = live.serverNumber === number; return `<label><input type="radio" name="phoneServer" value="${number}" data-phone-server aria-label="Set ${escapeHtml(playerName)} as serving player" ${selected ? "checked" : ""}><span><strong>${escapeHtml(playerName)}</strong><small>${selected ? "Serving" : "Select"}</small></span></label>`; }).join("")}</fieldset></div>
-      <div class="phone-match-actions"><button type="button" data-phone-action="reset">Reset score</button><button class="danger" type="button" data-phone-action="end">End match</button></div>
+      <div class="phone-match-actions"><button type="button" data-phone-action="swap" aria-label="Swap the left and right court sides with their scores">⇄ Swap courts</button><button type="button" data-phone-action="reset">Reset score</button><button class="danger" type="button" data-phone-action="end">End match</button></div>
       <button class="button ${winner ? "button-primary" : "button-secondary"} phone-record-button" type="button" data-phone-action="record" ${winner ? "" : "disabled"}>${winner ? `Record ${escapeHtml(winner.name)} win` : "Awaiting winning score"}</button>
     </section>`;
 }
@@ -247,6 +250,7 @@ phoneApp.addEventListener("click", (event) => {
   const action = button.dataset.phoneAction;
   if (action === "score") queueMutation((current) => adjustLiveScore(current, divisionId, button.dataset.team, Number(button.dataset.delta)), `${team(button.dataset.team, divisionId).name}: score updated.`, { celebrate: true, divisionId });
   if (action === "serve") queueMutation((current) => setLiveServer(current, divisionId, button.dataset.team), `${team(button.dataset.team, divisionId).name} is serving.`, { divisionId });
+  if (action === "swap") queueMutation((current) => swapLiveCourt(current, divisionId), `${division(divisionId).label} teams and scores swapped court sides.`, { divisionId });
   if (action === "undo") queueMutation((current) => undoLive(current, divisionId), "Last live-score change undone.", { divisionId });
   if (action === "reset") openConfirm("Reset this score?", "Both teams return to zero. You can undo the reset afterward.", "Reset score", () => queueMutation((current) => resetLiveScore(current, divisionId), "Score reset.", { divisionId }));
   if (action === "end") openConfirm("End this match?", "The live score will be discarded and will not affect standings.", "End match", () => queueMutation((current) => discardLiveMatch(current, divisionId), "Live match ended.", { divisionId }));

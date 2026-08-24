@@ -110,6 +110,25 @@ function drawNumberedLine(
     }
 }
 
+
+function tripVehiclePlateLabel(string $vehicleType, string $plateNo): string
+{
+    $vehicleType = trim($vehicleType);
+    $plateNo = trim($plateNo);
+    if ($vehicleType === '') {
+        return strtoupper($plateNo);
+    }
+    if ($plateNo === '') {
+        return strtoupper($vehicleType);
+    }
+
+    $normalize = static fn(string $value): string => preg_replace('/\s+/', ' ', strtoupper(trim($value))) ?? '';
+    if ($normalize($vehicleType) === $normalize($plateNo)) {
+        return strtoupper($vehicleType);
+    }
+
+    return strtoupper($vehicleType . ' ' . $plateNo);
+}
 function drawFuelLine(
     TripTicketPdf $pdf,
     string $letter,
@@ -214,7 +233,7 @@ $pdf->Cell(120, 4.5, 'A. To be filled by the Administrative Official authorizing
 
 $itemsA = [
     [1, 'Name of driver of the vehicle', $driver],
-    [2, 'Government car to be used, Plate No.', trim($vehicle . ' ' . $plateNo)],
+    [2, 'Government car to be used, Plate No.', tripVehiclePlateLabel($vehicle, $plateNo)],
     [3, 'Name of authorized passenger', $passenger],
     [4, 'Place or places to be visited/inspected', $places],
     [5, 'Purpose', $purpose],

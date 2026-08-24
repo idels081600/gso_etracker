@@ -87,28 +87,53 @@ function batchTripFuelLine(
     $pdf->Cell(20, 4.5, $unit, 0, 0, 'L');
 }
 
-function batchTripDrawPage(BatchTripTicketPdf $pdf, mysqli $conn, array $issuance): void
+
+function batchTripVehiclePlateLabel(string $vehicleType, string $plateNo): string
+{
+    $vehicleType = trim($vehicleType);
+    $plateNo = trim($plateNo);
+    if ($vehicleType === '') {
+        return strtoupper($plateNo);
+    }
+    if ($plateNo === '') {
+        return strtoupper($vehicleType);
+    }
+
+    $normalize = static fn(string $value): string => preg_replace('/\s+/', ' ', strtoupper(trim($value))) ?? '';
+    if ($normalize($vehicleType) === $normalize($plateNo)) {
+        return strtoupper($vehicleType);
+    }
+
+    return strtoupper($vehicleType . ' ' . $plateNo);
+}
+
+function batchTripDrawPage(BatchTripTicketPdf $pdf, mysqli $conn, array $issuance, array $options = []): void
 {
     $issuanceId = (int) ($issuance['id'] ?? 0);
     $serialNo = (string) ($issuance['serial_no'] ?? '');
     $office = trim((string) ($issuance['office'] ?? '')) ?: '(Name of Office)';
     $date = batchTripDateLabel((string) ($issuance['issue_date'] ?? date('Y-m-d')));
     $driver = strtoupper((string) ($issuance['driver_name'] ?? ''));
-    $vehicle = strtoupper(trim(implode(' ', array_filter([
+    $vehicle = batchTripVehiclePlateLabel(
         (string) ($issuance['vehicle_type'] ?? ''),
-        (string) ($issuance['plate_no'] ?? ''),
-    ]))));
+        (string) ($issuance['plate_no'] ?? '')
+    );
     $purpose = (string) ($issuance['purpose'] ?? 'OFFICIAL TRAVEL');
     $approvedBy = strtoupper((string) ($issuance['approved_by'] ?? 'CHRIS JOHN RENER G. TORRALBA'));
+    $blankFuelValues = !empty($options['blank_fuel_values']);
+    $hideSignature = !empty($options['hide_signature']);
     $issuedValue = (float) ($issuance['authorized_liters'] ?? 0);
     $balanceValue = 2.0;
-    $issued = batchTripFormatNumber($issuedValue);
-    $balance = batchTripFormatNumber($balanceValue);
-    $total = batchTripFormatNumber($balanceValue + $issuedValue);
-    $endBalance = batchTripFormatNumber($balanceValue);
-    $driverSignature = fuelTrackerFetchDriverSignatureByIssuanceId($conn, $issuanceId);
-    if ($driverSignature === '') {
-        $driverSignature = fuelTrackerFetchDriverSignature($conn, $serialNo);
+    $issued = $blankFuelValues ? '' : batchTripFormatNumber($issuedValue);
+    $balance = $blankFuelValues ? '' : batchTripFormatNumber($balanceValue);
+    $total = $blankFuelValues ? '' : batchTripFormatNumber($balanceValue + $issuedValue);
+    $endBalance = $blankFuelValues ? '' : batchTripFormatNumber($balanceValue);
+    $driverSignature = '';
+    if (!$hideSignature) {
+        $driverSignature = fuelTrackerFetchDriverSignatureByIssuanceId($conn, $issuanceId);
+        if ($driverSignature === '') {
+            $driverSignature = fuelTrackerFetchDriverSignature($conn, $serialNo);
+        }
     }
 
     $pdf->AddPage();
@@ -257,8 +282,16 @@ $pdf->SetTitle('Selected Driver Trip Tickets');
 $pdf->SetMargins(0, 0, 0);
 $pdf->SetAutoPageBreak(false, 0);
 
+$copyCount = max(1, min(10, (int) ($_GET['copies'] ?? 1)));
+$renderOptions = [
+    'blank_fuel_values' => ($_GET['blank_fuel_values'] ?? '') === '1',
+    'hide_signature' => ($_GET['hide_signature'] ?? '') === '1',
+];
+
 foreach ($issuances as $issuance) {
-    batchTripDrawPage($pdf, $conn, $issuance);
+    for ($copyIndex = 0; $copyIndex < $copyCount; $copyIndex++) {
+        batchTripDrawPage($pdf, $conn, $issuance, $renderOptions);
+    }
 }
 
 $pdf->Output('Selected_Drivers_Trip_Tickets.pdf', 'I');
