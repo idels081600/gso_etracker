@@ -122,6 +122,8 @@ function batchTripDrawPage(BatchTripTicketPdf $pdf, mysqli $conn, array $issuanc
     $approvedBy = strtoupper((string) ($issuance['approved_by'] ?? 'CHRIS JOHN RENER G. TORRALBA'));
     $blankFuelValues = !empty($options['blank_fuel_values']);
     $hideSignature = !empty($options['hide_signature']);
+    $places = $blankFuelValues ? 'Within Tagbilaran City' : '';
+    $purpose = $blankFuelValues ? 'For Office Use and Other Services' : $purpose;
     $issuedValue = (float) ($issuance['authorized_liters'] ?? 0);
     $balanceValue = 2.0;
     $issued = $blankFuelValues ? '' : batchTripFormatNumber($issuedValue);
@@ -169,7 +171,7 @@ function batchTripDrawPage(BatchTripTicketPdf $pdf, mysqli $conn, array $issuanc
         [1, 'Name of driver of the vehicle', $driver],
         [2, 'Government car to be used, Plate No.', $vehicle],
         [3, 'Name of authorized passenger', ''],
-        [4, 'Place or places to be visited/inspected', ''],
+        [4, 'Place or places to be visited/inspected', $places],
         [5, 'Purpose', $purpose],
     ];
     $y = 69;
