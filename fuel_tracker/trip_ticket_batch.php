@@ -124,6 +124,7 @@ function batchTripDrawPage(BatchTripTicketPdf $pdf, mysqli $conn, array $issuanc
     $hideSignature = !empty($options['hide_signature']);
     $places = $blankFuelValues ? 'Within Tagbilaran City' : '';
     $purpose = $blankFuelValues ? 'For Office Use and Other Services' : $purpose;
+    $date = $blankFuelValues ? '' : $date;
     $issuedValue = (float) ($issuance['authorized_liters'] ?? 0);
     $balanceValue = 2.0;
     $issued = $blankFuelValues ? '' : batchTripFormatNumber($issuedValue);
