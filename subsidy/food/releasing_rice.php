@@ -72,6 +72,7 @@ $station_name = 'Rice Assistance Verification';
                         <li class="nav-item"><a class="nav-link active" aria-current="page" href="releasing_rice.php">Next-Wave Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="releasing_rice_first_wave.php">First-Wave Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="cross_check_rice.php">Cross Check</a></li>
+                        <li class="nav-item"><a class="nav-link" href="consolidate_rice_claims.php">Claim Consolidation</a></li>
                         <li class="nav-item"><a class="nav-link text-danger" href="../../logout.php"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
                     </ul>
                 </div>
