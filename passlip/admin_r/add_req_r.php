@@ -14,13 +14,28 @@ $conn = mysqli_connect($servername, $username, $password, $dbname);
 if (isset($_POST['save_data2'])) {
 
     $username = $_SESSION['username'];
-    $query_pending = "SELECT * FROM request WHERE name = '$username' AND (Status = 'Pending' OR status1 = 'Pass-Slip' OR status1 = 'Waiting For Pass Slip Approval' OR status1 = 'Scan Qrcode')";
-    $result_pending = mysqli_query($conn, $query_pending);
+    $query_pending = "
+        SELECT id
+        FROM request
+        WHERE name = ?
+        AND DATE(date) = CURDATE()
+        AND (
+            Status = 'Pending'
+            OR status1 = 'Pass-Slip'
+            OR status1 = 'Waiting For Pass Slip Approval'
+            OR status1 = 'Scan Qrcode'
+        )
+        LIMIT 1
+    ";
+    $stmt_pending = mysqli_prepare($conn, $query_pending);
+    mysqli_stmt_bind_param($stmt_pending, "s", $username);
+    mysqli_stmt_execute($stmt_pending);
+    mysqli_stmt_store_result($stmt_pending);
 
-    if (mysqli_num_rows($result_pending) > 0) {
+    if (mysqli_stmt_num_rows($stmt_pending) > 0) {
         echo '<div class="alert alert-danger alert-dismissible">
                 <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <strong>Error!</strong> You already have a pending request or You forgot to scan your Qrcode for arrival.
+                <strong>Error!</strong> You already have an active request for today.
             </div>';
     } else {
         $name = mysqli_real_escape_string($conn, $_POST["name"]);
