@@ -24,6 +24,20 @@ function not_received_month_label($value): string
     return $timestamp ? date('F Y', $timestamp) : 'No Upload Date';
 }
 
+$isTransmittedView = strtolower(trim((string)($_GET['view'] ?? ''))) === 'transmitted';
+$reportTitle = $isTransmittedView
+    ? 'BAC Monitoring - Transmitted to GSO'
+    : 'BAC Monitoring - Not Yet Received';
+$reportDescription = $isTransmittedView
+    ? 'All BAC monitoring records transmitted to GSO'
+    : 'All BAC monitoring records not yet received';
+$emptyMessage = $isTransmittedView
+    ? 'No BAC monitoring records transmitted to GSO were found.'
+    : 'No not-yet-received BAC monitoring records found.';
+$whereClause = $isTransmittedView
+    ? "LOWER(TRIM(COALESCE(status, ''))) = 'transmitted to gso'"
+    : "(LOWER(TRIM(COALESCE(status, ''))) = 'not yet received' OR TRIM(COALESCE(received_by, '')) = '')";
+
 $rows = [];
 $stmt = $conn->prepare("
     SELECT ib_no, project_name, abc, final_amount, bidder,
@@ -31,8 +45,7 @@ $stmt = $conn->prepare("
         date_transmitted_from_bac, office, noa_no, notice_to_proceed_date, contract_date,
         calendar_days_delivery, deadline, received_by, created_at
     FROM bac_monitoring
-    WHERE LOWER(TRIM(COALESCE(status, ''))) = 'not yet received'
-        OR TRIM(COALESCE(received_by, '')) = ''
+    WHERE {$whereClause}
     ORDER BY created_at IS NULL ASC, created_at DESC, id DESC
 ");
 if ($stmt) {
@@ -49,7 +62,7 @@ if ($stmt) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BAC Not Yet Received</title>
+    <title><?php echo htmlspecialchars($reportTitle, ENT_QUOTES, 'UTF-8'); ?></title>
     <style>
         @page { size: legal landscape; margin: 10mm; }
         body { color: #101828; font-family: Arial, sans-serif; margin: 24px; }
@@ -77,7 +90,7 @@ if ($stmt) {
 <body>
     <div class="print-actions"><button type="button" onclick="window.print()">Print</button></div>
     <div class="print-header">
-        <div><h1>BAC Monitoring - Not Yet Received</h1><div class="print-meta">All BAC monitoring records not yet received</div></div>
+        <div><h1><?php echo htmlspecialchars($reportTitle, ENT_QUOTES, 'UTF-8'); ?></h1><div class="print-meta"><?php echo htmlspecialchars($reportDescription, ENT_QUOTES, 'UTF-8'); ?></div></div>
         <div class="print-meta"><?php echo date('M d, Y h:i A'); ?> | <?php echo number_format(count($rows)); ?> record(s)</div>
     </div>
     <table>
@@ -142,7 +155,7 @@ if ($stmt) {
                     </tr>
                 <?php endforeach; ?>
             <?php else: ?>
-                <tr><td class="empty" colspan="19">No not-yet-received BAC monitoring records found.</td></tr>
+                <tr><td class="empty" colspan="19"><?php echo htmlspecialchars($emptyMessage, ENT_QUOTES, 'UTF-8'); ?></td></tr>
             <?php endif; ?>
         </tbody>
     </table>

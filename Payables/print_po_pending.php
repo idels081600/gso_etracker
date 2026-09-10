@@ -14,12 +14,23 @@ function pending_rfq_month_label($value): string
     return $timestamp ? date('F Y', $timestamp) : 'No Date Received';
 }
 
+$isGsoView = strtolower(trim((string)($_GET['view'] ?? ''))) === 'gso';
+$reportTitle = $isGsoView ? 'RFQ Receiving - GSO Office' : 'Pending RFQ Receiving';
+$reportDescription = $isGsoView
+    ? 'All RFQ receiving records assigned to GSO'
+    : 'PO SAP records with Pending status';
+$emptyMessage = $isGsoView
+    ? 'No RFQ records assigned to GSO were found.'
+    : 'No pending RFQ records found.';
+$whereClause = $isGsoView
+    ? "delete_status = 0 AND LOWER(TRIM(COALESCE(office, ''))) = 'gso'"
+    : "delete_status = 0 AND (status IS NULL OR TRIM(status) = '' OR LOWER(TRIM(status)) = 'pending')";
+
 $rows = [];
 $stmt = $conn->prepare("
     SELECT RFQ_no, supplier, description, amount, date_received, office, received_by, status
     FROM PO_sap
-    WHERE delete_status = 0
-        AND (status IS NULL OR TRIM(status) = '' OR LOWER(TRIM(status)) = 'pending')
+    WHERE {$whereClause}
     ORDER BY date_received IS NULL ASC, date_received DESC, id DESC
 ");
 if ($stmt) {
@@ -36,7 +47,7 @@ if ($stmt) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pending RFQ Receiving</title>
+    <title><?php echo htmlspecialchars($reportTitle, ENT_QUOTES, 'UTF-8'); ?></title>
     <style>
         body { color: #101828; font-family: Arial, sans-serif; margin: 28px; }
         .print-header { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: 2px solid #101828; margin-bottom: 18px; padding-bottom: 10px; }
@@ -56,7 +67,7 @@ if ($stmt) {
 <body>
     <div class="print-actions"><button type="button" onclick="window.print()">Print</button></div>
     <div class="print-header">
-        <div><h1>Pending RFQ Receiving</h1><div class="print-meta">PO SAP records with Pending status</div></div>
+        <div><h1><?php echo htmlspecialchars($reportTitle, ENT_QUOTES, 'UTF-8'); ?></h1><div class="print-meta"><?php echo htmlspecialchars($reportDescription, ENT_QUOTES, 'UTF-8'); ?></div></div>
         <div class="print-meta"><?php echo date('M d, Y h:i A'); ?> | <?php echo number_format(count($rows)); ?> record(s)</div>
     </div>
     <table>
@@ -82,7 +93,7 @@ if ($stmt) {
                     </tr>
                 <?php endforeach; ?>
             <?php else: ?>
-                <tr><td class="empty" colspan="8">No pending RFQ records found.</td></tr>
+                <tr><td class="empty" colspan="8"><?php echo htmlspecialchars($emptyMessage, ENT_QUOTES, 'UTF-8'); ?></td></tr>
             <?php endif; ?>
         </tbody>
     </table>

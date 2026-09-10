@@ -41,6 +41,10 @@ $perPage = 25;
                         <i class="fas fa-print"></i>
                         <span>Print Pending</span>
                     </a>
+                    <a class="rfq-print-button" href="print_po_pending.php?view=gso" target="_blank" rel="noopener">
+                        <i class="fas fa-print"></i>
+                        <span>Print GSO</span>
+                    </a>
                     <button type="button" class="rfq-add-button" data-bs-toggle="modal" data-bs-target="#addTransmittalModal">
                         <i class="fas fa-plus"></i>
                         <span>Receive</span>

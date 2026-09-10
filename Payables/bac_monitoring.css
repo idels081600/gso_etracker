@@ -68,6 +68,7 @@ body.sidebar-collapsed .bac-monitoring-content {
 
 .bac-monitoring-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   justify-content: flex-end;
