@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once '../dbh.php';
 require_once "../../fpdf/fpdf.php";
 session_start();
@@ -21,6 +21,25 @@ if ($range == 'today') {
 // Query for Regular Employees ONLY. TCWS has its own twcs_employee_export.php exporter.
 $sql_official = $conn->query("SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND role = 'Employee' $date_condition $duration_condition ORDER BY name");
 $sql_personal = $conn->query("SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND role = 'Employee' $date_condition $duration_condition ORDER BY name");
+
+function pdfText($text) {
+    $text = (string) $text;
+    $text = str_replace(
+        ["\xC3\x83\xC2\xB1", "\xC3\x83\xC2\x91"],
+        ["\xC3\xB1", "\xC3\x91"],
+        $text
+    );
+
+    $nameCorrections = [
+        'Caete Rogelio' => "Ca\xC3\xB1ete Rogelio",
+        'Estabaya Nio' => "Estabaya Ni\xC3\xB1o",
+        'Marc Nino Niluag' => "Marc Ni\xC3\xB1o Niluag",
+    ];
+    $text = str_ireplace(array_keys($nameCorrections), array_values($nameCorrections), $text);
+
+    $encoded = iconv('UTF-8', 'Windows-1252//TRANSLIT', $text);
+    return $encoded !== false ? $encoded : $text;
+}
 
 class PDF extends FPDF {
     var $headerTitle;
@@ -49,9 +68,9 @@ class PDF extends FPDF {
         $this->SetFont('Arial', '', 10);
         while ($row = $sql->fetch_object()) {
             $h = floor($row->duration_seconds / 3600); $m = floor(($row->duration_seconds % 3600) / 60);
-            $this->Cell(45, 12, $row->name, 1);
-            $this->Cell(100, 12, $row->purpose, 1);
-            $this->Cell(70, 12, $row->dest2, 1);
+            $this->Cell(45, 12, pdfText($row->name), 1);
+            $this->Cell(100, 12, pdfText($row->purpose), 1);
+            $this->Cell(70, 12, pdfText($row->dest2), 1);
             $this->Cell(30, 12, date("m/d/Y", strtotime($row->date)), 1, 0, 'C');
             $this->Cell(30, 12, date("h:i A", strtotime($row->timedept)), 1, 0, 'C');
             $this->Cell(30, 12, date("h:i A", strtotime($row->time_returned)), 1, 0, 'C');
@@ -86,7 +105,7 @@ if ($range == 'today' || $filter_duration == '1') {
         $pdf->SetTextColor(0, 0, 0); $pdf->SetFont('Arial', '', 10);
         foreach ($totals as $name => $sec) {
             $time_str = floor($sec / 3600) . 'h ' . floor(($sec % 3600) / 60) . 'm';
-            $pdf->Cell(100, 10, $name, 1); $pdf->Cell(100, 10, $time_str, 1); $pdf->Ln();
+            $pdf->Cell(100, 10, pdfText($name), 1); $pdf->Cell(100, 10, $time_str, 1); $pdf->Ln();
         }
         $pdf->Ln(10);
     }
