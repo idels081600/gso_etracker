@@ -390,17 +390,22 @@ class PDF extends FPDF
 // Function to get office head name
 function getOfficeHeadName($conn, $officeName)
 {
-    $sql = "SELECT name FROM users WHERE username LIKE ? LIMIT 1";
+    $sql = "SELECT name
+            FROM users
+            WHERE username = ?
+              AND status = 'active'
+            LIMIT 1";
     $stmt = $conn->prepare($sql);
 
     if ($stmt) {
-        $searchTerm = '%' . trim($officeName) . '%';  // Flexible match
-        $stmt->bind_param("s", $searchTerm);
+        $username = trim($officeName);
+        $stmt->bind_param("s", $username);
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($row = $result->fetch_assoc()) {
-            return $row['name'];
+            $stmt->close();
+            return trim((string) $row['name']);
         }
 
         $stmt->close();
