@@ -11,6 +11,26 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION
 $conn = require(__DIR__ . '/config/database.php');
 header('Content-Type: application/json');
 
+$searchTerm = trim((string)($_GET['q'] ?? ''));
+$codeSourceSql = "
+            SELECT household_code FROM rice_households
+            UNION SELECT household_code FROM rice_claimed_households
+            UNION SELECT household_code FROM rice_third_wave_households
+            UNION SELECT household_code FROM rice_fourth_wave_households";
+if ($searchTerm !== '') {
+    $escapedSearch = mysqli_real_escape_string($conn, $searchTerm);
+    $likeSearch = "'%" . $escapedSearch . "%'";
+    $codeSourceSql = "
+            SELECT household_code FROM rice_households
+             WHERE household_code LIKE {$likeSearch} OR household_name LIKE {$likeSearch} OR address LIKE {$likeSearch}
+            UNION SELECT household_code FROM rice_claimed_households
+             WHERE household_code LIKE {$likeSearch} OR household_name LIKE {$likeSearch} OR address LIKE {$likeSearch}
+            UNION SELECT household_code FROM rice_third_wave_households
+             WHERE household_code LIKE {$likeSearch} OR household_name LIKE {$likeSearch} OR address LIKE {$likeSearch}
+            UNION SELECT household_code FROM rice_fourth_wave_households
+             WHERE household_code LIKE {$likeSearch} OR household_name LIKE {$likeSearch} OR address LIKE {$likeSearch}";
+}
+
 $sql = "SELECT
             COALESCE(first_wave.id, next_wave.id, third_wave.id, fourth_wave.id) AS id,
             codes.household_code,
@@ -29,11 +49,7 @@ $sql = "SELECT
             CASE WHEN fourth_wave.id IS NULL THEN 0 ELSE 1 END AS fourth_wave_exists,
             COALESCE(fourth_wave.is_claimed, 0) AS fourth_wave_is_claimed,
             fourth_wave.claimed_at AS fourth_wave_claimed_at
-        FROM (
-            SELECT household_code FROM rice_households
-            UNION SELECT household_code FROM rice_claimed_households
-            UNION SELECT household_code FROM rice_third_wave_households
-            UNION SELECT household_code FROM rice_fourth_wave_households
+        FROM ({$codeSourceSql}
         ) codes
         LEFT JOIN rice_households first_wave ON first_wave.household_code = codes.household_code
         LEFT JOIN rice_claimed_households next_wave ON next_wave.household_code = codes.household_code

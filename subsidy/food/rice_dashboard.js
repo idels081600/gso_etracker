@@ -2,19 +2,64 @@ const PAGE_SIZE = 10;
 let allRiceRecords = [];
 let filteredRiceRecords = [];
 let currentPage = 1;
+let recordsRequestController = null;
+let recordsRequestSequence = 0;
+let searchDebounceTimer = null;
+let hasLoadedFullRecordSet = false;
 
-async function loadRiceRecords() {
+async function loadRiceRecords(searchTerm = '') {
+    const requestSequence = ++recordsRequestSequence;
+
+    if (recordsRequestController) {
+        recordsRequestController.abort();
+    }
+
+    recordsRequestController = new AbortController();
+    const url = new URL('api_get_rice_records.php', window.location.href);
+    if (searchTerm) {
+        url.searchParams.set('q', searchTerm);
+    }
+
+    const tbody = document.getElementById('recordsTable');
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="11" class="text-center text-muted py-4">Searching rice household records...</td>
+            </tr>
+        `;
+    }
+
     try {
-        const response = await fetch('api_get_rice_records.php');
+        const response = await fetch(url, {
+            signal: recordsRequestController.signal,
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) {
+            throw new Error(`Records request failed with status ${response.status}`);
+        }
         const data = await response.json();
-        if (data.success) {
-            allRiceRecords = Array.isArray(data.data) ? data.data : [];
-            filteredRiceRecords = [...allRiceRecords];
+        if (requestSequence === recordsRequestSequence && data.success) {
+            const records = Array.isArray(data.data) ? data.data : [];
+            if (!searchTerm) {
+                allRiceRecords = records;
+                hasLoadedFullRecordSet = true;
+            }
+            filteredRiceRecords = records;
             currentPage = 1;
             renderCurrentPage();
         }
     } catch (error) {
+        if (error.name === 'AbortError') {
+            return;
+        }
         console.error('Error loading rice records:', error);
+        if (requestSequence === recordsRequestSequence && tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="11" class="text-center text-danger py-4">Unable to load rice household records. Please try again.</td>
+                </tr>
+            `;
+        }
     }
 }
 
@@ -130,29 +175,25 @@ function renderCurrentPage() {
 }
 
 function applyTableSearch() {
-    const searchTerm = (tableSearch?.value || '').trim().toLowerCase();
+    const searchTerm = (tableSearch?.value || '').trim();
+    window.clearTimeout(searchDebounceTimer);
 
-    if (!searchTerm) {
-        filteredRiceRecords = [...allRiceRecords];
-    } else {
-        filteredRiceRecords = allRiceRecords.filter((record) =>
-            [
+    if (hasLoadedFullRecordSet) {
+        const normalizedSearchTerm = searchTerm.toLocaleLowerCase();
+        filteredRiceRecords = !normalizedSearchTerm
+            ? [...allRiceRecords]
+            : allRiceRecords.filter((record) => [
                 record.household_code,
                 record.household_name,
-                record.status,
-                record.previous_wave_exists !== 1 ? 'first wave not found' : (record.previous_wave_is_claimed === 1 ? 'first wave claimed' : 'first wave not claimed'),
-                record.next_wave_exists !== 1 ? 'not in next wave' : (record.is_claimed === 1 ? 'next wave claimed' : 'next wave unclaimed'),
-                record.claimed_at || '',
-                record.third_wave_exists !== 1 ? 'not in third batch' : (record.third_wave_is_claimed === 1 ? 'third batch claimed' : 'third batch unclaimed'),
-                record.third_wave_claimed_at || '',
-                record.fourth_wave_exists !== 1 ? 'not in fourth batch' : (record.fourth_wave_is_claimed === 1 ? 'fourth batch claimed' : 'fourth batch unclaimed'),
-                record.fourth_wave_claimed_at || ''
-            ].join(' ').toLowerCase().includes(searchTerm)
-        );
+                record.address,
+                record.status
+            ].join(' ').toLocaleLowerCase().includes(normalizedSearchTerm));
+        currentPage = 1;
+        renderCurrentPage();
+        return;
     }
 
-    currentPage = 1;
-    renderCurrentPage();
+    searchDebounceTimer = window.setTimeout(() => loadRiceRecords(searchTerm), 250);
 }
 
 function resetAddHouseholdForm() {
