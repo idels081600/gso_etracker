@@ -1,6 +1,9 @@
 <?php
 session_start();
+require_once __DIR__ . '/rice_release_batches.php';
 require_once __DIR__ . '/rice_household_code.php';
+require_once dirname(__DIR__, 2) . '/fpdf/fpdf.php';
+require_once __DIR__ . '/rice_recipient_form_pdf.php';
 $conn = require(__DIR__ . '/config/database.php');
 
 if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -13,6 +16,19 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'RICE_VERIFIER') {
     exit();
 }
 
+$batch = riceReleaseBatch($_GET['wave'] ?? 'next_wave');
+if (!$batch || $batch['previous_households'] === null) {
+    http_response_code(400);
+    exit('Select the second, third, or fourth rice batch.');
+}
+$household_table = $batch['households'];
+$is_third_wave = $household_table === 'rice_third_wave_households';
+$is_fourth_wave = $household_table === 'rice_fourth_wave_households';
+$is_distribution_coupon = $is_third_wave || $is_fourth_wave;
+$arranged = $is_distribution_coupon && (string)($_GET['arranged'] ?? '') === '1';
+$distribution = $is_fourth_wave ? '4' : '3';
+$distribution_ordinal = $distribution === '4' ? '4TH' : '3RD';
+$distribution_class = $distribution === '4' ? 'fourth-distribution' : 'third-distribution';
 $filter = isset($_GET['filter']) ? strtolower(trim($_GET['filter'])) : 'all';
 $allowed_filters = ['all', 'unclaimed', 'claimed'];
 if (!in_array($filter, $allowed_filters, true)) {
@@ -27,6 +43,10 @@ if (!in_array($sort, $allowed_sorts, true)) {
 
 $barangay = isset($_GET['barangay']) ? trim($_GET['barangay']) : '';
 $household_code = isset($_GET['household_code']) ? trim($_GET['household_code']) : '';
+$is_ind_sector = in_array(strtoupper($barangay), ['IND', 'IND2', 'INDIGENTS'], true);
+if ($is_ind_sector) {
+    $sort = 'name';
+}
 
 $where_clauses = ["status = 'Active'"];
 if ($filter === 'unclaimed') {
@@ -37,7 +57,9 @@ if ($filter === 'unclaimed') {
 
 $types = '';
 $params = [];
-if ($barangay !== '') {
+if ($is_ind_sector) {
+    $where_clauses[] = "UPPER(TRIM(address)) IN ('IND', 'IND2', 'INDIGENTS')";
+} elseif ($barangay !== '') {
     $where_clauses[] = "address = ?";
     $types .= 's';
     $params[] = $barangay;
@@ -58,8 +80,16 @@ if ($sort === 'address') {
     $order_sql = "ORDER BY household_name ASC, household_code_prefix ASC, household_code_number ASC, household_code ASC";
 }
 
-$sql = "SELECT household_code, household_name, address, is_claimed
-        FROM rice_claimed_households
+if ($is_ind_sector) {
+    $order_sql = "ORDER BY (TRIM(COALESCE(designation, '')) = '') ASC,
+                  UPPER(TRIM(COALESCE(designation, ''))) ASC,
+                  household_name ASC, household_code_prefix ASC, household_code_number ASC, household_code ASC";
+}
+
+$sql = "SELECT id, household_code, household_name, first_name, last_name, middle_name,
+               address, is_claimed, designation,
+               UPPER(TRIM(COALESCE(designation, ''))) AS designation_group
+        FROM {$household_table}
         $where_sql
         $order_sql";
 
@@ -74,9 +104,49 @@ if ($stmt) {
 }
 $records = [];
 if ($result) {
-    while ($row = mysqli_fetch_assoc($result)) {
+while ($row = mysqli_fetch_assoc($result)) {
         $records[] = $row;
     }
+}
+
+if ($is_third_wave && $records) {
+    $referenceRecords = [];
+    $referenceResult = mysqli_query(
+        $conn,
+        'SELECT id, household_code, household_name, first_name, last_name, middle_name, designation '
+        . 'FROM rice_claimed_households ORDER BY id ASC'
+    );
+    if ($referenceResult) {
+        while ($reference = mysqli_fetch_assoc($referenceResult)) {
+            $codeKey = strtoupper(trim((string)$reference['household_code']));
+            if ($codeKey !== '' && !isset($referenceRecords[$codeKey])) {
+                $referenceRecords[$codeKey] = $reference;
+            }
+        }
+    }
+
+    foreach ($records as &$record) {
+        $codeKey = strtoupper(trim((string)$record['household_code']));
+        $reference = $referenceRecords[$codeKey] ?? [];
+        if ($reference) {
+            $record['id'] = $reference['id'];
+            $record['household_name'] = $reference['household_name'];
+            $record['first_name'] = $reference['first_name'];
+            $record['last_name'] = $reference['last_name'];
+            $record['middle_name'] = $reference['middle_name'];
+            $record['sector_source'] = $reference['designation'];
+        } else {
+            $record['sector_source'] = $record['designation'] ?: $record['address'];
+        }
+    }
+    unset($record);
+}
+
+if ($is_fourth_wave && $records) {
+    foreach ($records as &$record) {
+        $record['sector_source'] = $record['designation'] ?: $record['address'];
+    }
+    unset($record);
 }
 
 if ($sort === 'code' || $sort === 'address') {
@@ -106,6 +176,34 @@ if ($sort === 'code' || $sort === 'address') {
             isset($right['address']) ? (string)$right['address'] : null
         );
     });
+}
+
+$chunks = [];
+$pageDesignations = [];
+$pageGroupLabels = [];
+$pageGroupKinds = [];
+if ($arranged) {
+    foreach (riceRecipientFormGroupedRecords($records) as $group) {
+        foreach (array_chunk($group['records'], 15) as $pageItems) {
+            $chunks[] = $pageItems;
+            $pageGroupLabels[] = $group['label'];
+            $pageGroupKinds[] = $group['kind'];
+        }
+    }
+} elseif ($is_ind_sector) {
+    $designationGroups = [];
+    foreach ($records as $record) {
+        $designationGroups[$record['designation_group']][] = $record;
+    }
+    // Keep each designation on its own sheets, including partially filled sheets.
+    foreach ($designationGroups as $designation => $groupRecords) {
+        foreach (array_chunk($groupRecords, 15) as $pageItems) {
+            $chunks[] = $pageItems;
+            $pageDesignations[] = $designation !== '' ? (string)$designation : 'Unspecified';
+        }
+    }
+} else {
+    $chunks = array_chunk($records, 15);
 }
 
 $filter_title = [
@@ -150,6 +248,8 @@ function riceVoucherNameClass($name)
             --ink-strong: #515151;
             --accent-line: #6b7280;
             --claimed: #0f766e;
+            --third-batch-orange: #c2410c;
+            --fourth-distribution-blue: #1d4ed8;
         }
 
         * {
@@ -307,11 +407,61 @@ function riceVoucherNameClass($name)
             color: var(--claimed);
         }
 
+        .third-distribution .voucher-name,
+        .third-distribution .voucher-code,
+        .third-distribution .distribution-indicator {
+            color: var(--third-batch-orange);
+        }
+
+        .fourth-distribution .voucher-name,
+        .fourth-distribution .voucher-code,
+        .fourth-distribution .distribution-indicator {
+            color: var(--fourth-distribution-blue);
+        }
+
+        .distribution-indicator {
+            position: absolute;
+            top: 1.8mm;
+            right: 2.2mm;
+            z-index: 2;
+            font-size: 2.1mm;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: 0.08em;
+        }
+
         .empty-state {
             padding: 30mm 12mm;
             text-align: center;
             color: #6b7280;
             font-size: 18px;
+        }
+
+        .designation-label {
+            margin-bottom: 2.5mm;
+            font-size: 3.3mm;
+            font-weight: 700;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
+        }
+
+        .coupon-group-label {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8mm;
+            margin: 0 0 2.5mm;
+            color: #374151;
+            font-size: 3.3mm;
+            font-weight: 800;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .coupon-group-label small {
+            color: #6b7280;
+            font-size: 2.2mm;
+            letter-spacing: 0.08em;
         }
 
         @page {
@@ -342,10 +492,10 @@ function riceVoucherNameClass($name)
         }
     </style>
 </head>
-<body>
+<body class="<?php echo $is_distribution_coupon ? $distribution_class : ''; ?>">
     <div class="toolbar">
         <div class="toolbar-left">
-            <a class="alt" href="dashboard_rice.php">Back to Dashboard</a>
+            <a class="alt" href="dashboard_rice.php">Back to Dashboard</a><span class="badge"><?php echo htmlspecialchars($batch['label']); ?></span>
             <span class="badge"><?php echo htmlspecialchars($filter_title[$filter]); ?></span>
             <?php if ($barangay !== ''): ?>
                 <span class="badge"><?php echo htmlspecialchars($barangay); ?></span>
@@ -353,7 +503,11 @@ function riceVoucherNameClass($name)
             <?php if ($household_code !== ''): ?>
                 <span class="badge"><?php echo htmlspecialchars($household_code); ?></span>
             <?php endif; ?>
-            <span class="badge"><?php echo htmlspecialchars($sort_title[$sort]); ?></span>
+            <span class="badge"><?php echo htmlspecialchars($is_ind_sector ? 'Sorted by Designation and Name' : $sort_title[$sort]); ?></span>
+            <?php if ($arranged): ?>
+                <span class="badge">Recipient Form Order</span>
+                <span class="badge"><?php echo $distribution_ordinal; ?> Distribution</span>
+            <?php endif; ?>
             <span><?php echo number_format(count($records)); ?> voucher<?php echo count($records) === 1 ? '' : 's'; ?></span>
         </div>
         <button type="button" onclick="window.print()">Print Vouchers</button>
@@ -365,17 +519,29 @@ function riceVoucherNameClass($name)
         </div>
     <?php else: ?>
         <?php
-        $chunks = array_chunk($records, 15);
-        foreach ($chunks as $pageItems):
+        foreach ($chunks as $pageIndex => $pageItems):
         ?>
             <div class="page">
+                <?php if ($arranged): ?>
+                    <?php $groupPrefix = ($pageGroupKinds[$pageIndex] ?? '') === 'barangay' ? 'BARANGAY' : 'SECTOR'; ?>
+                    <div class="coupon-group-label">
+                        <span><?php echo $groupPrefix; ?>: <?php echo htmlspecialchars($pageGroupLabels[$pageIndex] ?? ''); ?></span>
+                        <small><?php echo $distribution_ordinal; ?> DISTRIBUTION COUPONS</small>
+                    </div>
+                <?php elseif ($is_ind_sector): ?>
+                    <div class="designation-label">INDIGENTS | Designation: <?php echo htmlspecialchars($pageDesignations[$pageIndex]); ?></div>
+                <?php endif; ?>
                 <div class="voucher-grid">
                     <?php foreach ($pageItems as $record): ?>
                         <article class="voucher<?php echo ((int)$record['is_claimed'] === 1) ? ' claimed' : ''; ?>">
                             <img class="voucher-template" src="rice voucher.png" alt="" aria-hidden="true">
+                            <?php if ($is_distribution_coupon): ?>
+                                <span class="distribution-indicator"><?php echo $distribution_ordinal; ?></span>
+                            <?php endif; ?>
                             <div class="voucher-overlay">
                                 <div class="voucher-meta">
-                                    <div class="voucher-name<?php echo riceVoucherNameClass($record['household_name']); ?>"><?php echo htmlspecialchars($record['household_name']); ?></div>
+                                    <?php $voucherName = $record['formatted_name'] ?? $record['household_name']; ?>
+                                    <div class="voucher-name<?php echo riceVoucherNameClass($voucherName); ?>"><?php echo htmlspecialchars($voucherName); ?></div>
                                     <div class="voucher-code"><?php echo htmlspecialchars($record['household_code']); ?></div>
                                 </div>
                             </div>

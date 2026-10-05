@@ -1,11 +1,12 @@
 <?php
 session_start();
+require_once __DIR__ . '/rice_release_batches.php';
 $conn = require(__DIR__ . '/config/database.php');
 
 header('Content-Type: application/json');
 mysqli_report(MYSQLI_REPORT_OFF);
 
-if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || ($_SESSION['role'] ?? '') !== 'RICE_VERIFIER') {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
@@ -16,12 +17,13 @@ if (!isset($_GET['q']) || strlen(trim($_GET['q'])) < 2) {
 }
 
 $query = trim($_GET['q']);
-$source = isset($_GET['source']) ? trim($_GET['source']) : '';
-if (!in_array($source, ['first_wave', 'next_wave'], true)) {
+$source = isset($_GET['source']) && is_string($_GET['source']) ? trim($_GET['source']) : '';
+$batch = riceReleaseBatch($source);
+if (!$batch) {
     echo json_encode(['success' => false, 'message' => 'A valid release wave is required']);
     exit();
 }
-$household_table = $source === 'next_wave' ? 'rice_claimed_households' : 'rice_households';
+$household_table = $batch['households'];
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $per_page = 10;
 $offset = ($page - 1) * $per_page;

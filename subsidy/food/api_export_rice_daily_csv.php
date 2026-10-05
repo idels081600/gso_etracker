@@ -1,12 +1,22 @@
 <?php
 session_start();
+require_once __DIR__ . '/rice_release_batches.php';
 $conn = require(__DIR__ . '/config/database.php');
 
-if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || ($_SESSION['role'] ?? '') !== 'RICE_VERIFIER') {
     header("Location: ../../login_v2.php");
     exit;
 }
 
+$wave = $_GET['wave'] ?? 'first_wave';
+$batch = riceReleaseBatch($wave);
+if (!$batch) {
+    http_response_code(400);
+    exit('Invalid rice batch.');
+}
+$household_table = $batch['households'];
+$claim_table = $batch['claims'];
+session_write_close();
 $export_all = isset($_GET['all']) && $_GET['all'] === '1';
 
 if ($export_all) {
@@ -16,6 +26,10 @@ if ($export_all) {
     $date = isset($_GET['date']) ? trim($_GET['date']) : date('Y-m-d');
     $filename = 'Rice_Assistance_' . $date . '.csv';
     $where_sql = 'WHERE DATE(rvc.claim_date) = ?';
+}
+
+if ($wave !== 'first_wave') {
+    $filename = substr($filename, 0, -4) . '_' . str_replace(' ', '_', $batch['label']) . '.csv';
 }
 
 header('Content-Type: text/csv; charset=utf-8');
@@ -41,8 +55,8 @@ $sql = "SELECT
             rvc.claimant_name,
             rvc.verifier_name,
             rvc.claim_date
-        FROM rice_voucher_claims rvc
-        INNER JOIN rice_households rh ON rvc.household_id = rh.id
+        FROM {$claim_table} rvc
+        INNER JOIN {$household_table} rh ON rvc.household_id = rh.id
         $where_sql
         ORDER BY rvc.claim_date ASC";
 

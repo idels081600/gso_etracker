@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/rice_release_batches.php';
 $conn = require(__DIR__ . '/config/database.php');
 
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -15,13 +16,21 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'RICE_VERIFIER') {
     exit();
 }
 $station_name = 'Rice Assistance Verification';
+$rice_release_source = $rice_release_source ?? 'next_wave';
+$release_batch = riceReleaseBatch($rice_release_source);
+if (!$release_batch || $rice_release_source === 'first_wave') {
+    http_response_code(400);
+    exit('Invalid rice release batch.');
+}
+$release_title = $release_batch['label'] . ' Rice Assistance Releasing';
+$release_active = riceReleaseBatchIsActive($conn, $rice_release_source);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Next-Wave Rice Assistance Releasing</title>
+    <title><?php echo htmlspecialchars($release_title); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.4/font/bootstrap-icons.css">
     <style>
@@ -47,6 +56,14 @@ $station_name = 'Rice Assistance Verification';
         .border-rice-teal { border-color: var(--rice-teal-border) !important; }
         .bg-rice-danger-soft { background-color: #fee2e2 !important; }
         .border-rice-danger { border-color: #ef4444 !important; }
+        @media (max-width: 575.98px) {
+            .navbar-brand {
+                max-width: calc(100% - 72px);
+                margin-right: 0;
+                white-space: normal;
+                font-size: 1rem;
+            }
+        }
     </style>
     <script src="./js/session_heartbeat.js"></script>
     <script>
@@ -69,7 +86,9 @@ $station_name = 'Rice Assistance Verification';
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                         <li class="nav-item"><a class="nav-link" href="dashboard_rice.php">Home</a></li>
-                        <li class="nav-item"><a class="nav-link active" aria-current="page" href="releasing_rice.php">Next-Wave Releasing</a></li>
+                        <li class="nav-item"><a class="nav-link <?php echo $rice_release_source === 'next_wave' ? 'active' : ''; ?>" href="releasing_rice.php">2nd Batch Releasing</a></li>
+                        <li class="nav-item"><a class="nav-link <?php echo $rice_release_source === 'third_wave' ? 'active' : ''; ?>" href="releasing_rice_third_wave.php">3rd Batch Releasing</a></li>
+                        <li class="nav-item"><a class="nav-link <?php echo $rice_release_source === 'fourth_wave' ? 'active' : ''; ?>" href="releasing_rice_fourth_wave.php">4th Batch Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="releasing_rice_first_wave.php">First-Wave Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="cross_check_rice.php">Cross Check</a></li>
                         <li class="nav-item"><a class="nav-link" href="consolidate_rice_claims.php">Claim Consolidation</a></li>
@@ -81,6 +100,14 @@ $station_name = 'Rice Assistance Verification';
     </nav>
 
     <main class="pt-5">
+        <?php if (!$release_active): ?>
+            <div class="container-fluid mt-4 mb-0">
+                <div class="alert alert-warning border-warning d-flex align-items-start gap-2 mb-0" role="status" id="releaseLockNotice">
+                    <i class="bi bi-lock-fill mt-1" aria-hidden="true"></i>
+                    <div><strong><?php echo htmlspecialchars($release_batch['label']); ?> claiming is locked.</strong> You may search and review recipients, but claims cannot be submitted until the batch is activated by an administrator.</div>
+                </div>
+            </div>
+        <?php endif; ?>
         <div class="container py-5">
             <div class="row justify-content-center">
                 <div class="col-12 col-md-10 col-lg-8">
@@ -88,7 +115,7 @@ $station_name = 'Rice Assistance Verification';
                         <div class="card-body py-5">
                             <div class="row align-items-center">
                                 <div class="col-md-8 mb-4 mb-md-0">
-                                    <h2 class="fw-bold mb-2">Next-Wave Rice Assistance Releasing</h2>
+                                    <h2 class="fw-bold mb-2"><?php echo htmlspecialchars($release_title); ?></h2>
                                     <p class="text-muted mb-4">Search for a household and confirm the one-time rice voucher release.</p>
                                     <div class="input-group input-group-lg position-relative">
                                         <input id="mainSearch" type="text" class="form-control" placeholder="Search household code" aria-label="Search household" autocomplete="off">
@@ -270,7 +297,7 @@ $station_name = 'Rice Assistance Verification';
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>window.RICE_RELEASE_CONFIG = { source: 'next_wave' };</script>
+    <script>window.RICE_RELEASE_CONFIG = <?php echo json_encode(['source' => $rice_release_source, 'active' => $release_active]); ?>;</script>
     <script src="releasing_rice.js?v=<?php echo rawurlencode((string)filemtime(__DIR__ . '/releasing_rice.js')); ?>"></script>
     <style>
         @keyframes spin {
@@ -280,6 +307,7 @@ $station_name = 'Rice Assistance Verification';
         .spin {
             animation: spin 1s linear infinite;
         }
+
     </style>
 </body>
 </html>

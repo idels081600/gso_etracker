@@ -33,6 +33,16 @@ function riceConsolidationWaveConfig(string $wave): array
             'claim_table' => 'rice_next_wave_claims',
             'label' => 'Second Wave',
         ],
+        'third_wave' => [
+            'household_table' => 'rice_third_wave_households',
+            'claim_table' => 'rice_third_wave_claims',
+            'label' => 'Third Wave',
+        ],
+        'fourth_wave' => [
+            'household_table' => 'rice_fourth_wave_households',
+            'claim_table' => 'rice_fourth_wave_claims',
+            'label' => 'Fourth Wave',
+        ],
     ];
 
     if (!isset($configs[$wave])) {
@@ -42,45 +52,72 @@ function riceConsolidationWaveConfig(string $wave): array
     return $configs[$wave];
 }
 
-function riceConsolidationPairCte(): string
+function riceConsolidationPairCte(bool $searching = false): string
 {
-    return <<<'SQL'
-WITH claim_pairs AS (
-    SELECT
-        fh.household_code,
-        COALESCE(NULLIF(fh.household_code_prefix, ''), NULLIF(sh.household_code_prefix, ''), '') AS sort_prefix,
-        COALESCE(NULLIF(fh.household_code_number, 0), NULLIF(sh.household_code_number, 0), 0) AS sort_number,
-        fh.id AS first_household_id,
-        fh.household_name AS first_household_name,
-        fh.address AS first_address,
-        fc.id AS first_claim_id,
-        fc.claimant_name AS first_claimant_name,
-        fc.claim_date AS first_claim_date,
-        fc.verifier_name AS first_verifier_name,
-        sh.id AS second_household_id,
-        sh.household_name AS second_household_name,
-        sh.address AS second_address,
-        sc.id AS second_claim_id,
-        sc.claimant_name AS second_claimant_name,
-        sc.claim_date AS second_claim_date,
-        sc.verifier_name AS second_verifier_name,
-        CASE
-            WHEN sh.id IS NULL THEN 'unmatched'
-            WHEN sc.id IS NULL THEN 'first_wave_only'
-            WHEN UPPER(TRIM(fh.household_name)) <> UPPER(TRIM(sh.household_name)) THEN 'name_difference'
-            ELSE 'both_waves'
-        END AS pair_state
+    $matchingCodesCte = '';
+    $searchJoin = '';
+
+    if ($searching) {
+        $matchingCodesCte = <<<'SQL'
+matching_codes AS (
+    SELECT household_code FROM rice_households WHERE household_code LIKE ?
+    UNION
+    SELECT household_code FROM rice_households WHERE household_name LIKE ?
+    UNION
+    SELECT fh.household_code
     FROM rice_voucher_claims fc
     INNER JOIN rice_households fh ON fh.id = fc.household_id
-    LEFT JOIN rice_claimed_households sh ON sh.household_code = fh.household_code
-    LEFT JOIN rice_next_wave_claims sc ON sc.household_id = sh.id
+    WHERE fc.claimant_name LIKE ?
+    UNION
+    SELECT household_code FROM rice_claimed_households WHERE household_code LIKE ?
+    UNION
+    SELECT household_code FROM rice_claimed_households WHERE household_name LIKE ?
+    UNION
+    SELECT sh.household_code
+    FROM rice_next_wave_claims sc
+    INNER JOIN rice_claimed_households sh ON sh.id = sc.household_id
+    WHERE sc.claimant_name LIKE ?
+    UNION
+    SELECT household_code FROM rice_third_wave_households WHERE household_code LIKE ?
+    UNION
+    SELECT household_code FROM rice_third_wave_households WHERE household_name LIKE ?
+    UNION
+    SELECT th.household_code
+    FROM rice_third_wave_claims tc
+    INNER JOIN rice_third_wave_households th ON th.id = tc.household_id
+    WHERE tc.claimant_name LIKE ?
+    UNION
+    SELECT household_code FROM rice_fourth_wave_households WHERE household_code LIKE ?
+    UNION
+    SELECT household_code FROM rice_fourth_wave_households WHERE household_name LIKE ?
+    UNION
+    SELECT qh.household_code
+    FROM rice_fourth_wave_claims qc
+    INNER JOIN rice_fourth_wave_households qh ON qh.id = qc.household_id
+    WHERE qc.claimant_name LIKE ?
+),
+SQL;
+        $searchJoin = 'INNER JOIN matching_codes mc ON mc.household_code = codes.household_code';
+    }
 
-    UNION ALL
-
+    return "WITH {$matchingCodesCte}claimed_codes AS (
+    SELECT fh.household_code
+    FROM rice_voucher_claims fc INNER JOIN rice_households fh ON fh.id = fc.household_id
+    UNION
+    SELECT sh.household_code
+    FROM rice_next_wave_claims sc INNER JOIN rice_claimed_households sh ON sh.id = sc.household_id
+    UNION
+    SELECT th.household_code
+    FROM rice_third_wave_claims tc INNER JOIN rice_third_wave_households th ON th.id = tc.household_id
+    UNION
+    SELECT qh.household_code
+    FROM rice_fourth_wave_claims qc INNER JOIN rice_fourth_wave_households qh ON qh.id = qc.household_id
+),
+claim_pairs AS (
     SELECT
-        sh.household_code,
-        COALESCE(NULLIF(sh.household_code_prefix, ''), NULLIF(fh.household_code_prefix, ''), '') AS sort_prefix,
-        COALESCE(NULLIF(sh.household_code_number, 0), NULLIF(fh.household_code_number, 0), 0) AS sort_number,
+        codes.household_code,
+        COALESCE(NULLIF(fh.household_code_prefix, ''), NULLIF(sh.household_code_prefix, ''), NULLIF(th.household_code_prefix, ''), NULLIF(qh.household_code_prefix, ''), '') AS sort_prefix,
+        COALESCE(NULLIF(fh.household_code_number, 0), NULLIF(sh.household_code_number, 0), NULLIF(th.household_code_number, 0), NULLIF(qh.household_code_number, 0), 0) AS sort_number,
         fh.id AS first_household_id,
         fh.household_name AS first_household_name,
         fh.address AS first_address,
@@ -95,16 +132,45 @@ WITH claim_pairs AS (
         sc.claimant_name AS second_claimant_name,
         sc.claim_date AS second_claim_date,
         sc.verifier_name AS second_verifier_name,
-        CASE WHEN fh.id IS NULL THEN 'unmatched' ELSE 'second_wave_only' END AS pair_state
-    FROM rice_next_wave_claims sc
-    INNER JOIN rice_claimed_households sh ON sh.id = sc.household_id
-    LEFT JOIN rice_households fh ON fh.household_code = sh.household_code
+        th.id AS third_household_id,
+        th.household_name AS third_household_name,
+        th.address AS third_address,
+        tc.id AS third_claim_id,
+        tc.claimant_name AS third_claimant_name,
+        tc.claim_date AS third_claim_date,
+        tc.verifier_name AS third_verifier_name,
+        qh.id AS fourth_household_id,
+        qh.household_name AS fourth_household_name,
+        qh.address AS fourth_address,
+        qc.id AS fourth_claim_id,
+        qc.claimant_name AS fourth_claimant_name,
+        qc.claim_date AS fourth_claim_date,
+        qc.verifier_name AS fourth_verifier_name,
+        CASE
+            WHEN (
+                (fh.household_name IS NOT NULL AND sh.household_name IS NOT NULL AND UPPER(TRIM(fh.household_name)) <> UPPER(TRIM(sh.household_name)))
+                OR (fh.household_name IS NOT NULL AND th.household_name IS NOT NULL AND UPPER(TRIM(fh.household_name)) <> UPPER(TRIM(th.household_name)))
+                OR (fh.household_name IS NOT NULL AND qh.household_name IS NOT NULL AND UPPER(TRIM(fh.household_name)) <> UPPER(TRIM(qh.household_name)))
+                OR (sh.household_name IS NOT NULL AND th.household_name IS NOT NULL AND UPPER(TRIM(sh.household_name)) <> UPPER(TRIM(th.household_name)))
+                OR (sh.household_name IS NOT NULL AND qh.household_name IS NOT NULL AND UPPER(TRIM(sh.household_name)) <> UPPER(TRIM(qh.household_name)))
+                OR (th.household_name IS NOT NULL AND qh.household_name IS NOT NULL AND UPPER(TRIM(th.household_name)) <> UPPER(TRIM(qh.household_name)))
+            ) THEN 'name_difference'
+            WHEN fc.id IS NOT NULL AND sc.id IS NOT NULL AND tc.id IS NOT NULL AND qc.id IS NOT NULL THEN 'all_four'
+            ELSE 'partial_claims'
+        END AS pair_state
+    FROM claimed_codes codes
+    {$searchJoin}
+    LEFT JOIN rice_households fh ON fh.household_code = codes.household_code
     LEFT JOIN rice_voucher_claims fc ON fc.household_id = fh.id
-    WHERE fc.id IS NULL
+    LEFT JOIN rice_claimed_households sh ON sh.household_code = codes.household_code
+    LEFT JOIN rice_next_wave_claims sc ON sc.household_id = sh.id
+    LEFT JOIN rice_third_wave_households th ON th.household_code = codes.household_code
+    LEFT JOIN rice_third_wave_claims tc ON tc.household_id = th.id
+    LEFT JOIN rice_fourth_wave_households qh ON qh.household_code = codes.household_code
+    LEFT JOIN rice_fourth_wave_claims qc ON qc.household_id = qh.id
 )
-SQL;
+";
 }
-
 function riceConsolidationFetchWaveRecord(mysqli $conn, string $wave, string $householdCode, bool $forUpdate = false): ?array
 {
     $config = riceConsolidationWaveConfig($wave);
@@ -113,6 +179,8 @@ function riceConsolidationFetchWaveRecord(mysqli $conn, string $wave, string $ho
                 h.id AS household_id,
                 h.household_code,
                 h.household_name,
+                h.first_name,
+                h.last_name,
                 h.address,
                 c.id AS claim_id,
                 c.claimant_name,
@@ -145,6 +213,8 @@ function riceConsolidationLockPair(mysqli $conn, string $householdCode): array
     return [
         'first_wave' => riceConsolidationFetchWaveRecord($conn, 'first_wave', $householdCode, true),
         'second_wave' => riceConsolidationFetchWaveRecord($conn, 'second_wave', $householdCode, true),
+        'third_wave' => riceConsolidationFetchWaveRecord($conn, 'third_wave', $householdCode, true),
+        'fourth_wave' => riceConsolidationFetchWaveRecord($conn, 'fourth_wave', $householdCode, true),
     ];
 }
 
@@ -168,9 +238,11 @@ function riceConsolidationInsertAudit(mysqli $conn, array $audit): int
 {
     $sql = "INSERT INTO rice_claim_consolidation_audit (
                 action_type, direction, household_code, source_wave, target_wave,
-                source_claim_id, target_claim_id, previous_signature, result_signature_hash,
-                previous_claimant_name, result_claimant_name, operator_name, restored_from_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                target_household_id, source_claim_id, target_claim_id, previous_signature, result_signature_hash,
+                previous_claimant_name, result_claimant_name,
+                previous_first_name, previous_last_name, result_first_name, result_last_name,
+                operator_name, restored_from_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
 
     $actionType = $audit['action_type'];
@@ -178,28 +250,38 @@ function riceConsolidationInsertAudit(mysqli $conn, array $audit): int
     $householdCode = $audit['household_code'];
     $sourceWave = $audit['source_wave'] ?? null;
     $targetWave = $audit['target_wave'];
+    $targetHouseholdId = $audit['target_household_id'] ?? null;
     $sourceClaimId = $audit['source_claim_id'] ?? null;
-    $targetClaimId = $audit['target_claim_id'];
+    $targetClaimId = $audit['target_claim_id'] ?? null;
     $previousSignature = $audit['previous_signature'] ?? null;
     $resultSignatureHash = $audit['result_signature_hash'] ?? null;
     $previousClaimantName = $audit['previous_claimant_name'] ?? null;
     $resultClaimantName = $audit['result_claimant_name'] ?? null;
+    $previousFirstName = $audit['previous_first_name'] ?? null;
+    $previousLastName = $audit['previous_last_name'] ?? null;
+    $resultFirstName = $audit['result_first_name'] ?? null;
+    $resultLastName = $audit['result_last_name'] ?? null;
     $operatorName = $audit['operator_name'];
     $restoredFromId = $audit['restored_from_id'] ?? null;
 
     $stmt->bind_param(
-        'sssssiisssssi',
+        'sssssiiisssssssssi',
         $actionType,
         $direction,
         $householdCode,
         $sourceWave,
         $targetWave,
+        $targetHouseholdId,
         $sourceClaimId,
         $targetClaimId,
         $previousSignature,
         $resultSignatureHash,
         $previousClaimantName,
         $resultClaimantName,
+        $previousFirstName,
+        $previousLastName,
+        $resultFirstName,
+        $resultLastName,
         $operatorName,
         $restoredFromId
     );

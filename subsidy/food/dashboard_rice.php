@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/rice_release_batches.php';
 $conn = require(__DIR__ . '/config/database.php');
 
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -31,11 +32,27 @@ $next_wave_result = mysqli_query(
             SUM(is_claimed = 0 AND status = 'Active') AS not_claimed
      FROM rice_claimed_households"
 );
+$third_wave_result = mysqli_query(
+    $conn,
+    "SELECT COUNT(*) AS total,
+            SUM(is_claimed = 1) AS claimed,
+            SUM(is_claimed = 0 AND status = 'Active') AS not_claimed
+     FROM rice_third_wave_households"
+);
+$fourth_wave_result = mysqli_query(
+    $conn,
+    "SELECT COUNT(*) AS total,
+            SUM(is_claimed = 1) AS claimed,
+            SUM(is_claimed = 0 AND status = 'Active') AS not_claimed
+     FROM rice_fourth_wave_households"
+);
 $barangay_result = mysqli_query($conn, "SELECT DISTINCT address FROM rice_households WHERE address IS NOT NULL AND TRIM(address) <> '' ORDER BY address ASC");
-$claimed_barangay_result = mysqli_query($conn, "SELECT DISTINCT address FROM rice_claimed_households WHERE status = 'Active' AND address IS NOT NULL AND TRIM(address) <> '' ORDER BY address ASC");
+$claimed_barangay_result = mysqli_query($conn, "SELECT address FROM rice_claimed_households WHERE status = 'Active' AND address IS NOT NULL AND TRIM(address) <> '' UNION SELECT address FROM rice_third_wave_households WHERE status = 'Active' AND address IS NOT NULL AND TRIM(address) <> '' UNION SELECT address FROM rice_fourth_wave_households WHERE status = 'Active' AND address IS NOT NULL AND TRIM(address) <> '' ORDER BY address ASC");
 
 $first_wave_metrics = $first_wave_result ? mysqli_fetch_assoc($first_wave_result) : [];
 $next_wave_metrics = $next_wave_result ? mysqli_fetch_assoc($next_wave_result) : [];
+$third_wave_metrics = $third_wave_result ? mysqli_fetch_assoc($third_wave_result) : [];
+$fourth_wave_metrics = $fourth_wave_result ? mysqli_fetch_assoc($fourth_wave_result) : [];
 $dashboard_metrics = [
     'first_wave' => [
         'total' => (int)($first_wave_metrics['total'] ?? 0),
@@ -46,6 +63,17 @@ $dashboard_metrics = [
         'total' => (int)($next_wave_metrics['total'] ?? 0),
         'claimed' => (int)($next_wave_metrics['claimed'] ?? 0),
         'not_claimed' => (int)($next_wave_metrics['not_claimed'] ?? 0),
+    ],
+    'third_wave' => [
+        'total' => (int)($third_wave_metrics['total'] ?? 0),
+        'claimed' => (int)($third_wave_metrics['claimed'] ?? 0),
+        'not_claimed' => (int)($third_wave_metrics['not_claimed'] ?? 0),
+    ],
+    'fourth_wave' => [
+        'total' => (int)($fourth_wave_metrics['total'] ?? 0),
+        'claimed' => (int)($fourth_wave_metrics['claimed'] ?? 0),
+        'not_claimed' => (int)($fourth_wave_metrics['not_claimed'] ?? 0),
+        'active' => riceReleaseBatchIsActive($conn, 'fourth_wave'),
     ],
 ];
 $total_households = $dashboard_metrics['first_wave']['total'];
@@ -96,7 +124,7 @@ if ($claimed_barangay_result) {
         }
         .wave-toggle {
             width: 100%;
-            max-width: 280px;
+            max-width: 520px;
         }
         .wave-toggle .btn {
             flex: 1 1 0;
@@ -104,6 +132,7 @@ if ($claimed_barangay_result) {
             border-color: var(--rice-teal);
             color: var(--rice-teal);
             touch-action: manipulation;
+            white-space: nowrap;
         }
         .wave-toggle .btn.active,
         .wave-toggle .btn[aria-pressed="true"] {
@@ -117,6 +146,14 @@ if ($claimed_barangay_result) {
             }
             .wave-toggle .btn {
                 min-width: 112px;
+            }
+        }
+        @media (max-width: 575.98px) {
+            .navbar-brand {
+                max-width: calc(100% - 72px);
+                margin-right: 0;
+                white-space: normal;
+                font-size: 1rem;
             }
         }
     </style>
@@ -140,7 +177,9 @@ if ($claimed_barangay_result) {
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                         <li class="nav-item"><a class="nav-link active" aria-current="page" href="dashboard_rice.php">Home</a></li>
-                        <li class="nav-item"><a class="nav-link" href="releasing_rice.php">Next-Wave Releasing</a></li>
+                        <li class="nav-item"><a class="nav-link" href="releasing_rice.php">2nd Batch Releasing</a></li>
+                        <li class="nav-item"><a class="nav-link" href="releasing_rice_third_wave.php">3rd Batch Releasing</a></li>
+                        <li class="nav-item"><a class="nav-link" href="releasing_rice_fourth_wave.php">4th Batch Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="releasing_rice_first_wave.php">First-Wave Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="cross_check_rice.php">Cross Check</a></li>
                         <li class="nav-item"><a class="nav-link" href="consolidate_rice_claims.php">Claim Consolidation</a></li>
@@ -156,9 +195,12 @@ if ($claimed_barangay_result) {
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
                 <h5 class="text-rice-teal mb-0"><i class="bi bi-basket2 me-2"></i>RICE ASSISTANCE STATISTICS</h5>
                 <div class="btn-group wave-toggle" role="group" aria-label="Select dashboard wave">
-                    <button type="button" class="btn btn-outline-success active" data-dashboard-wave="first_wave" aria-pressed="true">First Wave</button>
-                    <button type="button" class="btn btn-outline-success" data-dashboard-wave="next_wave" aria-pressed="false">Next Wave</button>
+                    <button type="button" class="btn btn-outline-success active" data-dashboard-wave="first_wave" aria-pressed="true">1st Batch</button>
+                    <button type="button" class="btn btn-outline-success" data-dashboard-wave="next_wave" aria-pressed="false">2nd Batch</button>
+                    <button type="button" class="btn btn-outline-success" data-dashboard-wave="third_wave" aria-pressed="false">3rd Batch</button>
+                    <button type="button" class="btn btn-outline-success" data-dashboard-wave="fourth_wave" aria-pressed="false">4th Batch</button>
                 </div>
+                <span class="badge text-bg-success" id="batchActivationStatus">Active</span>
             </div>
             <div class="row g-3 mb-4">
                 <div class="col-12 col-md-4">
@@ -197,18 +239,24 @@ if ($claimed_barangay_result) {
                 <div class="card-header py-3">
                     <div class="row align-items-center">
                         <div class="col">
-                            <h5 class="mb-0">First-Wave Rice Assistance Records</h5>
+                            <h5 class="mb-0">Rice Assistance Records - All Batches</h5>
                         </div>
                         <div class="col-auto">
-                            <div class="d-flex gap-2">
+                            <div class="d-flex flex-wrap gap-2">
                                 <a href="releasing_rice.php" class="btn btn-warning btn-sm">
-                                    <i class="bi bi-person-check me-1"></i>Next-Wave Releasing
+                                    <i class="bi bi-person-check me-1"></i>2nd Batch Releasing
+                                </a>
+                                <a href="releasing_rice_third_wave.php" class="btn btn-rice-teal btn-sm">
+                                    <i class="bi bi-person-check me-1"></i>3rd Batch Releasing
+                                </a>
+                                <a href="releasing_rice_fourth_wave.php" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-lock me-1"></i>4th Batch Releasing
                                 </a>
                                 <a href="releasing_rice_first_wave.php" class="btn btn-outline-warning btn-sm">
                                     <i class="bi bi-clock-history me-1"></i>First-Wave Releasing
                                 </a>
                                 <button type="button" class="btn btn-rice-teal btn-sm" data-bs-toggle="modal" data-bs-target="#addHouseholdModal">
-                                    <i class="bi bi-plus-circle me-1"></i>Add Household
+                                    <i class="bi bi-plus-circle me-1"></i>Add 1st-Batch Household
                                 </button>
                                 <input type="text" class="form-control form-control-sm" placeholder="Search records..." id="tableSearch" style="width: 200px;">
                                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#printBarangayModal">
@@ -218,21 +266,27 @@ if ($claimed_barangay_result) {
                                     <i class="bi bi-card-checklist me-1"></i>Attendance Sheet
                                 </button>
                                 <a href="api_export_rice_beneficiaries_pdf.php" class="btn btn-danger btn-sm" target="_blank">
-                                    <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>1st-Batch PDF
                                 </a>
-                                <a href="api_export_rice_claimed_pdf.php" class="btn btn-outline-danger btn-sm" target="_blank">
+                                <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#claimedPdfModal">
                                     <i class="bi bi-file-earmark-pdf me-1"></i>Claimed PDF
+                                </button>
+                                <a href="api_export_rice_master_list_pdf.php" class="btn btn-outline-danger btn-sm" target="_blank">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>1st-Batch Master List
                                 </a>
-                                <a href="api_export_rice_daily_csv.php" class="btn btn-rice-teal btn-sm" target="_blank">
+                                <a href="api_export_rice_recipient_form_pdf.php" class="btn btn-outline-success btn-sm" target="_blank">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>Recipient Form PDF
+                                </a>
+                                <a data-rice-wave-export href="api_export_rice_daily_csv.php" class="btn btn-rice-teal btn-sm" target="_blank">
                                     <i class="bi bi-download me-1"></i>Daily Report CSV
                                 </a>
-                                <a href="api_export_rice_daily_csv.php?all=1" class="btn btn-dark btn-sm" target="_blank">
+                                <a data-rice-wave-export href="api_export_rice_daily_csv.php?all=1" class="btn btn-dark btn-sm" target="_blank">
                                     <i class="bi bi-file-earmark-excel me-1"></i>All Report CSV
                                 </a>
-                                <a href="api_export_rice_raw_csv.php" class="btn btn-info btn-sm" target="_blank">
+                                <a data-rice-wave-export href="api_export_rice_raw_csv.php" class="btn btn-info btn-sm" target="_blank">
                                     <i class="bi bi-table me-1"></i>Raw Daily CSV
                                 </a>
-                                <a href="api_export_rice_raw_csv.php?all=1" class="btn btn-secondary btn-sm" target="_blank">
+                                <a data-rice-wave-export href="api_export_rice_raw_csv.php?all=1" class="btn btn-secondary btn-sm" target="_blank">
                                     <i class="bi bi-database me-1"></i>Raw All CSV
                                 </a>
                             </div>
@@ -249,8 +303,12 @@ if ($claimed_barangay_result) {
                                     <th>Household Name</th>
                                     <th>Status</th>
                                     <th>First Wave Claim Status</th>
-                                    <th>Next Wave</th>
-                                    <th>Next-Wave Claimed At</th>
+                                    <th>2nd Batch</th>
+                                    <th>2nd-Batch Claimed At</th>
+                                    <th>3rd Batch</th>
+                                    <th>3rd-Batch Claimed At</th>
+                                    <th>4th Batch</th>
+                                    <th>4th-Batch Claimed At</th>
                                 </tr>
                             </thead>
                             <tbody id="recordsTable"></tbody>
@@ -277,7 +335,7 @@ if ($claimed_barangay_result) {
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title text-rice-teal" id="addHouseholdModalLabel">Add Missing Household</h5>
+                    <h5 class="modal-title text-rice-teal" id="addHouseholdModalLabel">Add First-Batch Household</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -309,7 +367,7 @@ if ($claimed_barangay_result) {
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-rice-teal" id="saveHouseholdBtn">
-                        <i class="bi bi-save me-1"></i>Add Household
+                        <i class="bi bi-save me-1"></i>Add 1st-Batch Household
                     </button>
                 </div>
             </div>
@@ -324,9 +382,46 @@ if ($claimed_barangay_result) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted mb-3">Print vouchers either by one barangay or by one exact household code.</p>
+                    <p class="text-muted mb-3">Open the complete arranged third- or fourth-distribution set, one barangay, or one exact household code.</p>
+
+                    <form method="get" action="rice_voucher_print.php" target="_blank" class="border border-warning rounded-3 p-3 mb-3 bg-warning-subtle">
+                        <input type="hidden" name="wave" value="third_wave">
+                        <input type="hidden" name="arranged" value="1">
+                        <input type="hidden" name="distribution" value="3">
+                        <input type="hidden" name="filter" value="all">
+                        <input type="hidden" name="sort" value="name">
+                        <h6 class="mb-2">3rd Distribution - Arranged Coupon Set</h6>
+                        <p class="small text-muted mb-3">Orange names, codes, and 3RD indicators, grouped by barangay, then PWD, HONEST DRIVERS, PORTER, URBAN POOR, and LOW INCOME.</p>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-warning text-dark fw-semibold">
+                                <i class="bi bi-ticket-perforated me-1"></i>Open 3rd Coupons
+                            </button>
+                        </div>
+                    </form>
+
+                    <form method="get" action="rice_voucher_print.php" target="_blank" class="border border-primary rounded-3 p-3 mb-3 bg-primary-subtle">
+                        <input type="hidden" name="wave" value="fourth_wave">
+                        <input type="hidden" name="arranged" value="1">
+                        <input type="hidden" name="filter" value="all">
+                        <input type="hidden" name="sort" value="name">
+                        <h6 class="mb-2">4th Distribution - Arranged Coupon Set</h6>
+                        <p class="small text-muted mb-3">Blue names, codes, and 4TH indicators, grouped by barangay, then PWD, HONEST DRIVERS, PORTER, URBAN POOR, and LOW INCOME.</p>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary fw-semibold">
+                                <i class="bi bi-ticket-perforated me-1"></i>Open 4th Coupons
+                            </button>
+                        </div>
+                    </form>
 
                     <form method="get" action="rice_voucher_print.php" target="_blank" class="border rounded-3 p-3 mb-3 bg-light-subtle">
+                        <div class="mb-3">
+                            <label for="voucherBarangayBatch" class="form-label">Distribution Batch</label>
+                            <select class="form-select" id="voucherBarangayBatch" name="wave" required>
+                                <option value="next_wave" selected>2nd Batch</option>
+                                <option value="third_wave">3rd Batch</option>
+                                <option value="fourth_wave">4th Batch</option>
+                            </select>
+                        </div>
                         <h6 class="mb-3">Print by Barangay</h6>
                         <div class="mb-3">
                             <label for="barangaySelect" class="form-label">Barangay</label>
@@ -347,6 +442,14 @@ if ($claimed_barangay_result) {
                     </form>
 
                     <form method="get" action="rice_voucher_print.php" target="_blank" class="border rounded-3 p-3">
+                        <div class="mb-3">
+                            <label for="voucherCodeBatch" class="form-label">Distribution Batch</label>
+                            <select class="form-select" id="voucherCodeBatch" name="wave" required>
+                                <option value="next_wave" selected>2nd Batch</option>
+                                <option value="third_wave">3rd Batch</option>
+                                <option value="fourth_wave">4th Batch</option>
+                            </select>
+                        </div>
                         <h6 class="mb-3">Print by Household Code</h6>
                         <div class="mb-3">
                             <label for="householdCodePrint" class="form-label">Household Code</label>
@@ -367,6 +470,29 @@ if ($claimed_barangay_result) {
         </div>
     </div>
 
+    <div class="modal fade" id="claimedPdfModal" tabindex="-1" aria-labelledby="claimedPdfModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form method="get" action="api_export_rice_claimed_pdf.php" target="_blank" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="claimedPdfModalLabel">Print Claimed PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="claimedPdfBatch" class="form-label">Distribution Batch</label>
+                    <select class="form-select" id="claimedPdfBatch" name="wave" required>
+                        <option value="first_wave">1st Batch</option>
+                        <option value="next_wave">2nd Batch</option>
+                        <option value="third_wave">3rd Batch</option>
+                        <option value="fourth_wave">4th Batch</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-rice-teal"><i class="bi bi-file-earmark-pdf me-1"></i>Open PDF</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="modal fade" id="printAttendanceModal" tabindex="-1" aria-labelledby="printAttendanceModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
@@ -378,6 +504,14 @@ if ($claimed_barangay_result) {
                     <p class="text-muted mb-3">Open a registration sheet by barangay or by sector.</p>
 
                     <form method="get" action="rice_attendance_print.php" target="_blank" class="border rounded-3 p-3 mb-3 bg-light-subtle">
+                        <div class="mb-3">
+                            <label for="attendanceBarangayBatch" class="form-label">Distribution Batch</label>
+                            <select class="form-select" id="attendanceBarangayBatch" name="wave" required>
+                                <option value="next_wave" selected>2nd Batch</option>
+                                <option value="third_wave">3rd Batch</option>
+                                <option value="fourth_wave">4th Batch</option>
+                            </select>
+                        </div>
                         <h6 class="mb-3">Print by Barangay</h6>
                         <div class="mb-3">
                             <label for="attendanceBarangaySelect" class="form-label">Barangay</label>
@@ -395,6 +529,14 @@ if ($claimed_barangay_result) {
                         </div>
                     </form>
                     <form method="get" action="rice_attendance_print.php" target="_blank" class="border rounded-3 p-3 bg-light-subtle">
+                        <div class="mb-3">
+                            <label for="attendanceSectorBatch" class="form-label">Distribution Batch</label>
+                            <select class="form-select" id="attendanceSectorBatch" name="wave" required>
+                                <option value="next_wave" selected>2nd Batch</option>
+                                <option value="third_wave">3rd Batch</option>
+                                <option value="fourth_wave">4th Batch</option>
+                            </select>
+                        </div>
                         <h6 class="mb-3">Print by Sector</h6>
                         <div class="mb-3">
                             <label for="attendanceSectorSelect" class="form-label">Sector</label>
@@ -403,7 +545,8 @@ if ($claimed_barangay_result) {
                                 <option value="pwd">PWD</option>
                                 <option value="honest_drivers">HONEST DRIVERS</option>
                                 <option value="porter">PORTER</option>
-                                <option value="ind">IND</option>
+                                <option value="urban_poor">URBAN POOR</option>
+                                <option value="low_income">LOW INCOME</option>
                             </select>
                         </div>
                         <div class="d-flex justify-content-between align-items-center gap-2">

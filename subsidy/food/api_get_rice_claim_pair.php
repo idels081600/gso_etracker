@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/rice_claim_consolidation_lib.php';
+require_once __DIR__ . '/rice_release_batches.php';
 
 riceConsolidationRequireVerifier();
 $conn = require __DIR__ . '/config/database.php';
@@ -13,20 +14,32 @@ if ($householdCode === '' || strlen($householdCode) > 50) {
 
 $first = riceConsolidationFetchWaveRecord($conn, 'first_wave', $householdCode);
 $second = riceConsolidationFetchWaveRecord($conn, 'second_wave', $householdCode);
+$third = riceConsolidationFetchWaveRecord($conn, 'third_wave', $householdCode);
+$fourth = riceConsolidationFetchWaveRecord($conn, 'fourth_wave', $householdCode);
 $firstClaimExists = $first && $first['claim_id'] !== null;
 $secondClaimExists = $second && $second['claim_id'] !== null;
+$thirdClaimExists = $third && $third['claim_id'] !== null;
+$fourthClaimExists = $fourth && $fourth['claim_id'] !== null;
 
-if (!$firstClaimExists && !$secondClaimExists) {
+if (!$firstClaimExists && !$secondClaimExists && !$thirdClaimExists && !$fourthClaimExists) {
     riceConsolidationJsonResponse(['success' => false, 'message' => 'No claimed record was found for this household code.'], 404);
 }
 
-$nameDifference = $first && $second
-    && strcasecmp(trim((string)$first['household_name']), trim((string)$second['household_name'])) !== 0;
-$canConsolidate = $firstClaimExists && $secondClaimExists;
+$names = [];
+foreach ([$first, $second, $third, $fourth] as $record) {
+    if ($record && trim((string)$record['household_name']) !== '') {
+        $names[strtoupper(trim((string)$record['household_name']))] = true;
+    }
+}
+$nameDifference = count($names) > 1;
+$claimCount = count(array_filter([$firstClaimExists, $secondClaimExists, $thirdClaimExists, $fourthClaimExists]));
+$canConsolidate = $claimCount >= 2;
 
 $currentByWave = [
     'first_wave' => $first,
     'second_wave' => $second,
+    'third_wave' => $third,
+    'fourth_wave' => $fourth,
 ];
 $historyStmt = $conn->prepare(
     "SELECT
@@ -35,11 +48,16 @@ $historyStmt = $conn->prepare(
         audit.direction,
         audit.source_wave,
         audit.target_wave,
+        audit.target_household_id,
         audit.source_claim_id,
         audit.target_claim_id,
         audit.result_signature_hash,
         audit.previous_claimant_name,
         audit.result_claimant_name,
+        audit.previous_first_name,
+        audit.previous_last_name,
+        audit.result_first_name,
+        audit.result_last_name,
         audit.operator_name,
         audit.restored_from_id,
         audit.created_at,
@@ -60,11 +78,24 @@ while ($row = $historyResult->fetch_assoc()) {
     $target = $currentByWave[$row['target_wave']] ?? null;
     $restorable = false;
 
-    if ($target && (int)$target['claim_id'] === (int)$row['target_claim_id'] && (int)$row['has_been_restored'] === 0) {
+    $isHouseholdNameAction = in_array($row['action_type'], ['update_household_name', 'swap_household_name'], true);
+    $targetMatches = $target && (int)$row['has_been_restored'] === 0;
+    if ($targetMatches && $isHouseholdNameAction) {
+        $targetMatches = $row['target_household_id'] === null
+            || (int)$target['household_id'] === (int)$row['target_household_id'];
+    } elseif ($targetMatches) {
+        $targetMatches = $target['claim_id'] !== null
+            && (int)$target['claim_id'] === (int)$row['target_claim_id'];
+    }
+
+    if ($targetMatches) {
         if ($row['action_type'] === 'copy_signature') {
             $restorable = riceConsolidationSignatureHash($target['e_signature'] ?? null) === (string)$row['result_signature_hash'];
         } elseif ($row['action_type'] === 'update_claimant') {
             $restorable = (string)($target['claimant_name'] ?? '') === (string)($row['result_claimant_name'] ?? '');
+        } elseif ($isHouseholdNameAction) {
+            $restorable = (string)($target['first_name'] ?? '') === (string)($row['result_first_name'] ?? '')
+                && (string)($target['last_name'] ?? '') === (string)($row['result_last_name'] ?? '');
         }
     }
 
@@ -91,6 +122,8 @@ $normalize = static function (?array $record): ?array {
         'household_id' => $record['household_id'],
         'household_code' => $record['household_code'],
         'household_name' => $record['household_name'],
+        'first_name' => $record['first_name'],
+        'last_name' => $record['last_name'],
         'address' => $record['address'],
         'claim_id' => $record['claim_id'],
         'claimant_name' => $record['claimant_name'],
@@ -107,9 +140,12 @@ riceConsolidationJsonResponse([
         'household_code' => $householdCode,
         'first_wave' => $normalize($first),
         'second_wave' => $normalize($second),
+        'third_wave' => $normalize($third),
+        'fourth_wave' => $normalize($fourth),
         'can_consolidate' => $canConsolidate ? 1 : 0,
-        'is_matched' => ($first && $second) ? 1 : 0,
+        'is_matched' => count(array_filter([$first, $second, $third, $fourth])) >= 2 ? 1 : 0,
         'name_difference' => $nameDifference ? 1 : 0,
+        'fourth_wave_locked' => riceReleaseBatchIsActive($conn, 'fourth_wave') ? 0 : 1,
         'history' => $history,
     ],
 ]);

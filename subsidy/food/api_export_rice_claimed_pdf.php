@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/rice_release_batches.php';
 $conn = require(__DIR__ . '/config/database.php');
 
 if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -12,6 +13,17 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'RICE_VERIFIER') {
 }
 
 require_once '../../fpdf/fpdf.php';
+$wave = $_GET['wave'] ?? 'first_wave';
+$batch = riceReleaseBatch($wave);
+if (!$batch) {
+    http_response_code(400);
+    exit('Invalid rice batch.');
+}
+$isFirstBatch = $wave === 'first_wave';
+$householdTable = $batch['households'];
+$claimsTable = $batch['claims'];
+$batchLabel = strtoupper($batch['label']);
+session_write_close();
 
 function riceClaimedPdfText($text)
 {
@@ -27,10 +39,13 @@ function riceClaimedPdfText($text)
 $sql = "SELECT rh.household_name,
                rvc.claim_date,
                rvc.e_signature
-        FROM rice_voucher_claims rvc
-        INNER JOIN rice_households rh ON rvc.household_id = rh.id
+        FROM {$claimsTable} rvc
+        INNER JOIN {$householdTable} rh ON rvc.household_id = rh.id
         WHERE rh.is_claimed = 1
-        ORDER BY rvc.claim_date ASC, rh.household_name ASC";
+        ORDER BY rvc.claim_date ASC, rh.household_name ASC, rvc.id ASC";
+if ($isFirstBatch) {
+    $sql .= ' LIMIT 5404';
+}
 
 $result = mysqli_query($conn, $sql);
 $records = [];
@@ -44,22 +59,37 @@ define('RICE_CLAIMED_COL_NO', 20);
 define('RICE_CLAIMED_COL_NAME', 70);
 define('RICE_CLAIMED_COL_DATE', 50);
 define('RICE_CLAIMED_COL_SIG', 130);
-define('RICE_CLAIMED_LINE_HEIGHT', 5);
-define('RICE_CLAIMED_MIN_ROW_HEIGHT', 20);
+define('RICE_CLAIMED_LINE_HEIGHT', 4);
+define('RICE_CLAIMED_MIN_ROW_HEIGHT', 14);
+define('RICE_CLAIMED_ROWS_PER_PAGE', 10);
 define('RICE_CLAIMED_LEFT_MARGIN', 10);
 
 class RiceClaimedDataPDF extends FPDF
 {
+    public $batchLabel = 'FIRST BATCH';
+
     function Header()
     {
         $this->SetFont('Arial', 'B', 16);
-        $this->Cell(0, 10, 'RICE CLAIMED DATA', 0, 1, 'C');
+        $this->Cell(0, 10, 'RICE CLAIMED DATA - ' . $this->batchLabel, 0, 1, 'C');
         $this->Ln(2);
         $this->drawTableHeader();
     }
 
     function Footer()
     {
+        $this->SetTextColor(0, 0, 0);
+        $this->SetXY(RICE_CLAIMED_LEFT_MARGIN, -32);
+        $this->SetFont('Arial', 'B', 9);
+        $this->Cell(95, 5, 'CERTIFIED TRUE AND CORRECT', 0, 1, 'C');
+        $this->SetX(RICE_CLAIMED_LEFT_MARGIN);
+        $this->Ln(4);
+        $this->SetFont('Arial', 'B', 9);
+        $this->Cell(95, 5, 'CHRIS JOHN RENER G. TORRALBA', 0, 1, 'C');
+        $this->SetX(RICE_CLAIMED_LEFT_MARGIN);
+        $this->SetFont('Arial', '', 8);
+        $this->Cell(95, 4, '(CGDH I - CGSO)', 0, 0, 'C');
+
         $this->SetY(-15);
         $this->SetFont('Arial', 'I', 8);
         $this->Cell(0, 10, 'Page ' . $this->PageNo() . '/{nb}', 0, 0, 'C');
@@ -132,6 +162,7 @@ class RiceClaimedDataPDF extends FPDF
 }
 
 $pdf = new RiceClaimedDataPDF('L', 'mm', 'A4');
+$pdf->batchLabel = $batchLabel;
 $pdf->AliasNbPages();
 $pdf->SetMargins(RICE_CLAIMED_LEFT_MARGIN, 10, 10);
 $pdf->AddPage();
@@ -141,18 +172,15 @@ if (empty($records)) {
     $pdf->Cell(RICE_CLAIMED_COL_NO + RICE_CLAIMED_COL_NAME + RICE_CLAIMED_COL_DATE + RICE_CLAIMED_COL_SIG, 10, 'No claimed rice data found.', 1, 1, 'C');
 } else {
     foreach ($records as $index => $record) {
+        if ($index > 0 && $index % RICE_CLAIMED_ROWS_PER_PAGE === 0) {
+            $pdf->AddPage();
+        }
+
         $rowNumber = (string)($index + 1);
         $name = riceClaimedPdfText($record['household_name']);
         $claimedDate = riceClaimedPdfText($record['claim_date']);
 
-        $h1 = $pdf->calcRowHeight($rowNumber, RICE_CLAIMED_COL_NO);
-        $h2 = $pdf->calcRowHeight($name, RICE_CLAIMED_COL_NAME);
-        $h3 = $pdf->calcRowHeight($claimedDate, RICE_CLAIMED_COL_DATE);
-        $rowH = max($h1, $h2, $h3, RICE_CLAIMED_MIN_ROW_HEIGHT);
-
-        if ($pdf->GetY() + $rowH > $pdf->GetPageHeight() - 20) {
-            $pdf->AddPage();
-        }
+        $rowH = RICE_CLAIMED_MIN_ROW_HEIGHT;
 
         $rowX = RICE_CLAIMED_LEFT_MARGIN;
         $rowY = $pdf->GetY();
@@ -166,22 +194,40 @@ if (empty($records)) {
         $pdf->fixedCell($xDate, $rowY, RICE_CLAIMED_COL_DATE, $rowH, $claimedDate);
         $pdf->Rect($xSig, $rowY, RICE_CLAIMED_COL_SIG, $rowH);
 
-        if (!empty($record['e_signature']) && strpos($record['e_signature'], 'data:image') === 0) {
-            preg_match('/data:image\/(\w+);base64,/', $record['e_signature'], $typeMatch);
-            $imageType = isset($typeMatch[1]) ? strtolower($typeMatch[1]) : 'png';
-            $base64String = preg_replace('/^data:image\/\w+;base64,/', '', $record['e_signature']);
-            $imageData = base64_decode($base64String);
+        if (!empty($record['e_signature']) && preg_match('/^data:image\/[^;]+;base64,(.+)$/s', $record['e_signature'], $signatureMatch)) {
+            $imageData = base64_decode($signatureMatch[1], true);
+            $imageInfo = $imageData !== false && function_exists('getimagesizefromstring')
+                ? @getimagesizefromstring($imageData)
+                : false;
+            $supportedTypes = [
+                IMAGETYPE_PNG => 'png',
+                IMAGETYPE_JPEG => 'jpg',
+                IMAGETYPE_GIF => 'gif',
+            ];
+            $imageType = $imageInfo !== false && isset($supportedTypes[$imageInfo[2]])
+                ? $supportedTypes[$imageInfo[2]]
+                : null;
 
-            if ($imageData !== false) {
-                $tempFile = tempnam(sys_get_temp_dir(), 'rice_claim_sig_') . '.' . $imageType;
-                file_put_contents($tempFile, $imageData);
-
-                $imgW = 72;
-                $imgH = min(16, $rowH - 4);
-                $imgX = $xSig + (RICE_CLAIMED_COL_SIG - $imgW) / 2;
-                $imgY = $rowY + ($rowH - $imgH) / 2;
-                $pdf->Image($tempFile, $imgX, $imgY, $imgW, $imgH);
-                @unlink($tempFile);
+            if ($imageType !== null) {
+                $tempFile = @tempnam(__DIR__, 'rice_claim_sig_');
+                if ($tempFile !== false && @file_put_contents($tempFile, $imageData) !== false) {
+                    try {
+                        $maxImgW = 95;
+                        $maxImgH = $rowH - 1;
+                        $imageRatio = $imageInfo[0] / max(1, $imageInfo[1]);
+                        $imgW = min($maxImgW, $maxImgH * $imageRatio);
+                        $imgH = min($maxImgH, $imgW / max(0.01, $imageRatio));
+                        $imgX = $xSig + (RICE_CLAIMED_COL_SIG - $imgW) / 2;
+                        $imgY = $rowY + ($rowH - $imgH) / 2;
+                        $pdf->Image($tempFile, $imgX, $imgY, $imgW, $imgH, $imageType);
+                    } catch (Throwable $exception) {
+                        // A malformed signature must not stop the rest of the export.
+                    } finally {
+                        @unlink($tempFile);
+                    }
+                } elseif ($tempFile !== false) {
+                    @unlink($tempFile);
+                }
             }
         }
 
@@ -189,7 +235,7 @@ if (empty($records)) {
     }
 }
 
-$filename = 'Rice_Claimed_Data_' . date('Y-m-d') . '.pdf';
+$filename = 'Rice_Claimed_Data_' . str_replace(' ', '_', $batch['label']) . '_' . date('Y-m-d') . '.pdf';
 $pdf->Output('I', $filename);
 exit();
 ?>

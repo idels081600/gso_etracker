@@ -1,8 +1,10 @@
 const RICE_RELEASE_SOURCE = window.RICE_RELEASE_CONFIG?.source;
 
-if (!['first_wave', 'next_wave'].includes(RICE_RELEASE_SOURCE)) {
+if (!['first_wave', 'next_wave', 'third_wave', 'fourth_wave'].includes(RICE_RELEASE_SOURCE)) {
     throw new Error('Rice release source is missing or invalid.');
 }
+
+const RICE_RELEASE_ACTIVE = window.RICE_RELEASE_CONFIG?.active !== false;
 
 let currentHouseholdCode = '';
 let currentHouseholdName = '';
@@ -76,6 +78,12 @@ function renderClaimState(data) {
         claimStateHint.textContent = 'This household has already claimed its rice assistance voucher.';
         reviewClaimBtn.disabled = true;
         viewProofBtn.classList.remove('d-none');
+    } else if (!RICE_RELEASE_ACTIVE) {
+        claimStateCard.className = 'card border-2 border-warning bg-warning-subtle';
+        claimStateText.textContent = 'Claiming Locked';
+        claimStateHint.textContent = 'This recipient is ready, but fourth-distribution claiming has not been activated.';
+        reviewClaimBtn.disabled = true;
+        viewProofBtn.classList.add('d-none');
     } else {
         claimStateCard.className = 'card border-2 border-rice-danger bg-rice-danger-soft';
         claimStateText.textContent = 'Unclaimed';
@@ -449,6 +457,10 @@ viewProofBtn.addEventListener('click', () => {
 });
 
 document.getElementById('confirmSubmit').addEventListener('click', () => {
+    if (!RICE_RELEASE_ACTIVE) {
+        alert('Claiming for this distribution is currently locked.');
+        return;
+    }
     let claimantName = '';
     if (claimantHouseholdRadio.checked) {
         claimantName = claimantNameHousehold.value;
@@ -501,6 +513,10 @@ document.getElementById('confirmSubmit').addEventListener('click', () => {
 });
 
 document.getElementById('finalConfirmSubmit').addEventListener('click', async () => {
+    if (!RICE_RELEASE_ACTIVE) {
+        alert('Claiming for this distribution is currently locked.');
+        return;
+    }
     const claimantName = document.getElementById('claimantName').value;
     if (isSignatureRequired() && !pendingSignatureData) {
         alert('Missing e-signature. Please review the signature again before submitting.');

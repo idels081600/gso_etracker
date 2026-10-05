@@ -1,25 +1,26 @@
 <?php
 session_start();
+require_once __DIR__ . '/rice_release_batches.php';
 $conn = require(__DIR__ . '/config/database.php');
 
 header('Content-Type: application/json');
 mysqli_report(MYSQLI_REPORT_OFF);
 
-if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || ($_SESSION['role'] ?? '') !== 'RICE_VERIFIER') {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit();
 }
 
 $household_id = isset($_GET['household_id']) ? (int)$_GET['household_id'] : 0;
 $household_code = isset($_GET['household_code']) ? trim($_GET['household_code']) : '';
-$source = isset($_GET['source']) ? trim($_GET['source']) : '';
-if (!in_array($source, ['first_wave', 'next_wave'], true)) {
+$source = isset($_GET['source']) && is_string($_GET['source']) ? trim($_GET['source']) : '';
+$batch = riceReleaseBatch($source);
+if (!$batch) {
     echo json_encode(['success' => false, 'message' => 'A valid release wave is required']);
     exit();
 }
-$is_next_wave = $source === 'next_wave';
-$household_table = $is_next_wave ? 'rice_claimed_households' : 'rice_households';
-$claim_table = $is_next_wave ? 'rice_next_wave_claims' : 'rice_voucher_claims';
+$household_table = $batch['households'];
+$claim_table = $batch['claims'];
 
 if ($household_id <= 0 && $household_code === '') {
     echo json_encode(['success' => false, 'message' => 'Household lookup is required']);
@@ -78,10 +79,11 @@ $household['is_claimed'] = (int)$household['is_claimed'];
 $household['is_checked'] = isset($household['is_checked']) ? (int)$household['is_checked'] : 0;
 $household['claim_data'] = $claim ?: null;
 
-if ($is_next_wave) {
+if ($batch['previous_households'] !== null) {
+    $previous_table = $batch['previous_households'];
     $previous_stmt = $conn->prepare(
         "SELECT is_claimed, claimed_at
-         FROM rice_households
+         FROM {$previous_table}
          WHERE household_code = ?
          LIMIT 1"
     );

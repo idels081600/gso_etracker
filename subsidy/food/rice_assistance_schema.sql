@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS `rice_voucher_claims` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_rice_household_claim` (`household_id`),
   KEY `idx_rice_claim_date` (`claim_date`),
+  KEY idx_rice_claimant_name (claimant_name),
   CONSTRAINT `rice_voucher_claims_ibfk_1` FOREIGN KEY (`household_id`) REFERENCES `rice_households` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 CREATE TABLE IF NOT EXISTS `rice_claimed_households` LIKE `rice_households`;
@@ -100,6 +101,7 @@ CREATE TABLE IF NOT EXISTS `rice_next_wave_claims` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_rice_next_wave_household_claim` (`household_id`),
   KEY `idx_rice_next_wave_claim_date` (`claim_date`),
+  KEY idx_rice_next_wave_claimant_name (claimant_name),
   CONSTRAINT `rice_next_wave_claims_household_fk` FOREIGN KEY (`household_id`) REFERENCES `rice_claimed_households` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -124,4 +126,21 @@ CREATE TABLE IF NOT EXISTS `rice_claim_consolidation_audit` (
   KEY `idx_rice_consolidation_target` (`target_wave`,`target_claim_id`,`created_at`),
   KEY `idx_rice_consolidation_restore` (`restored_from_id`),
   KEY `idx_rice_consolidation_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Seed the full second-batch household snapshot with the CLI-only setup_rice_third_wave.php.
+-- Do not copy earlier signatures or reset an existing third batch during schema setup.
+CREATE TABLE IF NOT EXISTS `rice_third_wave_households` LIKE `rice_claimed_households`;
+CREATE TABLE IF NOT EXISTS `rice_third_wave_claims` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `household_id` int NOT NULL,
+  `claimant_name` varchar(150) DEFAULT NULL,
+  `e_signature` longtext,
+  `claim_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `verifier_name` varchar(150) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_rice_third_wave_household_claim` (`household_id`),
+  KEY `idx_rice_third_wave_claim_date` (`claim_date`),
+  KEY `idx_rice_third_wave_claimant_name` (`claimant_name`),
+  CONSTRAINT `rice_third_wave_claims_household_fk` FOREIGN KEY (`household_id`) REFERENCES `rice_third_wave_households` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

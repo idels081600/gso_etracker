@@ -1,7 +1,8 @@
 <?php
 session_start();
+require_once __DIR__ . '/rice_release_batches.php';
 
-if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || ($_SESSION['role'] ?? '') !== 'RICE_VERIFIER') {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit();
@@ -22,13 +23,14 @@ $claimant_name = trim($input['claimant_name'] ?? '');
 $e_signature = $input['e_signature'] ?? '';
 $verifier_name = $_SESSION['pay_name'] ?? $_SESSION['username'];
 $source = $input['source'] ?? '';
-if (!in_array($source, ['first_wave', 'next_wave'], true)) {
+$batch = riceReleaseBatch($source);
+if (!$batch) {
     echo json_encode(['success' => false, 'message' => 'A valid release wave is required']);
     exit();
 }
-$household_table = $source === 'first_wave' ? 'rice_households' : 'rice_claimed_households';
-$claim_table = $source === 'first_wave' ? 'rice_voucher_claims' : 'rice_next_wave_claims';
-$wave_label = $source === 'first_wave' ? 'First-wave' : 'Next-wave';
+$household_table = $batch['households'];
+$claim_table = $batch['claims'];
+$wave_label = $batch['label'];
 
 function riceSignatureHasInk($signature) {
     if (!is_string($signature) || !preg_match('/^data:image\/(?:png|jpeg|jpg);base64,/', $signature)) {
@@ -82,6 +84,10 @@ if (!riceSignatureHasInk($e_signature)) {
 
 try {
     $conn->begin_transaction();
+
+    if (!riceReleaseBatchIsActive($conn, $source)) {
+        throw new Exception($wave_label . ' claiming is currently locked. Preparation documents remain available.');
+    }
 
     $household_stmt = $conn->prepare(
         "SELECT id, household_name, status, is_claimed

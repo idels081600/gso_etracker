@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/rice_release_batches.php';
 $conn = require(__DIR__ . '/config/database.php');
 
 if (!isset($_SESSION['username']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -12,23 +13,36 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'RICE_VERIFIER') {
     exit();
 }
 
+$batch = riceReleaseBatch($_GET['wave'] ?? 'next_wave');
+if (!$batch || $batch['previous_households'] === null) {
+    http_response_code(400);
+    exit('Select the second, third, or fourth rice batch.');
+}
+$household_table = $batch['households'];
 $barangay = isset($_GET['barangay']) ? trim((string)$_GET['barangay']) : '';
 $sector_key = isset($_GET['sector']) ? strtolower(trim((string)$_GET['sector'])) : '';
 $sector_options = [
     'pwd' => ['label' => 'PWD', 'address' => 'PWD'],
     'honest_drivers' => ['label' => 'HONEST DRIVERS', 'address' => 'HONEST DRIVERS'],
     'porter' => ['label' => 'PORTER', 'address' => 'PORTER'],
-    'ind' => ['label' => 'INDIGENTS', 'address' => 'IND'],
-    'ind2' => ['label' => 'INDIGENTS', 'address' => 'IND'],
-    'indigents' => ['label' => 'INDIGENTS', 'address' => 'IND'],
+    'urban_poor' => ['label' => 'URBAN POOR', 'address' => 'URBAN POOR'],
+    'low_income' => ['label' => 'LOW INCOME', 'address' => 'LOW INCOME'],
 ];
 $address_sector_labels = [
     'PWD' => 'PWD',
     'HONEST DRIVERS' => 'HONEST DRIVERS',
     'PORTER' => 'PORTER',
-    'IND' => 'INDIGENTS',
-    'IND2' => 'INDIGENTS',
-    'INDIGENTS' => 'INDIGENTS',
+    'URBAN POOR' => 'URBAN POOR',
+    'IND' => 'LOW INCOME',
+    'IND2' => 'LOW INCOME',
+    'INDIGENT' => 'LOW INCOME',
+    'INDIGENTS' => 'LOW INCOME',
+    'TAGBI' => 'LOW INCOME',
+    'B2' => 'LOW INCOME',
+    'B3' => 'LOW INCOME',
+    'B4' => 'LOW INCOME',
+    'B5' => 'LOW INCOME',
+    'JO' => 'LOW INCOME',
 ];
 $selected_sector = $sector_options[$sector_key] ?? null;
 $selected_address = $selected_sector !== null ? $selected_sector['address'] : $barangay;
@@ -37,16 +51,20 @@ $selected_sector_label = $selected_sector !== null
     ? $selected_sector['label']
     : ($address_sector_labels[strtoupper($barangay)] ?? '');
 $records = [];
+$is_ind_sector = $selected_sector_label === 'LOW INCOME';
 
 if ($selected_address !== '') {
-    $is_ind_sector = $selected_sector !== null && $selected_sector['address'] === 'IND';
-    $sql = "SELECT household_name, household_code
-            FROM rice_claimed_households
+    $designation_order = $is_ind_sector
+        ? "(TRIM(COALESCE(designation, '')) = '') ASC, UPPER(TRIM(COALESCE(designation, ''))) ASC, "
+        : '';
+    $sql = "SELECT household_name, household_code, designation,
+                   UPPER(TRIM(COALESCE(designation, ''))) AS designation_group
+            FROM {$household_table}
             WHERE status = 'Active'
               AND " . ($is_ind_sector
-                  ? "UPPER(TRIM(address)) IN ('IND', 'IND2', 'INDIGENTS')"
+                  ? "UPPER(TRIM(address)) IN ('', 'TAGBI', 'B2', 'B3', 'B4', 'B5', 'JO', 'IND', 'IND2', 'INDIGENT', 'INDIGENTS')"
                   : "address = ?") . "
-            ORDER BY household_name ASC, household_code_prefix ASC, household_code_number ASC, household_code ASC";
+            ORDER BY " . $designation_order . "household_name ASC, household_code_prefix ASC, household_code_number ASC, household_code ASC";
 
     $stmt = mysqli_prepare($conn, $sql);
     if ($stmt) {
@@ -65,7 +83,25 @@ if ($selected_address !== '') {
     }
 }
 $rowsPerPage = 12;
-$pages = !empty($records) ? array_chunk($records, $rowsPerPage) : [[]];
+$pages = [];
+$pageDesignations = [];
+$designationGroups = [];
+foreach ($records as $record) {
+    $group = $is_ind_sector ? $record['designation_group'] : '';
+    $designationGroups[$group][] = $record;
+}
+$attendanceNumber = 0;
+// Chunk each designation separately so a partially filled sheet never mixes groups.
+foreach ($designationGroups as $designation => $groupRecords) {
+    foreach (array_chunk($groupRecords, $rowsPerPage) as $pageRecords) {
+        foreach ($pageRecords as &$record) {
+            $record['attendance_number'] = ++$attendanceNumber;
+        }
+        unset($record);
+        $pages[] = $pageRecords;
+        $pageDesignations[] = $designation !== '' ? (string)$designation : 'Unspecified';
+    }
+}
 $today = date('F j, Y');
 ?>
 <!DOCTYPE html>
@@ -277,6 +313,8 @@ $today = date('F j, Y');
         .col-pwd-sm { text-align: center; padding-left: 0.4mm; padding-right: 0.4mm; }
         .col-age { text-align: center; }
         .col-sector { text-align: center; font-weight: 700; }
+        .col-designation { overflow-wrap: anywhere; }
+        .designation-label { font-size: 3.3mm; font-weight: 700; overflow-wrap: anywhere; }
 
         .subhead {
             font-size: 2.2mm;
@@ -357,7 +395,7 @@ $today = date('F j, Y');
 <body>
     <div class="toolbar">
         <div class="toolbar-left">
-            <a class="alt" href="dashboard_rice.php">Back to Dashboard</a>
+            <a class="alt" href="dashboard_rice.php">Back to Dashboard</a><span class="badge"><?php echo htmlspecialchars($batch['label']); ?></span>
             <?php if ($selected_address !== ''): ?>
                 <span class="badge"><?php echo htmlspecialchars($selected_filter_label); ?></span>
                 <span><?php echo number_format(count($records)); ?> name<?php echo count($records) === 1 ? '' : 's'; ?></span>
@@ -385,6 +423,9 @@ $today = date('F j, Y');
                             </div>
                             <div class="title-block">
                                 <div class="title-line">CITY GOVERNMENT OF TAGBILARAN | REGISTRATION SHEET</div>
+                                <?php if ($is_ind_sector): ?>
+                                    <div class="designation-label">LOW INCOME | Designation: <?php echo htmlspecialchars($pageDesignations[$pageIndex]); ?></div>
+                                <?php endif; ?>
                                 <div class="meta-box">
                                     <div class="meta-fields">
                                         <div class="meta-row">
@@ -451,7 +492,7 @@ $today = date('F j, Y');
                                 <?php for ($rowIndex = 0; $rowIndex < $rowsPerPage; $rowIndex++): ?>
                                     <?php $record = $pageRecords[$rowIndex] ?? null; ?>
                                     <tr>
-                                        <td class="col-no"><?php echo $record ? (string)(($pageIndex * $rowsPerPage) + $rowIndex + 1) : ''; ?></td>
+                                        <td class="col-no"><?php echo $record ? (string)$record['attendance_number'] : ''; ?></td>
                                         <td class="name-cell"><?php echo $record ? htmlspecialchars($record['household_name']) : ''; ?></td>
                                         <td></td>
                                         <td></td>
@@ -459,7 +500,7 @@ $today = date('F j, Y');
                                         <td></td>
                                         <td></td>
                                         <td></td>
-                                        <td></td>
+                                        <td class="col-designation"><?php echo $record && $is_ind_sector ? htmlspecialchars(trim((string)$record['designation'])) : ''; ?></td>
                                         <td class="col-sector"><?php echo $record ? htmlspecialchars($record['sectoral_representation']) : ''; ?></td>
                                         <td></td>
                                         <td></td>

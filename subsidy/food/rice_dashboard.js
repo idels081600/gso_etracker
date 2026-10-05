@@ -39,7 +39,7 @@ function renderRiceTable(records, startIndex = 0) {
     if (!records.length) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center text-muted py-4">No next-wave rice household records found.</td>
+                <td colspan="11" class="text-center text-muted py-4">No rice household records found.</td>
             </tr>
         `;
         return;
@@ -56,12 +56,28 @@ function renderRiceTable(records, startIndex = 0) {
                 ? '<span class="badge bg-success">Claimed</span>'
                 : '<span class="badge bg-secondary">Not Claimed</span>';
         const claimBadge = record.next_wave_exists !== 1
-            ? '<span class="badge bg-secondary">Not in Next Wave</span>'
+            ? '<span class="badge bg-secondary">Not in 2nd Batch</span>'
             : record.is_claimed === 1
                 ? '<span class="badge bg-success">Claimed</span>'
                 : '<span class="badge bg-warning text-dark">Unclaimed</span>';
         const claimDate = record.claimed_at
             ? new Date(record.claimed_at).toLocaleString()
+            : 'N/A';
+        const thirdClaimBadge = record.third_wave_exists !== 1
+            ? '<span class="badge bg-secondary">Not in 3rd Batch</span>'
+            : record.third_wave_is_claimed === 1
+                ? '<span class="badge bg-success">Claimed</span>'
+                : '<span class="badge bg-warning text-dark">Unclaimed</span>';
+        const thirdClaimDate = record.third_wave_claimed_at
+            ? new Date(record.third_wave_claimed_at).toLocaleString()
+            : 'N/A';
+        const fourthClaimBadge = record.fourth_wave_exists !== 1
+            ? '<span class="badge bg-secondary">Not in 4th Batch</span>'
+            : record.fourth_wave_is_claimed === 1
+                ? '<span class="badge bg-success">Claimed</span>'
+                : '<span class="badge bg-warning text-dark">Unclaimed</span>';
+        const fourthClaimDate = record.fourth_wave_claimed_at
+            ? new Date(record.fourth_wave_claimed_at).toLocaleString()
             : 'N/A';
 
         tr.innerHTML = `
@@ -72,6 +88,10 @@ function renderRiceTable(records, startIndex = 0) {
             <td>${previousWaveBadge}</td>
             <td>${claimBadge}</td>
             <td>${claimDate}</td>
+            <td>${thirdClaimBadge}</td>
+            <td>${thirdClaimDate}</td>
+            <td>${fourthClaimBadge}</td>
+            <td>${fourthClaimDate}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -122,7 +142,11 @@ function applyTableSearch() {
                 record.status,
                 record.previous_wave_exists !== 1 ? 'first wave not found' : (record.previous_wave_is_claimed === 1 ? 'first wave claimed' : 'first wave not claimed'),
                 record.next_wave_exists !== 1 ? 'not in next wave' : (record.is_claimed === 1 ? 'next wave claimed' : 'next wave unclaimed'),
-                record.claimed_at || ''
+                record.claimed_at || '',
+                record.third_wave_exists !== 1 ? 'not in third batch' : (record.third_wave_is_claimed === 1 ? 'third batch claimed' : 'third batch unclaimed'),
+                record.third_wave_claimed_at || '',
+                record.fourth_wave_exists !== 1 ? 'not in fourth batch' : (record.fourth_wave_is_claimed === 1 ? 'fourth batch claimed' : 'fourth batch unclaimed'),
+                record.fourth_wave_claimed_at || ''
             ].join(' ').toLowerCase().includes(searchTerm)
         );
     }
@@ -296,7 +320,7 @@ function saveDashboardWave(wave) {
 }
 
 function renderDashboardWave(wave) {
-    const selectedWave = wave === 'next_wave' ? 'next_wave' : 'first_wave';
+    const selectedWave = ['first_wave', 'next_wave', 'third_wave', 'fourth_wave'].includes(wave) ? wave : 'first_wave';
 
     dashboardWaveButtons.forEach((button) => {
         const isActive = button.dataset.dashboardWave === selectedWave;
@@ -314,17 +338,25 @@ function renderDashboardWave(wave) {
     metricClaimed.textContent = formatter.format(metrics.claimed || 0);
     metricNotClaimed.textContent = formatter.format(metrics.not_claimed || 0);
 
-    const isNextWave = selectedWave === 'next_wave';
-    metricTotalDescription.textContent = isNextWave
-        ? 'Households in the next-wave list'
-        : 'Households in the first-wave list';
-    metricClaimedDescription.textContent = isNextWave
-        ? 'Next-wave households already claimed'
-        : 'First-wave households already claimed';
-    metricNotClaimedDescription.textContent = isNextWave
-        ? 'Active next-wave households not yet claimed'
-        : 'Active first-wave households not yet claimed';
+    const batchLabel = { first_wave: 'First-batch', next_wave: 'Second-batch', third_wave: 'Third-batch', fourth_wave: 'Fourth-batch' }[selectedWave];
+    metricTotalDescription.textContent = `${batchLabel} household list`;
+    metricClaimedDescription.textContent = `${batchLabel} households already claimed`;
+    metricNotClaimedDescription.textContent = `Active ${batchLabel.toLowerCase()} households not yet claimed`;
+    const activationStatus = document.getElementById('batchActivationStatus');
+    const isLocked = selectedWave === 'fourth_wave' && metrics.active === false;
+    activationStatus.className = `badge ${isLocked ? 'text-bg-warning' : 'text-bg-success'}`;
+    activationStatus.textContent = isLocked ? 'Claiming Locked' : 'Active';
+    document.getElementById('claimedPdfBatch').value = selectedWave;
+    ['voucherBarangayBatch', 'voucherCodeBatch', 'attendanceBarangayBatch', 'attendanceSectorBatch'].forEach((id) => {
+        document.getElementById(id).value = ['third_wave', 'fourth_wave'].includes(selectedWave) ? selectedWave : 'next_wave';
+    });
 
+    document.querySelectorAll('[data-rice-wave-export]').forEach((link) => {
+        const url = new URL(link.href);
+        url.searchParams.set('wave', selectedWave);
+        link.href = url.href;
+        link.title = `${batchLabel} CSV export`;
+    });
     saveDashboardWave(selectedWave);
 }
 
