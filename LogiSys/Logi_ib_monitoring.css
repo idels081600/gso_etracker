@@ -699,6 +699,38 @@
 .delivery-line .remain,
 .delivery-line .value { text-align: right; }
 .delivery-line .value { font-weight: 760; }
+.delivery-entry { min-width: 0; }
+.delivery-full-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 7px;
+  color: var(--ib-muted);
+  font-size: .8rem;
+  font-weight: 650;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.delivery-full-toggle .form-check-input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  border-color: var(--ib-rule);
+  cursor: pointer;
+}
+.delivery-full-toggle .form-check-input:checked {
+  background-color: var(--ib-green);
+  border-color: var(--ib-green);
+}
+.delivery-full-toggle .form-check-input:focus-visible {
+  box-shadow: 0 0 0 3px rgba(23, 107, 58, .22);
+}
+.delivery-entry .delivery-qty[readonly] {
+  border-color: rgba(23, 107, 58, .45);
+  background: var(--ib-green-soft);
+  color: var(--ib-ink);
+  font-weight: 700;
+}
 
 @media (max-width: 1050px) {
   .ib-stats { grid-template-columns: repeat(3, 1fr); }
