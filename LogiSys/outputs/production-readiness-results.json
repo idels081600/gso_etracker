@@ -1,0 +1,227 @@
+{
+    "generated_at": "2026-10-08T10:17:38+08:00",
+    "database": "logisys_test_20261008101700_10016",
+    "production_ready": false,
+    "passed": 30,
+    "failed": 1,
+    "blockers": 1,
+    "results": [
+        {
+            "area": "Static",
+            "name": "All Version 1 PHP files pass syntax validation",
+            "passed": true,
+            "detail": "",
+            "severity": "blocker"
+        },
+        {
+            "area": "Static",
+            "name": "All Version 1 JavaScript files pass syntax validation",
+            "passed": true,
+            "detail": "",
+            "severity": "blocker"
+        },
+        {
+            "area": "Deployment",
+            "name": "Internal artifacts are denied by Apache configuration",
+            "passed": true,
+            "detail": ".htaccess protects tmp, outputs, tests, SQL, CSV, logs, and environment files",
+            "severity": "blocker"
+        },
+        {
+            "area": "Security",
+            "name": "Every write endpoint enforces authentication",
+            "passed": true,
+            "detail": "",
+            "severity": "blocker"
+        },
+        {
+            "area": "Security",
+            "name": "Every write endpoint validates CSRF",
+            "passed": true,
+            "detail": "",
+            "severity": "blocker"
+        },
+        {
+            "area": "Data",
+            "name": "No negative inventory balances",
+            "passed": true,
+            "detail": "count=0",
+            "severity": "blocker"
+        },
+        {
+            "area": "Data",
+            "name": "Inventory stock numbers are unique in current data",
+            "passed": true,
+            "detail": "duplicate_numbers=0",
+            "severity": "required"
+        },
+        {
+            "area": "Data",
+            "name": "IB records have no orphan lines",
+            "passed": true,
+            "detail": "orphans=0",
+            "severity": "blocker"
+        },
+        {
+            "area": "Data",
+            "name": "IB delivered totals reconcile to posted and reversed deliveries",
+            "passed": true,
+            "detail": "lines=4172, history=4172",
+            "severity": "blocker"
+        },
+        {
+            "area": "Data",
+            "name": "Inventory balances match latest ledger entries",
+            "passed": false,
+            "detail": "mismatches=63; evidence=inventory-ledger-mismatches.csv",
+            "severity": "blocker"
+        },
+        {
+            "area": "Authorization",
+            "name": "Anonymous IB page access redirects to login",
+            "passed": true,
+            "detail": "status=302",
+            "severity": "blocker"
+        },
+        {
+            "area": "Authorization",
+            "name": "Anonymous IB mutations are rejected",
+            "passed": true,
+            "detail": "status=401",
+            "severity": "blocker"
+        },
+        {
+            "area": "Authorization",
+            "name": "Non-ADMIN_SAP account is rejected",
+            "passed": true,
+            "detail": "status=403",
+            "severity": "blocker"
+        },
+        {
+            "area": "Authentication",
+            "name": "ADMIN_SAP can sign in",
+            "passed": true,
+            "detail": "status=302",
+            "severity": "blocker"
+        },
+        {
+            "area": "UI",
+            "name": "IB Monitoring renders for ADMIN_SAP",
+            "passed": true,
+            "detail": "status=200",
+            "severity": "required"
+        },
+        {
+            "area": "UI",
+            "name": "IB page exposes valid application data",
+            "passed": true,
+            "detail": "valid JSON",
+            "severity": "blocker"
+        },
+        {
+            "area": "Fixtures",
+            "name": "Required offices and three catalog items exist",
+            "passed": true,
+            "detail": "ADMIN, CSWDO, catalog",
+            "severity": "required"
+        },
+        {
+            "area": "Security",
+            "name": "IB mutations reject invalid CSRF",
+            "passed": true,
+            "detail": "status=403",
+            "severity": "blocker"
+        },
+        {
+            "area": "Security",
+            "name": "Legacy write endpoint rejects anonymous request",
+            "passed": true,
+            "detail": "status=401",
+            "severity": "blocker"
+        },
+        {
+            "area": "Security",
+            "name": "Legacy write endpoint rejects missing CSRF",
+            "passed": true,
+            "detail": "status=403",
+            "severity": "blocker"
+        },
+        {
+            "area": "IB workflow",
+            "name": "Create multi-office Draft IB",
+            "passed": true,
+            "detail": "IB TEST-READY-20261008101719 was saved as Draft.",
+            "severity": "blocker"
+        },
+        {
+            "area": "IB workflow",
+            "name": "Duplicate IB numbers are rejected",
+            "passed": true,
+            "detail": "status=409",
+            "severity": "blocker"
+        },
+        {
+            "area": "IB workflow",
+            "name": "Activate Draft IB",
+            "passed": true,
+            "detail": "IB TEST-READY-20261008101719 is now Active.",
+            "severity": "blocker"
+        },
+        {
+            "area": "IB workflow",
+            "name": "Append an item while IB is Active",
+            "passed": true,
+            "detail": "1 item added to ADMIN in IB TEST-READY-20261008101719.",
+            "severity": "required"
+        },
+        {
+            "area": "Delivery",
+            "name": "ADMIN delivery may exceed planned quantity and adds stock",
+            "passed": true,
+            "detail": "status=200, balance=5\u219213",
+            "severity": "blocker"
+        },
+        {
+            "area": "Delivery",
+            "name": "Repeated delivery token cannot post twice",
+            "passed": true,
+            "detail": "status=409",
+            "severity": "blocker"
+        },
+        {
+            "area": "Delivery",
+            "name": "Non-ADMIN delivery is monitoring-only",
+            "passed": true,
+            "detail": "status=200, stock_change=0",
+            "severity": "blocker"
+        },
+        {
+            "area": "IB workflow",
+            "name": "Edit planned quantity with audit reason",
+            "passed": true,
+            "detail": "Planned quantity for  Aluminum Tape was updated from 5 to 10.",
+            "severity": "required"
+        },
+        {
+            "area": "Delivery",
+            "name": "Ordinary Stock In rejects managed IB number",
+            "passed": true,
+            "detail": "status=409",
+            "severity": "blocker"
+        },
+        {
+            "area": "Reversal",
+            "name": "Whole delivery reversal restores ADMIN stock and preserves original",
+            "passed": true,
+            "detail": "status=200, balance=5",
+            "severity": "blocker"
+        },
+        {
+            "area": "Reversal",
+            "name": "A delivery cannot be reversed twice",
+            "passed": true,
+            "detail": "status=409",
+            "severity": "blocker"
+        }
+    ]
+}
