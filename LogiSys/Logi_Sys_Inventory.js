@@ -707,7 +707,7 @@ function populateUpdateForm(row) {
             elements.updateItemName.value = item.item_name || "";
           if (elements.updateRackNo)
             elements.updateRackNo.value = item.rack_no || "";
-          if (elements.updateUnit) elements.updateUnit.value = item.unit || "";
+          if (elements.updateUnit) selectInventoryUnit(elements.updateUnit, item.unit);
           if (elements.updateBalance)
             elements.updateBalance.value = item.current_balance || "";
           if (elements.updateLowStockThreshold)
@@ -923,6 +923,35 @@ document.querySelectorAll(".update-btn").forEach(function (btn) {
 
 // Paginated inventory table loader
 document.addEventListener("DOMContentLoaded", function () {
+  const unitAliases = {
+    PIECE: "PCS", PIECES: "PCS", PCS: "PCS",
+    BOX: "BOX", BOXES: "BOX",
+    BOTTLE: "BOT", BOTTLES: "BOT", BOT: "BOT",
+    GALLON: "GAL", GALLONS: "GAL", GAL: "GAL",
+    PAD: "PAD", PADS: "PAD",
+    PACK: "PACKS", PACKS: "PACKS",
+    ROLL: "ROLLS", ROLLS: "ROLLS",
+    SHEET: "SHEETS", SHEETS: "SHEETS",
+    REAM: "REAMS", REAMS: "REAMS",
+    UNIT: "UNIT", UNITS: "UNIT",
+  };
+
+  function selectInventoryUnit(select, value) {
+    select.querySelectorAll('option[data-legacy-unit="1"]').forEach((option) => option.remove());
+    const original = String(value || "").trim();
+    const normalized = unitAliases[original.toUpperCase()] || original.toUpperCase();
+    if ([...select.options].some((option) => option.value === normalized)) {
+      select.value = normalized;
+      return;
+    }
+    if (original) {
+      const option = new Option(`${original} (Existing)`, original, true, true);
+      option.dataset.legacyUnit = "1";
+      select.add(option);
+      return;
+    }
+    select.value = "";
+  }
   const tableBody = document.getElementById("inventoryTableBody");
   const searchInput = document.getElementById("searchInput");
   const statusFilter = document.getElementById("inventoryStatusFilter");

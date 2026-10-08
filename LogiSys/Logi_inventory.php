@@ -396,14 +396,16 @@ function getStatusBadge($status)
                                     <label for="unit" class="form-label">Unit of Measurement</label>
                                     <select class="form-select" id="unit" name="unit" required>
                                         <option value="">Select Unit</option>
-                                        <option value="pcs">Pieces</option>
-                                        <option value="boxes">Boxes</option>
-                                        <option value="reams">Reams</option>
-                                        <option value="cartridges">Cartridges</option>
-                                        <option value="sets">Sets</option>
-                                        <option value="packs">Packs</option>
-                                        <option value="rolls">Rolls</option>
-                                        <option value="bottles">Bottles</option>
+                                        <option value="UNIT">UNIT</option>
+                                        <option value="PCS">PCS</option>
+                                        <option value="BOX">BOX</option>
+                                        <option value="BOT">BOT</option>
+                                        <option value="GAL">GAL</option>
+                                        <option value="PAD">PAD</option>
+                                        <option value="PACKS">PACKS</option>
+                                        <option value="ROLLS">ROLLS</option>
+                                        <option value="SHEETS">SHEETS</option>
+                                        <option value="REAMS">REAMS</option>
                                     </select>
                                 </div>
                             </div>
@@ -506,15 +508,16 @@ function getStatusBadge($status)
                             <label for="updateUnit" class="form-label">Unit of Measurement</label>
                             <select class="form-select" id="updateUnit" name="unit" required>
                                 <option value="">Select Unit</option>
-                                <option value="pcs">Pieces</option>
-                                <option value="boxes">Boxes</option>
-                                <option value="reams">Reams</option>
-                                <option value="cartridges">Cartridges</option>
-                                <option value="sets">Sets</option>
-                                <option value="packs">Packs</option>
-                                <option value="rolls">Rolls</option>
-                                <option value="bottles">Bottles</option>
-                                <option value="sacks">Sacks</option>
+                                <option value="UNIT">UNIT</option>
+                                <option value="PCS">PCS</option>
+                                <option value="BOX">BOX</option>
+                                <option value="BOT">BOT</option>
+                                <option value="GAL">GAL</option>
+                                <option value="PAD">PAD</option>
+                                <option value="PACKS">PACKS</option>
+                                <option value="ROLLS">ROLLS</option>
+                                <option value="SHEETS">SHEETS</option>
+                                <option value="REAMS">REAMS</option>
                             </select>
                         </div>
 
