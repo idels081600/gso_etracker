@@ -126,8 +126,11 @@ function getStatusBadge($status)
                                             <i class="fas fa-balance-scale"></i> Update Balance
                                         </button>
                                         <button type="button" class="btn btn-info btn-sm" id="printBtn">
-                                            <i class="fas fa-print"></i> Print
+                                            <i class="fas fa-print"></i> Print by Status
                                         </button>
+                                        <a class="btn btn-outline-success btn-sm" href="Logi_print_inventory_list.php" target="_blank" rel="noopener">
+                                            <i class="fas fa-clipboard-list"></i> Print Blank List
+                                        </a>
                                         <button type="button" class="btn btn-secondary btn-sm" id="inventoryUpdateBtn" data-bs-toggle="modal" data-bs-target="#bulkUpdateModal">
                                             <i class="fas fa-file-upload"></i>Update Inventory
                                         </button>
