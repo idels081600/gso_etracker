@@ -1,0 +1,9 @@
+
+/.playwright-cli/
+/node_modules/
+/tmp/
+/outputs/
+/.env
+*.log
+/items_requested_deducted_*.csv
+/ics_items_requested_deducted_*.csv

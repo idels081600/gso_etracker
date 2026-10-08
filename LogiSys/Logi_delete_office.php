@@ -1,5 +1,7 @@
 <?php
 require_once 'logi_db.php'; // Include database connection
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_csrf($conn);
 
 header('Content-Type: application/json');
 

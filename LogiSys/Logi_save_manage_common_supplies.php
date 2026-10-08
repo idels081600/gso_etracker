@@ -22,6 +22,9 @@ try {
     exit;
 }
 
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_csrf($conn);
+
 // Check if it's a POST request
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Invalid request method']);

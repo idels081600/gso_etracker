@@ -5,6 +5,8 @@ error_reporting(0);
 
 // Include your database connection
 require_once 'logi_display_data.php'; // or your database connection file
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_csrf($conn);
 
 // Set JSON header
 header('Content-Type: application/json');

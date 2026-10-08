@@ -2,10 +2,9 @@
 session_start();
 require_once 'logi_display_data.php'; // Include database connection file
 require_once 'logi_db.php';
-// if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-//     header("Location: Logi_login.php");
-//     exit();
-// }
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_page($conn);
+$logiCsrfToken = logi_csrf_token();
 $username = $_SESSION['username'];
 $user_role = $_SESSION['role'];
 $logi_all_data = display_inventory_items(25); // Fetch the first page quickly; pagination loads the rest.
@@ -29,6 +28,7 @@ function getStatusBadge($status)
 <html lang="en">
 
 <head>
+    <?= logi_security_meta() ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory management</title>
@@ -70,6 +70,11 @@ function getStatusBadge($status)
                 <li class="nav-item">
                     <a class="nav-link" href="Logi_transactions.php">
                         <i class="fas fa-exchange-alt icon-size"></i> Transactions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="Logi_ib_monitoring.php">
+                        <i class="fas fa-clipboard-list icon-size"></i> IB Monitoring
                     </a>
                 </li>
                 <!-- <li class="nav-item">
@@ -189,6 +194,7 @@ function getStatusBadge($status)
                                             <th>Expiry Date</th>
                                             <th>Expiry Status</th>
                                             <th>Status</th>
+                                            <th>Stock Card</th>
                                         </tr>
                                     </thead>
                                     <tbody id="inventoryTableBody">
@@ -261,6 +267,11 @@ function getStatusBadge($status)
                                                         ?>
                                                         <span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($displayStatus) ?></span>
                                                     </td>
+                                                    <td>
+                                                        <a class="btn btn-outline-success btn-sm text-nowrap" href="Logi_stock_card.php?item_id=<?= (int)$row['id'] ?>">
+                                                            <i class="fas fa-clipboard-list"></i> View
+                                                        </a>
+                                                    </td>
                                                 </tr>
                                             <?php
                                             }
@@ -268,7 +279,7 @@ function getStatusBadge($status)
                                             // No data found
                                             ?>
                                             <tr>
-                                                <td colspan="9" class="text-center">
+                                                <td colspan="10" class="text-center">
                                                     <div class="py-4">
                                                         <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                                                         <h5 class="text-muted">No inventory items found</h5>
@@ -742,6 +753,7 @@ function getStatusBadge($status)
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="Logi_security.js"></script>
     <script src="Logi_Sys_Inventory.js"></script>
 </body>
 

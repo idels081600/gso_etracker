@@ -1,11 +1,15 @@
 <?php
 require_once 'logi_db.php';
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_page($conn);
+$logiCsrfToken = logi_csrf_token();
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+    <?= logi_security_meta() ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Scanner - LogiSys</title>
@@ -603,6 +607,7 @@ require_once 'logi_db.php';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <script src="Logi_security.js"></script>
     <script src="Logi_scanner.js"></script>
 
  

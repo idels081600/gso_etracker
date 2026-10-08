@@ -1,65 +1,59 @@
 <?php
 require_once 'logi_display_data.php'; // Include database connection
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_csrf($conn);
 
-// Set header to return JSON response
 header('Content-Type: application/json');
 
 try {
-    // Validate required fields
-    $required_fields = ['itemNo', 'itemName', 'quantity', 'reason', 'previous_balance', 'requestor_name'];
-    foreach ($required_fields as $field) {
-        if (!isset($_POST[$field]) || empty($_POST[$field])) {
-            throw new Exception("Missing required field: $field");
-        }
-    }
-
-    // Sanitize and assign
-    $item_name = mysqli_real_escape_string($conn, $_POST['itemName']);
-    $item_no = mysqli_real_escape_string($conn, $_POST['itemNo']);
-    $quantity = (int)$_POST['quantity'];
-    $reason = mysqli_real_escape_string($conn, $_POST['reason']);
-    $previous_balance = (int)$_POST['previous_balance'];
-    $requestor = mysqli_real_escape_string($conn, $_POST['requestor_name']);
+    $item_name = trim((string)($_POST['itemName'] ?? $_POST['item_name'] ?? ''));
+    $item_no = trim((string)($_POST['itemNo'] ?? $_POST['item_no'] ?? ''));
+    $quantity = (int)($_POST['quantity'] ?? 0);
+    $reason = trim((string)($_POST['reason'] ?? ''));
+    $requestor = trim((string)($_POST['requestor_name'] ?? $_POST['requestor'] ?? ''));
     $transaction_type = 'DEDUCTION';
 
-    // Calculate new_balance if not provided
-    if (isset($_POST['new_balance']) && !empty($_POST['new_balance'])) {
-        $new_balance = (int)$_POST['new_balance'];
-        // Validate balance calculation if provided
-        if ($new_balance !== ($previous_balance - $quantity)) {
-            throw new Exception("Invalid balance calculation");
-        }
-    } else {
-        $new_balance = $previous_balance - $quantity;
+    if ($item_no === '' || $item_name === '' || $reason === '' || $requestor === '') {
+        throw new Exception('Item, quantity, reason, and Requestor/Department are required');
     }
 
-    // Validate quantity
     if ($quantity <= 0) {
-        throw new Exception("Quantity must be greater than 0");
+        throw new Exception('Quantity must be greater than 0');
     }
 
-    // Modified validation - now allows balance to go to zero, but not negative
-    if ($new_balance < 0) {
-        throw new Exception("Insufficient stock for this transaction");
-    }
-
-    // Start transaction
     $conn->begin_transaction();
 
     try {
-        // Insert transaction
-        $insert_sql = "INSERT INTO inventory_transactions (
-            item_name, 
-            item_no, 
-            quantity, 
-            previous_balance, 
-            new_balance, 
-            reason, 
+        $select_sql = 'SELECT item_name, current_balance FROM inventory_items WHERE item_no = ? FOR UPDATE';
+        $stmt = $conn->prepare($select_sql);
+        $stmt->bind_param('s', $item_no);
+        $stmt->execute();
+        $item = $stmt->get_result()->fetch_assoc();
+
+        if (!$item) {
+            throw new Exception('Inventory item not found');
+        }
+
+        $item_name = $item['item_name'];
+        $previous_balance = (int)$item['current_balance'];
+        $new_balance = $previous_balance - $quantity;
+
+        if ($new_balance < 0) {
+            throw new Exception('Insufficient stock for this transaction');
+        }
+
+        $insert_sql = 'INSERT INTO inventory_transactions (
+            item_name,
+            item_no,
+            quantity,
+            previous_balance,
+            new_balance,
+            reason,
             transaction_type,
             requestor,
             created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-        
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())';
+
         $stmt = $conn->prepare($insert_sql);
         $stmt->bind_param(
             'ssiiisss',
@@ -72,37 +66,34 @@ try {
             $transaction_type,
             $requestor
         );
-        
+
         if (!$stmt->execute()) {
-            throw new Exception("Failed to insert transaction");
+            throw new Exception('Failed to insert transaction');
         }
 
-        // Update inventory
-        $update_sql = "UPDATE inventory_items SET current_balance = ?, updated_at = NOW() WHERE item_no = ?";
+        $update_sql = 'UPDATE inventory_items SET current_balance = ?, updated_at = NOW() WHERE item_no = ?';
         $stmt = $conn->prepare($update_sql);
         $stmt->bind_param('is', $new_balance, $item_no);
-        
-        if (!$stmt->execute()) {
-            throw new Exception("Failed to update inventory");
+
+        if (!$stmt->execute() || $stmt->affected_rows < 1) {
+            throw new Exception('Failed to update inventory');
         }
 
-        // Commit transaction
         $conn->commit();
-
-        echo json_encode([
-            'success' => true, 
-            'message' => 'Stock out transaction completed successfully'
-        ]);
-
     } catch (Exception $e) {
-        // Rollback transaction on error
         $conn->rollback();
         throw $e;
     }
 
+    echo json_encode([
+        'success' => true,
+        'message' => 'Stock out transaction completed successfully',
+        'previous_balance' => $previous_balance,
+        'new_balance' => $new_balance
+    ]);
 } catch (Exception $e) {
     echo json_encode([
-        'success' => false, 
+        'success' => false,
         'message' => $e->getMessage()
     ]);
 }

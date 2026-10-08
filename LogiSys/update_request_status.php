@@ -14,6 +14,8 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 }  
 
 require_once 'logi_db.php';  
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_csrf($conn);
 
 try {
     // Get JSON input
