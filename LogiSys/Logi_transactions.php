@@ -1,10 +1,17 @@
 <?php
 session_start();
+if (empty($_SESSION['ib_csrf'])) {
+    $_SESSION['ib_csrf'] = bin2hex(random_bytes(32));
+}
+$ib_csrf = $_SESSION['ib_csrf'];
 
 $date_filter = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
 $status_filter = isset($_GET['status']) ? $_GET['status'] : 'Pending';
 $office_filter = isset($_GET['office']) ? $_GET['office'] : 'all';
 require_once 'logi_display_data.php'; // Include your database functions
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_page($conn);
+$logiCsrfToken = logi_csrf_token();
 $transactions_data = display_transactions(); // Fetch transactions from the database
 $bulk_transactions_data = display_requested_items(); // Fetch transactions from the database
 $logi_all_data = display_inventory_items(); // Fetch inventory items from the database
@@ -24,6 +31,58 @@ function getAllOffices($conn) {
 
 // Get all offices for dropdown
 $all_offices = getAllOffices($conn);
+$active_admin_ibs = [];
+$active_admin_ib_query = "SELECT h.id, h.ib_no, MIN(g.description) AS description,
+                                 COUNT(l.id) AS item_count,
+                                 COALESCE(SUM(GREATEST(CAST(l.planned_quantity AS SIGNED) - CAST(l.delivered_quantity AS SIGNED), 0)), 0) AS remaining_quantity
+                          FROM ib_headers h
+                          JOIN ib_office_groups g ON g.ib_id = h.id
+                          LEFT JOIN ib_item_lines l ON l.group_id = g.id
+                          WHERE h.status = 'ACTIVE' AND UPPER(TRIM(g.office_name)) = 'ADMIN'
+                          GROUP BY h.id, h.ib_no
+                          ORDER BY h.activated_at DESC, h.id DESC";
+$active_admin_ib_result = mysqli_query($conn, $active_admin_ib_query);
+if ($active_admin_ib_result) {
+    while ($row = mysqli_fetch_assoc($active_admin_ib_result)) {
+        $row['id'] = (int)$row['id'];
+        $row['items'] = [];
+        $active_admin_ibs[] = $row;
+    }
+}
+$active_admin_ib_index = [];
+foreach ($active_admin_ibs as $index => $active_admin_ib) {
+    $active_admin_ib_index[(int)$active_admin_ib['id']] = $index;
+}
+if ($active_admin_ib_index) {
+    $active_admin_ib_ids = implode(',', array_map('intval', array_keys($active_admin_ib_index)));
+    $active_admin_line_query = "SELECT h.id AS ib_id, l.id AS line_id, l.item_id, l.item_no, l.item_name, l.unit,
+                                       l.planned_quantity, l.delivered_quantity, l.unit_price,
+                                       COALESCE(i.current_balance, 0) AS current_balance
+                                FROM ib_headers h
+                                JOIN ib_office_groups g ON g.ib_id = h.id
+                                JOIN ib_item_lines l ON l.group_id = g.id
+                                LEFT JOIN inventory_items i ON i.id = l.item_id
+                                WHERE h.id IN ($active_admin_ib_ids) AND UPPER(TRIM(g.office_name)) = 'ADMIN'
+                                ORDER BY h.id, l.sort_order, l.id";
+    $active_admin_line_result = mysqli_query($conn, $active_admin_line_query);
+    if ($active_admin_line_result) {
+        while ($line = mysqli_fetch_assoc($active_admin_line_result)) {
+            $ib_index = $active_admin_ib_index[(int)$line['ib_id']] ?? null;
+            if ($ib_index === null) continue;
+            $active_admin_ibs[$ib_index]['items'][] = [
+                'line_id' => (int)$line['line_id'],
+                'item_id' => $line['item_id'] !== null ? (int)$line['item_id'] : null,
+                'item_no' => $line['item_no'],
+                'item_name' => $line['item_name'],
+                'unit' => $line['unit'],
+                'planned_quantity' => (int)$line['planned_quantity'],
+                'delivered_quantity' => (int)$line['delivered_quantity'],
+                'unit_price' => $line['unit_price'],
+                'current_balance' => (int)$line['current_balance'],
+            ];
+        }
+    }
+}
 function getTransactionTypeBadge($type)
 {
     switch (strtolower($type)) {
@@ -46,6 +105,7 @@ function getTransactionTypeBadge($type)
 <html lang="en">
 
 <head>
+    <?= logi_security_meta() ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logi_Sys_Dashboard</title>
@@ -92,6 +152,11 @@ function getTransactionTypeBadge($type)
                 <li class="nav-item">
                     <a class="nav-link" href="Logi_transactions.php">
                         <i class="fas fa-exchange-alt icon-size"></i> Transactions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="Logi_ib_monitoring.php">
+                        <i class="fas fa-clipboard-list icon-size"></i> IB Monitoring
                     </a>
                 </li>
                 <!-- <li class="nav-item">
@@ -303,136 +368,111 @@ function getTransactionTypeBadge($type)
     </div>
     <!-- Stock In Modal -->
     <div class="modal fade" id="stockInModal" tabindex="-1" aria-labelledby="stockInModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="stockInModalLabel">
-                        <i class="fas fa-plus text-success"></i> Stock In Transaction
-                    </h5>
+                    <div>
+                        <h5 class="modal-title mb-1" id="stockInModalLabel">
+                            <i class="fas fa-plus-circle text-success"></i> Stock In Transaction
+                        </h5>
+                        <p class="text-muted small mb-0">Record common-supply deliveries for an Active ADMIN IB.</p>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="stockInForm" method="post" action="Logi_stock_in.php">
+                <form id="stockInBatchForm">
                     <div class="modal-body">
-                        <div class="row">
-                            <!-- Left Column -->
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="stockInItemSearch" class="form-label">Select Item <span class="text-danger">*</span></label>
-
-                                    <!-- Search Input with Dropdown -->
-                                    <div class="position-relative">
-                                        <input type="text"
-                                            class="form-control"
-                                            id="stockInItemSearch"
-                                            name="item_search"
-                                            placeholder="Type to search for an item..."
-                                            autocomplete="off"
-                                            required>
-
-                                        <!-- Suggestions Dropdown -->
-                                        <div class="position-absolute top-100 start-0 w-100 bg-white border rounded-bottom shadow-sm"
-                                            id="stockInItemDropdown"
-                                            style="display: none; max-height: 250px; overflow-y: auto; z-index: 1050;">
-                                            <!-- Suggestions will be populated here -->
-                                        </div>
-                                    </div>
-
-                                    <!-- Hidden inputs to store selected values -->
-                                    <input type="hidden" id="selectedItemNameInput" name="item_name">
-                                    <input type="hidden" id="selectedItemNo" name="item_no">
-                                    <input type="hidden" id="selectedCurrentBalance" name="current_balance">
-
-                                    <div class="form-text">Type to search and select an item from suggestions</div>
-
-                                    <!-- Selected item indicator -->
-                                    <div id="selectedItemIndicator" class="mt-2" style="display: none;">
-                                        <div class="alert alert-success py-2 mb-0">
-                                            <i class="fas fa-check-circle text-success"></i>
-                                            <strong>Selected:</strong> <span id="displaySelectedItem"></span>
-                                            <button type="button" class="btn btn-sm btn-outline-danger ms-2 float-end" id="clearItemSelection">
-                                                <i class="fas fa-times"></i> Clear
-                                            </button>
-                                        </div>
-                                    </div>
+                        <input type="hidden" id="stockInDate" value="<?= date('Y-m-d') ?>">
+                        <div class="active-admin-ibs mb-4" aria-label="Active IB numbers containing an ADMIN office">
+                            <div class="active-admin-ibs-heading">
+                                <span>Active ADMIN IB<?= count($active_admin_ibs) === 1 ? '' : 's' ?></span>
+                                <small>Choose where these common supplies belong</small>
+                            </div>
+                            <?php if ($active_admin_ibs): ?>
+                                <div class="active-admin-ib-links">
+                                    <?php foreach ($active_admin_ibs as $active_admin_ib): ?>
+                                        <button type="button" class="active-admin-ib-link" data-ib-id="<?= (int)$active_admin_ib['id'] ?>" aria-pressed="false">
+                                            <span>
+                                                <strong><?= htmlspecialchars($active_admin_ib['ib_no']) ?></strong>
+                                                <small>ADMIN · <?= number_format((int)$active_admin_ib['item_count']) ?> item<?= (int)$active_admin_ib['item_count'] === 1 ? '' : 's' ?> · <?= number_format((int)$active_admin_ib['remaining_quantity']) ?> remaining</small>
+                                            </span>
+                                            <span class="active-admin-ib-action"><i class="fas fa-check-circle" aria-hidden="true"></i> Select</span>
+                                        </button>
+                                    <?php endforeach; ?>
                                 </div>
+                            <?php else: ?>
+                                <p class="active-admin-ib-empty">No Active IB currently contains an ADMIN office.</p>
+                            <?php endif; ?>
+                        </div>
 
-
-                                <div class="mb-3">
-                                    <label for="stockInQuantity" class="form-label">Quantity to Add <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="stockInQuantity" name="quantity" min="1" required>
-                                    <div class="form-text">Enter the number of items to add</div>
+                        <section class="stock-in-builder" aria-labelledby="stockInItemsHeading">
+                            <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-2">
+                                <div>
+                                    <h6 class="mb-1" id="stockInItemsHeading">Items received <span class="text-danger">*</span></h6>
+                                    <p class="small text-muted mb-0">Select an Active ADMIN IB, then search its planned items and enter the quantities received.</p>
                                 </div>
-
-                                <div class="mb-3">
-                                    <label for="stockInReason" class="form-label">Reason <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="stockInReason" name="reason" required>
-                                        <option value="">Select reason...</option>
-                                        <option value="New Purchase">New Purchase</option>
-                                        <option value="Supplier Delivery">Supplier Delivery</option>
-                                        <option value="Return from Department">Return from Department</option>
-                                        <option value="Stock Correction">Stock Correction</option>
-                                        <option value="Transfer In">Transfer In</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="stockInDate" class="form-label">Transaction Date <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control" id="stockInDate" name="transaction_date" value="<?= date('Y-m-d') ?>" required>
-                                    <div class="form-text">Select the date of the transaction</div>
-                                </div>
-
-                                <div class="mb-3" id="customReasonDiv" style="display: none;">
-                                    <label for="customReason" class="form-label">Custom Reason</label>
-                                    <input type="text" class="form-control" id="customReason" name="custom_reason" placeholder="Enter custom reason">
-                                </div>
+                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle" id="stockInBatchCount">0 items</span>
                             </div>
 
-                            <!-- Right Column -->
-                            <div class="col-md-6">
-                                <div class="card bg-light">
-                                    <div class="card-header">
-                                        <h6 class="mb-0"><i class="fas fa-info-circle"></i> Transaction Summary</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-2">
-                                            <strong>Selected Item:</strong>
-                                            <span id="selectedItemNameSummary" class="text-muted">None selected</span>
-                                        </div>
-                                        <div class="mb-2">
-                                            <strong>Current Balance:</strong>
-                                            <span id="currentBalanceSummary" class="badge bg-info">0</span>
-                                        </div>
-                                        <div class="mb-2">
-                                            <strong>Quantity to Add:</strong>
-                                            <span id="addQuantity" class="badge bg-success">0</span>
-                                        </div>
-                                        <hr>
-                                        <div class="mb-2">
-                                            <strong>New Balance:</strong>
-                                            <span id="newBalance" class="badge bg-primary">0</span>
-                                        </div>
-                                    </div>
+                            <div class="stock-in-add-row">
+                                <div class="position-relative stock-in-search">
+                                    <label for="stockInBatchItemSearch" class="form-label">Inventory item</label>
+                                    <input type="search" class="form-control" id="stockInBatchItemSearch" placeholder="Search item name or stock number" autocomplete="off">
+                                    <div class="stock-in-suggestions shadow-sm" id="stockInBatchSuggestions" hidden></div>
                                 </div>
+                                <div>
+                                    <label for="stockInBatchQuantity" class="form-label">Quantity</label>
+                                    <input type="number" class="form-control" id="stockInBatchQuantity" min="1" step="1" inputmode="numeric" placeholder="0">
+                                </div>
+                                <button type="button" class="btn btn-outline-success" id="addStockInBatchItem">
+                                    <i class="fas fa-plus"></i> Add item
+                                </button>
+                            </div>
+                            <div class="form-text mb-3" id="stockInSelectedHint">Select an item from the search results.</div>
 
-                                <div class="mt-3">
-                                    <label for="stockInNotes" class="form-label">Additional Notes</label>
-                                    <textarea class="form-control" id="stockInNotes" name="notes" rows="3" placeholder="Any additional information..."></textarea>
+                            <div class="table-responsive border rounded stock-in-lines-wrap">
+                                <table class="table table-sm align-middle mb-0 stock-in-lines">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>Stock No.</th>
+                                            <th class="text-end">Current</th>
+                                            <th style="width:140px">Quantity IN</th>
+                                            <th class="text-end">New balance</th>
+                                            <th class="text-end">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="stockInBatchLines">
+                                        <tr class="stock-in-empty">
+                                            <td colspan="6" class="text-center text-muted py-4">
+                                                <i class="fas fa-box-open d-block fs-4 mb-2"></i>
+                                                No items added yet.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-8">
+                                <label for="stockInNotes" class="form-label">Additional Notes</label>
+                                <textarea class="form-control" id="stockInNotes" maxlength="280" rows="2" placeholder="Supplier, delivery, inspection, or other supporting details"></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stock-in-summary">
+                                    <span>Total line items<strong id="stockInLineTotal">0</strong></span>
+                                    <span>Total units received<strong id="stockInUnitTotal">0</strong></span>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Hidden fields for form processing -->
-                        <input type="hidden" id="previousBalance" name="previous_balance">
-                        <input type="hidden" id="calculatedNewBalance" name="new_balance">
-                        <input type="hidden" name="transaction_type" value="Stock In">
                     </div>
                     <div class="modal-footer">
+                        <span class="me-auto small text-muted">All selected quantities post to the chosen ADMIN IB together.</span>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i class="fas fa-times"></i> Cancel
                         </button>
-                        <button type="button" class="btn btn-success" id="submitStockIn">
-                            <i class="fas fa-plus"></i> Add Stock
+                        <button type="submit" class="btn btn-success" id="submitStockInBatch">
+                            <i class="fas fa-check"></i> Post Delivery
                         </button>
                     </div>
                 </form>
@@ -523,9 +563,9 @@ function getTransactionTypeBadge($type)
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="stockOutRequestor" class="form-label">Requestor/Department</label>
-                                    <input type="text" class="form-control" id="stockOutRequestor" name="requestor" placeholder="Who is requesting this item?">
-                                    <div class="form-text">Optional: Name or department requesting the items</div>
+                                    <label for="stockOutRequestor" class="form-label">Requestor/Department <span class="text-danger" aria-hidden="true">*</span></label>
+                                    <input type="text" class="form-control" id="stockOutRequestor" name="requestor" placeholder="Who is requesting this item?" required maxlength="50" autocomplete="organization">
+                                    <div class="form-text">Required: Enter the person or department receiving the items.</div>
                                 </div>
                             </div>
 
@@ -737,8 +777,11 @@ function getTransactionTypeBadge($type)
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="Logi_security.js"></script>
     <script src="Logi_transactions.js"></script>
     <script>
+        window.activeAdminIbs = <?= json_encode($active_admin_ibs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+        window.ibActionCsrf = <?= json_encode($ib_csrf, JSON_UNESCAPED_SLASHES) ?>;
         // Pass inventory data to JavaScript
         window.inventoryItems = [
             <?php

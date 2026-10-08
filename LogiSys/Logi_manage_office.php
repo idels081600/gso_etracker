@@ -1,5 +1,8 @@
 <?php
 require_once 'logi_db.php';
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_page($conn);
+$logiCsrfToken = logi_csrf_token();
 
 // Fetch all offices
 $offices_query = "SELECT * FROM office_balances ORDER BY office_name";
@@ -30,6 +33,7 @@ function getStatusBadge($status)
 <html lang="en">
 
 <head>
+    <?= logi_security_meta() ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Office Balance Management</title>
@@ -483,6 +487,7 @@ function getStatusBadge($status)
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="Logi_security.js"></script>
     <script src="Logi_manage_office.js"></script>
 </body>
 

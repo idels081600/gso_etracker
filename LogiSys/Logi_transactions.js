@@ -536,7 +536,14 @@ function updateNewBalance() {
   const newBalanceDisplay = document.getElementById('newBalance');
   if (newBalanceDisplay) newBalanceDisplay.textContent = newBalance;
 }
+function updateCachedInventoryBalance(itemNo, newBalance) {
+  if (!itemNo || typeof window.inventoryItems === "undefined") return;
 
+  const item = window.inventoryItems.find((inventoryItem) => inventoryItem.item_no === itemNo);
+  if (item) {
+    item.current_balance = parseInt(newBalance, 10) || 0;
+  }
+}
 // Stock In form submission handler
 const submitStockInBtn = document.getElementById('submitStockIn');
 if (submitStockInBtn) {
@@ -607,6 +614,8 @@ if (submitStockInBtn) {
     })
     .then(data => {
       if (data.success) {
+        updateCachedInventoryBalance(itemNo, data.new_balance);
+
         // Show success message using Bootstrap modal
         const successModal = new bootstrap.Modal(document.getElementById('successModal'));
         document.getElementById('successMessage').textContent = data.message;
@@ -715,6 +724,8 @@ if (stockOutForm) {
     })
     .then(data => {
       if (data.success) {
+        updateCachedInventoryBalance(itemNo, data.new_balance);
+
         // Show success message using Bootstrap modal
         const successModal = new bootstrap.Modal(document.getElementById('successModal'));
         document.getElementById('successMessage').textContent = data.message;
@@ -1808,3 +1819,300 @@ document.addEventListener('DOMContentLoaded', function () {
     fetchBulkRows();
   });
 });
+
+// Multi-item Stock In with one IB number
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("stockInBatchForm");
+  if (!form || !Array.isArray(window.activeAdminIbs)) return;
+
+  const search = document.getElementById("stockInBatchItemSearch");
+  const suggestions = document.getElementById("stockInBatchSuggestions");
+  const quantity = document.getElementById("stockInBatchQuantity");
+  const addButton = document.getElementById("addStockInBatchItem");
+  const linesBody = document.getElementById("stockInBatchLines");
+  const countBadge = document.getElementById("stockInBatchCount");
+  const lineTotal = document.getElementById("stockInLineTotal");
+  const unitTotal = document.getElementById("stockInUnitTotal");
+  const hint = document.getElementById("stockInSelectedHint");
+  const submitButton = document.getElementById("submitStockInBatch");
+  const ibButtons = [...document.querySelectorAll(".active-admin-ib-link[data-ib-id]")];
+  const activeIbMap = new Map(window.activeAdminIbs.map((ib) => [Number(ib.id), ib]));
+  const batchLines = new Map();
+  let selectedCandidate = null;
+  let selectedActiveIb = null;
+
+  const escapeHtml = (value) => String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+  function hideSuggestions() {
+    suggestions.hidden = true;
+    suggestions.replaceChildren();
+  }
+
+  function chooseItem(item) {
+    selectedCandidate = item;
+    search.value = item.item_name;
+    const remaining = Math.max(0, Number(item.planned_quantity) - Number(item.delivered_quantity));
+    hint.textContent = item.item_name + " — Stock No. " + item.item_no + " — " + remaining + " planned remaining";
+    hint.className = "form-text mb-3 text-success";
+    hideSuggestions();
+    quantity.focus();
+  }
+
+  function showSuggestions(term) {
+    suggestions.replaceChildren();
+    const normalized = term.trim().toLowerCase();
+    if (!normalized) {
+      hideSuggestions();
+      return;
+    }
+    if (!selectedActiveIb) {
+      const empty = document.createElement("div");
+      empty.className = "p-3 text-muted small";
+      empty.textContent = "Select an Active ADMIN IB first.";
+      suggestions.appendChild(empty);
+      suggestions.hidden = false;
+      return;
+    }
+    const matches = selectedActiveIb.items.filter((item) =>
+      String(item.item_name).toLowerCase().includes(normalized) ||
+      String(item.item_no).toLowerCase().includes(normalized)
+    ).slice(0, 12);
+
+    if (!matches.length) {
+      const empty = document.createElement("div");
+      empty.className = "p-3 text-muted small";
+      empty.textContent = "No inventory items found.";
+      suggestions.appendChild(empty);
+    } else {
+      matches.forEach((item) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "stock-in-suggestion";
+        const identity = document.createElement("span");
+        const name = document.createElement("strong");
+        name.textContent = item.item_name;
+        const code = document.createElement("small");
+        code.textContent = "Stock No. " + item.item_no + " — " + (item.unit || "unit");
+        identity.append(name, code);
+        const balance = document.createElement("span");
+        balance.className = "balance";
+        const remaining = Math.max(0, Number(item.planned_quantity) - Number(item.delivered_quantity));
+        balance.textContent = remaining + " planned remaining";
+        button.append(identity, balance);
+        button.addEventListener("click", () => chooseItem(item));
+        suggestions.appendChild(button);
+      });
+    }
+    suggestions.hidden = false;
+  }
+
+  function totals() {
+    const itemCount = batchLines.size;
+    const units = [...batchLines.values()].reduce((sum, line) => sum + line.quantity, 0);
+    countBadge.textContent = itemCount + " item" + (itemCount === 1 ? "" : "s");
+    lineTotal.textContent = itemCount;
+    unitTotal.textContent = units;
+  }
+
+  function renderLines() {
+    if (!batchLines.size) {
+      linesBody.innerHTML = '<tr class="stock-in-empty"><td colspan="6" class="text-center text-muted py-4"><i class="fas fa-box-open d-block fs-4 mb-2"></i>No items added yet.</td></tr>';
+      totals();
+      return;
+    }
+
+    linesBody.innerHTML = [...batchLines.values()].map((line) => {
+      const next = Number(line.current_balance) + Number(line.quantity);
+      return '<tr data-line-id="' + escapeHtml(line.line_id) + '">' +
+        '<td><span class="line-item-name">' + escapeHtml(line.item_name) + '</span><span class="line-item-unit">' + escapeHtml(line.unit || "unit") + '</span></td>' +
+        '<td>' + escapeHtml(line.item_no) + '</td>' +
+        '<td class="text-end">' + escapeHtml(line.current_balance) + '</td>' +
+        '<td><input type="number" class="form-control form-control-sm stock-in-line-quantity" min="1" step="1" value="' + escapeHtml(line.quantity) + '" aria-label="Quantity received for ' + escapeHtml(line.item_name) + '"></td>' +
+        '<td class="text-end fw-bold stock-in-new-balance">' + escapeHtml(next) + '</td>' +
+        '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger stock-in-remove-line" aria-label="Remove ' + escapeHtml(line.item_name) + '"><i class="fas fa-trash"></i></button></td>' +
+      '</tr>';
+    }).join("");
+    totals();
+  }
+
+  function addSelectedItem() {
+    const amount = Number.parseInt(quantity.value, 10);
+    if (!selectedCandidate) {
+      search.setCustomValidity("Select an item from the search results.");
+      search.reportValidity();
+      return;
+    }
+    search.setCustomValidity("");
+    if (!Number.isInteger(amount) || amount <= 0) {
+      quantity.setCustomValidity("Enter a quantity greater than zero.");
+      quantity.reportValidity();
+      return;
+    }
+    quantity.setCustomValidity("");
+
+    const lineKey = String(selectedCandidate.line_id);
+    const existing = batchLines.get(lineKey);
+    batchLines.set(lineKey, {
+      line_id: Number(selectedCandidate.line_id),
+      item_no: String(selectedCandidate.item_no),
+      item_name: selectedCandidate.item_name,
+      unit: selectedCandidate.unit || "",
+      current_balance: Number(selectedCandidate.current_balance) || 0,
+      quantity: existing ? existing.quantity + amount : amount,
+    });
+    renderLines();
+    selectedCandidate = null;
+    search.value = "";
+    quantity.value = "";
+    hint.textContent = "Item added. Search for another item.";
+    hint.className = "form-text mb-3 text-success";
+    search.focus();
+  }
+
+  search.addEventListener("input", function () {
+    selectedCandidate = null;
+    search.setCustomValidity("");
+    hint.textContent = "Select an item from the search results.";
+    hint.className = "form-text mb-3";
+    showSuggestions(search.value);
+  });
+  search.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") hideSuggestions();
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const first = suggestions.querySelector(".stock-in-suggestion");
+      if (first) first.click();
+      else addSelectedItem();
+    }
+  });
+  quantity.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addSelectedItem();
+    }
+  });
+  quantity.addEventListener("input", () => quantity.setCustomValidity(""));
+  addButton.addEventListener("click", addSelectedItem);
+
+  document.addEventListener("click", function (event) {
+    if (!search.contains(event.target) && !suggestions.contains(event.target)) hideSuggestions();
+  });
+
+  linesBody.addEventListener("input", function (event) {
+    if (!event.target.classList.contains("stock-in-line-quantity")) return;
+    const row = event.target.closest("tr");
+    const line = batchLines.get(row.dataset.lineId);
+    const amount = Number.parseInt(event.target.value, 10);
+    if (!line || !Number.isInteger(amount) || amount <= 0) return;
+    line.quantity = amount;
+    row.querySelector(".stock-in-new-balance").textContent = String(line.current_balance + amount);
+    totals();
+  });
+  linesBody.addEventListener("click", function (event) {
+    const remove = event.target.closest(".stock-in-remove-line");
+    if (!remove) return;
+    batchLines.delete(remove.closest("tr").dataset.lineId);
+    renderLines();
+  });
+
+  function selectActiveIb(ibId) {
+    selectedActiveIb = activeIbMap.get(Number(ibId)) || null;
+    selectedCandidate = null;
+    batchLines.clear();
+    search.value = "";
+    quantity.value = "";
+    ibButtons.forEach((button) => {
+      const selected = Number(button.dataset.ibId) === Number(ibId);
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+      const action = button.querySelector(".active-admin-ib-action");
+      if (action) action.innerHTML = selected ? '<i class="fas fa-check-circle" aria-hidden="true"></i> Selected' : '<i class="fas fa-circle" aria-hidden="true"></i> Select';
+    });
+    hint.textContent = selectedActiveIb ? "Search the planned ADMIN items in IB " + selectedActiveIb.ib_no + "." : "Select an Active ADMIN IB first.";
+    hint.className = "form-text mb-3";
+    renderLines();
+  }
+
+  ibButtons.forEach((button) => button.addEventListener("click", () => selectActiveIb(button.dataset.ibId)));
+
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    if (!selectedActiveIb) {
+      alert("Select an Active ADMIN IB before recording a delivery.");
+      ibButtons[0]?.focus();
+      return;
+    }
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+    if (!batchLines.size) {
+      alert("Add at least one inventory item to this IB transaction.");
+      search.focus();
+      return;
+    }
+    const invalidLine = [...batchLines.values()].find((line) => !Number.isInteger(line.quantity) || line.quantity <= 0);
+    if (invalidLine) {
+      alert("Enter a valid quantity for " + invalidLine.item_name + ".");
+      return;
+    }
+
+    const payload = {
+      action: "record_delivery",
+      csrf_token: window.ibActionCsrf,
+      ib_id: Number(selectedActiveIb.id),
+      delivery_date: document.getElementById("stockInDate").value,
+      notes: document.getElementById("stockInNotes").value.trim(),
+      idempotency_token: typeof crypto.randomUUID === "function" ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+        const random = Math.random() * 16 | 0;
+        return (character === "x" ? random : (random & 3 | 8)).toString(16);
+      }),
+      items: [...batchLines.values()].map((line) => ({
+        line_id: line.line_id,
+        quantity: line.quantity,
+      })),
+    };
+    payload.lines = payload.items;
+    delete payload.items;
+
+    const original = submitButton.innerHTML;
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+    try {
+      const response = await fetch("Logi_ib_action.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || "Stock In failed.");
+
+      const modalElement = document.getElementById("stockInModal");
+      bootstrap.Modal.getInstance(modalElement)?.hide();
+      document.getElementById("successMessage").textContent = data.message;
+      new bootstrap.Modal(document.getElementById("successModal")).show();
+
+      form.reset();
+      batchLines.clear();
+      selectedCandidate = null;
+      hint.textContent = "Select an item from the search results.";
+      hint.className = "form-text mb-3";
+      renderLines();
+      window.setTimeout(() => window.location.reload(), 900);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      submitButton.disabled = false;
+      submitButton.innerHTML = original;
+    }
+  });
+
+  if (ibButtons.length === 1) selectActiveIb(ibButtons[0].dataset.ibId);
+  else renderLines();
+});
+

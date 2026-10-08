@@ -8,6 +8,9 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
 // Include database connection
 require_once 'logi_db.php';
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_page($conn);
+$logiCsrfToken = logi_csrf_token();
 $username = $_SESSION['username'];
 $user_role = $_SESSION['role'];
 // Get filter parameters
@@ -104,6 +107,7 @@ if (isset($requests_stmt)) {
 <html lang="en">
 
 <head>
+    <?= logi_security_meta() ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LogiSys - Approve Requests</title>
@@ -147,6 +151,11 @@ if (isset($requests_stmt)) {
                 <li class="nav-item">
                     <a class="nav-link" href="Logi_transactions.php">
                         <i class="fas fa-exchange-alt icon-size"></i> Transactions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="Logi_ib_monitoring.php">
+                        <i class="fas fa-clipboard-list icon-size"></i> IB Monitoring
                     </a>
                 </li>
                 <!-- <li class="nav-item">
@@ -849,6 +858,7 @@ if (isset($requests_stmt)) {
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+    <script src="Logi_security.js"></script>
     <script src="Logi_app_req.js"></script>
 </body>
 

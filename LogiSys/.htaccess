@@ -1,0 +1,29 @@
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+  ExpiresByType text/javascript "access plus 7 days"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType image/gif "access plus 30 days"
+  ExpiresByType image/webp "access plus 30 days"
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(css|js|png|jpg|jpeg|gif|webp)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>
+
+# Internal data, diagnostics, migrations, and test artifacts must never be
+# served by the web server. They remain available to administrators locally.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^(?:tmp|outputs|tests)(?:/|$) - [F,L,NC]
+</IfModule>
+
+<IfModule mod_authz_core.c>
+  <FilesMatch "(^\.env(?:\..*)?$|\.(?:sql|csv|log)$)">
+    Require all denied
+  </FilesMatch>
+</IfModule>

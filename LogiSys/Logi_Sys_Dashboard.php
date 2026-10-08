@@ -4,6 +4,9 @@ session_start();
 
 // Include database connection
 require_once 'logi_db.php';
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_page($conn);
+$logiCsrfToken = logi_csrf_token();
 $username = $_SESSION['username'];
 $user_role = $_SESSION['role'];
 
@@ -114,9 +117,11 @@ $office_result = $conn->query($office_query);
 <html lang="en">
 
 <head>
+    <?= logi_security_meta() ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LogiSys - Admin Dashboard</title>
+    <link rel="icon" href="logo.png" type="image/png">
     <link rel="stylesheet" href="Logi_Sys.css">
     <link rel="stylesheet" href="Logi_req.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -206,6 +211,11 @@ $office_result = $conn->query($office_query);
                 <li class="nav-item">
                     <a class="nav-link" href="Logi_transactions.php">
                         <i class="fas fa-exchange-alt icon-size"></i> Transactions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="Logi_ib_monitoring.php">
+                        <i class="fas fa-clipboard-list icon-size"></i> IB Monitoring
                     </a>
                 </li>
                 <!-- <li class="nav-item">
@@ -532,6 +542,7 @@ $office_result = $conn->query($office_query);
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="Logi_security.js"></script>
     <script src="Logi_Sys_Dashboard.js"></script>
 
 </body>

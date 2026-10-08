@@ -3,6 +3,8 @@ session_start();
 header('Content-Type: application/json');
 
 require_once 'logi_db.php';
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_csrf($conn);
 
 function log_error_message(string $message): void {
     error_log(date('[Y-m-d H:i:s] ') . $message . "\n", 3, __DIR__ . '/error.log');

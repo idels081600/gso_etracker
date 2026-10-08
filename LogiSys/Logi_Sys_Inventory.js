@@ -1005,6 +1005,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <td>${escapeHtml(item.expiry_date || "")}</td>
         <td><span class="badge ${escapeHtml(item.expiry_class)}">${escapeHtml(item.expiry_label)}</span></td>
         <td><span class="badge ${escapeHtml(item.status_class)}">${escapeHtml(item.status_label)}</span></td>
+        <td><a class="btn btn-outline-success btn-sm text-nowrap" href="Logi_stock_card.php?item_id=${encodeURIComponent(item.id)}"><i class="fas fa-clipboard-list"></i> View</a></td>
       </tr>
     `).join("");
 

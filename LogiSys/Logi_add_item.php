@@ -32,6 +32,8 @@ function handleError($message, $error = null) {
 }
 
 require_once 'logi_db.php';
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_csrf($conn);
 
 function hasInventoryColumn($conn, $column) {
     $stmt = $conn->prepare("SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_items' AND COLUMN_NAME = ?");

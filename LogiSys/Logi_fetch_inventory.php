@@ -70,6 +70,7 @@ try {
     $search = trim((string)($_GET['search'] ?? ''));
     $status = trim((string)($_GET['status'] ?? ''));
     $hasThreshold = has_column($conn, 'inventory_items', 'low_stock_threshold');
+    $validExpiryDateSql = "STR_TO_DATE(NULLIF(CAST(expiry_date AS CHAR), '0000-00-00'), '%Y-%m-%d')";
 
     $where = [];
     $types = '';
@@ -93,7 +94,7 @@ try {
         $thresholdSql = $hasThreshold ? 'COALESCE(NULLIF(low_stock_threshold, 0), 10)' : '10';
         $where[] = "current_balance > $thresholdSql";
     } elseif ($status === 'expiring') {
-        $where[] = "expiry_date IS NOT NULL AND expiry_date != '0000-00-00' AND expiry_date >= CURDATE() AND expiry_date < DATE_ADD(CURDATE(), INTERVAL 31 DAY)";
+        $where[] = "$validExpiryDateSql IS NOT NULL AND $validExpiryDateSql >= CURDATE() AND $validExpiryDateSql < DATE_ADD(CURDATE(), INTERVAL 31 DAY)";
     }
 
     $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -149,7 +150,7 @@ try {
                     COUNT(*) AS total_items,
                     SUM(CASE WHEN current_balance <= 0 THEN 1 ELSE 0 END) AS out_items,
                     SUM(CASE WHEN current_balance > 0 AND current_balance <= " . ($hasThreshold ? "COALESCE(NULLIF(low_stock_threshold, 0), 10)" : "10") . " THEN 1 ELSE 0 END) AS low_items,
-                    SUM(CASE WHEN expiry_date IS NOT NULL AND expiry_date != '0000-00-00' AND expiry_date >= CURDATE() AND expiry_date < DATE_ADD(CURDATE(), INTERVAL 31 DAY) THEN 1 ELSE 0 END) AS expiring_items
+                    SUM(CASE WHEN $validExpiryDateSql IS NOT NULL AND $validExpiryDateSql >= CURDATE() AND $validExpiryDateSql < DATE_ADD(CURDATE(), INTERVAL 31 DAY) THEN 1 ELSE 0 END) AS expiring_items
                    FROM inventory_items";
     $summaryResult = mysqli_query($conn, $summarySql);
     $summary = mysqli_fetch_assoc($summaryResult) ?: [];

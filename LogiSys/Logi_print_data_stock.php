@@ -37,7 +37,7 @@ for ($i = 0; $i < count($headers); $i++) {
 $pdf->Ln();
 
 // Fetch all items ordered by rack number only
-$query = "SELECT item_no, rack_no, item_name, unit, current_balance FROM inventory_items ORDER BY rack_no ASC";
+$query = "SELECT item_no, rack_no, item_name, unit, current_balance, status FROM inventory_items ORDER BY rack_no ASC";
 $result = mysqli_query($conn, $query);
 
 // Table body styling
@@ -50,7 +50,9 @@ $rowColor2 = array(255, 255, 255); // White
 while ($row = mysqli_fetch_assoc($result)) {
     $balance = (int)$row['current_balance'];
     // Calculate status
-    if ($balance == 0) {
+    if (strcasecmp(trim((string)$row['status']), 'Discontinued') === 0) {
+        $status = 'Discontinued';
+    } else if ($balance == 0) {
         $status = 'Out of Stock';
     } else if ($balance <= 10) {
         $status = 'Low Stock';
@@ -70,7 +72,7 @@ while ($row = mysqli_fetch_assoc($result)) {
     // $pdf->Cell($w[0], 10, $row['item_no'], 1, 0, 'C', true);
     $pdf->Cell($w[0], 10, $row['item_name'], 1, 0, 'L', true);
     $pdf->Cell($w[1], 10, $row['unit'], 1, 0, 'C', true);
-    $pdf->Cell($w[2], 10, '', 1, 0, 'C', true);
+    $pdf->Cell($w[2], 10, (string)$balance, 1, 0, 'C', true);
     // Status cell with color
     // if ($status == 'Available') {
     //     $pdf->SetTextColor(39, 174, 96); // Green

@@ -9,6 +9,8 @@ error_reporting(E_ALL);
 
 session_start(); // Start the session if not already started
 require_once 'logi_db.php';
+require_once __DIR__ . '/Logi_security.php';
+logi_require_admin_csrf($conn);
 
 // Enable error logging
 ini_set('log_errors', 1);
