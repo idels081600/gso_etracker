@@ -3,13 +3,24 @@ require_once '../dbh.php';
 require_once "../../fpdf/fpdf.php";
 session_start();
 
-$range = isset($_GET['range']) ? $_GET['range'] : 'today';
+$range = isset($_GET['range']) ? $_GET['range'] : 'date';
+$selected_date = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
 $selected_month = isset($_GET['month']) ? $_GET['month'] : date('Y-m');
 $filter_duration = isset($_GET['filter_duration']) ? $_GET['filter_duration'] : '0';
 $duration_condition = ($filter_duration == '1') ? "AND duration_seconds > 3600" : "";
 
-if ($range == 'today') {
-    $date_condition = "AND DATE(date) = CURDATE()";
+// Only normalized date values are placed into the query below.
+$date_object = DateTime::createFromFormat('!Y-m-d', $selected_date);
+if (!$date_object || $date_object->format('Y-m-d') !== $selected_date) {
+    $selected_date = date('Y-m-d');
+}
+
+if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $selected_month)) {
+    $selected_month = date('Y-m');
+}
+
+if ($range == 'date' || $range == 'today') {
+    $date_condition = "AND DATE(date) = '$selected_date'";
 } else {
     $month_year = explode('-', $selected_month);
     $year = $month_year[0]; $month = $month_year[1];
@@ -21,6 +32,11 @@ if ($range == 'today') {
 // Query for TCWS Employees ONLY
 $sql_official = $conn->query("SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Official Business' AND role = 'TCWS Employee' $date_condition $duration_condition ORDER BY name");
 $sql_personal = $conn->query("SELECT * FROM request WHERE Status = 'Done' AND TypeofBusiness = 'Personal' AND role = 'TCWS Employee' $date_condition $duration_condition ORDER BY name");
+
+function pdfText($text) {
+    $encoded = iconv('UTF-8', 'Windows-1252//TRANSLIT', (string) $text);
+    return $encoded !== false ? $encoded : (string) $text;
+}
 
 class PDF extends FPDF {
     var $headerTitle;
@@ -45,13 +61,25 @@ class PDF extends FPDF {
         $this->Ln();
         $this->SetTextColor(0, 0, 0);
     }
+    function fitText($text, $cellWidth) {
+        $availableWidth = $cellWidth - 3;
+        if ($this->GetStringWidth($text) <= $availableWidth) {
+            return $text;
+        }
+
+        $suffix = '...';
+        while ($text !== '' && $this->GetStringWidth($text . $suffix) > $availableWidth) {
+            $text = substr($text, 0, -1);
+        }
+        return rtrim($text) . $suffix;
+    }
     function printRows($sql) {
         $this->SetFont('Arial', '', 10);
         while ($row = $sql->fetch_object()) {
             $h = floor($row->duration_seconds / 3600); $m = floor(($row->duration_seconds % 3600) / 60);
-            $this->Cell(45, 12, $row->name, 1);
-            $this->Cell(60, 12, $row->purpose, 1);
-            $this->Cell(70, 12, $row->dest2, 1);
+            $this->Cell(45, 12, $this->fitText(pdfText($row->name), 45), 1);
+            $this->Cell(60, 12, $this->fitText(pdfText($row->purpose), 60), 1);
+            $this->Cell(70, 12, $this->fitText(pdfText($row->dest2), 70), 1);
             $this->Cell(30, 12, date("m/d/Y", strtotime($row->date)), 1, 0, 'C');
             $this->Cell(30, 12, date("h:i A", strtotime($row->timedept)), 1, 0, 'C');
             $this->Cell(30, 12, date("h:i A", strtotime($row->time_returned)), 1, 0, 'C');
@@ -61,10 +89,13 @@ class PDF extends FPDF {
     }
 }
 
-$pdf = new PDF('L', 'mm', array(215.9, 400), "TCWS EMPLOYEE SUMMARY - ".date('F Y', strtotime($selected_month)));
+$report_period = ($range == 'date' || $range == 'today')
+    ? date('F j, Y', strtotime($selected_date))
+    : date('F Y', strtotime($selected_month . '-01'));
+$pdf = new PDF('L', 'mm', array(215.9, 400), "TCWS EMPLOYEE SUMMARY - " . $report_period);
 $pdf->AddPage();
 
-if ($range == 'today' || $filter_duration == '1') {
+if ($range == 'date' || $range == 'today' || $filter_duration == '1') {
     $pdf->Cell(0, 10, "Official Business (TCWS)", 0, 1); $pdf->printTableHeader(); $pdf->printRows($sql_official);
     $pdf->Ln(10);
     $pdf->Cell(0, 10, "Personal Business (TCWS)", 0, 1); $pdf->printTableHeader(); $pdf->printRows($sql_personal);
@@ -91,5 +122,6 @@ if ($range == 'today' || $filter_duration == '1') {
         $pdf->Ln(10);
     }
 }
-$pdf->Output('TCWS_Employees_'.date('Y-m-d').'.pdf', 'I');
+$file_period = ($range == 'date' || $range == 'today') ? $selected_date : $selected_month . '_' . $range;
+$pdf->Output('TCWS_Employees_' . $file_period . '.pdf', 'I');
 ?>

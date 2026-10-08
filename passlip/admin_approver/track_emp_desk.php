@@ -203,6 +203,16 @@ if (isset($_POST['undo_delete'])) {
       font-weight: 700;
     }
 
+    #exportModal .modal-content,
+    #specificDateExportModal .modal-content {
+      max-height: calc(100vh - 30px);
+    }
+
+    #exportModal .modal-body,
+    #specificDateExportModal .modal-body {
+      overflow-y: auto;
+    }
+
     @media screen and (max-width: 640px) {
       .track-detail-grid {
         grid-template-columns: 1fr;
@@ -443,9 +453,13 @@ if (isset($_POST['undo_delete'])) {
           </button>
         </div>
         <div class="modal-body">
-          <p>Choose the date range for export:</p>
+          <p>Choose the report you want to export:</p>
+          <div class="d-flex flex-column mb-3">
+            <button type="button" class="btn btn-primary" onclick="openSpecificDateExportModal()">Export Specific Date</button>
+          </div>
+          <hr>
           <div class="mb-3">
-            <label for="exportMonth" class="form-label">Select Month:</label>
+            <label for="exportMonth" class="form-label">Select Month for Monthly Export:</label>
             <select class="form-control" id="exportMonth">
               <option value="<?php echo date('Y-m'); ?>"><?php echo date('F Y'); ?> (Current)</option>
               <option value="<?php echo date('Y-m', strtotime('-1 month')); ?>"><?php echo date('F Y', strtotime('-1 month')); ?></option>
@@ -457,19 +471,53 @@ if (isset($_POST['undo_delete'])) {
           </div>
           <div class="mb-3">
             <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="durationFilter" value="1">
-              <label class="form-check-label" for="durationFilter">
+              <input class="form-check-input" type="checkbox" id="monthlyDurationFilter" value="1">
+              <label class="form-check-label" for="monthlyDurationFilter">
                 Export only records with Duration Outside Office > 1 hour
               </label>
             </div>
           </div>
           <div class="d-flex flex-column">
-            <button type="button" class="btn btn-primary mb-2" onclick="exportToday()">Export Current Date CGSO Data</button>
-            <button type="button" class="btn btn-primary mb-2" onclick="exportToday_TCWS()">Export Current Date TCWS Data</button>
             <button type="button" class="btn btn-primary mb-2" onclick="exportFirst15()">Export 1st 15 Days for CGSO</button>
             <button type="button" class="btn btn-primary mb-2" onclick="exportFirst15_TWCS()">Export 1st 15 Days for TWCS</button>
             <button type="button" class="btn btn-primary" onclick="exportSecond15()">Export 2nd 15 Days for CGSO</button>
             <button type="button" class="btn btn-primary" onclick="exportSecond15_TWCS()">Export 2nd 15 Days for TCWS</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Specific Date Export Modal -->
+  <div class="modal fade" id="specificDateExportModal" tabindex="-1" role="dialog" aria-labelledby="specificDateExportModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="specificDateExportModalLabel">Export Specific Date</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="exportDate" class="form-label">Select Date:</label>
+            <input type="date" class="form-control" id="exportDate" value="<?php echo date('Y-m-d'); ?>" aria-describedby="exportDateHelp">
+            <small class="form-text text-muted" id="exportDateHelp">Choose which employee group to include in the PDF.</small>
+          </div>
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="specificDateDurationFilter" value="1">
+              <label class="form-check-label" for="specificDateDurationFilter">
+                Export only records with Duration Outside Office > 1 hour
+              </label>
+            </div>
+          </div>
+          <div class="d-flex flex-column">
+            <button type="button" class="btn btn-primary mb-2" onclick="exportSelectedDate()">Export CGSO Only</button>
+            <button type="button" class="btn btn-primary" onclick="exportSelectedDateTCWS()">Export TCWS Only</button>
           </div>
         </div>
         <div class="modal-footer">
@@ -499,38 +547,67 @@ if (isset($_POST['undo_delete'])) {
       $('#exportModal').modal('show');
     }
 
-    function exportToday() {
-      const month = document.getElementById('exportMonth').value;
-      window.location.href = `export_r.php?range=today&month=${month}`;
+    function openSpecificDateExportModal() {
+      const exportModal = $('#exportModal');
+      exportModal.one('hidden.bs.modal', function() {
+        $('#specificDateExportModal').modal('show');
+      });
+      exportModal.modal('hide');
     }
 
-    function exportToday_TCWS() {
-      const month = document.getElementById('exportMonth').value;
-      window.location.href = `twcs_employee_export.php?range=today&month=${month}`;
+    $('#specificDateExportModal').on('shown.bs.modal', function() {
+      document.getElementById('exportDate').focus();
+    });
+
+    function getSelectedExportDate() {
+      const dateInput = document.getElementById('exportDate');
+      if (!dateInput.value) {
+        dateInput.focus();
+        alert('Please select a date to export.');
+        return null;
+      }
+
+      return dateInput.value;
+    }
+
+    function exportSelectedDate() {
+      const selectedDate = getSelectedExportDate();
+      if (!selectedDate) return;
+
+      const filterDuration = document.getElementById('specificDateDurationFilter').checked ? '1' : '0';
+      window.location.href = `export_r.php?range=date&date=${encodeURIComponent(selectedDate)}&filter_duration=${filterDuration}`;
+    }
+
+    function exportSelectedDateTCWS() {
+      const selectedDate = getSelectedExportDate();
+      if (!selectedDate) return;
+
+      const filterDuration = document.getElementById('specificDateDurationFilter').checked ? '1' : '0';
+      window.location.href = `twcs_employee_export.php?range=date&date=${encodeURIComponent(selectedDate)}&filter_duration=${filterDuration}`;
     }
 
 
     function exportFirst15() {
       const month = document.getElementById('exportMonth').value;
-      const filterDuration = document.getElementById('durationFilter').checked ? '1' : '0';
+      const filterDuration = document.getElementById('monthlyDurationFilter').checked ? '1' : '0';
       window.location.href = `export_r.php?range=first15&month=${month}&filter_duration=${filterDuration}`;
     }
 
     function exportFirst15_TWCS() {
       const month = document.getElementById('exportMonth').value;
-      const filterDuration = document.getElementById('durationFilter').checked ? '1' : '0';
+      const filterDuration = document.getElementById('monthlyDurationFilter').checked ? '1' : '0';
       window.location.href = `twcs_employee_export.php?range=first15&month=${month}&filter_duration=${filterDuration}`;
     }
 
     function exportSecond15() {
       const month = document.getElementById('exportMonth').value;
-      const filterDuration = document.getElementById('durationFilter').checked ? '1' : '0';
+      const filterDuration = document.getElementById('monthlyDurationFilter').checked ? '1' : '0';
       window.location.href = `export_r.php?range=second15&month=${month}&filter_duration=${filterDuration}`;
     }
 
     function exportSecond15_TWCS() {
       const month = document.getElementById('exportMonth').value;
-      const filterDuration = document.getElementById('durationFilter').checked ? '1' : '0';
+      const filterDuration = document.getElementById('monthlyDurationFilter').checked ? '1' : '0';
       window.location.href = `twcs_employee_export.php?range=second15&month=${month}&filter_duration=${filterDuration}`;
     }
 
