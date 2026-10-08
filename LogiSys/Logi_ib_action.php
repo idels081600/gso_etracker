@@ -43,6 +43,28 @@ function ib_activity(mysqli $conn, int $ibId, string $action, string $actor, arr
     $stmt->execute();
     $stmt->close();
 }
+function ib_reference_reuse_authorization(mysqli $conn, string $ibNo, ?int $ibId = null): ?array {
+    $stmt = $conn->prepare('SELECT id, reason, legacy_transaction_count, used_by_ib_id FROM ib_reference_reuse_authorizations WHERE ib_no = ? FOR UPDATE');
+    $stmt->bind_param('s', $ibNo);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$row) return null;
+    $usedBy = $row['used_by_ib_id'] === null ? null : (int)$row['used_by_ib_id'];
+    if ($usedBy !== null && $usedBy !== $ibId) return null;
+    return $row;
+}
+function ib_consume_reference_reuse(mysqli $conn, array $authorization, int $ibId): void {
+    $authorizationId = (int)$authorization['id'];
+    $stmt = $conn->prepare('UPDATE ib_reference_reuse_authorizations SET used_by_ib_id = ?, used_at = COALESCE(used_at, NOW()) WHERE id = ? AND (used_by_ib_id IS NULL OR used_by_ib_id = ?)');
+    $stmt->bind_param('iii', $ibId, $authorizationId, $ibId);
+    $stmt->execute();
+    if ($stmt->affected_rows < 1) {
+        $stmt->close();
+        throw new DomainException('The IB reference reuse authorization has already been consumed.');
+    }
+    $stmt->close();
+}
 function ib_lock_header(mysqli $conn, int $id): array {
     $stmt = $conn->prepare('SELECT * FROM ib_headers WHERE id = ? FOR UPDATE');
     $stmt->bind_param('i', $id); $stmt->execute();
@@ -163,6 +185,7 @@ try {
         if ($ibNo === '' || mb_strlen($ibNo) > 100) throw new DomainException('Enter an IB number of up to 100 characters.');
         $groups = $data['groups'] ?? [];
         if ($action === 'create') {
+            $reuseAuthorization = null;
             $check = $conn->prepare('SELECT id FROM ib_headers WHERE ib_no = ? LIMIT 1');
             $check->bind_param('s', $ibNo); $check->execute();
             $exists = (bool)$check->get_result()->fetch_row(); $check->close();
@@ -170,17 +193,27 @@ try {
                 $check = $conn->prepare('SELECT id FROM inventory_transactions WHERE PO_no_IB_no = ? OR reference_no = ? LIMIT 1');
                 $check->bind_param('ss', $ibNo, $ibNo); $check->execute();
                 $exists = (bool)$check->get_result()->fetch_row(); $check->close();
+                if ($exists) {
+                    $reuseAuthorization = ib_reference_reuse_authorization($conn, $ibNo);
+                    $exists = $reuseAuthorization === null;
+                }
             }
             if ($exists) throw new DomainException('That IB number already exists in IB Monitoring or Transaction History.');
             $stmt = $conn->prepare("INSERT INTO ib_headers (ib_no, status, created_by) VALUES (?, 'DRAFT', ?)");
             $stmt->bind_param('ss', $ibNo, $actor); $stmt->execute(); $stmt->close();
             $ibId = (int)$conn->insert_id;
             ib_save_structure($conn, $ibId, $groups);
-            ib_activity($conn, $ibId, 'CREATED', $actor, ['ib_no' => $ibNo]);
+            if ($reuseAuthorization) ib_consume_reference_reuse($conn, $reuseAuthorization, $ibId);
+            ib_activity($conn, $ibId, 'CREATED', $actor, [
+                'ib_no' => $ibNo,
+                'reference_reuse_authorization_id' => $reuseAuthorization ? (int)$reuseAuthorization['id'] : null,
+                'legacy_transaction_count' => $reuseAuthorization ? (int)$reuseAuthorization['legacy_transaction_count'] : 0,
+            ]);
             $message = 'IB ' . $ibNo . ' was saved as Draft.';
         } else {
             $ibId = (int)($data['ib_id'] ?? 0);
             $header = ib_lock_header($conn, $ibId);
+            $reuseAuthorization = null;
             if ($header['status'] !== 'DRAFT') throw new DomainException('Only Draft IB records can be edited.');
             if (strcasecmp($ibNo, $header['ib_no']) !== 0) {
                 $check = $conn->prepare('SELECT id FROM ib_headers WHERE ib_no = ? AND id <> ? LIMIT 1');
@@ -190,13 +223,22 @@ try {
                     $check = $conn->prepare('SELECT id FROM inventory_transactions WHERE PO_no_IB_no = ? OR reference_no = ? LIMIT 1');
                     $check->bind_param('ss', $ibNo, $ibNo); $check->execute();
                     $exists = (bool)$check->get_result()->fetch_row(); $check->close();
+                    if ($exists) {
+                        $reuseAuthorization = ib_reference_reuse_authorization($conn, $ibNo, $ibId);
+                        $exists = $reuseAuthorization === null;
+                    }
                 }
                 if ($exists) throw new DomainException('That IB number is already in use.');
             }
             $delete = $conn->prepare('DELETE FROM ib_office_groups WHERE ib_id = ?'); $delete->bind_param('i', $ibId); $delete->execute(); $delete->close();
             $update = $conn->prepare('UPDATE ib_headers SET ib_no = ?, version = version + 1 WHERE id = ?'); $update->bind_param('si', $ibNo, $ibId); $update->execute(); $update->close();
             ib_save_structure($conn, $ibId, $groups);
-            ib_activity($conn, $ibId, 'DRAFT_UPDATED', $actor, ['ib_no' => $ibNo]);
+            if ($reuseAuthorization) ib_consume_reference_reuse($conn, $reuseAuthorization, $ibId);
+            ib_activity($conn, $ibId, 'DRAFT_UPDATED', $actor, [
+                'ib_no' => $ibNo,
+                'reference_reuse_authorization_id' => $reuseAuthorization ? (int)$reuseAuthorization['id'] : null,
+                'legacy_transaction_count' => $reuseAuthorization ? (int)$reuseAuthorization['legacy_transaction_count'] : 0,
+            ]);
             $message = 'Draft IB ' . $ibNo . ' was updated.';
         }
     } elseif ($action === 'add_active_items') {
