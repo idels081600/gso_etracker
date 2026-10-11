@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/auth_guard.php';
-requireFuelRole('fuel_admin', 'text');
+requireFuelRole('private_issuance_admin', 'text');
 require_once __DIR__ . '/rate_limiter.php';
 require_rate_limit(30, 60, 'private_gas_coupon', 'text');
 

@@ -899,11 +899,6 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="private_gas_issuance.php">
-                            <i class="fas fa-car-side me-1"></i>Private Issuance
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="sub_admin.php">
                             <i class="fas fa-print me-1"></i>Print Desk
                         </a>
@@ -947,9 +942,6 @@ $budgetTotal = (float) ($budgetSummary['total_budget'] ?? 0);
                 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#vehicleManagerModal">
                     <i class="fas fa-clipboard-list me-1"></i>Vehicle Details
                 </button>
-                <a href="private_gas_issuance.php" class="btn btn-outline-dark">
-                    <i class="fas fa-car-side me-1"></i>Private Issuance
-                </a>
                 <a href="fuel_dashboard.php" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-1"></i>Dashboard
                 </a>

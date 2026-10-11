@@ -166,7 +166,7 @@ function login_throttle_message($remainingSeconds)
 
 function security_admin_roles()
 {
-    return ['Admin', 'master_admin', 'Pay_admin', 'fuel_admin', 'advance_PO'];
+    return ['Admin', 'master_admin', 'Pay_admin', 'fuel_admin', 'private_issuance_admin', 'advance_PO'];
 }
 
 function security_role_requires_2fa($role)
@@ -237,6 +237,7 @@ function login_redirect_for_role($role)
         case "SUPPLIES": return "LogiSys/Logi_Sys_Dashboard.php";
         case "Pay_admin": return "Payables/bac_dashboard.php";
         case "fuel_admin": return "fuel_tracker/fuel_dashboard.php";
+        case "private_issuance_admin": return "fuel_tracker/private_gas_issuance.php";
         case "gas_checker": return "fuel_tracker/gas_checker.php";
         case "advance_PO": return "advance_request/dashboard.php";
         case "pr_admin": return "prtracking/dashboard.php";

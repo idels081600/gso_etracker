@@ -35,6 +35,52 @@ function fuelAuthRole(): string
     return strtolower(trim((string) ($_SESSION['role'] ?? '')));
 }
 
+function fuelAuthCsrfToken(): string
+{
+    fuelAuthStartSession();
+
+    $token = $_SESSION['_fuel_csrf_token'] ?? null;
+    if (!is_string($token) || strlen($token) !== 64 || !ctype_xdigit($token)) {
+        $token = bin2hex(random_bytes(32));
+        $_SESSION['_fuel_csrf_token'] = $token;
+    }
+
+    return $token;
+}
+
+function requireFuelCsrfToken(mixed $submittedToken, string $responseType = 'json'): void
+{
+    fuelAuthStartSession();
+    fuelAuthSecurityHeaders();
+
+    $sessionToken = $_SESSION['_fuel_csrf_token'] ?? '';
+    $submittedToken = is_string($submittedToken) ? trim($submittedToken) : '';
+
+    if (
+        is_string($sessionToken)
+        && $sessionToken !== ''
+        && $submittedToken !== ''
+        && hash_equals($sessionToken, $submittedToken)
+    ) {
+        return;
+    }
+
+    http_response_code(403);
+
+    if ($responseType === 'json') {
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Security check failed. Refresh the page and try again.',
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo 'Security check failed. Refresh the page and try again.';
+    exit;
+}
+
 function requireFuelRole(array|string $roles, string $responseType = 'html'): void
 {
     fuelAuthStartSession();
@@ -45,12 +91,12 @@ function requireFuelRole(array|string $roles, string $responseType = 'html'): vo
         is_array($roles) ? $roles : [$roles]
     );
 
+    $isLoggedIn = !empty($_SESSION['logged_in']);
     $currentRole = fuelAuthRole();
-    if (($currentRole !== '') && in_array($currentRole, $allowedRoles, true)) {
+    if ($isLoggedIn && ($currentRole !== '') && in_array($currentRole, $allowedRoles, true)) {
         return;
     }
 
-    $isLoggedIn = !empty($_SESSION['logged_in']);
     $statusCode = $isLoggedIn ? 403 : 401;
     http_response_code($statusCode);
 

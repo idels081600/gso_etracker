@@ -76,11 +76,6 @@ try {
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="private_gas_issuance.php">
-                            <i class="fas fa-car-side me-1"></i>Private Issuance
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="sub_admin.php">
                             <i class="fas fa-print me-1"></i>Print Desk
                         </a>

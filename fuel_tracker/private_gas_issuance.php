@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/auth_guard.php';
-requireFuelRole('fuel_admin');
+requireFuelRole('private_issuance_admin');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
@@ -53,6 +53,7 @@ function privateGasStatusClass(string $status): string
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?php echo privateGasEscape(fuelAuthCsrfToken()); ?>">
     <title>Private Gas Issuance</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -260,25 +261,25 @@ function privateGasStatusClass(string $status): string
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm" aria-label="Private Fuel Issuance navigation">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="fuel_dashboard.php">
+            <a class="navbar-brand d-flex align-items-center" href="private_gas_issuance.php">
                 <i class="fas fa-gas-pump text-primary me-2"></i>
-                <span class="fw-bold text-dark">Fuel Tracker</span>
+                <span class="fw-bold text-dark">Private Fuel Issuance</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a class="nav-link" href="fuel_dashboard.php"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="gas_issuance.php"><i class="fas fa-receipt me-1"></i>Gas Issuance</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="private_gas_issuance.php"><i class="fas fa-car-side me-1"></i>Private Issuance</a></li>
-                    <li class="nav-item"><a class="nav-link" href="sub_admin.php"><i class="fas fa-print me-1"></i>Print Desk</a></li>
-                </ul>
-                <a class="btn btn-outline-secondary btn-sm" href="../logout.php">
-                    <i class="fas fa-sign-out-alt me-1"></i>Logout
-                </a>
+                <div class="ms-auto d-flex align-items-center gap-3 pt-3 pt-lg-0">
+                    <span class="badge text-bg-light border text-secondary">
+                        <i class="fas fa-shield-halved me-1" aria-hidden="true"></i>Restricted access
+                    </span>
+                    <a class="btn btn-outline-secondary btn-sm" href="../logout.php">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
@@ -688,13 +689,14 @@ function privateGasStatusClass(string $status): string
         }
 
         async function postPrivateJson(url, payload) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: JSON.stringify(payload),
+                body: JSON.stringify({ ...payload, csrf_token: csrfToken }),
             });
             const data = await response.json();
             if (!response.ok || !data.success) {

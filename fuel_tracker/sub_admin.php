@@ -498,11 +498,6 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                                 <i class="fas fa-receipt me-1"></i>Gas Issuance
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="private_gas_issuance.php">
-                                <i class="fas fa-car-side me-1"></i>Private Issuance
-                            </a>
-                        </li>
                     <?php endif; ?>
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="sub_admin.php">

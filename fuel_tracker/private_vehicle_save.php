@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/auth_guard.php';
-requireFuelRole('fuel_admin', 'json');
+requireFuelRole('private_issuance_admin', 'json');
 requireFuelAjaxRequest();
 require_once __DIR__ . '/rate_limiter.php';
 require_rate_limit(30, 60, 'private_vehicle_save', 'json');
@@ -47,6 +47,7 @@ function privateVehicleNumber(mixed $value, float $default = 0, float $minimum =
 }
 
 $input = privateVehicleInput();
+requireFuelCsrfToken($input['csrf_token'] ?? '', 'json');
 $action = strtolower(trim((string) ($input['action'] ?? 'create')));
 
 try {
