@@ -24,11 +24,13 @@ if (!$batch || $batch['previous_households'] === null) {
 $household_table = $batch['households'];
 $is_third_wave = $household_table === 'rice_third_wave_households';
 $is_fourth_wave = $household_table === 'rice_fourth_wave_households';
-$is_distribution_coupon = $is_third_wave || $is_fourth_wave;
+$is_additional = (string)($_GET['additional'] ?? '') === '1';
+$is_second_wave = $household_table === 'rice_claimed_households';
+$is_distribution_coupon = $is_third_wave || $is_fourth_wave || ($is_additional && $is_second_wave);
 $arranged = $is_distribution_coupon && (string)($_GET['arranged'] ?? '') === '1';
-$distribution = $is_fourth_wave ? '4' : '3';
-$distribution_ordinal = $distribution === '4' ? '4TH' : '3RD';
-$distribution_class = $distribution === '4' ? 'fourth-distribution' : 'third-distribution';
+$distribution = $is_fourth_wave ? '4' : ($is_third_wave ? '3' : '2');
+$distribution_ordinal = ['2' => '2ND', '3' => '3RD', '4' => '4TH'][$distribution];
+$distribution_class = ['2' => 'second-distribution', '3' => 'third-distribution', '4' => 'fourth-distribution'][$distribution];
 $filter = isset($_GET['filter']) ? strtolower(trim($_GET['filter'])) : 'all';
 $allowed_filters = ['all', 'unclaimed', 'claimed'];
 if (!in_array($filter, $allowed_filters, true)) {
@@ -49,6 +51,9 @@ if ($is_ind_sector) {
 }
 
 $where_clauses = ["status = 'Active'"];
+if ($is_additional) {
+    $where_clauses[] = "UPPER(TRIM(COALESCE(address, ''))) = 'ADDITIONAL'";
+}
 if ($filter === 'unclaimed') {
     $where_clauses[] = "is_claimed = 0";
 } elseif ($filter === 'claimed') {
@@ -57,7 +62,9 @@ if ($filter === 'unclaimed') {
 
 $types = '';
 $params = [];
-if ($is_ind_sector) {
+if ($is_additional) {
+    $sort = 'name';
+} elseif ($is_ind_sector) {
     $where_clauses[] = "UPPER(TRIM(address)) IN ('IND', 'IND2', 'INDIGENTS')";
 } elseif ($barangay !== '') {
     $where_clauses[] = "address = ?";
@@ -109,7 +116,7 @@ while ($row = mysqli_fetch_assoc($result)) {
     }
 }
 
-if ($is_third_wave && $records) {
+if ($is_third_wave && $records && !$is_additional) {
     $referenceRecords = [];
     $referenceResult = mysqli_query(
         $conn,
@@ -145,6 +152,14 @@ if ($is_third_wave && $records) {
 if ($is_fourth_wave && $records) {
     foreach ($records as &$record) {
         $record['sector_source'] = $record['designation'] ?: $record['address'];
+    }
+    unset($record);
+}
+
+if ($is_additional && $records) {
+    foreach ($records as &$record) {
+        $record['sector_source'] = $record['designation'] ?: 'ADDITIONAL';
+        $record['force_barangay_group'] = true;
     }
     unset($record);
 }
@@ -248,6 +263,7 @@ function riceVoucherNameClass($name)
             --ink-strong: #515151;
             --accent-line: #6b7280;
             --claimed: #0f766e;
+            --second-distribution-teal: #0f766e;
             --third-batch-orange: #c2410c;
             --fourth-distribution-blue: #1d4ed8;
         }
@@ -413,6 +429,12 @@ function riceVoucherNameClass($name)
             color: var(--third-batch-orange);
         }
 
+        .second-distribution .voucher-name,
+        .second-distribution .voucher-code,
+        .second-distribution .distribution-indicator {
+            color: var(--second-distribution-teal);
+        }
+
         .fourth-distribution .voucher-name,
         .fourth-distribution .voucher-code,
         .fourth-distribution .distribution-indicator {
@@ -508,6 +530,9 @@ function riceVoucherNameClass($name)
                 <span class="badge">Recipient Form Order</span>
                 <span class="badge"><?php echo $distribution_ordinal; ?> Distribution</span>
             <?php endif; ?>
+            <?php if ($is_additional): ?>
+                <span class="badge">Additional Recipients</span>
+            <?php endif; ?>
             <span><?php echo number_format(count($records)); ?> voucher<?php echo count($records) === 1 ? '' : 's'; ?></span>
         </div>
         <button type="button" onclick="window.print()">Print Vouchers</button>
@@ -526,7 +551,7 @@ function riceVoucherNameClass($name)
                     <?php $groupPrefix = ($pageGroupKinds[$pageIndex] ?? '') === 'barangay' ? 'BARANGAY' : 'SECTOR'; ?>
                     <div class="coupon-group-label">
                         <span><?php echo $groupPrefix; ?>: <?php echo htmlspecialchars($pageGroupLabels[$pageIndex] ?? ''); ?></span>
-                        <small><?php echo $distribution_ordinal; ?> DISTRIBUTION COUPONS</small>
+                        <small><?php echo $distribution_ordinal; ?> DISTRIBUTION<?php echo $is_additional ? ' - ADDITIONAL' : ''; ?> COUPONS</small>
                     </div>
                 <?php elseif ($is_ind_sector): ?>
                     <div class="designation-label">INDIGENTS | Designation: <?php echo htmlspecialchars($pageDesignations[$pageIndex]); ?></div>

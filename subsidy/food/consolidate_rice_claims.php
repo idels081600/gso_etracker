@@ -90,7 +90,7 @@ $csrfToken = $_SESSION['rice_consolidation_csrf'];
             <div class="offcanvas-body">
                 <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                     <li class="nav-item"><a class="nav-link" href="dashboard_rice.php">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="releasing_rice.php">2nd Batch Releasing</a></li>
+                    <li class="nav-item"><a class="nav-link" href="releasing_rice_second_wave.php">2nd Batch Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="releasing_rice_third_wave.php">3rd Batch Releasing</a></li>
                     <li class="nav-item"><a class="nav-link" href="releasing_rice_fourth_wave.php">4th Batch Releasing</a></li>
                     <li class="nav-item"><a class="nav-link" href="releasing_rice_first_wave.php">First-Wave Releasing</a></li>

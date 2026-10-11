@@ -7,6 +7,7 @@ if (PHP_SAPI !== 'cli') {
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $conn = require __DIR__ . '/config/database.php';
+$minimumCohort = 5404;
 $lock = $conn->query("SELECT GET_LOCK('rice_fourth_wave_setup', 30) AS acquired")->fetch_assoc();
 if ((int)$lock['acquired'] !== 1) {
     throw new RuntimeException('Another fourth-batch setup is already running.');
@@ -144,8 +145,8 @@ try {
             $conn->rollback();
             throw $error;
         }
-    } elseif ($total !== 5404) {
-        throw new RuntimeException("Fourth-batch household table already contains {$total} rows; no records were overwritten.");
+    } elseif ($total < $minimumCohort) {
+        throw new RuntimeException("Fourth-batch household table contains only {$total} rows; no records were overwritten.");
     } else {
         echo "Fourth-batch snapshot already exists. No household or claim records were changed.\n";
     }
@@ -154,10 +155,17 @@ try {
         "SELECT COUNT(*) AS total,
                 COUNT(DISTINCT household_code) AS unique_codes,
                 COUNT(DISTINCT cohort_sequence) AS unique_sequences,
+                MIN(cohort_sequence) AS first_sequence,
+                MAX(cohort_sequence) AS last_sequence,
                 COALESCE(SUM(is_claimed = 1), 0) AS claimed
          FROM rice_fourth_wave_households"
     )->fetch_assoc();
-    if ((int)$summary['total'] !== 5404 || (int)$summary['unique_codes'] !== 5404 || (int)$summary['unique_sequences'] !== 5404) {
+    $cohortTotal = (int)$summary['total'];
+    if ($cohortTotal < $minimumCohort
+        || (int)$summary['unique_codes'] !== $cohortTotal
+        || (int)$summary['unique_sequences'] !== $cohortTotal
+        || (int)$summary['first_sequence'] !== 1
+        || (int)$summary['last_sequence'] !== $cohortTotal) {
         throw new RuntimeException('Fourth-batch integrity validation failed.');
     }
 
@@ -169,4 +177,3 @@ try {
 } finally {
     $conn->query("SELECT RELEASE_LOCK('rice_fourth_wave_setup')");
 }
-

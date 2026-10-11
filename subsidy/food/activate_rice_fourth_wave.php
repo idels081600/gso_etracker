@@ -8,6 +8,7 @@ if (PHP_SAPI !== 'cli') {
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $conn = require __DIR__ . '/config/database.php';
 $activate = in_array('--activate', $argv ?? [], true);
+$minimumCohort = 5404;
 
 $requiredTables = ['rice_fourth_wave_households', 'rice_fourth_wave_claims', 'rice_release_batch_status'];
 foreach ($requiredTables as $table) {
@@ -23,21 +24,28 @@ $summary = $conn->query(
     "SELECT COUNT(*) AS total,
             COUNT(DISTINCT household_code) AS unique_codes,
             COUNT(DISTINCT cohort_sequence) AS unique_sequences,
+            MIN(cohort_sequence) AS first_sequence,
+            MAX(cohort_sequence) AS last_sequence,
             COALESCE(SUM(is_claimed = 1), 0) AS claimed
      FROM rice_fourth_wave_households"
 )->fetch_assoc();
 $proofs = (int)$conn->query('SELECT COUNT(*) AS total FROM rice_fourth_wave_claims')->fetch_assoc()['total'];
 $status = $conn->query("SELECT is_active, activated_at, activated_by FROM rice_release_batch_status WHERE wave = 'fourth_wave'")->fetch_assoc();
 
-if ((int)$summary['total'] !== 5404 || (int)$summary['unique_codes'] !== 5404 || (int)$summary['unique_sequences'] !== 5404) {
-    throw new RuntimeException('Fourth-batch activation stopped: the 5,404-recipient snapshot failed validation.');
+$cohortTotal = (int)$summary['total'];
+if ($cohortTotal < $minimumCohort
+    || (int)$summary['unique_codes'] !== $cohortTotal
+    || (int)$summary['unique_sequences'] !== $cohortTotal
+    || (int)$summary['first_sequence'] !== 1
+    || (int)$summary['last_sequence'] !== $cohortTotal) {
+    throw new RuntimeException('Fourth-batch activation stopped: the recipient cohort failed integrity validation.');
 }
 if ((int)$status['is_active'] === 1) {
     echo "Fourth-batch claiming is already active.\n";
     exit(0);
 }
 if (!$activate) {
-    echo "Fourth-batch claiming is locked. Validation passed for 5,404 recipients.\n";
+    echo "Fourth-batch claiming is locked. Validation passed for {$cohortTotal} recipients.\n";
     echo "Run: php activate_rice_fourth_wave.php --activate\n";
     exit(0);
 }
@@ -57,5 +65,4 @@ if ($stmt->affected_rows !== 1) {
     throw new RuntimeException('Fourth-batch activation was not applied.');
 }
 
-echo "Fourth-batch claiming is now active for 5,404 recipients.\n";
-
+echo "Fourth-batch claiming is now active for {$cohortTotal} recipients.\n";

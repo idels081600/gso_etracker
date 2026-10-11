@@ -43,10 +43,11 @@ $summary = $conn->query(
             COALESCE(SUM(household_code IN ('PWD901', 'R677', 'PWD264')), 0) AS excluded_present
      FROM rice_fourth_wave_households"
 )->fetch_assoc();
-fourthWaveAssert((int)$summary['total'] === 5404, 'Fourth-wave snapshot must contain 5,404 recipients.');
-fourthWaveAssert((int)$summary['unique_codes'] === 5404, 'Fourth-wave household codes must be unique.');
-fourthWaveAssert((int)$summary['unique_sequences'] === 5404, 'Fourth-wave cohort sequences must be unique.');
-fourthWaveAssert((int)$summary['first_sequence'] === 1 && (int)$summary['last_sequence'] === 5404, 'Fourth-wave sequence must cover 1 through 5,404.');
+$cohortTotal = (int)$summary['total'];
+fourthWaveAssert($cohortTotal >= 5404, 'Fourth-wave snapshot must retain the original 5,404-recipient cohort.');
+fourthWaveAssert((int)$summary['unique_codes'] === $cohortTotal, 'Fourth-wave household codes must be unique.');
+fourthWaveAssert((int)$summary['unique_sequences'] === $cohortTotal, 'Fourth-wave cohort sequences must be unique.');
+fourthWaveAssert((int)$summary['first_sequence'] === 1 && (int)$summary['last_sequence'] === $cohortTotal, 'Fourth-wave sequence must be contiguous from 1 through the cohort total.');
 fourthWaveAssert((int)$summary['claimed'] === 0, 'Fourth-wave snapshot must start unclaimed.');
 fourthWaveAssert((int)$summary['excluded_present'] === 0, 'The three later first-batch claims must be excluded.');
 fourthWaveAssert(riceReleaseBatchIsActive($conn, 'third_wave'), 'Third-wave claiming must remain active.');
@@ -98,4 +99,3 @@ foreach ($protectedTables as $table) {
 }
 
 echo "Fourth-wave tests passed: cohort, exclusions, lock state, duplicate protection, rollback, and protected-table fingerprints.\n";
-

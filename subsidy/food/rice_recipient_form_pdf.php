@@ -548,7 +548,19 @@ function riceRecipientFormGroupedRecords(array $records)
     $roleEvidence = riceRecipientFormNameRoleEvidence($records);
 
     foreach ($records as $record) {
-        $group = riceRecipientFormGroup($record['sector_source'] ?? '');
+        if (!empty($record['force_barangay_group'])) {
+            $barangay = strtoupper(trim(preg_replace('/\s+/', ' ', (string)($record['sector_source'] ?? ''))));
+            $barangay = $barangay !== '' ? $barangay : 'UNSPECIFIED';
+            $group = $barangay === 'TAGBI'
+                ? ['key' => 'LOW INCOME', 'label' => 'LOW INCOME', 'kind' => 'low_income']
+                : [
+                    'key' => 'BARANGAY:' . $barangay,
+                    'label' => $barangay,
+                    'kind' => 'barangay',
+                ];
+        } else {
+            $group = riceRecipientFormGroup($record['sector_source'] ?? '');
+        }
         if (!isset($groups[$group['key']])) {
             $groups[$group['key']] = [
                 'label' => $group['label'],
@@ -594,12 +606,25 @@ function riceRecipientFormGroupedRecords(array $records)
 class RiceAssistanceRecipientFormPDF extends FPDF
 {
     public $distributionDates = [];
+    public $distributionLabels = ['1ST', '2ND', '3RD', '4TH'];
+    public $documentTitle = 'RICE ASSISTANCE RECIPIENT';
+
+    public function signatureColumnWidth()
+    {
+        $columnCount = max(1, count($this->distributionLabels));
+        $availableWidth = 277
+            - RICE_RECIPIENT_FORM_NO_WIDTH
+            - RICE_RECIPIENT_FORM_NAME_WIDTH
+            - RICE_RECIPIENT_FORM_SECTOR_WIDTH;
+
+        return $availableWidth / $columnCount;
+    }
 
     public function Header()
     {
         $this->SetTextColor(18, 52, 59);
         $this->SetFont('Arial', 'B', 14);
-        $this->Cell(0, 6, 'RICE ASSISTANCE RECIPIENT', 0, 1, 'C');
+        $this->Cell(0, 6, riceRecipientFormPdfText($this->documentTitle), 0, 1, 'C');
         $this->Ln(2);
         $this->drawTableHeader();
     }
@@ -630,18 +655,18 @@ class RiceAssistanceRecipientFormPDF extends FPDF
         $this->Cell(RICE_RECIPIENT_FORM_NAME_WIDTH, $totalHeight, 'NAME', 1, 0, 'C', true);
         $this->Cell(RICE_RECIPIENT_FORM_SECTOR_WIDTH, $totalHeight, 'SECTOR', 1, 0, 'C', true);
         $signatureX = $this->GetX();
-        $signatureWidth = RICE_RECIPIENT_FORM_SIGNATURE_WIDTH * 4;
+        $signatureColumnWidth = $this->signatureColumnWidth();
+        $signatureWidth = $signatureColumnWidth * count($this->distributionLabels);
         $this->Cell($signatureWidth, $mainHeight, 'SIGNATURE', 1, 1, 'C', true);
 
-        $distributionLabels = ['1ST', '2ND', '3RD', '4TH'];
         $this->SetFont('Arial', 'B', 6.5);
-        foreach ($distributionLabels as $index => $label) {
-            $x = $signatureX + ($index * RICE_RECIPIENT_FORM_SIGNATURE_WIDTH);
+        foreach ($this->distributionLabels as $index => $label) {
+            $x = $signatureX + ($index * $signatureColumnWidth);
             $date = trim((string) ($this->distributionDates[$index] ?? ''));
             $dateLine = $date !== '' ? $date : '______________';
             $this->SetXY($x, $startY + $mainHeight);
             $this->MultiCell(
-                RICE_RECIPIENT_FORM_SIGNATURE_WIDTH,
+                $signatureColumnWidth,
                 5,
                 $label . " DISTRIBUTION\nDATE: " . riceRecipientFormPdfText($dateLine),
                 1,
@@ -698,8 +723,10 @@ class RiceAssistanceRecipientFormPDF extends FPDF
             'C'
         );
 
-        for ($column = 0; $column < 4; $column++) {
-            $this->Cell(RICE_RECIPIENT_FORM_SIGNATURE_WIDTH, RICE_RECIPIENT_FORM_ROW_HEIGHT, '', 1, $column === 3 ? 1 : 0);
+        $signatureColumnWidth = $this->signatureColumnWidth();
+        $lastColumn = count($this->distributionLabels) - 1;
+        foreach ($this->distributionLabels as $column => $label) {
+            $this->Cell($signatureColumnWidth, RICE_RECIPIENT_FORM_ROW_HEIGHT, '', 1, $column === $lastColumn ? 1 : 0);
         }
     }
 
@@ -721,12 +748,16 @@ function riceRecipientFormRender(
     array $records,
     $destination = 'I',
     $filename = 'Rice_Assistance_Recipient_Form.pdf',
-    array $distributionDates = []
+    array $distributionDates = [],
+    array $distributionLabels = ['1ST', '2ND', '3RD', '4TH'],
+    $documentTitle = 'RICE ASSISTANCE RECIPIENT'
 )
 {
     $groups = riceRecipientFormGroupedRecords($records);
     $pdf = new RiceAssistanceRecipientFormPDF('L', 'mm', 'A4');
     $pdf->distributionDates = $distributionDates;
+    $pdf->distributionLabels = $distributionLabels ?: ['1ST', '2ND', '3RD', '4TH'];
+    $pdf->documentTitle = $documentTitle;
     $pdf->AliasNbPages();
     $pdf->SetMargins(RICE_RECIPIENT_FORM_MARGIN, 8, RICE_RECIPIENT_FORM_MARGIN);
     // Pagination is handled before every group header and recipient row so a

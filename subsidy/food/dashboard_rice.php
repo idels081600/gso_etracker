@@ -155,6 +155,20 @@ if ($claimed_barangay_result) {
                 white-space: normal;
                 font-size: 1rem;
             }
+            .modal-dialog {
+                width: auto;
+                max-width: calc(100vw - 1rem);
+                margin: .5rem auto;
+            }
+            .modal-content {
+                min-width: 0;
+            }
+            #printBarangayModal .modal-body {
+                overflow-x: hidden;
+            }
+            #printBarangayModal .btn {
+                white-space: normal;
+            }
         }
     </style>
     <script src="./js/session_heartbeat.js"></script>
@@ -177,7 +191,7 @@ if ($claimed_barangay_result) {
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                         <li class="nav-item"><a class="nav-link active" aria-current="page" href="dashboard_rice.php">Home</a></li>
-                        <li class="nav-item"><a class="nav-link" href="releasing_rice.php">2nd Batch Releasing</a></li>
+                        <li class="nav-item"><a class="nav-link" href="releasing_rice_second_wave.php">2nd Batch Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="releasing_rice_third_wave.php">3rd Batch Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="releasing_rice_fourth_wave.php">4th Batch Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="releasing_rice_first_wave.php">First-Wave Releasing</a></li>
@@ -243,7 +257,7 @@ if ($claimed_barangay_result) {
                         </div>
                         <div class="col-auto">
                             <div class="d-flex flex-wrap gap-2">
-                                <a href="releasing_rice.php" class="btn btn-warning btn-sm">
+                                <a href="releasing_rice_second_wave.php" class="btn btn-warning btn-sm">
                                     <i class="bi bi-person-check me-1"></i>2nd Batch Releasing
                                 </a>
                                 <a href="releasing_rice_third_wave.php" class="btn btn-rice-teal btn-sm">
@@ -276,6 +290,12 @@ if ($claimed_barangay_result) {
                                 </a>
                                 <a href="api_export_rice_recipient_form_pdf.php" class="btn btn-outline-success btn-sm" target="_blank">
                                     <i class="bi bi-file-earmark-pdf me-1"></i>Recipient Form PDF
+                                </a>
+                                <a href="api_export_rice_additional_recipient_form_pdf.php" class="btn btn-success btn-sm" target="_blank">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>Additional Recipient Form
+                                </a>
+                                <a href="api_export_rice_additional_master_list_pdf.php" class="btn btn-outline-success btn-sm" target="_blank">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>Additional Master List
                                 </a>
                                 <a data-rice-wave-export href="api_export_rice_daily_csv.php" class="btn btn-rice-teal btn-sm" target="_blank">
                                     <i class="bi bi-download me-1"></i>Daily Report CSV
@@ -382,7 +402,31 @@ if ($claimed_barangay_result) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted mb-3">Open the complete arranged third- or fourth-distribution set, one barangay, or one exact household code.</p>
+                    <p class="text-muted mb-3">Open the ADDITIONAL coupon set for the 2nd, 3rd, or 4th distribution, a complete arranged set, one barangay, or one exact household code.</p>
+
+                    <form method="get" action="rice_voucher_print.php" target="_blank" class="border border-success rounded-3 p-3 mb-3 bg-success-subtle">
+                        <input type="hidden" name="additional" value="1">
+                        <input type="hidden" name="arranged" value="1">
+                        <input type="hidden" name="filter" value="all">
+                        <input type="hidden" name="sort" value="name">
+                        <h6 class="mb-2">Additional Recipient Coupons</h6>
+                        <p class="small text-muted mb-3">Only recipients tagged ADDITIONAL, arranged by barangay and alphabetical name.</p>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-sm-7">
+                                <label for="additionalCouponBatch" class="form-label">Distribution</label>
+                                <select class="form-select" id="additionalCouponBatch" name="wave" required>
+                                    <option value="next_wave">2nd Distribution</option>
+                                    <option value="third_wave">3rd Distribution</option>
+                                    <option value="fourth_wave">4th Distribution</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-5 d-grid">
+                                <button type="submit" class="btn btn-success fw-semibold">
+                                    <i class="bi bi-ticket-perforated me-1"></i>Open Additional Coupons
+                                </button>
+                            </div>
+                        </div>
+                    </form>
 
                     <form method="get" action="rice_voucher_print.php" target="_blank" class="border border-warning rounded-3 p-3 mb-3 bg-warning-subtle">
                         <input type="hidden" name="wave" value="third_wave">

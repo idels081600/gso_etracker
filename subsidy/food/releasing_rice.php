@@ -16,7 +16,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'RICE_VERIFIER') {
     exit();
 }
 $station_name = 'Rice Assistance Verification';
-$rice_release_source = $rice_release_source ?? 'next_wave';
+$rice_release_source = $rice_release_source ?? 'third_wave';
 $release_batch = riceReleaseBatch($rice_release_source);
 if (!$release_batch || $rice_release_source === 'first_wave') {
     http_response_code(400);
@@ -86,7 +86,7 @@ $release_active = riceReleaseBatchIsActive($conn, $rice_release_source);
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                         <li class="nav-item"><a class="nav-link" href="dashboard_rice.php">Home</a></li>
-                        <li class="nav-item"><a class="nav-link <?php echo $rice_release_source === 'next_wave' ? 'active' : ''; ?>" href="releasing_rice.php">2nd Batch Releasing</a></li>
+                        <li class="nav-item"><a class="nav-link <?php echo $rice_release_source === 'next_wave' ? 'active' : ''; ?>" href="releasing_rice_second_wave.php">2nd Batch Releasing</a></li>
                         <li class="nav-item"><a class="nav-link <?php echo $rice_release_source === 'third_wave' ? 'active' : ''; ?>" href="releasing_rice_third_wave.php">3rd Batch Releasing</a></li>
                         <li class="nav-item"><a class="nav-link <?php echo $rice_release_source === 'fourth_wave' ? 'active' : ''; ?>" href="releasing_rice_fourth_wave.php">4th Batch Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="releasing_rice_first_wave.php">First-Wave Releasing</a></li>
