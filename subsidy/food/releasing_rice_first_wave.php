@@ -1,5 +1,7 @@
 <?php
 session_start();
+$rice_release_source = 'first_wave';
+require_once __DIR__ . '/rice_batch_switcher.php';
 $conn = require(__DIR__ . '/config/database.php');
 
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -24,6 +26,7 @@ $station_name = 'Rice Assistance Verification';
     <title>First-Wave Rice Assistance Releasing</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.4/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="rice_batch_switcher.css">
     <style>
         :root {
             --rice-teal: #0f766e;
@@ -69,9 +72,6 @@ $station_name = 'Rice Assistance Verification';
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                         <li class="nav-item"><a class="nav-link" href="dashboard_rice.php">Home</a></li>
-                        <li class="nav-item"><a class="nav-link" href="releasing_rice_second_wave.php">2nd Batch Releasing</a></li>
-                        <li class="nav-item"><a class="nav-link" href="releasing_rice_third_wave.php">3rd Batch Releasing</a></li>
-                        <li class="nav-item"><a class="nav-link active" aria-current="page" href="releasing_rice_first_wave.php">First-Wave Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="cross_check_rice.php">Cross Check</a></li>
                         <li class="nav-item"><a class="nav-link" href="consolidate_rice_claims.php">Claim Consolidation</a></li>
                         <li class="nav-item"><a class="nav-link text-danger" href="../../logout.php"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
@@ -82,6 +82,7 @@ $station_name = 'Rice Assistance Verification';
     </nav>
 
     <main class="pt-5">
+        <?php renderRiceBatchSwitcher($conn, $rice_release_source); ?>
         <div class="container py-5">
             <div class="row justify-content-center">
                 <div class="col-12 col-md-10 col-lg-8">

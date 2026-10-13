@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/rice_release_batches.php';
+require_once __DIR__ . '/rice_batch_switcher.php';
 $conn = require(__DIR__ . '/config/database.php');
 
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -33,6 +34,7 @@ $release_active = riceReleaseBatchIsActive($conn, $rice_release_source);
     <title><?php echo htmlspecialchars($release_title); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.4/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="rice_batch_switcher.css">
     <style>
         :root {
             --rice-teal: #0f766e;
@@ -86,10 +88,6 @@ $release_active = riceReleaseBatchIsActive($conn, $rice_release_source);
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                         <li class="nav-item"><a class="nav-link" href="dashboard_rice.php">Home</a></li>
-                        <li class="nav-item"><a class="nav-link <?php echo $rice_release_source === 'next_wave' ? 'active' : ''; ?>" href="releasing_rice_second_wave.php">2nd Batch Releasing</a></li>
-                        <li class="nav-item"><a class="nav-link <?php echo $rice_release_source === 'third_wave' ? 'active' : ''; ?>" href="releasing_rice_third_wave.php">3rd Batch Releasing</a></li>
-                        <li class="nav-item"><a class="nav-link <?php echo $rice_release_source === 'fourth_wave' ? 'active' : ''; ?>" href="releasing_rice_fourth_wave.php">4th Batch Releasing</a></li>
-                        <li class="nav-item"><a class="nav-link" href="releasing_rice_first_wave.php">First-Wave Releasing</a></li>
                         <li class="nav-item"><a class="nav-link" href="cross_check_rice.php">Cross Check</a></li>
                         <li class="nav-item"><a class="nav-link" href="consolidate_rice_claims.php">Claim Consolidation</a></li>
                         <li class="nav-item"><a class="nav-link text-danger" href="../../logout.php"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
@@ -100,6 +98,7 @@ $release_active = riceReleaseBatchIsActive($conn, $rice_release_source);
     </nav>
 
     <main class="pt-5">
+        <?php renderRiceBatchSwitcher($conn, $rice_release_source); ?>
         <?php if (!$release_active): ?>
             <div class="container-fluid mt-4 mb-0">
                 <div class="alert alert-warning border-warning d-flex align-items-start gap-2 mb-0" role="status" id="releaseLockNotice">
