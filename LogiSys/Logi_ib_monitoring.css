@@ -135,6 +135,13 @@
   white-space: nowrap;
 }
 .ib-stats > div:nth-child(6) strong { color: var(--ib-amber); }
+.ib-stats .ib-stat-deduction {
+  margin-top: 3px;
+  color: var(--ib-danger);
+  font-size: .66rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
 
 .ib-toolbar {
   display: flex;
@@ -239,6 +246,14 @@
   font-weight: 750;
 }
 .ib-head-metric.money strong { color: var(--ib-amber); }
+.ib-head-deduction {
+  display: block;
+  margin-top: 2px;
+  color: var(--ib-danger);
+  font-size: .66rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
 .ib-progress-cell {
   display: grid;
   grid-template-columns: 38px 1fr;
@@ -385,6 +400,29 @@
 }
 .ib-office tfoot .ib-deficit-label {
   margin-left: auto;
+}
+.ib-office tfoot .ib-office-deduction-row td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  border-top: 1px solid #e7c9a0;
+  background: #fffaf0;
+  color: #6f4a0a;
+  font-weight: 700;
+}
+.ib-office tfoot .ib-office-deduction-row .ib-office-total-label { color: #6f4a0a; }
+.ib-deduction-value { color: var(--ib-danger); font-weight: 800; }
+.ib-non-ib-row { background: #fffaf0; }
+.ib-non-ib-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border: 1px solid #d7bd79;
+  border-radius: 3px;
+  background: #fff4d8;
+  color: #7a4e00;
+  font-size: .67rem;
+  font-weight: 750;
+  line-height: 1.2;
 }
 .ib-line-action {
   width: 92px;

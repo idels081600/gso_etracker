@@ -3,6 +3,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/logi_db.php';
 require_once __DIR__ . '/Logi_ib_auth.php';
+require_once __DIR__ . '/Logi_ib_schema.php';
 
 function ib_response(int $status, array $data): void {
     http_response_code($status);
@@ -172,6 +173,12 @@ $actor = ib_actor();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') ib_fail('Only POST requests are accepted.', 405);
 $data = ib_payload();
 if (empty($_SESSION['ib_csrf']) || !hash_equals($_SESSION['ib_csrf'], (string)($data['csrf_token'] ?? ''))) ib_fail('The security token is invalid. Refresh the page and try again.', 403);
+try {
+    logi_ensure_non_ib_delivery_schema($conn);
+} catch (Throwable $schemaError) {
+    error_log('IB schema initialization failed: ' . $schemaError->getMessage());
+    ib_fail('The Not in IB delivery records are not available. Ask the administrator to run the database migration.', 500);
+}
 $action = (string)($data['action'] ?? '');
 $itemNumberLock = false;
 
@@ -313,11 +320,21 @@ try {
         $notes = trim((string)($data['notes'] ?? '')); if (mb_strlen($notes) > 500) throw new DomainException('Delivery notes must not exceed 500 characters.');
         $token = trim((string)($data['idempotency_token'] ?? '')); if (!preg_match('/^[a-f0-9-]{36}$/i', $token)) throw new DomainException('The delivery token is invalid. Refresh and try again.');
         $lines = $data['lines'] ?? []; if (!is_array($lines) || !$lines) throw new DomainException('Enter at least one delivered quantity.');
+
+        $groupStmt = $conn->prepare('SELECT id, office_name, description FROM ib_office_groups WHERE ib_id=? ORDER BY sort_order,id FOR UPDATE');
+        $groupStmt->bind_param('i', $ibId); $groupStmt->execute(); $groupRows = $groupStmt->get_result()->fetch_all(MYSQLI_ASSOC); $groupStmt->close();
+        $adminGroup = null;
+        foreach ($groupRows as $groupRow) {
+            if (ib_is_admin_gso_office((string)$groupRow['office_name'])) { $adminGroup = $groupRow; break; }
+        }
+        if (!$adminGroup) throw new DomainException('The selected IB has no ADMIN office allocation.');
+
         $deliveryStmt = $conn->prepare("INSERT INTO ib_deliveries (ib_id, delivery_date, notes, idempotency_token, posted_by) VALUES (?, ?, NULLIF(?,''), ?, ?)");
         $deliveryStmt->bind_param('issss', $ibId, $deliveryDate, $notes, $token, $actor); $deliveryStmt->execute(); $deliveryStmt->close();
-        $deliveryId = (int)$conn->insert_id; $seen = [];
+        $deliveryId = (int)$conn->insert_id; $seen = []; $nonIbCount = 0; $nonIbAmount = 0.0;
         $lineStmt = $conn->prepare('SELECT l.*, g.office_name, g.description FROM ib_item_lines l JOIN ib_office_groups g ON g.id=l.group_id WHERE l.id=? AND g.ib_id=? FOR UPDATE');
-        $itemStmt = $conn->prepare('SELECT id, current_balance FROM inventory_items WHERE id=? FOR UPDATE');
+        $itemStmt = $conn->prepare('SELECT id, item_no, item_name, current_balance, unit FROM inventory_items WHERE id=? FOR UPDATE');
+        $plannedItemStmt = $conn->prepare('SELECT l.id FROM ib_item_lines l JOIN ib_office_groups g ON g.id=l.group_id WHERE g.ib_id=? AND (l.item_id=? OR l.item_no=?) LIMIT 1 FOR UPDATE');
         $manualFind = $conn->prepare('SELECT id, current_balance FROM inventory_items WHERE item_no=? LIMIT 1 FOR UPDATE');
         $manualInsert = $conn->prepare("INSERT INTO inventory_items (item_no,item_name,rack_no,current_balance,description,status,unit,type) VALUES (?,?,'',0,?,'Available',?,'consumable')");
         $manualLink = $conn->prepare('UPDATE ib_item_lines SET item_id=? WHERE id=? AND item_id IS NULL');
@@ -325,10 +342,48 @@ try {
         $invUpdate = $conn->prepare('UPDATE inventory_items SET current_balance=? WHERE id=?');
         $lineUpdate = $conn->prepare('UPDATE ib_item_lines SET delivered_quantity=delivered_quantity+? WHERE id=?');
         $deliveryLine = $conn->prepare('INSERT INTO ib_delivery_lines (delivery_id,ib_item_line_id,quantity,unit_price,amount,inventory_transaction_id) VALUES (?,?,?,?,?,?)');
+        $nonIbLine = $conn->prepare('INSERT INTO ib_non_ib_delivery_lines (delivery_id,ib_id,office_group_id,item_id,item_no,item_name,unit,quantity,unit_price,amount,inventory_transaction_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
+
+        if (!$lineStmt || !$itemStmt || !$plannedItemStmt || !$manualFind || !$manualInsert || !$manualLink || !$txStmt || !$invUpdate || !$lineUpdate || !$deliveryLine || !$nonIbLine) {
+            throw new RuntimeException('Unable to prepare all delivery posting statements.');
+        }
+
         foreach ($lines as $entry) {
-            $lineId = filter_var($entry['line_id'] ?? null, FILTER_VALIDATE_INT); $qty = filter_var($entry['quantity'] ?? null, FILTER_VALIDATE_INT);
-            if (!$lineId || !$qty || $qty < 1) throw new DomainException('Every delivered quantity must be a positive whole number.');
-            if (isset($seen[$lineId])) throw new DomainException('A delivery line was submitted more than once.'); $seen[$lineId] = true;
+            if (!is_array($entry)) throw new DomainException('A delivery line is invalid.');
+            $qty = filter_var($entry['quantity'] ?? null, FILTER_VALIDATE_INT);
+            if (!$qty || $qty < 1) throw new DomainException('Every delivered quantity must be a positive whole number.');
+
+            if (!empty($entry['not_in_ib'])) {
+                $itemId = filter_var($entry['item_id'] ?? null, FILTER_VALIDATE_INT);
+                if (!$itemId || $itemId < 1) throw new DomainException('Select a valid inventory item for every Not in IB line.');
+                $key = 'nonib:' . $itemId;
+                if (isset($seen[$key])) throw new DomainException('A Not in IB item was submitted more than once.');
+                $seen[$key] = true;
+                $unitPriceText = trim((string)($entry['unit_price'] ?? ''));
+                if (!preg_match('/^(?:0|[1-9]\d{0,12})(?:\.\d{1,2})?$/', $unitPriceText)) throw new DomainException('Not in IB unit prices must be valid non-negative amounts with at most two decimal places.');
+                $unitPrice = number_format((float)$unitPriceText, 2, '.', '');
+
+                $itemStmt->bind_param('i', $itemId); $itemStmt->execute(); $inventory = $itemStmt->get_result()->fetch_assoc();
+                if (!$inventory) throw new DomainException('A selected Not in IB item is no longer available in inventory.');
+                $plannedItemStmt->bind_param('iis', $ibId, $itemId, $inventory['item_no']); $plannedItemStmt->execute();
+                if ($plannedItemStmt->get_result()->fetch_assoc()) throw new DomainException('The selected Not in IB item is already listed in this IB. Record it as a planned item instead.');
+                $before = (int)$inventory['current_balance']; $after = $before + $qty;
+                $reason = 'Not in IB delivery - deducted from ADMIN office amount';
+                $txStmt->bind_param('ssiiissssss', $inventory['item_no'], $inventory['item_name'], $qty, $before, $after, $reason, $actor, $header['ib_no'], $deliveryDate, $header['ib_no'], $adminGroup['office_name']);
+                $txStmt->execute(); $transactionId = (int)$conn->insert_id;
+                $invUpdate->bind_param('ii', $after, $itemId); $invUpdate->execute();
+                $amount = number_format($qty * (float)$unitPrice, 2, '.', '');
+                $adminGroupId = (int)$adminGroup['id'];
+                $nonIbLine->bind_param('iiiisssissi', $deliveryId, $ibId, $adminGroupId, $itemId, $inventory['item_no'], $inventory['item_name'], $inventory['unit'], $qty, $unitPrice, $amount, $transactionId);
+                $nonIbLine->execute();
+                $nonIbCount++; $nonIbAmount += (float)$amount;
+                continue;
+            }
+
+            $lineId = filter_var($entry['line_id'] ?? null, FILTER_VALIDATE_INT);
+            if (!$lineId || $lineId < 1) throw new DomainException('Select a valid planned IB line.');
+            $key = 'planned:' . $lineId;
+            if (isset($seen[$key])) throw new DomainException('A delivery line was submitted more than once.'); $seen[$key] = true;
             $lineStmt->bind_param('ii', $lineId, $ibId); $lineStmt->execute(); $line = $lineStmt->get_result()->fetch_assoc();
             if (!$line) throw new DomainException('A selected IB item line was not found.');
             $itemId = (int)$line['item_id']; $transactionId = null;
@@ -358,11 +413,11 @@ try {
             $amount = number_format($qty * (float)$line['unit_price'], 2, '.', ''); $unitPrice = (string)$line['unit_price'];
             $deliveryLine->bind_param('iiissi', $deliveryId, $lineId, $qty, $unitPrice, $amount, $transactionId); $deliveryLine->execute();
         }
-        $lineStmt->close(); $itemStmt->close(); $manualFind->close(); $manualInsert->close(); $manualLink->close(); $txStmt->close(); $invUpdate->close(); $lineUpdate->close(); $deliveryLine->close();
+        $lineStmt->close(); $itemStmt->close(); $plannedItemStmt->close(); $manualFind->close(); $manualInsert->close(); $manualLink->close(); $txStmt->close(); $invUpdate->close(); $lineUpdate->close(); $deliveryLine->close(); $nonIbLine->close();
         $remainingRow = $conn->query('SELECT COUNT(*) remaining_lines FROM ib_item_lines l JOIN ib_office_groups g ON g.id=l.group_id WHERE g.ib_id=' . $ibId . ' AND l.delivered_quantity < l.planned_quantity')->fetch_assoc();
         if ((int)$remainingRow['remaining_lines'] === 0) $conn->query("UPDATE ib_headers SET status='COMPLETED', completed_at=NOW(), version=version+1 WHERE id=" . $ibId);
-        ib_activity($conn, $ibId, 'DELIVERY_POSTED', $actor, ['delivery_id' => $deliveryId, 'date' => $deliveryDate]);
-        $message = 'Delivery posted to IB ' . $header['ib_no'] . '.';
+        ib_activity($conn, $ibId, 'DELIVERY_POSTED', $actor, ['delivery_id'=>$deliveryId,'date'=>$deliveryDate,'not_in_ib_lines'=>$nonIbCount,'not_in_ib_amount'=>number_format($nonIbAmount,2,'.','')]);
+        $message = 'Delivery posted to IB ' . $header['ib_no'] . ($nonIbCount ? ' with ' . $nonIbCount . ' Not in IB item' . ($nonIbCount === 1 ? '' : 's') . ' deducted from the ADMIN office amount.' : '.');
     } elseif ($action === 'reverse_delivery') {
         $deliveryId = (int)($data['delivery_id'] ?? 0); $reason = trim((string)($data['reason'] ?? ''));
         if ($reason === '' || mb_strlen($reason) > 500) throw new DomainException('Enter a reversal reason of up to 500 characters.');
@@ -372,11 +427,14 @@ try {
         $ibId = (int)$delivery['ib_id']; ib_lock_header($conn, $ibId);
         $rowsStmt = $conn->prepare('SELECT dl.*, l.item_id,l.item_no,l.item_name,g.office_name FROM ib_delivery_lines dl JOIN ib_item_lines l ON l.id=dl.ib_item_line_id JOIN ib_office_groups g ON g.id=l.group_id WHERE dl.delivery_id=? ORDER BY l.item_id FOR UPDATE');
         $rowsStmt->bind_param('i', $deliveryId); $rowsStmt->execute(); $rows = $rowsStmt->get_result()->fetch_all(MYSQLI_ASSOC); $rowsStmt->close();
+        $nonIbRowsStmt = $conn->prepare('SELECT n.*,g.office_name FROM ib_non_ib_delivery_lines n JOIN ib_office_groups g ON g.id=n.office_group_id WHERE n.delivery_id=? ORDER BY n.item_id FOR UPDATE');
+        $nonIbRowsStmt->bind_param('i',$deliveryId); $nonIbRowsStmt->execute(); $nonIbRows=$nonIbRowsStmt->get_result()->fetch_all(MYSQLI_ASSOC); $nonIbRowsStmt->close();
         $itemStmt = $conn->prepare('SELECT current_balance FROM inventory_items WHERE id=? FOR UPDATE');
         $txStmt = $conn->prepare("INSERT INTO inventory_transactions (item_no,item_name,transaction_type,quantity,previous_balance,new_balance,reason,user_id,reference_no,created_at,PO_no_IB_no,requestor) VALUES (?,?,'DEDUCTION',?,?,?,?,?,?,?,?,?)");
         $invUpdate = $conn->prepare('UPDATE inventory_items SET current_balance=? WHERE id=?');
         $lineUpdate = $conn->prepare('UPDATE ib_item_lines SET delivered_quantity=delivered_quantity-? WHERE id=?');
         $dlUpdate = $conn->prepare('UPDATE ib_delivery_lines SET reversal_transaction_id=? WHERE id=?');
+        $nonIbUpdate = $conn->prepare('UPDATE ib_non_ib_delivery_lines SET reversal_transaction_id=? WHERE id=?');
         foreach ($rows as $row) {
             $qty=(int)$row['quantity']; $lineId=(int)$row['ib_item_line_id']; $dlId=(int)$row['id'];
             if ($row['inventory_transaction_id'] !== null) {
@@ -388,7 +446,15 @@ try {
             }
             $lineUpdate->bind_param('ii',$qty,$lineId); $lineUpdate->execute();
         }
-        $itemStmt->close(); $txStmt->close(); $invUpdate->close(); $lineUpdate->close(); $dlUpdate->close();
+        foreach ($nonIbRows as $row) {
+            $qty=(int)$row['quantity']; $itemId=(int)$row['item_id']; $nonIbId=(int)$row['id'];
+            $itemStmt->bind_param('i',$itemId); $itemStmt->execute(); $inv=$itemStmt->get_result()->fetch_assoc();
+            if (!$inv || (int)$inv['current_balance'] < $qty) throw new DomainException('Cannot reverse because ' . $row['item_name'] . ' has insufficient current stock.');
+            $before=(int)$inv['current_balance']; $after=$before-$qty; $txReason='Not in IB delivery reversal: '.$reason; $date=date('Y-m-d');
+            $txStmt->bind_param('ssiiissssss',$row['item_no'],$row['item_name'],$qty,$before,$after,$txReason,$actor,$delivery['ib_no'],$date,$delivery['ib_no'],$row['office_name']); $txStmt->execute(); $txId=(int)$conn->insert_id;
+            $invUpdate->bind_param('ii',$after,$itemId); $invUpdate->execute(); $nonIbUpdate->bind_param('ii',$txId,$nonIbId); $nonIbUpdate->execute();
+        }
+        $itemStmt->close(); $txStmt->close(); $invUpdate->close(); $lineUpdate->close(); $dlUpdate->close(); $nonIbUpdate->close();
         $stmt=$conn->prepare("UPDATE ib_deliveries SET status='REVERSED',reversed_by=?,reversed_at=NOW(),reversal_reason=? WHERE id=?"); $stmt->bind_param('ssi',$actor,$reason,$deliveryId); $stmt->execute(); $stmt->close();
         $conn->query("UPDATE ib_headers SET status='ACTIVE',completed_at=NULL,version=version+1 WHERE id=".$ibId." AND status='COMPLETED'");
         ib_activity($conn,$ibId,'DELIVERY_REVERSED',$actor,['delivery_id'=>$deliveryId,'reason'=>$reason]); $message='Delivery reversed for IB '.$delivery['ib_no'].'.';

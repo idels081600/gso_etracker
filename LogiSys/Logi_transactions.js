@@ -1820,7 +1820,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-// Multi-item Stock In with one IB number
+// Multi-item Stock In with planned and Not in IB delivery lines
 document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("stockInBatchForm");
   if (!form || !Array.isArray(window.activeAdminIbs)) return;
@@ -1828,16 +1828,24 @@ document.addEventListener("DOMContentLoaded", function () {
   const search = document.getElementById("stockInBatchItemSearch");
   const suggestions = document.getElementById("stockInBatchSuggestions");
   const quantity = document.getElementById("stockInBatchQuantity");
+  const unitPrice = document.getElementById("stockInBatchUnitPrice");
+  const priceField = document.getElementById("stockInPriceField");
+  const modeToggle = document.getElementById("stockInNotInIb");
+  const modePanel = document.getElementById("stockInModePanel");
+  const modeLabel = modePanel.querySelector(".form-check-label");
   const addButton = document.getElementById("addStockInBatchItem");
   const linesBody = document.getElementById("stockInBatchLines");
   const countBadge = document.getElementById("stockInBatchCount");
   const lineTotal = document.getElementById("stockInLineTotal");
   const unitTotal = document.getElementById("stockInUnitTotal");
+  const amountTotal = document.getElementById("stockInAmountTotal");
   const hint = document.getElementById("stockInSelectedHint");
   const submitButton = document.getElementById("submitStockInBatch");
   const ibButtons = [...document.querySelectorAll(".active-admin-ib-link[data-ib-id]")];
   const activeIbMap = new Map(window.activeAdminIbs.map((ib) => [Number(ib.id), ib]));
+  const inventoryCatalog = Array.isArray(window.inventoryItems) ? window.inventoryItems : [];
   const batchLines = new Map();
+  const peso = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
   let selectedCandidate = null;
   let selectedActiveIb = null;
 
@@ -1848,19 +1856,65 @@ document.addEventListener("DOMContentLoaded", function () {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 
+  const notInIbMode = () => modeToggle.checked;
+
   function hideSuggestions() {
     suggestions.hidden = true;
     suggestions.replaceChildren();
   }
 
+  function resetPicker(message) {
+    selectedCandidate = null;
+    search.value = "";
+    quantity.value = "";
+    unitPrice.value = "";
+    search.setCustomValidity("");
+    quantity.setCustomValidity("");
+    unitPrice.setCustomValidity("");
+    hideSuggestions();
+    hint.textContent = message;
+    hint.className = "form-text mb-3";
+  }
+
+  function setMode(enabled) {
+    modeToggle.checked = enabled;
+    priceField.hidden = !enabled;
+    unitPrice.required = enabled;
+    modePanel.classList.toggle("is-not-in-ib", enabled);
+    modeLabel.textContent = enabled ? "On" : "Off";
+    search.placeholder = enabled ? "Search an inventory item not listed in the IB" : "Search planned item name or stock number";
+    const message = !selectedActiveIb
+      ? "Select an Active ADMIN IB first."
+      : enabled
+        ? "Search inventory items not listed in the selected IB, then enter quantity and unit price."
+        : "Search the planned ADMIN items in IB " + selectedActiveIb.ib_no + ".";
+    resetPicker(message);
+  }
+
   function chooseItem(item) {
-    selectedCandidate = item;
+    selectedCandidate = { ...item, not_in_ib: notInIbMode() };
     search.value = item.item_name;
-    const remaining = Math.max(0, Number(item.planned_quantity) - Number(item.delivered_quantity));
-    hint.textContent = item.item_name + " — Stock No. " + item.item_no + " — " + remaining + " planned remaining";
+    if (selectedCandidate.not_in_ib) {
+      hint.textContent = item.item_name + " — Stock No. " + item.item_no + " — Not in IB";
+    } else {
+      const remaining = Math.max(0, Number(item.planned_quantity) - Number(item.delivered_quantity));
+      hint.textContent = item.item_name + " — Stock No. " + item.item_no + " — " + remaining + " planned remaining";
+    }
     hint.className = "form-text mb-3 text-success";
     hideSuggestions();
     quantity.focus();
+  }
+
+  function candidateItems() {
+    if (!selectedActiveIb) return [];
+    if (!notInIbMode()) return selectedActiveIb.items;
+    const plannedIds = new Set(selectedActiveIb.items.map((item) => Number(item.item_id)).filter((id) => id > 0));
+    const plannedNumbers = new Set(selectedActiveIb.items.map((item) => String(item.item_no).trim().toLowerCase()).filter(Boolean));
+    return inventoryCatalog.filter((item) => {
+      const itemId = Number(item.id);
+      const itemNumber = String(item.item_no).trim().toLowerCase();
+      return !plannedIds.has(itemId) && (!itemNumber || !plannedNumbers.has(itemNumber));
+    });
   }
 
   function showSuggestions(term) {
@@ -1878,7 +1932,8 @@ document.addEventListener("DOMContentLoaded", function () {
       suggestions.hidden = false;
       return;
     }
-    const matches = selectedActiveIb.items.filter((item) =>
+
+    const matches = candidateItems().filter((item) =>
       String(item.item_name).toLowerCase().includes(normalized) ||
       String(item.item_no).toLowerCase().includes(normalized)
     ).slice(0, 12);
@@ -1886,7 +1941,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!matches.length) {
       const empty = document.createElement("div");
       empty.className = "p-3 text-muted small";
-      empty.textContent = "No inventory items found.";
+      empty.textContent = notInIbMode() ? "No matching inventory items outside this IB were found." : "No planned IB items found.";
       suggestions.appendChild(empty);
     } else {
       matches.forEach((item) => {
@@ -1901,8 +1956,12 @@ document.addEventListener("DOMContentLoaded", function () {
         identity.append(name, code);
         const balance = document.createElement("span");
         balance.className = "balance";
-        const remaining = Math.max(0, Number(item.planned_quantity) - Number(item.delivered_quantity));
-        balance.textContent = remaining + " planned remaining";
+        if (notInIbMode()) {
+          balance.textContent = "Current " + (Number(item.current_balance) || 0);
+        } else {
+          const remaining = Math.max(0, Number(item.planned_quantity) - Number(item.delivered_quantity));
+          balance.textContent = remaining + " planned remaining";
+        }
         button.append(identity, balance);
         button.addEventListener("click", () => chooseItem(item));
         suggestions.appendChild(button);
@@ -1913,26 +1972,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function totals() {
     const itemCount = batchLines.size;
-    const units = [...batchLines.values()].reduce((sum, line) => sum + line.quantity, 0);
+    const lines = [...batchLines.values()];
+    const units = lines.reduce((sum, line) => sum + line.quantity, 0);
+    const amount = lines.reduce((sum, line) => sum + line.quantity * line.unit_price, 0);
     countBadge.textContent = itemCount + " item" + (itemCount === 1 ? "" : "s");
     lineTotal.textContent = itemCount;
-    unitTotal.textContent = units;
+    unitTotal.textContent = units.toLocaleString("en-PH");
+    amountTotal.textContent = peso.format(amount);
   }
 
   function renderLines() {
     if (!batchLines.size) {
-      linesBody.innerHTML = '<tr class="stock-in-empty"><td colspan="6" class="text-center text-muted py-4"><i class="fas fa-box-open d-block fs-4 mb-2"></i>No items added yet.</td></tr>';
+      linesBody.innerHTML = '<tr class="stock-in-empty"><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-box-open d-block fs-4 mb-2"></i>No items added yet.</td></tr>';
       totals();
       return;
     }
 
     linesBody.innerHTML = [...batchLines.values()].map((line) => {
       const next = Number(line.current_balance) + Number(line.quantity);
-      return '<tr data-line-id="' + escapeHtml(line.line_id) + '">' +
-        '<td><span class="line-item-name">' + escapeHtml(line.item_name) + '</span><span class="line-item-unit">' + escapeHtml(line.unit || "unit") + '</span></td>' +
+      const priceControl = line.not_in_ib
+        ? '<div class="input-group input-group-sm"><span class="input-group-text">₱</span><input type="number" class="form-control stock-in-line-price" min="0" step="0.01" value="' + escapeHtml(line.unit_price.toFixed(2)) + '" aria-label="Unit price for ' + escapeHtml(line.item_name) + '"></div>'
+        : '<span class="stock-in-planned-price">' + escapeHtml(peso.format(line.unit_price)) + '</span>';
+      const badge = line.not_in_ib ? '<span class="stock-in-non-ib-badge">Not in IB</span>' : '';
+      return '<tr data-line-key="' + escapeHtml(line.key) + '">' +
+        '<td><span class="line-item-name">' + escapeHtml(line.item_name) + '</span><span class="line-item-unit">' + escapeHtml(line.unit || "unit") + '</span>' + badge + '</td>' +
         '<td>' + escapeHtml(line.item_no) + '</td>' +
         '<td class="text-end">' + escapeHtml(line.current_balance) + '</td>' +
         '<td><input type="number" class="form-control form-control-sm stock-in-line-quantity" min="1" step="1" value="' + escapeHtml(line.quantity) + '" aria-label="Quantity received for ' + escapeHtml(line.item_name) + '"></td>' +
+        '<td>' + priceControl + '</td>' +
+        '<td class="text-end fw-bold stock-in-line-amount">' + escapeHtml(peso.format(line.quantity * line.unit_price)) + '</td>' +
         '<td class="text-end fw-bold stock-in-new-balance">' + escapeHtml(next) + '</td>' +
         '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger stock-in-remove-line" aria-label="Remove ' + escapeHtml(line.item_name) + '"><i class="fas fa-trash"></i></button></td>' +
       '</tr>';
@@ -1941,43 +2009,54 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function addSelectedItem() {
-    const amount = Number.parseInt(quantity.value, 10);
+    const receivedQuantity = Number.parseInt(quantity.value, 10);
+    const priceText = unitPrice.value.trim();
+    const receivedPrice = notInIbMode() ? Number(priceText) : Number(selectedCandidate?.unit_price || 0);
     if (!selectedCandidate) {
       search.setCustomValidity("Select an item from the search results.");
       search.reportValidity();
       return;
     }
     search.setCustomValidity("");
-    if (!Number.isInteger(amount) || amount <= 0) {
+    if (!Number.isInteger(receivedQuantity) || receivedQuantity <= 0) {
       quantity.setCustomValidity("Enter a quantity greater than zero.");
       quantity.reportValidity();
       return;
     }
     quantity.setCustomValidity("");
+    if (!Number.isFinite(receivedPrice) || receivedPrice < 0 || (notInIbMode() && !/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(priceText))) {
+      unitPrice.setCustomValidity("Enter a valid unit price with no more than two decimal places.");
+      unitPrice.reportValidity();
+      return;
+    }
+    unitPrice.setCustomValidity("");
 
-    const lineKey = String(selectedCandidate.line_id);
-    const existing = batchLines.get(lineKey);
-    batchLines.set(lineKey, {
-      line_id: Number(selectedCandidate.line_id),
+    const isNonIb = Boolean(selectedCandidate.not_in_ib);
+    const key = isNonIb ? "nonib:" + selectedCandidate.id : "planned:" + selectedCandidate.line_id;
+    const existing = batchLines.get(key);
+    batchLines.set(key, {
+      key,
+      not_in_ib: isNonIb,
+      line_id: isNonIb ? null : Number(selectedCandidate.line_id),
+      item_id: isNonIb ? Number(selectedCandidate.id) : Number(selectedCandidate.item_id || 0),
       item_no: String(selectedCandidate.item_no),
       item_name: selectedCandidate.item_name,
       unit: selectedCandidate.unit || "",
       current_balance: Number(selectedCandidate.current_balance) || 0,
-      quantity: existing ? existing.quantity + amount : amount,
+      quantity: existing ? existing.quantity + receivedQuantity : receivedQuantity,
+      unit_price: receivedPrice,
     });
     renderLines();
-    selectedCandidate = null;
-    search.value = "";
-    quantity.value = "";
-    hint.textContent = "Item added. Search for another item.";
+    resetPicker("Item added. Search for another item.");
     hint.className = "form-text mb-3 text-success";
     search.focus();
   }
 
+  modeToggle.addEventListener("click", () => window.setTimeout(() => setMode(modeToggle.checked), 0));
   search.addEventListener("input", function () {
     selectedCandidate = null;
     search.setCustomValidity("");
-    hint.textContent = "Select an item from the search results.";
+    hint.textContent = notInIbMode() ? "Select a Not in IB item from the search results." : "Select a planned item from the search results.";
     hint.className = "form-text mb-3";
     showSuggestions(search.value);
   });
@@ -1993,10 +2072,18 @@ document.addEventListener("DOMContentLoaded", function () {
   quantity.addEventListener("keydown", function (event) {
     if (event.key === "Enter") {
       event.preventDefault();
+      if (notInIbMode()) unitPrice.focus();
+      else addSelectedItem();
+    }
+  });
+  unitPrice.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
       addSelectedItem();
     }
   });
   quantity.addEventListener("input", () => quantity.setCustomValidity(""));
+  unitPrice.addEventListener("input", () => unitPrice.setCustomValidity(""));
   addButton.addEventListener("click", addSelectedItem);
 
   document.addEventListener("click", function (event) {
@@ -2004,28 +2091,34 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   linesBody.addEventListener("input", function (event) {
-    if (!event.target.classList.contains("stock-in-line-quantity")) return;
-    const row = event.target.closest("tr");
-    const line = batchLines.get(row.dataset.lineId);
-    const amount = Number.parseInt(event.target.value, 10);
-    if (!line || !Number.isInteger(amount) || amount <= 0) return;
-    line.quantity = amount;
-    row.querySelector(".stock-in-new-balance").textContent = String(line.current_balance + amount);
+    const row = event.target.closest("tr[data-line-key]");
+    if (!row) return;
+    const line = batchLines.get(row.dataset.lineKey);
+    if (!line) return;
+    if (event.target.classList.contains("stock-in-line-quantity")) {
+      const receivedQuantity = Number.parseInt(event.target.value, 10);
+      if (!Number.isInteger(receivedQuantity) || receivedQuantity <= 0) return;
+      line.quantity = receivedQuantity;
+    }
+    if (event.target.classList.contains("stock-in-line-price")) {
+      const receivedPrice = Number(event.target.value);
+      if (!Number.isFinite(receivedPrice) || receivedPrice < 0) return;
+      line.unit_price = receivedPrice;
+    }
+    row.querySelector(".stock-in-new-balance").textContent = String(line.current_balance + line.quantity);
+    row.querySelector(".stock-in-line-amount").textContent = peso.format(line.quantity * line.unit_price);
     totals();
   });
   linesBody.addEventListener("click", function (event) {
     const remove = event.target.closest(".stock-in-remove-line");
     if (!remove) return;
-    batchLines.delete(remove.closest("tr").dataset.lineId);
+    batchLines.delete(remove.closest("tr").dataset.lineKey);
     renderLines();
   });
 
   function selectActiveIb(ibId) {
     selectedActiveIb = activeIbMap.get(Number(ibId)) || null;
-    selectedCandidate = null;
     batchLines.clear();
-    search.value = "";
-    quantity.value = "";
     ibButtons.forEach((button) => {
       const selected = Number(button.dataset.ibId) === Number(ibId);
       button.classList.toggle("is-selected", selected);
@@ -2033,8 +2126,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const action = button.querySelector(".active-admin-ib-action");
       if (action) action.innerHTML = selected ? '<i class="fas fa-check-circle" aria-hidden="true"></i> Selected' : '<i class="fas fa-circle" aria-hidden="true"></i> Select';
     });
-    hint.textContent = selectedActiveIb ? "Search the planned ADMIN items in IB " + selectedActiveIb.ib_no + "." : "Select an Active ADMIN IB first.";
-    hint.className = "form-text mb-3";
+    setMode(false);
     renderLines();
   }
 
@@ -2047,18 +2139,16 @@ document.addEventListener("DOMContentLoaded", function () {
       ibButtons[0]?.focus();
       return;
     }
-    if (!form.checkValidity()) {
-      form.reportValidity();
-      return;
-    }
     if (!batchLines.size) {
       alert("Add at least one inventory item to this IB transaction.");
       search.focus();
       return;
     }
-    const invalidLine = [...batchLines.values()].find((line) => !Number.isInteger(line.quantity) || line.quantity <= 0);
+    const invalidLine = [...batchLines.values()].find((line) =>
+      !Number.isInteger(line.quantity) || line.quantity <= 0 || !Number.isFinite(line.unit_price) || line.unit_price < 0
+    );
     if (invalidLine) {
-      alert("Enter a valid quantity for " + invalidLine.item_name + ".");
+      alert("Enter a valid quantity and unit price for " + invalidLine.item_name + ".");
       return;
     }
 
@@ -2072,13 +2162,10 @@ document.addEventListener("DOMContentLoaded", function () {
         const random = Math.random() * 16 | 0;
         return (character === "x" ? random : (random & 3 | 8)).toString(16);
       }),
-      items: [...batchLines.values()].map((line) => ({
-        line_id: line.line_id,
-        quantity: line.quantity,
-      })),
+      lines: [...batchLines.values()].map((line) => line.not_in_ib
+        ? { not_in_ib: true, item_id: line.item_id, quantity: line.quantity, unit_price: line.unit_price.toFixed(2) }
+        : { line_id: line.line_id, quantity: line.quantity }),
     };
-    payload.lines = payload.items;
-    delete payload.items;
 
     const original = submitButton.innerHTML;
     submitButton.disabled = true;
@@ -2099,9 +2186,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
       form.reset();
       batchLines.clear();
-      selectedCandidate = null;
-      hint.textContent = "Select an item from the search results.";
-      hint.className = "form-text mb-3";
+      selectedActiveIb = null;
+      ibButtons.forEach((button) => {
+        button.classList.remove("is-selected");
+        button.setAttribute("aria-pressed", "false");
+      });
+      setMode(false);
       renderLines();
       window.setTimeout(() => window.location.reload(), 900);
     } catch (error) {
@@ -2113,6 +2203,8 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   if (ibButtons.length === 1) selectActiveIb(ibButtons[0].dataset.ibId);
-  else renderLines();
+  else {
+    setMode(false);
+    renderLines();
+  }
 });
-

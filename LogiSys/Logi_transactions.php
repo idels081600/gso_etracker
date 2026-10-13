@@ -10,7 +10,9 @@ $status_filter = isset($_GET['status']) ? $_GET['status'] : 'Pending';
 $office_filter = isset($_GET['office']) ? $_GET['office'] : 'all';
 require_once 'logi_display_data.php'; // Include your database functions
 require_once __DIR__ . '/Logi_security.php';
+require_once __DIR__ . '/Logi_ib_schema.php';
 logi_require_admin_page($conn);
+logi_ensure_non_ib_delivery_schema($conn);
 $logiCsrfToken = logi_csrf_token();
 $transactions_data = display_transactions(); // Fetch transactions from the database
 $bulk_transactions_data = display_requested_items(); // Fetch transactions from the database
@@ -38,7 +40,8 @@ $active_admin_ib_query = "SELECT h.id, h.ib_no, MIN(g.description) AS descriptio
                           FROM ib_headers h
                           JOIN ib_office_groups g ON g.ib_id = h.id
                           LEFT JOIN ib_item_lines l ON l.group_id = g.id
-                          WHERE h.status = 'ACTIVE' AND UPPER(TRIM(g.office_name)) = 'ADMIN'
+                          WHERE h.status = 'ACTIVE'
+                            AND REPLACE(REPLACE(UPPER(TRIM(g.office_name)), '_', ''), ' ', '') IN ('ADMIN', 'ADMINGSO')
                           GROUP BY h.id, h.ib_no
                           ORDER BY h.activated_at DESC, h.id DESC";
 $active_admin_ib_result = mysqli_query($conn, $active_admin_ib_query);
@@ -62,7 +65,8 @@ if ($active_admin_ib_index) {
                                 JOIN ib_office_groups g ON g.ib_id = h.id
                                 JOIN ib_item_lines l ON l.group_id = g.id
                                 LEFT JOIN inventory_items i ON i.id = l.item_id
-                                WHERE h.id IN ($active_admin_ib_ids) AND UPPER(TRIM(g.office_name)) = 'ADMIN'
+                                WHERE h.id IN ($active_admin_ib_ids)
+                                  AND REPLACE(REPLACE(UPPER(TRIM(g.office_name)), '_', ''), ' ', '') IN ('ADMIN', 'ADMINGSO')
                                 ORDER BY h.id, l.sort_order, l.id";
     $active_admin_line_result = mysqli_query($conn, $active_admin_line_query);
     if ($active_admin_line_result) {
@@ -81,6 +85,21 @@ if ($active_admin_ib_index) {
                 'current_balance' => (int)$line['current_balance'],
             ];
         }
+    }
+}
+$stock_in_inventory_items = [];
+$stock_in_inventory_result = $conn->query("SELECT id, item_no, item_name, current_balance, unit
+                                            FROM inventory_items
+                                            ORDER BY item_name, item_no");
+if ($stock_in_inventory_result) {
+    while ($item = $stock_in_inventory_result->fetch_assoc()) {
+        $stock_in_inventory_items[] = [
+            'id' => (int)$item['id'],
+            'item_no' => (string)$item['item_no'],
+            'item_name' => (string)$item['item_name'],
+            'current_balance' => (int)$item['current_balance'],
+            'unit' => (string)($item['unit'] ?? ''),
+        ];
     }
 }
 function getTransactionTypeBadge($type)
@@ -413,6 +432,18 @@ function getTransactionTypeBadge($type)
                                 <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle" id="stockInBatchCount">0 items</span>
                             </div>
 
+                            <div class="stock-in-mode" id="stockInModePanel">
+                                <div>
+                                    <strong>Not in IB</strong>
+                                    <small>Search every item in the inventory database that is not listed in the selected IB. Its delivery value will be deducted from the ADMIN office amount.</small>
+                                </div>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="stockInNotInIb" aria-describedby="stockInModeHelp">
+                                    <label class="form-check-label" for="stockInNotInIb">Off</label>
+                                </div>
+                            </div>
+                            <div class="visually-hidden" id="stockInModeHelp">When enabled, search every item in the inventory database and enter the received unit price.</div>
+
                             <div class="stock-in-add-row">
                                 <div class="position-relative stock-in-search">
                                     <label for="stockInBatchItemSearch" class="form-label">Inventory item</label>
@@ -422,6 +453,13 @@ function getTransactionTypeBadge($type)
                                 <div>
                                     <label for="stockInBatchQuantity" class="form-label">Quantity</label>
                                     <input type="number" class="form-control" id="stockInBatchQuantity" min="1" step="1" inputmode="numeric" placeholder="0">
+                                </div>
+                                <div class="stock-in-price-field" id="stockInPriceField" hidden>
+                                    <label for="stockInBatchUnitPrice" class="form-label">Unit price</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₱</span>
+                                        <input type="number" class="form-control" id="stockInBatchUnitPrice" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+                                    </div>
                                 </div>
                                 <button type="button" class="btn btn-outline-success" id="addStockInBatchItem">
                                     <i class="fas fa-plus"></i> Add item
@@ -437,13 +475,15 @@ function getTransactionTypeBadge($type)
                                             <th>Stock No.</th>
                                             <th class="text-end">Current</th>
                                             <th style="width:140px">Quantity IN</th>
+                                            <th style="width:140px">Unit price</th>
+                                            <th class="text-end">Amount</th>
                                             <th class="text-end">New balance</th>
                                             <th class="text-end">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="stockInBatchLines">
                                         <tr class="stock-in-empty">
-                                            <td colspan="6" class="text-center text-muted py-4">
+                                            <td colspan="8" class="text-center text-muted py-4">
                                                 <i class="fas fa-box-open d-block fs-4 mb-2"></i>
                                                 No items added yet.
                                             </td>
@@ -462,12 +502,13 @@ function getTransactionTypeBadge($type)
                                 <div class="stock-in-summary">
                                     <span>Total line items<strong id="stockInLineTotal">0</strong></span>
                                     <span>Total units received<strong id="stockInUnitTotal">0</strong></span>
+                                    <span>Delivery value<strong id="stockInAmountTotal">₱0.00</strong></span>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <span class="me-auto small text-muted">All selected quantities post to the chosen ADMIN IB together.</span>
+                        <span class="me-auto small text-muted">Planned and Not in IB items post together to the chosen ADMIN office.</span>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i class="fas fa-times"></i> Cancel
                         </button>
@@ -783,24 +824,7 @@ function getTransactionTypeBadge($type)
         window.activeAdminIbs = <?= json_encode($active_admin_ibs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
         window.ibActionCsrf = <?= json_encode($ib_csrf, JSON_UNESCAPED_SLASHES) ?>;
         // Pass inventory data to JavaScript
-        window.inventoryItems = [
-            <?php
-            // Reset the inventory data pointer to reuse
-            if (isset($logi_all_data)) {
-                mysqli_data_seek($logi_all_data, 0);
-                $items = [];
-                while ($item = mysqli_fetch_assoc($logi_all_data)) {
-                    $items[] = '{
-                item_no: "' . addslashes($item['item_no']) . '",
-                item_name: "' . addslashes($item['item_name']) . '",
-                current_balance: "' . addslashes($item['current_balance']) . '",
-                unit: "' . addslashes($item['unit']) . '"
-            }';
-                }
-                echo implode(',', $items);
-            }
-            ?>
-        ];
+        window.inventoryItems = <?= json_encode($stock_in_inventory_items, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
 
         function updateNewBalance() {
             const quantity = parseInt(document.getElementById('stockInQuantity').value) || 0;

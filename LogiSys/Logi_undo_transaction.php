@@ -1,7 +1,9 @@
 <?php
 require_once 'logi_display_data.php'; // Include database connection
 require_once __DIR__ . '/Logi_security.php';
+require_once __DIR__ . '/Logi_ib_schema.php';
 logi_require_admin_csrf($conn);
+logi_ensure_non_ib_delivery_schema($conn);
 
 header('Content-Type: application/json');
 
@@ -51,6 +53,27 @@ try {
 
         if (!$transaction) {
             throw new Exception("Transaction not found");
+        }
+
+        // IB deliveries are compound, auditable postings. They must be reversed
+        // from IB Monitoring so inventory, delivered totals, and ADMIN value move
+        // together instead of deleting one ledger row in isolation.
+        $ib_link_query = "SELECT 1 FROM ib_delivery_lines WHERE inventory_transaction_id = ? OR reversal_transaction_id = ?
+                          UNION ALL
+                          SELECT 1 FROM ib_non_ib_delivery_lines WHERE inventory_transaction_id = ? OR reversal_transaction_id = ?
+                          LIMIT 1";
+        $ib_link_stmt = mysqli_prepare($conn, $ib_link_query);
+        if (!$ib_link_stmt) {
+            throw new Exception("Database prepare error: " . mysqli_error($conn));
+        }
+        mysqli_stmt_bind_param($ib_link_stmt, "iiii", $transaction_id, $transaction_id, $transaction_id, $transaction_id);
+        if (!mysqli_stmt_execute($ib_link_stmt)) {
+            throw new Exception("Failed to verify the transaction source: " . mysqli_stmt_error($ib_link_stmt));
+        }
+        $ib_linked = mysqli_fetch_assoc(mysqli_stmt_get_result($ib_link_stmt));
+        mysqli_stmt_close($ib_link_stmt);
+        if ($ib_linked) {
+            throw new Exception("This transaction belongs to an IB delivery. Reverse the delivery from IB Monitoring so its inventory and amount records stay synchronized.");
         }
 
         // Get current item details
