@@ -54,7 +54,7 @@ function privateGasStatusClass(string $status): string
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?php echo privateGasEscape(fuelAuthCsrfToken()); ?>">
-    <title>Private Gas Issuance</title>
+    <title>CARS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="fuel_dashboard.css">
@@ -265,7 +265,7 @@ function privateGasStatusClass(string $status): string
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="private_gas_issuance.php">
                 <i class="fas fa-gas-pump text-primary me-2"></i>
-                <span class="fw-bold text-dark">Private Fuel Issuance</span>
+                <span class="fw-bold text-dark">CARS</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -289,16 +289,16 @@ function privateGasStatusClass(string $status): string
             <div>
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <i class="fas fa-car-side text-primary fs-3"></i>
-                    <h1 class="h3 mb-0 fw-bold">Private Vehicle Gas Issuance</h1>
+                    <h1 class="h3 mb-0 fw-bold">CARS</h1>
                 </div>
-                <p class="text-muted mb-0">Manual fuel issuance records for private vehicles, separated from government reports and budgets.</p>
+                <p class="text-muted mb-0">Fuel issuance records for cars, separated from government reports and budgets.</p>
             </div>
             <div class="private-actions">
                 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#privateVehicleModal">
-                    <i class="fas fa-plus-circle me-1"></i>Add Private Vehicle
+                    <i class="fas fa-plus-circle me-1"></i>Add Car
                 </button>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#privateIssuanceModal" <?php echo $privateVehicles === [] ? 'disabled' : ''; ?>>
-                    <i class="fas fa-file-circle-plus me-1"></i>Create Private Issuance
+                    <i class="fas fa-file-circle-plus me-1"></i>Create Issuance
                 </button>
             </div>
         </div>
@@ -307,11 +307,11 @@ function privateGasStatusClass(string $status): string
 
         <section class="metric-strip mb-3">
             <div class="metric-box">
-                <div class="metric-label">Private Vehicles</div>
+                <div class="metric-label">Cars</div>
                 <div class="metric-value"><?php echo count($privateVehicles); ?></div>
             </div>
             <div class="metric-box">
-                <div class="metric-label">Private Issuances</div>
+                <div class="metric-label">Issuances</div>
                 <div class="metric-value"><?php echo count($privateIssuances); ?></div>
             </div>
             <div class="metric-box">
@@ -326,9 +326,9 @@ function privateGasStatusClass(string $status): string
             <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2">
                 <div>
                     <h2 class="h6 mb-0 fw-bold"><i class="fas fa-calculator me-2 text-primary"></i>Estimated Fuel Budget</h2>
-                    <small class="text-muted">Private liters x pump price.</small>
+                    <small class="text-muted">CARS liters x pump price.</small>
                 </div>
-                <span class="badge text-bg-light border">Private only</span>
+                <span class="badge text-bg-light border">CARS only</span>
             </div>
             <div class="card-body">
                 <div class="estimate-grid">
@@ -371,8 +371,8 @@ function privateGasStatusClass(string $status): string
                 </div>
                 <div class="estimate-total">
                     <div>
-                        <div class="metric-label">Total Estimated Private Fuel Amount</div>
-                        <small class="text-muted">Based on the current private issuance liters and pump prices above.</small>
+                        <div class="metric-label">Total Estimated CARS Fuel Amount</div>
+                        <small class="text-muted">Based on the current CARS issuance liters and pump prices above.</small>
                     </div>
                     <div class="metric-value text-primary" id="privateEstimatedTotal">&#8369;0.00</div>
                 </div>
@@ -381,13 +381,13 @@ function privateGasStatusClass(string $status): string
 
         <section class="card border-0 shadow-sm">
             <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <h2 class="h5 mb-0"><i class="fas fa-list-check me-2 text-primary"></i>Private Issuance Records</h2>
+                <h2 class="h5 mb-0"><i class="fas fa-list-check me-2 text-primary"></i>CARS Issuance Records</h2>
                 <div class="d-flex flex-wrap align-items-center gap-2">
                     <span class="small text-muted fw-semibold" id="privatePrintSelectionSummary">0 selected</span>
                     <button type="button" class="btn btn-success btn-sm" id="printSelectedPrivateBtn" disabled>
                         <i class="fas fa-print me-1"></i>Print Selected Coupons
                     </button>
-                    <span class="badge text-bg-primary">Private</span>
+                    <span class="badge text-bg-primary">CARS</span>
                 </div>
             </div>
             <div class="table-responsive">
@@ -395,7 +395,7 @@ function privateGasStatusClass(string $status): string
                     <thead>
                         <tr>
                             <th class="print-select-cell">
-                                <input type="checkbox" class="form-check-input" id="selectAllPrivatePrint" title="Select all printable private issuances" aria-label="Select all printable private issuances">
+                                <input type="checkbox" class="form-check-input" id="selectAllPrivatePrint" title="Select all printable CARS issuances" aria-label="Select all printable CARS issuances">
                             </th>
                             <th>Serial No.</th>
                             <th>Vehicle</th>
@@ -414,8 +414,8 @@ function privateGasStatusClass(string $status): string
                             <td colspan="10">
                                 <div class="empty-state">
                                     <i class="fas fa-file-circle-plus fa-2x mb-2 text-primary"></i>
-                                    <div class="fw-bold">No private gas issuance records yet.</div>
-                                    <div>Add a private vehicle, then create the first manual issuance.</div>
+                                    <div class="fw-bold">No CARS issuance records yet.</div>
+                                    <div>Add a car, then create the first issuance.</div>
                                 </div>
                             </td>
                         </tr>
@@ -441,18 +441,18 @@ function privateGasStatusClass(string $status): string
                                 </td>
                                 <td>
                                     <div class="fw-bold"><?php echo privateGasEscape($serial); ?></div>
-                                    <span class="badge text-bg-light border">Private</span>
+                                    <span class="badge text-bg-light border">CARS</span>
                                 </td>
                                 <td class="vehicle-cell">
                                     <div class="plate"><?php echo privateGasEscape($issuance['plate_no'] ?? ''); ?></div>
-                                    <div class="type"><?php echo privateGasEscape($issuance['vehicle_type'] ?? 'Private Vehicle'); ?></div>
+                                    <div class="type"><?php echo privateGasEscape($issuance['vehicle_type'] ?? 'Car'); ?></div>
                                 </td>
                                 <td><?php echo privateGasEscape($issuance['driver_name'] ?: ''); ?></td>
                                 <td class="text-capitalize"><?php echo privateGasEscape($issuance['fuel_type'] ?? ''); ?></td>
                                 <td class="fw-bold"><?php echo privateGasEscape(number_format((float) ($issuance['authorized_liters'] ?? 0), 2)); ?> L</td>
                                 <td><?php echo privateGasEscape($issuance['issue_date'] ?? ''); ?></td>
                                 <td class="approval-cell">
-                                    <label class="form-check" title="<?php echo $approvalLocked ? 'This status can no longer be changed.' : 'Approve private issuance'; ?>">
+                                    <label class="form-check" title="<?php echo $approvalLocked ? 'This status can no longer be changed.' : 'Approve CARS issuance'; ?>">
                                         <input
                                             type="checkbox"
                                             class="form-check-input private-approval-checkbox"
@@ -466,7 +466,7 @@ function privateGasStatusClass(string $status): string
                                 <td><span class="badge <?php echo privateGasEscape(privateGasStatusClass($status)); ?>" data-status-badge="<?php echo privateGasEscape($issuance['id'] ?? ''); ?>"><?php echo privateGasEscape(ucfirst($status)); ?></span></td>
                                 <td>
                                     <div class="action-buttons">
-                                        <a class="btn btn-sm btn-outline-primary" href="private_gas_coupon.php?serial_no=<?php echo urlencode($serial); ?>" target="_blank" title="Export private gas coupon with QR code">
+                                        <a class="btn btn-sm btn-outline-primary" href="private_gas_coupon.php?serial_no=<?php echo urlencode($serial); ?>" target="_blank" title="Export CARS gas coupon with QR code">
                                             <i class="fas fa-ticket-alt"></i>
                                         </a>
                                         <button
@@ -474,8 +474,8 @@ function privateGasStatusClass(string $status): string
                                             class="btn btn-sm btn-outline-danger private-delete-issuance"
                                             data-id="<?php echo privateGasEscape($issuance['id'] ?? ''); ?>"
                                             data-serial="<?php echo privateGasEscape($serial); ?>"
-                                            title="Delete private issuance"
-                                            aria-label="Delete private issuance <?php echo privateGasEscape($serial); ?>"
+                                            title="Delete CARS issuance"
+                                            aria-label="Delete CARS issuance <?php echo privateGasEscape($serial); ?>"
                                         >
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -494,7 +494,7 @@ function privateGasStatusClass(string $status): string
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="fas fa-car-side me-2"></i>Add Private Vehicle</h5>
+                    <h5 class="modal-title"><i class="fas fa-car-side me-2"></i>Add Car</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -522,7 +522,7 @@ function privateGasStatusClass(string $status): string
                             </div>
                             <div class="col-md-4">
                                 <label for="privateVehicleOffice" class="form-label">Office <span class="optional-note">(optional)</span></label>
-                                <input type="text" class="form-control" id="privateVehicleOffice" placeholder="PRIVATE">
+                                <input type="text" class="form-control" id="privateVehicleOffice" placeholder="CARS">
                             </div>
                             <div class="col-md-4">
                                 <label for="privateVehicleStatus" class="form-label">Status</label>
@@ -559,7 +559,7 @@ function privateGasStatusClass(string $status): string
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary" id="savePrivateVehicleBtn">
-                        <i class="fas fa-save me-1"></i>Save Private Vehicle
+                        <i class="fas fa-save me-1"></i>Save Car
                     </button>
                 </div>
             </div>
@@ -570,7 +570,7 @@ function privateGasStatusClass(string $status): string
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="fas fa-file-circle-plus me-2"></i>Create Private Issuance</h5>
+                    <h5 class="modal-title"><i class="fas fa-file-circle-plus me-2"></i>Create CARS Issuance</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -581,18 +581,18 @@ function privateGasStatusClass(string $status): string
                                 <input type="text" class="form-control" id="privateIssuanceSerial" value="<?php echo privateGasEscape($serialNo); ?>">
                             </div>
                             <div class="col-md-6">
-                                <label for="privateIssuanceVehicle" class="form-label">Private Vehicle</label>
+                                <label for="privateIssuanceVehicle" class="form-label">Car</label>
                                 <select class="form-select" id="privateIssuanceVehicle" required>
-                                    <option value="">Select private vehicle</option>
+                                    <option value="">Select car</option>
                                     <?php foreach ($privateVehicles as $vehicle): ?>
                                         <option
                                             value="<?php echo privateGasEscape($vehicle['id'] ?? ''); ?>"
                                             data-fuel-type="<?php echo privateGasEscape($vehicle['fuel_type'] ?? ''); ?>"
-                                            data-office="<?php echo privateGasEscape($vehicle['office'] ?? 'PRIVATE'); ?>"
+                                            data-office="<?php echo privateGasEscape($vehicle['office'] ?? 'CARS'); ?>"
                                             data-driver="<?php echo privateGasEscape($vehicle['driver_name'] ?? ''); ?>"
                                         >
                                             <?php
-                                            $privateVehicleLabel = trim(($vehicle['plate_no'] ?? '') . ' - ' . ($vehicle['type_of_vehicle'] ?? 'Private Vehicle'));
+                                            $privateVehicleLabel = trim(($vehicle['plate_no'] ?? '') . ' - ' . ($vehicle['type_of_vehicle'] ?? 'Car'));
                                             if (trim((string) ($vehicle['driver_name'] ?? '')) !== '') {
                                                 $privateVehicleLabel .= ' | ' . trim((string) $vehicle['driver_name']);
                                             }
@@ -650,7 +650,7 @@ function privateGasStatusClass(string $status): string
                             </div>
                             <div class="col-md-4">
                                 <label for="privateIssuanceOffice" class="form-label">Office <span class="optional-note">(optional)</span></label>
-                                <input type="text" class="form-control" id="privateIssuanceOffice" placeholder="PRIVATE">
+                                <input type="text" class="form-control" id="privateIssuanceOffice" placeholder="CARS">
                             </div>
                             <div class="col-md-6">
                                 <label for="privateIssuanceDriver" class="form-label">Driver <span class="optional-note">(optional)</span></label>
@@ -658,7 +658,7 @@ function privateGasStatusClass(string $status): string
                             </div>
                             <div class="col-md-6">
                                 <label for="privateIssuancePurpose" class="form-label">Purpose <span class="optional-note">(optional)</span></label>
-                                <input type="text" class="form-control" id="privateIssuancePurpose" placeholder="PRIVATE VEHICLE FUEL ISSUANCE">
+                                <input type="text" class="form-control" id="privateIssuancePurpose" placeholder="CARS FUEL ISSUANCE">
                             </div>
                         </div>
                     </form>
@@ -666,7 +666,7 @@ function privateGasStatusClass(string $status): string
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary" id="savePrivateIssuanceBtn">
-                        <i class="fas fa-save me-1"></i>Save Private Issuance
+                        <i class="fas fa-save me-1"></i>Save CARS Issuance
                     </button>
                 </div>
             </div>
@@ -852,8 +852,8 @@ function privateGasStatusClass(string $status): string
         document.querySelectorAll('.private-delete-issuance').forEach((button) => {
             button.addEventListener('click', async function () {
                 const id = this.dataset.id || '';
-                const serial = this.dataset.serial || 'this private issuance';
-                if (!window.confirm(`Delete private issuance ${serial}? This cannot be undone.`)) {
+                const serial = this.dataset.serial || 'this CARS issuance';
+                if (!window.confirm(`Delete CARS issuance ${serial}? This cannot be undone.`)) {
                     return;
                 }
 
@@ -865,7 +865,7 @@ function privateGasStatusClass(string $status): string
                     });
                     document.querySelector(`[data-private-issuance-row="${CSS.escape(id)}"]`)?.remove();
                     updatePrivatePrintSelection();
-                    showPrivateAlert(data.message || 'Private gas issuance deleted.', 'success');
+                    showPrivateAlert(data.message || 'CARS issuance deleted.', 'success');
                     window.setTimeout(() => window.location.reload(), 700);
                 } catch (error) {
                     showPrivateAlert(error.message, 'danger');
@@ -883,7 +883,7 @@ function privateGasStatusClass(string $status): string
                 return;
             }
             if (!fuelType) {
-                showPrivateAlert('Select a fuel type for the private vehicle.', 'warning');
+                showPrivateAlert('Select a fuel type for the car.', 'warning');
                 return;
             }
 
@@ -902,7 +902,7 @@ function privateGasStatusClass(string $status): string
                     current_odometer: document.getElementById('privateVehicleOdometer').value,
                     normal_km_per_liter: document.getElementById('privateVehicleKmLiter').value,
                 });
-                showPrivateAlert('Private vehicle saved. Reloading list...', 'success');
+                showPrivateAlert('Car saved. Reloading list...', 'success');
                 window.location.reload();
             } catch (error) {
                 showPrivateAlert(error.message, 'danger');
@@ -932,7 +932,7 @@ function privateGasStatusClass(string $status): string
             const openDate = document.getElementById('privateIssuanceOpenDate')?.checked || false;
             const liters = document.getElementById('privateIssuanceLiters').value;
             if (!vehicleId || !issueDate || !liters || Number(liters) <= 0) {
-                showPrivateAlert('Private vehicle, issue date, and liters are required.', 'warning');
+                showPrivateAlert('Car, issue date, and liters are required.', 'warning');
                 return;
             }
             if (openDate && !expiryDate) {
@@ -960,7 +960,7 @@ function privateGasStatusClass(string $status): string
                     purpose: document.getElementById('privateIssuancePurpose').value,
                     unit: 'Liters',
                 });
-                showPrivateAlert('Private gas issuance saved. Reloading list...', 'success');
+                showPrivateAlert('CARS issuance saved. Reloading list...', 'success');
                 window.location.reload();
             } catch (error) {
                 showPrivateAlert(error.message, 'danger');

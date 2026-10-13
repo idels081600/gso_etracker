@@ -83,10 +83,10 @@ try {
         $plateNo = $vehicleId;
     }
     if ($typeOfVehicle === '') {
-        $typeOfVehicle = 'Private Vehicle';
+        $typeOfVehicle = 'Car';
     }
 
-    $office = trim((string) ($input['office'] ?? '')) ?: 'PRIVATE';
+    $office = trim((string) ($input['office'] ?? '')) ?: 'CARS';
     $schedules = fuelTrackerNormalizeSchedule($input['schedules'] ?? '');
     $status = strtolower(trim((string) ($input['status'] ?? 'active')));
     if (!in_array($status, ['active', 'inactive'], true)) {
@@ -131,7 +131,7 @@ try {
 
     privateVehicleJson([
         'success' => true,
-        'message' => 'Private vehicle added.',
+        'message' => 'Car added.',
         'id' => $newId,
         'vehicle_id' => $vehicleId,
         'plate_no' => $plateNo,
@@ -146,7 +146,7 @@ try {
         privateVehicleJson(['success' => false, 'message' => 'A vehicle with this plate number or vehicle ID already exists.'], 409);
     }
 
-    privateVehicleJson(['success' => false, 'message' => 'Unable to save private vehicle.'], 500);
+    privateVehicleJson(['success' => false, 'message' => 'Unable to save car.'], 500);
 } catch (Throwable $e) {
     error_log('Private vehicle save unexpected error: ' . $e->getMessage());
     privateVehicleJson(['success' => false, 'message' => 'Unexpected server error.'], 500);

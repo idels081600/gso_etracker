@@ -36,7 +36,7 @@ class PrivateBatchGasCouponPdf extends TCPDF
 function privateBatchDrawCoupon(PrivateBatchGasCouponPdf $pdf, array $coupon): void
 {
     $serialNo = (string) ($coupon['serial_no'] ?? '');
-    $vehicle = trim((string) ($coupon['vehicle_type'] ?? 'Private Vehicle'));
+    $vehicle = trim((string) ($coupon['vehicle_type'] ?? 'Car'));
     $plateNo = trim((string) ($coupon['plate_no'] ?? ''));
     $fuelType = strtoupper((string) ($coupon['fuel_type'] ?? 'UNLEADED'));
     $liters = number_format((float) ($coupon['authorized_liters'] ?? 0), 2);
@@ -113,7 +113,7 @@ $ids = array_values(array_unique(array_filter(
 )));
 if ($ids === []) {
     http_response_code(422);
-    exit('Select at least one private gas issuance.');
+    exit('Select at least one CARS issuance.');
 }
 
 $issuances = array_values(array_filter(
@@ -126,7 +126,7 @@ $issuances = array_values(array_filter(
 ));
 if ($issuances === []) {
     http_response_code(409);
-    exit('Selected private gas issuances must be approved before printing.');
+    exit('Selected CARS issuances must be approved before printing.');
 }
 
 $pdf = new PrivateBatchGasCouponPdf('P', 'mm', 'A4', true, 'UTF-8', false);
@@ -134,7 +134,7 @@ $pdf->setPrintHeader(false);
 $pdf->setPrintFooter(false);
 $pdf->SetCreator('GSO Fuel Tracker');
 $pdf->SetAuthor('GSO Fuel Tracker');
-$pdf->SetTitle('Selected Private Gas Coupons');
+$pdf->SetTitle('Selected CARS Gas Coupons');
 $pdf->SetMargins(0, 0, 0);
 $pdf->SetAutoPageBreak(false, 0);
 
@@ -169,4 +169,4 @@ foreach ($issuances as $index => $issuance) {
     $pdf->printTemplate($templateId, $x, $y, $couponWidth, $couponHeight);
 }
 
-$pdf->Output('Selected_Private_Gas_Coupons.pdf', 'I');
+$pdf->Output('Selected_CARS_Gas_Coupons.pdf', 'I');

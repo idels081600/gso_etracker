@@ -39,7 +39,7 @@ function privateCouponData(mysqli $conn, string $reference): array
 {
     if ($reference === '') {
         http_response_code(422);
-        exit('Private gas issuance serial number is required.');
+        exit('CARS issuance serial number is required.');
     }
 
     $stmt = $conn->prepare("
@@ -67,7 +67,7 @@ function privateCouponData(mysqli $conn, string $reference): array
 
     if (!$row) {
         http_response_code(404);
-        exit('Private gas issuance was not found.');
+        exit('CARS issuance was not found.');
     }
 
     return $row;
@@ -89,11 +89,11 @@ $coupon = privateCouponData($conn, $reference);
 $status = strtolower((string) ($coupon['status'] ?? ''));
 if (!in_array($status, ['approved', 'valid', 'used'], true)) {
     http_response_code(409);
-    exit('Private gas issuance must be approved before printing a coupon.');
+    exit('CARS issuance must be approved before printing a coupon.');
 }
 
 $serialNo = (string) ($coupon['serial_no'] ?? '');
-$vehicle = trim((string) ($coupon['type_of_vehicle'] ?? 'Private Vehicle'));
+$vehicle = trim((string) ($coupon['type_of_vehicle'] ?? 'Car'));
 $plateNo = trim((string) ($coupon['plate_no'] ?? ''));
 $fuelType = strtoupper((string) ($coupon['fuel_type'] ?? 'UNLEADED'));
 $liters = number_format((float) ($coupon['authorized_liters'] ?? 0), 2);
@@ -191,5 +191,5 @@ $startX = ($pageWidth - $gridWidth) / 2;
 $startY = ($pageHeight - $gridHeight) / 2;
 $pdf->printTemplate($templateId, $startX, $startY, $couponWidth, $couponHeight);
 
-$filename = 'Private_Gas_Coupon_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $serialNo) . '.pdf';
+$filename = 'CARS_Gas_Coupon_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $serialNo) . '.pdf';
 $pdf->Output($filename, $outputMode);
