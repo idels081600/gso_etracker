@@ -1833,6 +1833,13 @@ document.addEventListener("DOMContentLoaded", function () {
   const modeToggle = document.getElementById("stockInNotInIb");
   const modePanel = document.getElementById("stockInModePanel");
   const modeLabel = modePanel.querySelector(".form-check-label");
+  const manualToggle = document.getElementById("stockInNotInInventory");
+  const manualPanel = document.getElementById("stockInManualModePanel");
+  const manualLabel = manualPanel.querySelector(".form-check-label");
+  const catalogSearch = document.getElementById("stockInCatalogSearch");
+  const manualFields = document.getElementById("stockInManualFields");
+  const manualItemName = document.getElementById("stockInManualItemName");
+  const manualUnit = document.getElementById("stockInManualUnit");
   const addButton = document.getElementById("addStockInBatchItem");
   const linesBody = document.getElementById("stockInBatchLines");
   const countBadge = document.getElementById("stockInBatchCount");
@@ -1857,6 +1864,7 @@ document.addEventListener("DOMContentLoaded", function () {
     .replace(/'/g, "&#039;");
 
   const notInIbMode = () => modeToggle.checked;
+  const manualNotInInventoryMode = () => notInIbMode() && manualToggle.checked;
 
   function hideSuggestions() {
     suggestions.hidden = true;
@@ -1868,7 +1876,11 @@ document.addEventListener("DOMContentLoaded", function () {
     search.value = "";
     quantity.value = "";
     unitPrice.value = "";
+    manualItemName.value = "";
+    manualUnit.value = "";
     search.setCustomValidity("");
+    manualItemName.setCustomValidity("");
+    manualUnit.setCustomValidity("");
     quantity.setCustomValidity("");
     unitPrice.setCustomValidity("");
     hideSuggestions();
@@ -1876,8 +1888,30 @@ document.addEventListener("DOMContentLoaded", function () {
     hint.className = "form-text mb-3";
   }
 
+  function setManualMode(enabled) {
+    const active = Boolean(enabled && notInIbMode());
+    manualToggle.checked = active;
+    manualLabel.textContent = active ? "On" : "Off";
+    manualPanel.classList.toggle("is-manual", active);
+    catalogSearch.hidden = active;
+    manualFields.hidden = !active;
+    manualItemName.required = active;
+    manualUnit.required = active;
+    selectedCandidate = null;
+    hideSuggestions();
+    search.setCustomValidity("");
+    manualItemName.setCustomValidity("");
+    manualUnit.setCustomValidity("");
+    hint.textContent = active
+      ? "Enter an item description and unit. This monitoring-only item will not change inventory stock."
+      : (selectedActiveIb ? "Search the complete inventory database, then enter quantity and unit price." : "Select an Active ADMIN IB first.");
+    hint.className = "form-text mb-3";
+  }
+
   function setMode(enabled) {
     modeToggle.checked = enabled;
+    manualPanel.hidden = !enabled;
+    if (!enabled) setManualMode(false);
     priceField.hidden = !enabled;
     unitPrice.required = enabled;
     modePanel.classList.toggle("is-not-in-ib", enabled);
@@ -1988,19 +2022,20 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     linesBody.innerHTML = [...batchLines.values()].map((line) => {
-      const next = Number(line.current_balance) + Number(line.quantity);
+      const next = line.not_in_inventory ? null : Number(line.current_balance) + Number(line.quantity);
       const priceControl = line.not_in_ib
         ? '<div class="input-group input-group-sm"><span class="input-group-text">₱</span><input type="number" class="form-control stock-in-line-price" min="0" step="0.01" value="' + escapeHtml(line.unit_price.toFixed(2)) + '" aria-label="Unit price for ' + escapeHtml(line.item_name) + '"></div>'
         : '<span class="stock-in-planned-price">' + escapeHtml(peso.format(line.unit_price)) + '</span>';
       const badge = line.not_in_ib ? '<span class="stock-in-non-ib-badge">Not in IB</span>' : '';
+      const manualBadge = line.not_in_inventory ? '<span class="stock-in-manual-badge">Not stocked</span>' : '';
       return '<tr data-line-key="' + escapeHtml(line.key) + '">' +
-        '<td><span class="line-item-name">' + escapeHtml(line.item_name) + '</span><span class="line-item-unit">' + escapeHtml(line.unit || "unit") + '</span>' + badge + '</td>' +
-        '<td>' + escapeHtml(line.item_no) + '</td>' +
-        '<td class="text-end">' + escapeHtml(line.current_balance) + '</td>' +
+        '<td><span class="line-item-name">' + escapeHtml(line.item_name) + '</span><span class="line-item-unit">' + escapeHtml(line.unit || "unit") + '</span>' + badge + manualBadge + '</td>' +
+        '<td>' + escapeHtml(line.item_no || "—") + '</td>' +
+        '<td class="text-end">' + (line.not_in_inventory ? '—' : escapeHtml(line.current_balance)) + '</td>' +
         '<td><input type="number" class="form-control form-control-sm stock-in-line-quantity" min="1" step="1" value="' + escapeHtml(line.quantity) + '" aria-label="Quantity received for ' + escapeHtml(line.item_name) + '"></td>' +
         '<td>' + priceControl + '</td>' +
         '<td class="text-end fw-bold stock-in-line-amount">' + escapeHtml(peso.format(line.quantity * line.unit_price)) + '</td>' +
-        '<td class="text-end fw-bold stock-in-new-balance">' + escapeHtml(next) + '</td>' +
+        '<td class="text-end fw-bold stock-in-new-balance">' + (line.not_in_inventory ? 'Not stocked' : escapeHtml(next)) + '</td>' +
         '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger stock-in-remove-line" aria-label="Remove ' + escapeHtml(line.item_name) + '"><i class="fas fa-trash"></i></button></td>' +
       '</tr>';
     }).join("");
@@ -2010,8 +2045,23 @@ document.addEventListener("DOMContentLoaded", function () {
   function addSelectedItem() {
     const receivedQuantity = Number.parseInt(quantity.value, 10);
     const priceText = unitPrice.value.trim();
+    const isManual = manualNotInInventoryMode();
     const receivedPrice = notInIbMode() ? Number(priceText) : Number(selectedCandidate?.unit_price || 0);
-    if (!selectedCandidate) {
+    const typedName = manualItemName.value.trim();
+    const typedUnit = manualUnit.value.trim().toUpperCase();
+    if (isManual && (typedName === "" || typedName.length > 500)) {
+      manualItemName.setCustomValidity("Enter an item description of up to 500 characters.");
+      manualItemName.reportValidity();
+      return;
+    }
+    manualItemName.setCustomValidity("");
+    if (isManual && !["UNIT", "PCS", "BOX", "BOT", "GAL", "PAD", "PACKS", "ROLLS", "SHEETS", "REAMS"].includes(typedUnit)) {
+      manualUnit.setCustomValidity("Select a unit.");
+      manualUnit.reportValidity();
+      return;
+    }
+    manualUnit.setCustomValidity("");
+    if (!isManual && !selectedCandidate) {
       search.setCustomValidity("Select an item from the search results.");
       search.reportValidity();
       return;
@@ -2030,28 +2080,44 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     unitPrice.setCustomValidity("");
 
-    const isNonIb = Boolean(selectedCandidate.not_in_ib);
-    const key = isNonIb ? "nonib:" + selectedCandidate.id : "planned:" + selectedCandidate.line_id;
+    const candidate = isManual ? {
+      id: null,
+      line_id: null,
+      item_no: "",
+      item_name: typedName,
+      unit: typedUnit,
+      current_balance: null,
+      unit_price: receivedPrice,
+      not_in_ib: true,
+      not_in_inventory: true,
+    } : selectedCandidate;
+    const isNonIb = Boolean(candidate.not_in_ib);
+    const key = isManual
+      ? "manual:" + typedName.toLocaleLowerCase() + "|" + typedUnit.toLocaleLowerCase()
+      : (isNonIb ? "nonib:" + candidate.id : "planned:" + candidate.line_id);
     const existing = batchLines.get(key);
     batchLines.set(key, {
       key,
       not_in_ib: isNonIb,
-      line_id: isNonIb ? null : Number(selectedCandidate.line_id),
-      item_id: isNonIb ? Number(selectedCandidate.id) : Number(selectedCandidate.item_id || 0),
-      item_no: String(selectedCandidate.item_no),
-      item_name: selectedCandidate.item_name,
-      unit: selectedCandidate.unit || "",
-      current_balance: Number(selectedCandidate.current_balance) || 0,
+      not_in_inventory: isManual,
+      line_id: isNonIb ? null : Number(candidate.line_id),
+      item_id: isManual ? null : (isNonIb ? Number(candidate.id) : Number(candidate.item_id || 0)),
+      item_no: String(candidate.item_no || ""),
+      item_name: candidate.item_name,
+      unit: candidate.unit || "",
+      current_balance: isManual ? null : (Number(candidate.current_balance) || 0),
       quantity: existing ? existing.quantity + receivedQuantity : receivedQuantity,
       unit_price: receivedPrice,
     });
     renderLines();
     resetPicker("Item added. Search for another item.");
     hint.className = "form-text mb-3 text-success";
-    search.focus();
+    if (isManual) manualItemName.focus();
+    else search.focus();
   }
 
   modeToggle.addEventListener("click", () => window.setTimeout(() => setMode(modeToggle.checked), 0));
+  manualToggle.addEventListener("click", () => window.setTimeout(() => setManualMode(manualToggle.checked), 0));
   search.addEventListener("input", function () {
     selectedCandidate = null;
     search.setCustomValidity("");
@@ -2086,6 +2152,14 @@ document.addEventListener("DOMContentLoaded", function () {
   });
   quantity.addEventListener("input", () => quantity.setCustomValidity(""));
   unitPrice.addEventListener("input", () => unitPrice.setCustomValidity(""));
+  manualItemName.addEventListener("input", () => manualItemName.setCustomValidity(""));
+  manualUnit.addEventListener("change", () => manualUnit.setCustomValidity(""));
+  manualItemName.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      manualUnit.focus();
+    }
+  });
   addButton.addEventListener("click", addSelectedItem);
 
   document.addEventListener("click", function (event) {
@@ -2107,7 +2181,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!Number.isFinite(receivedPrice) || receivedPrice < 0) return;
       line.unit_price = receivedPrice;
     }
-    row.querySelector(".stock-in-new-balance").textContent = String(line.current_balance + line.quantity);
+    row.querySelector(".stock-in-new-balance").textContent = line.not_in_inventory ? "Not stocked" : String(line.current_balance + line.quantity);
     row.querySelector(".stock-in-line-amount").textContent = peso.format(line.quantity * line.unit_price);
     totals();
   });
@@ -2147,7 +2221,8 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     const invalidLine = [...batchLines.values()].find((line) =>
-      !Number.isInteger(line.quantity) || line.quantity <= 0 || !Number.isFinite(line.unit_price) || line.unit_price < 0
+      !Number.isInteger(line.quantity) || line.quantity <= 0 || !Number.isFinite(line.unit_price) || line.unit_price < 0 ||
+      (line.not_in_inventory && (!line.item_name || !line.unit))
     );
     if (invalidLine) {
       alert("Enter a valid quantity and unit price for " + invalidLine.item_name + ".");
@@ -2165,7 +2240,9 @@ document.addEventListener("DOMContentLoaded", function () {
         return (character === "x" ? random : (random & 3 | 8)).toString(16);
       }),
       lines: [...batchLines.values()].map((line) => line.not_in_ib
-        ? { not_in_ib: true, item_id: line.item_id, quantity: line.quantity, unit_price: line.unit_price.toFixed(2) }
+        ? (line.not_in_inventory
+          ? { not_in_ib: true, not_in_inventory: true, item_name: line.item_name, unit: line.unit, quantity: line.quantity, unit_price: line.unit_price.toFixed(2) }
+          : { not_in_ib: true, item_id: line.item_id, quantity: line.quantity, unit_price: line.unit_price.toFixed(2) })
         : { line_id: line.line_id, quantity: line.quantity }),
     };
 

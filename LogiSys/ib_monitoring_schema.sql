@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS ib_non_ib_delivery_lines (
     delivery_id BIGINT UNSIGNED NOT NULL,
     ib_id BIGINT UNSIGNED NOT NULL,
     office_group_id BIGINT UNSIGNED NOT NULL,
-    item_id INT NOT NULL,
+    item_id INT NULL,
     item_no VARCHAR(500) NOT NULL,
     item_name VARCHAR(500) NOT NULL,
     unit VARCHAR(50) NULL,

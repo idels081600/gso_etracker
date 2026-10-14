@@ -7,7 +7,7 @@ function logi_ensure_non_ib_delivery_schema(mysqli $conn): void
         delivery_id BIGINT UNSIGNED NOT NULL,
         ib_id BIGINT UNSIGNED NOT NULL,
         office_group_id BIGINT UNSIGNED NOT NULL,
-        item_id INT NOT NULL,
+        item_id INT NULL,
         item_no VARCHAR(500) NOT NULL,
         item_name VARCHAR(500) NOT NULL,
         unit VARCHAR(50) NULL,
@@ -34,5 +34,13 @@ function logi_ensure_non_ib_delivery_schema(mysqli $conn): void
 
     if (!$conn->query($sql)) {
         throw new RuntimeException('Unable to initialize non-IB delivery records: ' . $conn->error);
+    }
+
+    $columnResult = $conn->query("SELECT IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='ib_non_ib_delivery_lines' AND COLUMN_NAME='item_id' LIMIT 1");
+    $column = $columnResult ? $columnResult->fetch_assoc() : null;
+    if ($column && strtoupper((string)$column['IS_NULLABLE']) !== 'YES') {
+        if (!$conn->query('ALTER TABLE ib_non_ib_delivery_lines MODIFY item_id INT NULL')) {
+            throw new RuntimeException('Unable to allow monitoring-only non-inventory IB items: ' . $conn->error);
+        }
     }
 }

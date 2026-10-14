@@ -344,8 +344,9 @@ try {
         $lineUpdate = $conn->prepare('UPDATE ib_item_lines SET delivered_quantity=delivered_quantity+? WHERE id=?');
         $deliveryLine = $conn->prepare('INSERT INTO ib_delivery_lines (delivery_id,ib_item_line_id,quantity,unit_price,amount,inventory_transaction_id) VALUES (?,?,?,?,?,?)');
         $nonIbLine = $conn->prepare('INSERT INTO ib_non_ib_delivery_lines (delivery_id,ib_id,office_group_id,item_id,item_no,item_name,unit,quantity,unit_price,amount,inventory_transaction_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
+        $manualNonIbLine = $conn->prepare("INSERT INTO ib_non_ib_delivery_lines (delivery_id,ib_id,office_group_id,item_id,item_no,item_name,unit,quantity,unit_price,amount,inventory_transaction_id) VALUES (?,?,?,NULL,'',?,?,?,?,?,NULL)");
 
-        if (!$lineStmt || !$itemStmt || !$plannedItemStmt || !$manualFind || !$manualInsert || !$manualLink || !$txStmt || !$invUpdate || !$lineUpdate || !$deliveryLine || !$nonIbLine) {
+        if (!$lineStmt || !$itemStmt || !$plannedItemStmt || !$manualFind || !$manualInsert || !$manualLink || !$txStmt || !$invUpdate || !$lineUpdate || !$deliveryLine || !$nonIbLine || !$manualNonIbLine) {
             throw new RuntimeException('Unable to prepare all delivery posting statements.');
         }
 
@@ -355,14 +356,32 @@ try {
             if (!$qty || $qty < 1) throw new DomainException('Every delivered quantity must be a positive whole number.');
 
             if (!empty($entry['not_in_ib'])) {
+                $isManualNonInventory = !empty($entry['not_in_inventory']);
+                $unitPriceText = trim((string)($entry['unit_price'] ?? ''));
+                if (!preg_match('/^(?:0|[1-9]\d{0,12})(?:\.\d{1,2})?$/', $unitPriceText)) throw new DomainException('Not in IB unit prices must be valid non-negative amounts with at most two decimal places.');
+                $unitPrice = number_format((float)$unitPriceText, 2, '.', '');
+
+                if ($isManualNonInventory) {
+                    $manualName = trim((string)($entry['item_name'] ?? ''));
+                    $manualUnit = strtoupper(trim((string)($entry['unit'] ?? '')));
+                    $allowedUnits = ['UNIT','PCS','BOX','BOT','GAL','PAD','PACKS','ROLLS','SHEETS','REAMS'];
+                    if ($manualName === '' || mb_strlen($manualName) > 500) throw new DomainException('Enter a manual item description of up to 500 characters.');
+                    if (!in_array($manualUnit, $allowedUnits, true)) throw new DomainException('Select a valid unit for the manual item.');
+                    $key = 'manual:' . mb_strtolower($manualName) . '|' . mb_strtolower($manualUnit);
+                    if (isset($seen[$key])) throw new DomainException('A manual Not in IB item was submitted more than once.');
+                    $seen[$key] = true;
+                    $amount = number_format($qty * (float)$unitPrice, 2, '.', '');
+                    $manualNonIbLine->bind_param('iiississ', $deliveryId, $ibId, $adminGroupId, $manualName, $manualUnit, $qty, $unitPrice, $amount);
+                    $manualNonIbLine->execute();
+                    $nonIbCount++; $nonIbAmount += (float)$amount;
+                    continue;
+                }
+
                 $itemId = filter_var($entry['item_id'] ?? null, FILTER_VALIDATE_INT);
                 if (!$itemId || $itemId < 1) throw new DomainException('Select a valid inventory item for every Not in IB line.');
                 $key = 'nonib:' . $itemId;
                 if (isset($seen[$key])) throw new DomainException('A Not in IB item was submitted more than once.');
                 $seen[$key] = true;
-                $unitPriceText = trim((string)($entry['unit_price'] ?? ''));
-                if (!preg_match('/^(?:0|[1-9]\d{0,12})(?:\.\d{1,2})?$/', $unitPriceText)) throw new DomainException('Not in IB unit prices must be valid non-negative amounts with at most two decimal places.');
-                $unitPrice = number_format((float)$unitPriceText, 2, '.', '');
 
                 $itemStmt->bind_param('i', $itemId); $itemStmt->execute(); $inventory = $itemStmt->get_result()->fetch_assoc();
                 if (!$inventory) throw new DomainException('A selected Not in IB item is no longer available in inventory.');
@@ -413,7 +432,7 @@ try {
             $amount = number_format($qty * (float)$line['unit_price'], 2, '.', ''); $unitPrice = (string)$line['unit_price'];
             $deliveryLine->bind_param('iiissi', $deliveryId, $lineId, $qty, $unitPrice, $amount, $transactionId); $deliveryLine->execute();
         }
-        $lineStmt->close(); $itemStmt->close(); $plannedItemStmt->close(); $manualFind->close(); $manualInsert->close(); $manualLink->close(); $txStmt->close(); $invUpdate->close(); $lineUpdate->close(); $deliveryLine->close(); $nonIbLine->close();
+        $lineStmt->close(); $itemStmt->close(); $plannedItemStmt->close(); $manualFind->close(); $manualInsert->close(); $manualLink->close(); $txStmt->close(); $invUpdate->close(); $lineUpdate->close(); $deliveryLine->close(); $nonIbLine->close(); $manualNonIbLine->close();
         $remainingRow = $conn->query('SELECT COUNT(*) remaining_lines FROM ib_item_lines l JOIN ib_office_groups g ON g.id=l.group_id WHERE g.ib_id=' . $ibId . ' AND l.delivered_quantity < l.planned_quantity')->fetch_assoc();
         if ((int)$remainingRow['remaining_lines'] === 0) $conn->query("UPDATE ib_headers SET status='COMPLETED', completed_at=NOW(), version=version+1 WHERE id=" . $ibId);
         ib_activity($conn, $ibId, 'DELIVERY_POSTED', $actor, ['delivery_id'=>$deliveryId,'date'=>$deliveryDate,'not_in_ib_lines'=>$nonIbCount,'not_in_ib_amount'=>number_format($nonIbAmount,2,'.','')]);
@@ -447,6 +466,7 @@ try {
             $lineUpdate->bind_param('ii',$qty,$lineId); $lineUpdate->execute();
         }
         foreach ($nonIbRows as $row) {
+            if ($row['item_id'] === null || $row['inventory_transaction_id'] === null) continue;
             $qty=(int)$row['quantity']; $itemId=(int)$row['item_id']; $nonIbId=(int)$row['id'];
             $itemStmt->bind_param('i',$itemId); $itemStmt->execute(); $inv=$itemStmt->get_result()->fetch_assoc();
             if (!$inv || (int)$inv['current_balance'] < $qty) throw new DomainException('Cannot reverse because ' . $row['item_name'] . ' has insufficient current stock.');

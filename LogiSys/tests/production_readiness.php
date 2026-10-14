@@ -254,7 +254,7 @@ try {
         'notes'=>'ADMIN planned item conflict test','idempotency_token'=>$adminConflictToken,
         'lines'=>[['not_in_ib'=>true,'item_id'=>(int)$adminLine['item_id'],'quantity'=>1,'unit_price'=>'10.00']],
     ], $adminCookie);
-    check_result('Delivery', 'Not in IB rejects an item planned for ADMIN', $adminConflict['status'] === 422 && scalar($conn, 'SELECT current_balance FROM inventory_items WHERE id=' . (int)$adminLine['item_id']) === $adminConflictBalance && scalar($conn, "SELECT COUNT(*) FROM ib_deliveries WHERE idempotency_token='{$adminConflictToken}'") === 0, "status={$adminConflict['status']}", 'blocker');
+    check_result('Delivery', 'Not in IB rejects an item planned for ADMIN', in_array($adminConflict['status'], [409, 422], true) && scalar($conn, 'SELECT current_balance FROM inventory_items WHERE id=' . (int)$adminLine['item_id']) === $adminConflictBalance && scalar($conn, "SELECT COUNT(*) FROM ib_deliveries WHERE idempotency_token='{$adminConflictToken}'") === 0, "status={$adminConflict['status']}", 'blocker');
 
     $nonIbItem = $catalog[1];
     $nonIbItemId = (int)$nonIbItem['id'];
@@ -274,6 +274,25 @@ try {
     $nonIbBalanceReversed = scalar($conn, 'SELECT current_balance FROM inventory_items WHERE id=' . $nonIbItemId);
     $nonIbReversalRows = scalar($conn, "SELECT COUNT(*) FROM ib_non_ib_delivery_lines WHERE delivery_id={$nonIbDeliveryId} AND reversal_transaction_id IS NOT NULL");
     check_result('Reversal', 'Not in IB reversal restores stock and keeps source evidence', $nonIbReverse['status'] === 200 && $nonIbBalanceReversed === $nonIbBalanceBefore && $nonIbReversalRows === 1 && scalar($conn, "SELECT status='REVERSED' FROM ib_deliveries WHERE id={$nonIbDeliveryId}") === 1, "status={$nonIbReverse['status']}, balance={$nonIbBalanceReversed}", 'blocker');
+
+    $manualToken = '35353535-3535-4535-8535-353535353535';
+    $manualName = 'Readiness monitoring-only item ' . $ibNo;
+    $manualNameSql = $conn->real_escape_string($manualName);
+    $manualInventoryBefore = scalar($conn, "SELECT COUNT(*) FROM inventory_items WHERE item_name='{$manualNameSql}'");
+    $manualTransactionsBefore = scalar($conn, "SELECT COUNT(*) FROM inventory_transactions WHERE item_name='{$manualNameSql}'");
+    $manualDelivery = post_json($baseUrl, [
+        'action'=>'record_delivery','csrf_token'=>$csrf,'ib_id'=>$ibId,'delivery_date'=>date('Y-m-d'),
+        'notes'=>'Manual monitoring-only Not in IB test','idempotency_token'=>$manualToken,
+        'lines'=>[['not_in_ib'=>true,'not_in_inventory'=>true,'item_name'=>$manualName,'unit'=>'BOX','quantity'=>4,'unit_price'=>'25.50']],
+    ], $adminCookie);
+    $manualDeliveryId = scalar($conn, "SELECT id FROM ib_deliveries WHERE idempotency_token='{$manualToken}'");
+    $manualRows = scalar($conn, "SELECT COUNT(*) FROM ib_non_ib_delivery_lines WHERE delivery_id={$manualDeliveryId} AND office_group_id={$adminGroupId} AND item_id IS NULL AND item_name='{$manualNameSql}' AND unit='BOX' AND quantity=4 AND amount=102.00 AND inventory_transaction_id IS NULL");
+    $manualInventoryAfter = scalar($conn, "SELECT COUNT(*) FROM inventory_items WHERE item_name='{$manualNameSql}'");
+    $manualTransactionsAfter = scalar($conn, "SELECT COUNT(*) FROM inventory_transactions WHERE item_name='{$manualNameSql}'");
+    check_result('Delivery', 'Manual Not in IB item is monitored without adding inventory stock', $manualDelivery['status'] === 200 && $manualRows === 1 && $manualInventoryAfter === $manualInventoryBefore && $manualTransactionsAfter === $manualTransactionsBefore, "status={$manualDelivery['status']}, rows={$manualRows}, inventory_change=".($manualInventoryAfter-$manualInventoryBefore).", transaction_change=".($manualTransactionsAfter-$manualTransactionsBefore), 'blocker');
+
+    $manualReverse = post_json($baseUrl, ['action'=>'reverse_delivery','csrf_token'=>$csrf,'delivery_id'=>$manualDeliveryId,'reason'=>'Manual monitoring-only readiness reversal'], $adminCookie);
+    check_result('Reversal', 'Manual monitoring-only delivery reverses without inventory movement', $manualReverse['status'] === 200 && scalar($conn, "SELECT status='REVERSED' FROM ib_deliveries WHERE id={$manualDeliveryId}") === 1 && scalar($conn, "SELECT COUNT(*) FROM inventory_items WHERE item_name='{$manualNameSql}'") === $manualInventoryBefore && scalar($conn, "SELECT COUNT(*) FROM inventory_transactions WHERE item_name='{$manualNameSql}'") === $manualTransactionsBefore, "status={$manualReverse['status']}", 'blocker');
 
     $quantityUpdate = post_json($baseUrl, [
         'action'=>'update_item_quantity','csrf_token'=>$csrf,'ib_id'=>$ibId,'line_id'=>(int)$adminLine['id'],

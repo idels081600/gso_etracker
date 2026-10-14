@@ -446,11 +446,38 @@ function getTransactionTypeBadge($type)
                             </div>
                             <div class="visually-hidden" id="stockInModeHelp">When enabled, focus the item search to browse every eligible inventory item, or type to filter by item name or stock number.</div>
 
+                            <div class="stock-in-manual-mode" id="stockInManualModePanel" hidden>
+                                <div>
+                                    <strong>Item not in inventory database</strong>
+                                    <small>Enter the item manually. It will reduce the ADMIN IB amount, but it will not be added to inventory or change any stock balance.</small>
+                                </div>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="stockInNotInInventory" aria-describedby="stockInManualModeHelp">
+                                    <label class="form-check-label" for="stockInNotInInventory">Off</label>
+                                </div>
+                            </div>
+                            <div class="visually-hidden" id="stockInManualModeHelp">Use this only for a delivered item that has no inventory database record and must remain monitoring-only.</div>
+
                             <div class="stock-in-add-row">
-                                <div class="position-relative stock-in-search">
+                                <div class="position-relative stock-in-search" id="stockInCatalogSearch">
                                     <label for="stockInBatchItemSearch" class="form-label">Inventory item</label>
                                     <input type="search" class="form-control" id="stockInBatchItemSearch" placeholder="Search item name or stock number" autocomplete="off">
                                     <div class="stock-in-suggestions shadow-sm" id="stockInBatchSuggestions" hidden></div>
+                                </div>
+                                <div class="stock-in-manual-fields" id="stockInManualFields" hidden>
+                                    <div>
+                                        <label for="stockInManualItemName" class="form-label">Item description</label>
+                                        <input type="text" class="form-control" id="stockInManualItemName" maxlength="500" placeholder="Enter item name or description">
+                                    </div>
+                                    <div>
+                                        <label for="stockInManualUnit" class="form-label">Unit</label>
+                                        <select class="form-select" id="stockInManualUnit">
+                                            <option value="">Select unit</option>
+                                            <?php foreach (['UNIT','PCS','BOX','BOT','GAL','PAD','PACKS','ROLLS','SHEETS','REAMS'] as $unit): ?>
+                                                <option value="<?= $unit ?>"><?= $unit ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div>
                                     <label for="stockInBatchQuantity" class="form-label">Quantity</label>
