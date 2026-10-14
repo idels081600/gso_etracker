@@ -156,6 +156,7 @@ mark.bg-warning {
 .stock-in-price-field[hidden]{display:none!important}
 .stock-in-search{min-width:0}
 .stock-in-suggestions{position:absolute;z-index:1080;top:100%;left:0;right:0;max-height:260px;overflow:auto;border:1px solid #cbd7cf;border-top:0;border-radius:0 0 6px 6px;background:#fff}
+.stock-in-suggestion-count{position:sticky;z-index:1;top:0;padding:7px 12px;border-bottom:1px solid #dbe4de;background:#f4f7f5;color:#5f6c64;font-size:11px;font-weight:700}
 .stock-in-suggestion{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:0;border-bottom:1px solid #edf1ee;border-radius:0;background:#fff;color:#20352a;text-align:left}
 .stock-in-suggestion:hover,.stock-in-suggestion:focus{background:#edf7f1}
 .stock-in-suggestion:last-child{border-bottom:0}

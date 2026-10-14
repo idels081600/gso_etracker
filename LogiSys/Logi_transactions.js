@@ -1882,11 +1882,11 @@ document.addEventListener("DOMContentLoaded", function () {
     unitPrice.required = enabled;
     modePanel.classList.toggle("is-not-in-ib", enabled);
     modeLabel.textContent = enabled ? "On" : "Off";
-    search.placeholder = enabled ? "Search an inventory item not listed in the IB" : "Search planned item name or stock number";
+    search.placeholder = enabled ? "Search all inventory items" : "Search planned item name or stock number";
     const message = !selectedActiveIb
       ? "Select an Active ADMIN IB first."
       : enabled
-        ? "Search inventory items not listed in the selected IB, then enter quantity and unit price."
+        ? "Search the complete inventory database, then enter quantity and unit price."
         : "Search the planned ADMIN items in IB " + selectedActiveIb.ib_no + ".";
     resetPicker(message);
   }
@@ -1908,19 +1908,13 @@ document.addEventListener("DOMContentLoaded", function () {
   function candidateItems() {
     if (!selectedActiveIb) return [];
     if (!notInIbMode()) return selectedActiveIb.items;
-    const plannedIds = new Set(selectedActiveIb.items.map((item) => Number(item.item_id)).filter((id) => id > 0));
-    const plannedNumbers = new Set(selectedActiveIb.items.map((item) => String(item.item_no).trim().toLowerCase()).filter(Boolean));
-    return inventoryCatalog.filter((item) => {
-      const itemId = Number(item.id);
-      const itemNumber = String(item.item_no).trim().toLowerCase();
-      return !plannedIds.has(itemId) && (!itemNumber || !plannedNumbers.has(itemNumber));
-    });
+    return inventoryCatalog;
   }
 
   function showSuggestions(term) {
     suggestions.replaceChildren();
     const normalized = term.trim().toLowerCase();
-    if (!normalized) {
+    if (!normalized && !notInIbMode()) {
       hideSuggestions();
       return;
     }
@@ -1933,17 +1927,22 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    const matches = candidateItems().filter((item) =>
-      String(item.item_name).toLowerCase().includes(normalized) ||
-      String(item.item_no).toLowerCase().includes(normalized)
-    ).slice(0, 12);
+    const matches = candidateItems().filter((item) => {
+      if (!normalized) return true;
+      return String(item.item_name ?? "").toLowerCase().includes(normalized) ||
+        String(item.item_no ?? "").toLowerCase().includes(normalized);
+    });
 
     if (!matches.length) {
       const empty = document.createElement("div");
       empty.className = "p-3 text-muted small";
-      empty.textContent = notInIbMode() ? "No matching inventory items outside this IB were found." : "No planned IB items found.";
+      empty.textContent = notInIbMode() ? "No matching inventory items were found." : "No planned IB items found.";
       suggestions.appendChild(empty);
     } else {
+      const resultCount = document.createElement("div");
+      resultCount.className = "stock-in-suggestion-count";
+      resultCount.textContent = matches.length.toLocaleString("en-PH") + " item" + (matches.length === 1 ? "" : "s") + " found";
+      suggestions.appendChild(resultCount);
       matches.forEach((item) => {
         const button = document.createElement("button");
         button.type = "button";
@@ -2059,6 +2058,9 @@ document.addEventListener("DOMContentLoaded", function () {
     hint.textContent = notInIbMode() ? "Select a Not in IB item from the search results." : "Select a planned item from the search results.";
     hint.className = "form-text mb-3";
     showSuggestions(search.value);
+  });
+  search.addEventListener("focus", function () {
+    if (notInIbMode()) showSuggestions(search.value);
   });
   search.addEventListener("keydown", function (event) {
     if (event.key === "Escape") hideSuggestions();

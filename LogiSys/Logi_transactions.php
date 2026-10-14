@@ -435,14 +435,14 @@ function getTransactionTypeBadge($type)
                             <div class="stock-in-mode" id="stockInModePanel">
                                 <div>
                                     <strong>Not in IB</strong>
-                                    <small>Search every item in the inventory database that is not listed in the selected IB. Its delivery value will be deducted from the ADMIN office amount.</small>
+                                    <small>Search every item in the inventory database. The selected delivery is treated as outside the IB plan and its value is deducted from the ADMIN office amount.</small>
                                 </div>
                                 <div class="form-check form-switch mb-0">
                                     <input class="form-check-input" type="checkbox" role="switch" id="stockInNotInIb" aria-describedby="stockInModeHelp">
                                     <label class="form-check-label" for="stockInNotInIb">Off</label>
                                 </div>
                             </div>
-                            <div class="visually-hidden" id="stockInModeHelp">When enabled, search every item in the inventory database and enter the received unit price.</div>
+                            <div class="visually-hidden" id="stockInModeHelp">When enabled, focus the item search to browse every eligible inventory item, or type to filter by item name or stock number.</div>
 
                             <div class="stock-in-add-row">
                                 <div class="position-relative stock-in-search">
