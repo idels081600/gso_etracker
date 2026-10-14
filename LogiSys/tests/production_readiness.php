@@ -247,19 +247,28 @@ try {
     $monitorLinked = scalar($conn, "SELECT COUNT(*) FROM ib_delivery_lines WHERE ib_item_line_id=".(int)$cswdoLine['id']." AND inventory_transaction_id IS NOT NULL");
     check_result('Delivery', 'Non-ADMIN delivery is monitoring-only', $monitorDelivery['status'] === 200 && $cswdoBalanceAfter === $cswdoBalanceBefore && $monitorLinked === 0, "status={$monitorDelivery['status']}, stock_change=".($cswdoBalanceAfter-$cswdoBalanceBefore), 'blocker');
 
-    $nonIbItem = $catalog[3];
+    $adminConflictToken = '34343434-3434-4434-8434-343434343434';
+    $adminConflictBalance = scalar($conn, 'SELECT current_balance FROM inventory_items WHERE id=' . (int)$adminLine['item_id']);
+    $adminConflict = post_json($baseUrl, [
+        'action'=>'record_delivery','csrf_token'=>$csrf,'ib_id'=>$ibId,'delivery_date'=>date('Y-m-d'),
+        'notes'=>'ADMIN planned item conflict test','idempotency_token'=>$adminConflictToken,
+        'lines'=>[['not_in_ib'=>true,'item_id'=>(int)$adminLine['item_id'],'quantity'=>1,'unit_price'=>'10.00']],
+    ], $adminCookie);
+    check_result('Delivery', 'Not in IB rejects an item planned for ADMIN', $adminConflict['status'] === 422 && scalar($conn, 'SELECT current_balance FROM inventory_items WHERE id=' . (int)$adminLine['item_id']) === $adminConflictBalance && scalar($conn, "SELECT COUNT(*) FROM ib_deliveries WHERE idempotency_token='{$adminConflictToken}'") === 0, "status={$adminConflict['status']}", 'blocker');
+
+    $nonIbItem = $catalog[1];
     $nonIbItemId = (int)$nonIbItem['id'];
     $nonIbBalanceBefore = scalar($conn, 'SELECT current_balance FROM inventory_items WHERE id=' . $nonIbItemId);
     $nonIbToken = '33333333-3333-4333-8333-333333333333';
     $nonIbDelivery = post_json($baseUrl, [
         'action'=>'record_delivery','csrf_token'=>$csrf,'ib_id'=>$ibId,'delivery_date'=>date('Y-m-d'),
-        'notes'=>'Not in IB integration test','idempotency_token'=>$nonIbToken,
+        'notes'=>'Cross-office Not in IB integration test','idempotency_token'=>$nonIbToken,
         'lines'=>[['not_in_ib'=>true,'item_id'=>$nonIbItemId,'quantity'=>3,'unit_price'=>'12.50']],
     ], $adminCookie);
     $nonIbDeliveryId = scalar($conn, "SELECT id FROM ib_deliveries WHERE idempotency_token='{$nonIbToken}'");
     $nonIbBalanceAfter = scalar($conn, 'SELECT current_balance FROM inventory_items WHERE id=' . $nonIbItemId);
     $nonIbRows = scalar($conn, "SELECT COUNT(*) FROM ib_non_ib_delivery_lines WHERE delivery_id={$nonIbDeliveryId} AND office_group_id={$adminGroupId} AND quantity=3 AND amount=37.50 AND inventory_transaction_id IS NOT NULL");
-    check_result('Delivery', 'Not in IB item adds stock and deducts value from ADMIN', $nonIbDelivery['status'] === 200 && $nonIbBalanceAfter === $nonIbBalanceBefore + 3 && $nonIbRows === 1, "status={$nonIbDelivery['status']}, balance={$nonIbBalanceBefore}→{$nonIbBalanceAfter}, rows={$nonIbRows}", 'blocker');
+    check_result('Delivery', 'Item planned only for another office can post as Not in IB for ADMIN', $nonIbDelivery['status'] === 200 && $nonIbBalanceAfter === $nonIbBalanceBefore + 3 && $nonIbRows === 1, "status={$nonIbDelivery['status']}, balance={$nonIbBalanceBefore}→{$nonIbBalanceAfter}, rows={$nonIbRows}", 'blocker');
 
     $nonIbReverse = post_json($baseUrl, ['action'=>'reverse_delivery','csrf_token'=>$csrf,'delivery_id'=>$nonIbDeliveryId,'reason'=>'Not in IB readiness reversal'], $adminCookie);
     $nonIbBalanceReversed = scalar($conn, 'SELECT current_balance FROM inventory_items WHERE id=' . $nonIbItemId);

@@ -328,13 +328,14 @@ try {
             if (ib_is_admin_gso_office((string)$groupRow['office_name'])) { $adminGroup = $groupRow; break; }
         }
         if (!$adminGroup) throw new DomainException('The selected IB has no ADMIN office allocation.');
+        $adminGroupId = (int)$adminGroup['id'];
 
         $deliveryStmt = $conn->prepare("INSERT INTO ib_deliveries (ib_id, delivery_date, notes, idempotency_token, posted_by) VALUES (?, ?, NULLIF(?,''), ?, ?)");
         $deliveryStmt->bind_param('issss', $ibId, $deliveryDate, $notes, $token, $actor); $deliveryStmt->execute(); $deliveryStmt->close();
         $deliveryId = (int)$conn->insert_id; $seen = []; $nonIbCount = 0; $nonIbAmount = 0.0;
         $lineStmt = $conn->prepare('SELECT l.*, g.office_name, g.description FROM ib_item_lines l JOIN ib_office_groups g ON g.id=l.group_id WHERE l.id=? AND g.ib_id=? FOR UPDATE');
         $itemStmt = $conn->prepare('SELECT id, item_no, item_name, current_balance, unit FROM inventory_items WHERE id=? FOR UPDATE');
-        $plannedItemStmt = $conn->prepare('SELECT l.id FROM ib_item_lines l JOIN ib_office_groups g ON g.id=l.group_id WHERE g.ib_id=? AND (l.item_id=? OR l.item_no=?) LIMIT 1 FOR UPDATE');
+        $plannedItemStmt = $conn->prepare('SELECT l.id FROM ib_item_lines l WHERE l.group_id=? AND (l.item_id=? OR l.item_no=?) LIMIT 1 FOR UPDATE');
         $manualFind = $conn->prepare('SELECT id, current_balance FROM inventory_items WHERE item_no=? LIMIT 1 FOR UPDATE');
         $manualInsert = $conn->prepare("INSERT INTO inventory_items (item_no,item_name,rack_no,current_balance,description,status,unit,type) VALUES (?,?,'',0,?,'Available',?,'consumable')");
         $manualLink = $conn->prepare('UPDATE ib_item_lines SET item_id=? WHERE id=? AND item_id IS NULL');
@@ -365,15 +366,14 @@ try {
 
                 $itemStmt->bind_param('i', $itemId); $itemStmt->execute(); $inventory = $itemStmt->get_result()->fetch_assoc();
                 if (!$inventory) throw new DomainException('A selected Not in IB item is no longer available in inventory.');
-                $plannedItemStmt->bind_param('iis', $ibId, $itemId, $inventory['item_no']); $plannedItemStmt->execute();
-                if ($plannedItemStmt->get_result()->fetch_assoc()) throw new DomainException('The selected Not in IB item is already listed in this IB. Record it as a planned item instead.');
+                $plannedItemStmt->bind_param('iis', $adminGroupId, $itemId, $inventory['item_no']); $plannedItemStmt->execute();
+                if ($plannedItemStmt->get_result()->fetch_assoc()) throw new DomainException('The selected Not in IB item is already planned for the ADMIN office in this IB. Record it as a planned item instead.');
                 $before = (int)$inventory['current_balance']; $after = $before + $qty;
                 $reason = 'Not in IB delivery - deducted from ADMIN office amount';
                 $txStmt->bind_param('ssiiissssss', $inventory['item_no'], $inventory['item_name'], $qty, $before, $after, $reason, $actor, $header['ib_no'], $deliveryDate, $header['ib_no'], $adminGroup['office_name']);
                 $txStmt->execute(); $transactionId = (int)$conn->insert_id;
                 $invUpdate->bind_param('ii', $after, $itemId); $invUpdate->execute();
                 $amount = number_format($qty * (float)$unitPrice, 2, '.', '');
-                $adminGroupId = (int)$adminGroup['id'];
                 $nonIbLine->bind_param('iiiisssissi', $deliveryId, $ibId, $adminGroupId, $itemId, $inventory['item_no'], $inventory['item_name'], $inventory['unit'], $qty, $unitPrice, $amount, $transactionId);
                 $nonIbLine->execute();
                 $nonIbCount++; $nonIbAmount += (float)$amount;
