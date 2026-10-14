@@ -14,6 +14,8 @@ require_once __DIR__ . '/Logi_ib_schema.php';
 logi_require_admin_page($conn);
 logi_ensure_non_ib_delivery_schema($conn);
 $logiCsrfToken = logi_csrf_token();
+$transactionsCssVersion = (string)(filemtime(__DIR__ . '/Logi_transactions.css') ?: 1);
+$transactionsJsVersion = (string)(filemtime(__DIR__ . '/Logi_transactions.js') ?: 1);
 $transactions_data = display_transactions(); // Fetch transactions from the database
 $bulk_transactions_data = display_requested_items(); // Fetch transactions from the database
 $logi_all_data = display_inventory_items(); // Fetch inventory items from the database
@@ -128,7 +130,7 @@ function getTransactionTypeBadge($type)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logi_Sys_Dashboard</title>
-    <link rel="stylesheet" href="Logi_transactions.css">
+    <link rel="stylesheet" href="Logi_transactions.css?v=<?= htmlspecialchars($transactionsCssVersion) ?>">
     <link rel="stylesheet" href="Logi_req.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
@@ -819,7 +821,7 @@ function getTransactionTypeBadge($type)
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script src="Logi_security.js"></script>
-    <script src="Logi_transactions.js"></script>
+    <script src="Logi_transactions.js?v=<?= htmlspecialchars($transactionsJsVersion) ?>"></script>
     <script>
         window.activeAdminIbs = <?= json_encode($active_admin_ibs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
         window.ibActionCsrf = <?= json_encode($ib_csrf, JSON_UNESCAPED_SLASHES) ?>;
