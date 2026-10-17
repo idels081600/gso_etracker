@@ -1,4 +1,8 @@
 DirectoryIndex index.php
 
+<FilesMatch "^\.env(?:\..*)?$">
+    Require all denied
+</FilesMatch>
+
 RewriteEngine On
 RewriteRule ^index\.html$ /gso_test/pickleball/index.php [R=302,L]

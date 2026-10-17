@@ -108,3 +108,258 @@ No actionable P0, P1, or P2 differences remain. The dark theme and internal tabl
 - P3: If the dashboard is later dedicated to a large TV instead of a laptop operator, an optional expanded court-schedule view could show all 21 Girls rows simultaneously.
 
 final result: passed
+
+---
+
+# Official Ranking Poster Style QA
+
+## Evidence
+
+- Source visual truth: `C:\Users\jerso\AppData\Local\Temp\codex-clipboard-6dbaaa00-6604-4330-9295-dce9e2cd3ed6.png` at 414 × 584 px.
+- Final implementation: `C:\laragon\www\pickleball\output\ranking-audit-2026-10-18\10-official-ranking-final.png` at 1280 × 720 px.
+- Side-by-side comparison: `C:\laragon\www\pickleball\output\ranking-audit-2026-10-18\11-official-ranking-comparison.png` at 1790 × 720 px.
+- Browser state: Mixed Doubles styled ranking with 14 teams and one completed match, checked at a 1280 × 720 CSS-pixel viewport and device scale factor 1.
+
+## Full-View Comparison
+
+- The portrait reference was adapted to the application's landscape LED-wall layout while preserving the visual hierarchy: lime `OFFICIAL`, white-on-black `RANKING`, dark tournament-green field, geometric line motifs, and 14 compact color-blocked rows.
+- Rank cells use bright lime, team cells use white, and points cells use a quieter mint green so team names and points stay readable at distance.
+- The app's Display / Details switch, close action, and footer close button remain available because they are functional product controls rather than poster artwork.
+- The full side-by-side comparison keeps the title treatment, background, all 14 rows, and column proportions legible; an additional focused crop was not needed.
+
+## Required Fidelity Surfaces
+
+- Typography: condensed, uppercase sports-poster hierarchy with the title broken into two graphic blocks.
+- Spacing and density: all 14 teams fit without scrolling at the target LED-wall viewport.
+- Column proportions: narrow rank, wide team name, narrow points; enforced with the view-specific `colgroup`.
+- Colors and image quality: generated line-art background scales cleanly without text or logo artifacts.
+- Content: point totals remain the emphasized ranking metric, and styled positions are zero-padded from 01 through 14.
+
+## Interaction And Findings
+
+- Display mode opens and shows the official-ranking poster treatment.
+- Details mode still exposes the complete operational statistics table and Results & corrections section.
+- Returning to Display restores the poster view without losing the selected tournament division.
+- Iteration finding: the first pass allowed hidden table headers to produce equal-width columns. This P2 mismatch was fixed with dynamic styled and detailed column groups.
+- Iteration finding: header and row heights were tightened so all 14 rankings remain visible at 1280 × 720.
+- No actionable P0, P1, or P2 visual, responsive, interaction, or accessibility findings remain.
+- PHP syntax, JavaScript syntax, all 48 JavaScript tests, and tournament role-action tests pass.
+
+## Follow-up Polish
+
+- The reference's social handle and placeholder logo were intentionally omitted because the app has no corresponding production brand assets.
+
+final result: passed
+
+---
+
+# Rankings Improvement QA — 2026-10-18
+
+## Evidence
+
+- Source visual truth: `output/ranking-audit-2026-10-18/01-styled-board.png` and `02-detailed-board.png`, captured before the improvement pass.
+- Final implementation: `output/ranking-audit-2026-10-18/05-final-styled.png` and `06-final-detailed.png`.
+- Normalized comparisons: `07-styled-before-after.png` and `08-detailed-before-after.png`, each 2560 × 720 px with before and after states aligned side by side.
+- Browser viewport: 1280 × 720 CSS pixels, device scale factor 1.
+- State: authenticated Game Master, Mixed Doubles, one completed match.
+
+## Full-View Comparison
+
+- Styled board: misleading Final Standings and Score labels were replaced by Live Standings and Record. Unplayed teams no longer crowd the public display, the two active rows are enlarged, the pattern is quieter, and first/second place accents improve hierarchy.
+- Detailed board: 11 columns were reduced to seven essential columns with descriptive headers. PF, PA, and H2H remain available as secondary team metadata. The permanent Completed Games panel became a collapsed Results & Corrections control.
+- Navigation: the changing single button became a stable Display / Details segmented switch with explicit pressed states.
+
+## Focused Interaction Evidence
+
+- Display and Details were switched in both directions without losing division or match type.
+- Results & Corrections was expanded and collapsed; the completed result and Edit score action appeared only when expanded.
+- The live board retained its clear close control and semantic table headers.
+
+## Required Fidelity Surfaces
+
+- Fonts and typography: LED-wall display type remains heavy and large; detailed team text was reduced so seven rows are visible instead of roughly six oversized rows. No important heading clips.
+- Spacing and layout rhythm: one-to-three ranked teams receive taller rows and additional breathing room. Detailed standings own most of the viewport, while administrative tools occupy one collapsed row.
+- Colors and visual tokens: the selected green sports-board palette is preserved; background blending lowers pattern competition and rank accents use restrained dark-to-light greens.
+- Image quality and asset fidelity: the generated pattern remains the original sharp raster asset and is not stretched or replaced.
+- Copy and content: Live Standings, Record, Win–Loss, Played, Wins, Losses, Point Diff., and Results & Corrections accurately describe their data and actions.
+
+## Comparison History And Findings
+
+- P1 fixed: Final Standings appeared after one match; it now reads Live Standings.
+- P1 fixed: Score displayed points-for without explaining ranking; the public board now shows the win–loss record and labels points-for/against as supporting data.
+- P1 fixed: unplayed teams dominated the LED view; only played/ranked teams appear publicly, while all teams remain in Details.
+- P2 fixed: detailed rankings were crowded by 11 columns and a permanently open editor; seven columns and a collapsed correction area now provide more readable space.
+- P2 fixed during visual iteration: the Point Diff. header was tight and detailed team names inherited display-scale type; the column was widened and detailed typography reduced.
+- No actionable P0, P1, or P2 visual, responsive, interaction, or accessibility findings remain at the audited viewport.
+
+## Follow-up Polish
+
+- P3: When three or more placements exist, an optional generated medal or event-brand asset could further distinguish the top three without changing the data hierarchy.
+
+final result: passed
+
+---
+
+# LED-Wall Leaderboard Redesign QA
+
+## Evidence
+
+- Source visual truth: `C:\Users\jerso\AppData\Local\Temp\codex-clipboard-7dfdca0e-213a-4fe9-8e15-849b3ec0c592.png` — 590 × 589 px.
+- Implementation: `http://localhost/pickleball/`, inspected in the Codex in-app browser at a 1280 × 720 CSS-pixel viewport.
+- Generated design asset: `assets/leaderboard-pattern.png` — text-free lime-green sports pattern used behind the standings.
+- State: authenticated Game Master, Mixed Doubles rankings, one completed result and the full registered team list.
+
+## Required Fidelity Surfaces
+
+- Typography: the supplied reference's heavy uppercase title, centered standings heading, bold team names, and oversized rank/score numerals are reproduced with responsive LED-wall sizing.
+- Layout: the former 11-column statistics table is intentionally simplified to the reference's three-column Rank / Team / Score structure. Wins, losses, and point differential remain as compact secondary information under each team.
+- Colors and imagery: a clean generated green geometric pattern supplies the reference's sports-board texture; the white header, deep-green standings ribbon, and white row cards preserve its main visual hierarchy.
+- Content: live tournament names, official ranks, total points, format, result count, and Game Master completed-game editing remain connected to existing application state.
+
+## Responsive And Interaction Check
+
+- At 1280 × 720, the title, first three rows, scores, result review panel, close control, and table scrollbar are visible without horizontal overflow.
+- Additional teams scroll vertically instead of forcing smaller typography.
+- The close control remains keyboard-labelled, the table retains semantic headers, and the completed-game edit action remains available.
+- A narrow-screen rule expands the content to 94vw, reduces the summary to its essential fields, and hides only optional award text.
+
+## Comparison History
+
+- Initial implementation capture briefly showed the dialog during its 180 ms entrance animation; the post-animation capture was used for the visual review.
+- Final capture confirmed an opaque white title band, visible pattern asset, centered FINAL STANDINGS ribbon, aligned columns, and unclipped team names and scores.
+- No actionable P0, P1, or P2 visual, responsive, interaction, or accessibility findings remain.
+
+## Follow-up Polish
+
+- None required for this scoped redesign.
+
+final result: passed
+
+---
+
+# Three-Court Centered Layout QA
+
+## Evidence
+
+- Source visual truth: `C:\Users\jerso\AppData\Local\Temp\codex-clipboard-d5941d26-9a5b-4280-926b-a19b392f23a8.png` — 1917 × 395 px.
+- Implementation: `http://localhost/pickleball/`, captured in the Codex in-app browser at a 1280 × 720 CSS-pixel viewport and device scale factor 1.
+- State: authenticated Game Master board with three courts, matching the supplied live/idle/live court content.
+- Density normalization: full-width composition was compared by relative grid tracks rather than pixel-for-pixel scaling because the requested change intentionally alters the source layout.
+
+## Full-View Comparison
+
+- Source: all three courts occupy one compressed horizontal row.
+- Implementation: Courts 1 and 2 occupy equal tracks on the first row. Court 3 occupies one track's width, spans the second grid row, and is horizontally centered.
+- The third court no longer compresses all three scoreboards, and no additional visual or interaction changes were introduced.
+
+## Focused Region Comparison
+
+A separate crop was not needed: the full browser capture clearly shows all three complete court cards, their equal widths, the centered second-row placement, and the surrounding whitespace at once.
+
+## Required Fidelity Surfaces
+
+- Fonts and typography: unchanged from the existing tournament board; headings, scores, labels, and controls retain their original hierarchy and wrapping.
+- Spacing and layout rhythm: the existing 8 px grid gap is preserved. The centered odd card uses exactly one of the two desktop track widths.
+- Colors and visual tokens: unchanged; division green, surfaces, borders, and semantic action colors remain intact.
+- Image quality and asset fidelity: the screen contains native interface elements and no raster assets requiring reproduction.
+- Copy and content: all court names, teams, scores, states, and actions remain unchanged.
+
+## Responsive Check
+
+- Desktop: two equal columns with a centered final odd court.
+- At 960 px and below: one full-width column; the odd-card centering override is removed to prevent narrowing or overflow.
+
+## Findings
+
+- No actionable P0, P1, or P2 differences remain for the requested layout change.
+
+## Comparison History
+
+- Initial issue: three cards were compressed into a single row.
+- Fix: changed the scoreboard grid to two tracks and centered the final odd child at one-track width.
+- Post-fix evidence: the in-app browser capture shows Courts 1 and 2 on row one and Court 3 centered on row two with equal card width.
+
+## Follow-up Polish
+
+- None required for this scoped change.
+
+final result: passed
+
+---
+
+# Styled And Detailed Ranking Views QA
+
+## Evidence
+
+- Source visual truth: `C:\Users\jerso\AppData\Local\Temp\codex-clipboard-c37f8e41-dfc6-4c57-845c-a23cfd416d40.png` — the Completed Games panel identified for removal from the styled board.
+- Implementation: `http://localhost/pickleball/`, captured and inspected in the Codex in-app browser at a 1280 × 720 CSS-pixel viewport and device scale factor 1.
+- States checked: Mixed Doubles styled leaderboard, detailed rankings, and return from detailed to styled.
+
+## Full-View And Focused Comparison
+
+- Styled view: the referenced Completed Games panel is absent. The green patterned leaderboard, three-column ranking table, large names, scores, mode button, and close action remain visible.
+- Detailed view: all 11 statistical columns are restored in a high-density full-page table, with the Completed Games review and Edit score action below it.
+- A separate focused crop was unnecessary because the full viewport clearly exposes the requested panel boundary, mode control, complete detailed header row, and Completed Games placement.
+
+## Required Fidelity Surfaces
+
+- Fonts and typography: the styled view keeps its display-scale sports typography; the detailed view uses smaller operational table typography to keep all statistics readable.
+- Spacing and layout rhythm: the styled board dedicates the full remaining height to leaderboard rows. The detailed board uses independent scrolling for the table while keeping review actions accessible.
+- Colors and visual tokens: the styled green pattern remains unchanged; the detailed board uses the existing white surfaces and tournament green header treatment.
+- Image quality and asset fidelity: the existing generated leaderboard pattern remains sharp and correctly scaled; no new raster asset was required for this functional separation.
+- Copy and content: mode labels are explicit—Detailed rankings and Styled board—and accessible labels describe the destination view.
+
+## Interaction And Findings
+
+- Rankings opens in styled mode by default.
+- Detailed rankings switches in place without losing division or match type.
+- Styled board returns in place, and Completed Games is again absent.
+- Live refresh preserves the currently selected ranking view.
+- PHP syntax, JavaScript syntax, all 48 JavaScript tests, and tournament role-action tests pass.
+- No actionable P0, P1, or P2 visual, responsive, interaction, or accessibility findings remain.
+
+## Follow-up Polish
+
+- None required for this scoped change.
+
+final result: passed
+
+---
+
+# LED-Wall Ranking QA
+
+## Evidence
+
+- Source visual truth: `C:\Users\jerso\AppData\Local\Temp\codex-clipboard-6dbaaa00-6604-4330-9295-dce9e2cd3ed6.png` at 414 × 584 px.
+- Browser-rendered implementation: `C:\laragon\www\pickleball\output\ranking-audit-2026-10-18\20-led-wall-ranking-qa.png` at 1660 × 934 px, captured from the Codex in-app browser at device scale factor 1.
+- Side-by-side comparison: `C:\laragon\www\pickleball\output\ranking-audit-2026-10-18\21-led-wall-ranking-comparison.png` at 2322 × 934 px.
+- Intended display: landscape 16:9 LED wall; checked with the styled Mixed Doubles ranking, 14 teams, and one completed match.
+
+## Full-View And Focused Comparison
+
+- The combined comparison shows the reference poster and the landscape implementation in one image. The lime rank blocks, white name blocks, mint points blocks, dark-green field, geometric background, and two-part title remain visually faithful.
+- The implementation adapts the portrait source into a wall-width composition: the team column expands, point totals remain a dedicated high-contrast column, and all 14 teams remain visible simultaneously.
+- The complete table, title, points, and controls are legible in the full-view comparison, so a separate focused crop was unnecessary.
+
+## Required Fidelity Surfaces
+
+- Fonts and typography: bold condensed sports-display hierarchy is retained; team names and point totals use distance-readable optical weights without wrapping.
+- Spacing and layout rhythm: the header and 14 compact rows fit one screen with no scrolling; the bottom action bar is removed from Display mode to protect vertical space.
+- Colors and visual tokens: the source's dark tournament green, lime rank blocks, white team cells, and mint score cells are preserved with strong LED contrast.
+- Image quality and asset fidelity: the generated geometric background stays sharp at wall scale and contains no embedded text or placeholder branding.
+- Copy and content: all team names, zero-padded ranks, and point totals are shown; points remain the primary ranking metric.
+
+## Interaction And Comparison History
+
+- P1 initial finding: the first 1920 × 1080 pass pushed lower teams below the visible canvas. Fix: reduced decorative-header height, tightened row height and vertical gaps, and removed the redundant styled footer. Post-fix evidence: all 14 rows fit in the final browser capture.
+- P1 initial finding: automatic table layout allowed long team names to squeeze the score column. Fix: applied fixed table layout with explicit 7% / 76% / 17% columns. Post-fix browser measurements were 126 px / 1372 px / 307 px at the 1920 px test viewport, with `11 POINTS` fully visible.
+- Added a Full screen control directly inside the ranking board so an operator does not need to close the board to enter LED-wall mode.
+- Verified Display → Details → Display without losing the selected division or ranking data.
+- PHP syntax, JavaScript syntax, all 48 JavaScript tests, and tournament role-action tests pass.
+- No actionable P0, P1, or P2 visual, responsive, interaction, or accessibility findings remain.
+
+## Follow-up Polish
+
+- The in-app browser does not expose native fullscreen exactly like Chrome; the control is implemented with the standard Fullscreen API for the deployed browser.
+
+final result: passed

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 $app = [
     'name' => 'Pickleball Scorekeeper',
-    'description' => 'An offline, manual pickleball match scorekeeper.',
-    'version' => '1.1.0',
+    'description' => 'A database-backed manual pickleball match scorekeeper.',
+    'version' => '2.1.0',
 ];
 
 header('Content-Type: text/html; charset=UTF-8');
@@ -24,11 +24,11 @@ function escape(string $value): string
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b0d0c">
+  <meta name="theme-color" content="#ffffff">
   <meta name="description" content="<?= escape($app['description']) ?>">
   <meta name="application-name" content="<?= escape($app['name']) ?>">
   <title><?= escape($app['name']) ?></title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23e7ee55'/%3E%3Ccircle cx='11' cy='12' r='2' fill='%23171900'/%3E%3Ccircle cx='21' cy='14' r='2' fill='%23171900'/%3E%3Ccircle cx='16' cy='22' r='2' fill='%23171900'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23147a3f'/%3E%3Ccircle cx='11' cy='12' r='2' fill='%23ffffff'/%3E%3Ccircle cx='21' cy='14' r='2' fill='%23ffffff'/%3E%3Ccircle cx='16' cy='22' r='2' fill='%23ffffff'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css?v=<?= escape($app['version']) ?>">
 </head>
 <body data-app-version="<?= escape($app['version']) ?>">
@@ -46,6 +46,7 @@ function escape(string $value): string
       <button class="nav-button" type="button" data-nav="history">
         History <span class="nav-count" id="history-count">0</span>
       </button>
+      <button class="nav-button" id="database-settings-button" type="button">Database <span class="sr-only" id="database-status">Database connection required</span></button>
     </nav>
   </header>
 
@@ -57,11 +58,22 @@ function escape(string $value): string
   <dialog id="resume-dialog" class="app-dialog" aria-labelledby="resume-title">
     <div class="dialog-kicker">Match recovered</div>
     <h2 id="resume-title">Continue where you left off?</h2>
-    <p id="resume-description">An unfinished match is saved on this device.</p>
+    <p id="resume-description">An unfinished match is saved in the database.</p>
     <div class="dialog-actions">
       <button class="button button-secondary" type="button" data-dialog-action="discard-resume">Discard match</button>
       <button class="button button-primary" type="button" data-dialog-action="resume">Resume match</button>
     </div>
+  </dialog>
+
+  <dialog id="database-dialog" class="app-dialog" aria-labelledby="database-dialog-title">
+    <div class="dialog-kicker">Shared storage</div>
+    <h2 id="database-dialog-title">Connect to the match database</h2>
+    <p>Enter the private access code to load and save matches across devices.</p>
+    <form id="database-form">
+      <label class="field sync-code-field"><span>Database access code</span><input id="database-access-code" name="accessCode" type="password" autocomplete="current-password" maxlength="64" required></label>
+      <div class="dialog-actions"><button class="button button-primary" type="submit">Connect database</button></div>
+    </form>
+    <p class="dialog-note">Any existing matches saved in this browser will be migrated after the first successful connection.</p>
   </dialog>
 
   <dialog id="winner-dialog" class="app-dialog winner-dialog" aria-labelledby="winner-title">

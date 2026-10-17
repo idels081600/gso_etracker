@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-const MODULE_ASSET_VERSION = '4.0.0';
+const MODULE_ASSET_VERSION = '4.0.3';
 
 $modules = [
     'app' => 'app.mjs',
@@ -10,6 +10,7 @@ $modules = [
     'tournament-app' => 'tournament-app.mjs',
     'tournament-engine' => 'tournament-engine.mjs',
     'tournament-sync' => 'tournament-sync.mjs',
+    'single-match-sync' => 'single-match-sync.mjs',
     'mobile-scorer' => 'mobile-scorer.mjs',
 ];
 
@@ -41,6 +42,7 @@ $source = strtr($source, [
     '"./scoring-engine.mjs"' => $moduleUrl('scoring-engine'),
     '"./tournament-engine.mjs"' => $moduleUrl('tournament-engine'),
     '"./tournament-sync.mjs"' => $moduleUrl('tournament-sync'),
+    '"./single-match-sync.mjs"' => $moduleUrl('single-match-sync'),
 ]);
 
 header('Content-Type: application/javascript; charset=UTF-8');

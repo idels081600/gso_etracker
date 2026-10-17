@@ -1,5 +1,5 @@
 export const TOURNAMENT_SCHEMA_VERSION = 2;
-export const DIVISION_IDS = ["girls", "boys"];
+export const DIVISION_IDS = ["girls", "boys", "mixed"];
 export const MAX_LIVE_UNDO = 40;
 
 const GIRLS_TEAMS = [
@@ -20,6 +20,38 @@ const BOYS_TEAMS = [
   "Iven & Jeff",
   "Eping & JG",
 ];
+
+const MIXED_TEAMS = [
+  "Marlon Amila & Babette Lim",
+  "Iven Lim & Thamar Olivar",
+  "Manju Lim & Jane Yap",
+  "Baba Yap & Mau Heraldo",
+  "Junax Suarez & Kat Sarte",
+  "Ryan Suarez & Twinkle Lim",
+  "JG Yap & Margie Estavilla",
+  "Eping Estavilla & Obe Yap",
+  "Jeffey Yap & Geri Niepes",
+  "Ian Mendez & Bombom Suarez",
+  "Carl Lim & Janah Yap",
+  "Trygve Olivar & Miriam Sumaylo",
+  "Arar Lim & Anna Lim",
+  "Emil Yap & Ira Lim",
+];
+
+function roundRobinSchedule(names) {
+  const rotation = [...names];
+  if (rotation.length % 2) rotation.push(null);
+  const schedule = [];
+  for (let round = 0; round < rotation.length - 1; round += 1) {
+    for (let index = 0; index < rotation.length / 2; index += 1) {
+      const first = rotation[index];
+      const second = rotation[rotation.length - 1 - index];
+      if (first && second) schedule.push(round % 2 ? [second, first] : [first, second]);
+    }
+    rotation.splice(1, 0, rotation.pop());
+  }
+  return schedule;
+}
 
 export const TOURNAMENT_SCHEDULES = {
   girls: [
@@ -62,6 +94,7 @@ export const TOURNAMENT_SCHEDULES = {
     ["Ridan & Carl", "Manju & Ian"],
     ["Ryan & Try", "Manju & Ian"],
   ],
+  mixed: roundRobinSchedule(MIXED_TEAMS),
 };
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -142,6 +175,14 @@ export function createTournament(now = new Date()) {
         id: "boys",
         label: "Boys",
         teams: seedTeams(BOYS_TEAMS, "boys"),
+        live: null,
+        results: [],
+        finalized: false,
+      },
+      mixed: {
+        id: "mixed",
+        label: "Mixed Doubles",
+        teams: seedTeams(MIXED_TEAMS, "mixed"),
         live: null,
         results: [],
         finalized: false,
@@ -355,7 +396,7 @@ export function addScoreboard(state, options = {}, now = new Date()) {
   const next = clone(state);
   if (!Array.isArray(next.scoreboards)) next.scoreboards = [];
   const divisionId = DIVISION_IDS.includes(options.divisionId) ? options.divisionId : "girls";
-  const matchType = options.matchType === "singles" ? "singles" : "doubles";
+  const matchType = divisionId !== "mixed" && options.matchType === "singles" ? "singles" : "doubles";
   const name = teamName(options.name) || defaultCourtName(next);
   if (next.scoreboards.some((board) => board.name.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("Use a unique scoreboard name.");
   const createdAt = nowIso(now);
@@ -487,11 +528,38 @@ export function recordScoreboardResult(state, scoreboardId, now = new Date()) {
     scoreB: live.scores[live.teamBId],
     winnerTeamId,
     scoreboardName: board.name,
+    targetPoints: live.targetPoints,
+    winBy: live.winBy,
     completedAt,
   });
   board.live = null;
   divisionOf(next, board.divisionId).finalized = false;
   next.updatedAt = completedAt;
+  return next;
+}
+
+export function editRecordedResult(state, divisionId, resultId, scoreA, scoreB, now = new Date()) {
+  const next = clone(state);
+  const division = divisionOf(next, divisionId);
+  const result = division.results.find((item) => item.id === resultId);
+  if (!result) throw new Error("Result not found.");
+  if (![scoreA, scoreB].every((score) => Number.isInteger(Number(score)) && Number(score) >= 0)) throw new Error("Scores must be non-negative whole numbers.");
+  const live = {
+    teamAId: result.teamAId,
+    teamBId: result.teamBId,
+    scores: { [result.teamAId]: Number(scoreA), [result.teamBId]: Number(scoreB) },
+    targetPoints: result.targetPoints ?? 11,
+    winBy: result.winBy ?? 2,
+  };
+  const winnerTeamId = candidateWinner(live);
+  if (!winnerTeamId) throw new Error("The corrected score must satisfy the configured win condition.");
+  result.scoreA = Number(scoreA);
+  result.scoreB = Number(scoreB);
+  result.winnerTeamId = winnerTeamId;
+  result.correctedAt = nowIso(now);
+  result.correctedBy = "game_master";
+  division.finalized = false;
+  next.updatedAt = nowIso(now);
   return next;
 }
 function isSameMatch(match, teamAId, teamBId) {
@@ -667,6 +735,20 @@ function migrateLegacyTournament(data) {
   return migrated;
 }
 
+function ensureMixedDivision(data) {
+  const migrated = clone(data);
+  if (migrated.divisions.mixed) return { data: migrated, migrated: false };
+  migrated.divisions.mixed = {
+    id: "mixed",
+    label: "Mixed Doubles",
+    teams: seedTeams(MIXED_TEAMS, "mixed"),
+    live: null,
+    results: [],
+    finalized: false,
+  };
+  return { data: migrated, migrated: true };
+}
+
 function normalizeScoreboards(data) {
   const normalized = clone(data);
   if (Array.isArray(normalized.scoreboards)) return { data: normalized, migrated: false };
@@ -690,6 +772,19 @@ function normalizeScoreboards(data) {
   return { data: normalized, migrated: true };
 }
 
+function normalizeResults(data) {
+  const normalized = clone(data);
+  let migrated = false;
+  DIVISION_IDS.forEach((divisionId) => {
+    normalized.divisions[divisionId].results.forEach((result) => {
+      const highScore = Math.max(Number(result.scoreA) || 0, Number(result.scoreB) || 0);
+      if (!Number.isInteger(result.targetPoints)) { result.targetPoints = highScore >= 21 ? 21 : highScore >= 15 ? 15 : 11; migrated = true; }
+      if (![1, 2].includes(result.winBy)) { result.winBy = Math.abs((Number(result.scoreA) || 0) - (Number(result.scoreB) || 0)) >= 2 ? 2 : 1; migrated = true; }
+    });
+  });
+  return { data: normalized, migrated };
+}
+
 export function deserializeTournament(raw) {
   if (!raw) return { ok: true, data: createTournament(), error: null, migrated: false };
   try {
@@ -699,12 +794,16 @@ export function deserializeTournament(raw) {
       && parsed.data?.schemaVersion === TOURNAMENT_SCHEMA_VERSION
       && hasDivisions;
     if (valid) {
-      const normalized = normalizeScoreboards(parsed.data);
-      return { ok: true, data: normalized.data, error: null, migrated: normalized.migrated };
+      const withMixed = ensureMixedDivision(parsed.data);
+      const withResults = normalizeResults(withMixed.data);
+      const normalized = normalizeScoreboards(withResults.data);
+      return { ok: true, data: normalized.data, error: null, migrated: withMixed.migrated || withResults.migrated || normalized.migrated };
     }
     const legacy = parsed.version === 1 && parsed.data?.schemaVersion === 1 && hasDivisions;
     if (legacy) {
-      const normalized = normalizeScoreboards(migrateLegacyTournament(parsed.data));
+      const withMixed = ensureMixedDivision(migrateLegacyTournament(parsed.data));
+      const withResults = normalizeResults(withMixed.data);
+      const normalized = normalizeScoreboards(withResults.data);
       return { ok: true, data: normalized.data, error: null, migrated: true };
     }
     return { ok: false, data: createTournament(), error: "unsupported", migrated: false };

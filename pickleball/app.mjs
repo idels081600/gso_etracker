@@ -12,8 +12,6 @@ import {
   getScoreCall,
   isTraditionalDoubles,
   resetGame,
-  serializeActiveMatch,
-  serializeHistory,
   setActiveServer,
   setServerNumber,
   setServingTeam,
@@ -22,9 +20,11 @@ import {
   undo,
   winsNeeded,
 } from "./scoring-engine.mjs";
+import { fetchSingleMatchState, saveSingleMatchState } from "./single-match-sync.mjs";
 
 const ACTIVE_KEY = "pickleball.activeMatch.v1";
 const HISTORY_KEY = "pickleball.matchHistory.v1";
+const DATABASE_ACCESS_KEY = "pickleball.databaseAccess.v1";
 
 const app = document.querySelector("#app");
 const toastRegion = document.querySelector("#toast-region");
@@ -34,11 +34,16 @@ const winnerDialog = document.querySelector("#winner-dialog");
 const nextGameDialog = document.querySelector("#next-game-dialog");
 const confirmDialog = document.querySelector("#confirm-dialog");
 const helpDialog = document.querySelector("#help-dialog");
+const databaseDialog = document.querySelector("#database-dialog");
 
 let match = null;
 let history = [];
 let view = "setup";
 let confirmCallback = null;
+let databaseAccessCode = String(sessionStorage.getItem(DATABASE_ACCESS_KEY) ?? "").trim().toUpperCase();
+let databaseUpdatedAt = "";
+let databaseWriting = false;
+let databaseQueued = false;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -79,27 +84,141 @@ function formatDuration(durationMs) {
   return `${hours}h ${minutes}m`;
 }
 
-function safeStorage(action) {
+function safeLegacyStorage(action) {
   try {
     return action();
   } catch {
-    showToast("Browser storage is unavailable. This match will not survive a reload.", "error");
     return null;
   }
 }
 
 function persistMatch() {
-  if (!match) return;
-  safeStorage(() => localStorage.setItem(ACTIVE_KEY, serializeActiveMatch(match)));
+  queueDatabaseSave();
 }
 
 function clearPersistedMatch() {
-  safeStorage(() => localStorage.removeItem(ACTIVE_KEY));
+  queueDatabaseSave();
 }
 
 function persistHistory() {
-  safeStorage(() => localStorage.setItem(HISTORY_KEY, serializeHistory(history)));
+  queueDatabaseSave();
   updateNavigation();
+}
+
+function nextUpdatedAt() {
+  const previous = Date.parse(databaseUpdatedAt) || 0;
+  return new Date(Math.max(Date.now(), previous + 1)).toISOString();
+}
+
+function databaseStatus(message, connected = false) {
+  const status = document.querySelector("#database-status");
+  if (status) status.textContent = message;
+  const button = document.querySelector("#database-settings-button");
+  if (button) button.classList.toggle("is-connected", connected);
+}
+
+function currentDatabaseState() {
+  return { activeMatch: match, history, updatedAt: databaseUpdatedAt };
+}
+
+async function flushDatabaseSave({ throwOnError = false } = {}) {
+  if (!databaseAccessCode || databaseWriting || !databaseQueued) return;
+  databaseWriting = true;
+  databaseQueued = false;
+  databaseStatus("Saving…", true);
+  try {
+    const result = await saveSingleMatchState(currentDatabaseState(), databaseAccessCode);
+    if (result.conflict && String(result.data.updatedAt) > databaseUpdatedAt) {
+      applyDatabaseState(result.data);
+      render();
+      showToast("A newer database update was loaded.");
+    }
+    databaseStatus("Database connected", true);
+  } catch (error) {
+    databaseStatus("Database save failed");
+    showToast(error.message, "error");
+    if (throwOnError) throw error;
+  } finally {
+    databaseWriting = false;
+    if (databaseQueued) void flushDatabaseSave();
+  }
+}
+
+function queueDatabaseSave() {
+  databaseUpdatedAt = nextUpdatedAt();
+  databaseQueued = true;
+  if (!databaseAccessCode) {
+    databaseStatus("Database connection required");
+    if (!databaseDialog.open) databaseDialog.showModal();
+    return;
+  }
+  void flushDatabaseSave();
+}
+
+function validateDatabaseState(data) {
+  const active = deserializeActiveMatch(data?.activeMatch === null ? null : JSON.stringify({ version: 1, data: data?.activeMatch }));
+  const savedHistory = deserializeHistory(JSON.stringify({ version: 1, data: data?.history ?? [] }));
+  if (!active.ok || !savedHistory.ok) throw new Error("The saved database state is incompatible.");
+  return { activeMatch: active.data, history: savedHistory.data, updatedAt: String(data?.updatedAt ?? "") };
+}
+
+function applyDatabaseState(data) {
+  const validated = validateDatabaseState(data);
+  match = validated.activeMatch;
+  history = validated.history;
+  databaseUpdatedAt = validated.updatedAt;
+}
+
+function readLegacyState() {
+  const activeRaw = safeLegacyStorage(() => localStorage.getItem(ACTIVE_KEY));
+  const historyRaw = safeLegacyStorage(() => localStorage.getItem(HISTORY_KEY));
+  const active = deserializeActiveMatch(activeRaw);
+  const savedHistory = deserializeHistory(historyRaw);
+  return {
+    hasData: Boolean(activeRaw || historyRaw),
+    activeMatch: active.ok ? active.data : null,
+    history: savedHistory.ok ? savedHistory.data : [],
+  };
+}
+
+function clearLegacyState() {
+  safeLegacyStorage(() => localStorage.removeItem(ACTIVE_KEY));
+  safeLegacyStorage(() => localStorage.removeItem(HISTORY_KEY));
+}
+
+async function connectDatabase(accessCode, legacy = readLegacyState()) {
+  databaseAccessCode = String(accessCode ?? "").trim().toUpperCase();
+  if (!databaseAccessCode) throw new Error("Enter the private database access code.");
+  const remote = await fetchSingleMatchState(databaseAccessCode);
+  if (remote) applyDatabaseState(remote);
+  else {
+    match = legacy.activeMatch;
+    history = legacy.history;
+    databaseUpdatedAt = nextUpdatedAt();
+    databaseQueued = true;
+    await flushDatabaseSave({ throwOnError: true });
+  }
+
+  if (remote && legacy.hasData) {
+    const knownIds = new Set(history.map((item) => item.id));
+    const additions = legacy.history.filter((item) => !knownIds.has(item.id));
+    const legacyActiveAdded = !match && legacy.activeMatch;
+    if (additions.length || legacyActiveAdded) {
+      history = [...additions, ...history];
+      if (legacyActiveAdded) match = legacy.activeMatch;
+      databaseUpdatedAt = nextUpdatedAt();
+      databaseQueued = true;
+      await flushDatabaseSave({ throwOnError: true });
+    }
+  }
+
+  sessionStorage.setItem(DATABASE_ACCESS_KEY, databaseAccessCode);
+  clearLegacyState();
+  databaseStatus("Database connected", true);
+  databaseDialog.close();
+  view = "setup";
+  render();
+  if (match) showResumeDialog();
 }
 
 function showToast(message, type = "info") {
@@ -569,7 +688,7 @@ function renderHistory() {
         <div>
           <div class="eyebrow">This device</div>
           <h1 id="history-title">Match history</h1>
-          <p>Completed results are stored only in this browser.</p>
+          <p>Completed results are stored in the shared database.</p>
         </div>
         ${history.length ? '<button class="button button-danger" type="button" data-action="clear-history">Clear history</button>' : ""}
       </div>
@@ -748,7 +867,7 @@ app.addEventListener("click", (event) => {
     match = null;
     view = "history";
     render();
-    showToast("Match result saved to this device.");
+    showToast("Match result saved to the database.");
   }
   if (action === "delete-history") {
     const record = history.find((item) => item.id === button.dataset.id);
@@ -756,7 +875,7 @@ app.addEventListener("click", (event) => {
     openConfirm({
       kicker: "History",
       title: "Delete this match result?",
-      message: `${record.teams.A.label} vs ${record.teams.B.label} will be permanently removed from this browser.`,
+      message: `${record.teams.A.label} vs ${record.teams.B.label} will be permanently removed from the database.`,
       confirmLabel: "Delete result",
       onConfirm: () => {
         history = history.filter((item) => item.id !== record.id);
@@ -770,7 +889,7 @@ app.addEventListener("click", (event) => {
     openConfirm({
       kicker: "History",
       title: "Clear all match history?",
-      message: `${plural(history.length, "saved result")} will be permanently removed from this browser.`,
+      message: `${plural(history.length, "saved result")} will be permanently removed from the database.`,
       confirmLabel: "Clear history",
       onConfirm: () => {
         history = [];
@@ -934,32 +1053,47 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-function initialize() {
-  const historyRaw = safeStorage(() => localStorage.getItem(HISTORY_KEY));
-  const historyResult = deserializeHistory(historyRaw);
-  if (historyResult.ok) history = historyResult.data;
-  else {
-    history = [];
-    safeStorage(() => localStorage.removeItem(HISTORY_KEY));
-    window.setTimeout(() => showToast("Saved history could not be read and was ignored.", "error"), 0);
-  }
+function showResumeDialog() {
+  if (!match) return;
+  document.querySelector("#resume-description").textContent =
+    `${match.teams.A.label} vs ${match.teams.B.label} · Game ${match.live.number} · ${match.live.scores.A}–${match.live.scores.B}`;
+  resumeDialog.showModal();
+}
 
-  const activeRaw = safeStorage(() => localStorage.getItem(ACTIVE_KEY));
-  const activeResult = deserializeActiveMatch(activeRaw);
-  if (activeResult.ok) match = activeResult.data;
-  else {
-    match = null;
-    safeStorage(() => localStorage.removeItem(ACTIVE_KEY));
-    window.setTimeout(() => showToast("The saved match could not be read and was ignored.", "error"), 0);
-  }
-
+async function initialize() {
   view = "setup";
   render();
-  if (match) {
-    document.querySelector("#resume-description").textContent =
-      `${match.teams.A.label} vs ${match.teams.B.label} · Game ${match.live.number} · ${match.live.scores.A}–${match.live.scores.B}`;
-    resumeDialog.showModal();
+  const legacy = readLegacyState();
+  if (databaseAccessCode) {
+    try {
+      await connectDatabase(databaseAccessCode, legacy);
+      return;
+    } catch (error) {
+      sessionStorage.removeItem(DATABASE_ACCESS_KEY);
+      databaseAccessCode = "";
+      showToast(error.message, "error");
+    }
   }
+  databaseStatus("Database connection required");
+  databaseDialog.showModal();
 }
+
+document.querySelector("#database-settings-button").addEventListener("click", () => {
+  document.querySelector("#database-access-code").value = databaseAccessCode;
+  databaseDialog.showModal();
+});
+
+document.querySelector("#database-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector('button[type="submit"]');
+  button.disabled = true;
+  try {
+    await connectDatabase(new FormData(event.currentTarget).get("accessCode"));
+  } catch (error) {
+    showToast(error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+});
 
 initialize();

@@ -8,6 +8,7 @@ import {
   adjustLiveScore,
   createTournament,
   deserializeTournament,
+  editRecordedResult,
   getSchedule,
   getScoreboards,
   getStandings,
@@ -51,7 +52,7 @@ function score(state, divisionId, teamId, points) {
   return next;
 }
 
-test("seeds the girls and boys teams from the standings sheets", () => {
+test("seeds girls, boys, and the confirmed mixed doubles teams", () => {
   const state = createTournament(T0);
   assert.deepEqual(state.divisions.girls.teams.map((team) => team.name), [
     "Joy & Irah",
@@ -70,6 +71,22 @@ test("seeds the girls and boys teams from the standings sheets", () => {
     "Iven & Jeff",
     "Eping & JG",
   ]);
+  assert.deepEqual(state.divisions.mixed.teams.map((team) => team.name), [
+    "Marlon Amila & Babette Lim",
+    "Iven Lim & Thamar Olivar",
+    "Manju Lim & Jane Yap",
+    "Baba Yap & Mau Heraldo",
+    "Junax Suarez & Kat Sarte",
+    "Ryan Suarez & Twinkle Lim",
+    "JG Yap & Margie Estavilla",
+    "Eping Estavilla & Obe Yap",
+    "Jeffey Yap & Geri Niepes",
+    "Ian Mendez & Bombom Suarez",
+    "Carl Lim & Janah Yap",
+    "Trygve Olivar & Miriam Sumaylo",
+    "Arar Lim & Anna Lim",
+    "Emil Yap & Ira Lim",
+  ]);
 });
 
 test("derives serving-player labels from doubles team names", () => {
@@ -84,8 +101,11 @@ test("projects the supplied court schedules through pending, live, and complete 
   let state = createTournament(T0);
   const girls = getSchedule(state, "girls");
   const boys = getSchedule(state, "boys");
+  const mixed = getSchedule(state, "mixed");
   assert.equal(girls.length, 21);
   assert.equal(boys.length, 15);
+  assert.equal(mixed.length, 91);
+  assert.equal(new Set(mixed.map((match) => [match.teamAName, match.teamBName].sort().join("|"))).size, 91);
   assert.deepEqual([girls[0].teamAName, girls[0].teamBName, girls[0].status], ["Joy & Irah", "Born2x & Jane Yap", "pending"]);
   assert.deepEqual([boys[14].teamAName, boys[14].teamBName], ["Ryan & Try", "Manju & Ian"]);
 
@@ -179,6 +199,13 @@ test("runs multiple dynamic boys and girls singles and doubles scoreboards indep
   assert.equal(getSchedule(state, "girls")[0].status, "live");
 });
 
+test("creates Mixed Doubles scoreboards as doubles-only", () => {
+  const state = addScoreboard(createTournament(T0), { name: "Mixed Court", divisionId: "mixed", matchType: "singles" }, T0);
+  assert.equal(state.scoreboards[0].divisionId, "mixed");
+  assert.equal(state.scoreboards[0].matchType, "doubles");
+  assert.equal(participantOptions(state, "mixed", "doubles").length, 14);
+});
+
 test("records a dynamic singles result in singles standings", () => {
   let state = addScoreboard(createTournament(T0), { divisionId: "boys", matchType: "singles" }, T0);
   const [a, b] = participantOptions(state, "boys", "singles");
@@ -190,6 +217,22 @@ test("records a dynamic singles result in singles standings", () => {
   assert.equal(standings[0].name, a.name);
   assert.equal(standings[0].wins, 1);
   assert.equal(state.scoreboards[0].live, null);
+});
+
+test("stores winning rules and lets the Game Master correct a completed score", () => {
+  let state = addScoreboard(createTournament(T0), { name: "Court 1", divisionId: "mixed", matchType: "doubles" }, T0);
+  const [a, b] = participantOptions(state, "mixed", "doubles");
+  const boardId = state.scoreboards[0].id;
+  state = startScoreboardMatch(state, boardId, { teamAId: a.id, teamBId: b.id, servingTeamId: a.id, targetPoints: 11, winBy: 2 }, T0);
+  for (let point = 0; point < 11; point += 1) state = adjustScoreboardScore(state, boardId, a.id, 1);
+  state = recordScoreboardResult(state, boardId, "2026-08-22T01:20:00.000Z");
+  const result = state.divisions.mixed.results[0];
+  assert.equal(result.targetPoints, 11);
+  assert.equal(result.winBy, 2);
+  state = editRecordedResult(state, "mixed", result.id, 10, 12, "2026-08-22T01:30:00.000Z");
+  assert.equal(state.divisions.mixed.results[0].winnerTeamId, b.id);
+  assert.equal(getStandings(state, "mixed")[0].id, b.id);
+  assert.throws(() => editRecordedResult(state, "mixed", result.id, 11, 10), /win condition/);
 });
 test("detects a winner only after target and margin are met", () => {
   let state = boysWithTeams();
@@ -281,8 +324,18 @@ test("versioned tournament storage round-trips and rejects corrupt data", () => 
   const restored = deserializeTournament(serializeTournament(state));
   assert.equal(restored.ok, true);
   assert.equal(restored.data.divisions.boys.teams.length, 6);
+  assert.equal(restored.data.divisions.mixed.teams.length, 14);
   assert.equal(deserializeTournament("not json").error, "corrupt");
   assert.equal(deserializeTournament(JSON.stringify({ version: 99, data: state })).error, "unsupported");
+});
+
+test("adds Mixed Doubles when restoring an older version-two tournament", () => {
+  const existing = createTournament(T0);
+  delete existing.divisions.mixed;
+  const restored = deserializeTournament(JSON.stringify({ version: 2, data: existing }));
+  assert.equal(restored.ok, true);
+  assert.equal(restored.migrated, true);
+  assert.equal(restored.data.divisions.mixed.teams.length, 14);
 });
 
 test("migrates a version-one board by adding missing boys teams without losing existing data", () => {
