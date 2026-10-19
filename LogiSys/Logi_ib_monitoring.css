@@ -477,6 +477,8 @@
   border-radius: 5px;
   box-shadow: 0 14px 38px rgba(18, 34, 25, .2);
 }
+#activeItemsModal .modal-dialog { max-width: 1080px; }
+#activeItemsModal .modal-body { padding-top: 14px; }
 .ib-page .modal-header {
   padding: 15px 17px;
   background: #f7faf8;
@@ -544,12 +546,15 @@
   border-color: var(--ib-green);
   background: var(--ib-green-soft);
 }
+.active-add-mode > label:focus-within {
+  outline: 3px solid rgba(23, 107, 58, .18);
+  outline-offset: 1px;
+}
 .active-add-mode input { margin-top: 3px; }
 .active-add-mode span { display: flex; flex-direction: column; gap: 2px; }
 .active-add-mode strong { color: var(--ib-ink); font-size: .84rem; }
 .active-add-mode small { color: var(--ib-muted); font-size: .74rem; line-height: 1.35; }
 .active-add-context {
-  max-width: 760px;
   margin-bottom: 14px;
   padding: 12px;
   background: var(--ib-green-soft);
@@ -568,10 +573,12 @@
 .active-new-group[hidden] { display: none !important; }
 .active-item-rows {
   margin-bottom: 10px;
-  padding: 0 10px;
+  padding: 0 12px;
   border: 1px solid var(--ib-rule);
   background: var(--ib-surface);
 }
+#activeItemsModal .editor-item-row:last-child { border-bottom: 0; }
+#activeItemsModal #activeAddRow { min-height: 36px; }
 .editor-office-group {
   max-width: 100%;
   margin-bottom: 14px;
