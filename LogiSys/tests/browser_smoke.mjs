@@ -73,8 +73,13 @@ try {
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await page.goto(`${baseUrl}/Logi_ib_monitoring.php`, { waitUntil: 'networkidle' });
+    const completedOfficeRecord = page.locator('.ib-record:has(.ib-office-fulfilled)').first();
+    const fullyDeliveredOffices = await page.locator('.ib-office-fulfilled').count();
+    if (fullyDeliveredOffices > 0) await completedOfficeRecord.locator('.ib-record-head').click();
+    add(`${viewport.width}px identifies fully delivered office groups`, fullyDeliveredOffices > 0, `indicators=${fullyDeliveredOffices}`);
+    await page.screenshot({ path: `outputs/ib-fully-delivered-${viewport.width}.png`, fullPage: true });
     const activeRecord = page.locator('.ib-record:has(.add-active-items)').first();
-    await activeRecord.locator('.ib-record-head').click();
+    if (!await activeRecord.locator(':scope > .collapse.show').count()) await activeRecord.locator('.ib-record-head').click();
     await activeRecord.locator('.add-active-items').click();
     await page.locator('input[name="activeAddMode"][value="new"]').check();
     const newOfficeVisible = await page.locator('#activeNewOffice').isVisible();

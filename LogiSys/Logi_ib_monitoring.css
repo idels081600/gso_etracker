@@ -303,6 +303,7 @@
   background: #f8faf8;
   border: 0;
 }
+.ib-office.is-fully-delivered > header { background: #f3f8f4; }
 .ib-office-title { min-width: 0; }
 .ib-office > header strong {
   margin-left: 5px;
@@ -322,6 +323,28 @@
   padding-top: 2px;
   color: var(--ib-muted);
   font-size: .73rem;
+  white-space: nowrap;
+}
+.ib-office-meta {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ib-office-fulfilled {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  color: var(--ib-green);
+  background: #eaf3ec;
+  border: 1px solid #a8c9b1;
+  border-radius: 3px;
+  font-size: .7rem;
+  font-weight: 750;
+  line-height: 1.2;
   white-space: nowrap;
 }
 .office-table-toggle {
@@ -884,6 +907,14 @@
     justify-content: flex-start;
   }
   .ib-office > header { gap: 10px; padding: 10px 4px; }
+  .ib-office-meta {
+    align-self: flex-start;
+    gap: 5px;
+  }
+  .ib-office-fulfilled {
+    padding: 3px 6px;
+    font-size: .66rem;
+  }
   .ib-office > header .ib-office-title > p { margin-left: 43px; }
   .ib-office-title { overflow: hidden; }
   .ib-office > header .ib-office-title > p { overflow-wrap: anywhere; }
