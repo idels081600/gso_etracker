@@ -248,22 +248,45 @@ try {
             ]);
             $message = 'Draft IB ' . $ibNo . ' was updated.';
         }
-    } elseif ($action === 'add_active_items') {
+    } elseif ($action === 'add_active_items' || $action === 'add_active_group') {
         $lockResult = $conn->query("SELECT GET_LOCK('logisys_inventory_item_no', 10) acquired")->fetch_assoc();
         if ((int)($lockResult['acquired'] ?? 0) !== 1) throw new DomainException('Item numbering is busy. Please try again.');
         $itemNumberLock = true;
-        $ibId = (int)($data['ib_id'] ?? 0); $groupId = (int)($data['group_id'] ?? 0); $header = ib_lock_header($conn, $ibId);
-        if ($header['status'] !== 'ACTIVE') throw new DomainException('Items can only be appended to an Active IB.');
-        $groupStmt = $conn->prepare('SELECT id,office_name,description FROM ib_office_groups WHERE id=? AND ib_id=? FOR UPDATE');
-        $groupStmt->bind_param('ii', $groupId, $ibId); $groupStmt->execute(); $group = $groupStmt->get_result()->fetch_assoc(); $groupStmt->close();
-        if (!$group) throw new DomainException('Select a valid office group from this IB.');
+        $ibId = (int)($data['ib_id'] ?? 0); $header = ib_lock_header($conn, $ibId);
+        if ($header['status'] !== 'ACTIVE') throw new DomainException('Office groups and items can only be appended to an Active IB.');
         $items = $data['items'] ?? [];
         $currentCount = $conn->query('SELECT COUNT(*) c FROM ib_item_lines l JOIN ib_office_groups g ON g.id=l.group_id WHERE g.ib_id=' . $ibId)->fetch_assoc();
         if ((int)$currentCount['c'] + (is_array($items) ? count($items) : 0) > 300) throw new DomainException('An IB can contain at most 300 item lines.');
+
+        if ($action === 'add_active_group') {
+            $officeId = filter_var($data['office_id'] ?? null, FILTER_VALIDATE_INT);
+            $description = trim((string)($data['description'] ?? ''));
+            if (!$officeId) throw new DomainException('Select an office for the new group.');
+            if ($description === '' || mb_strlen($description) > 500) throw new DomainException('Enter a description of up to 500 characters for the new group.');
+            $groupCount = $conn->query('SELECT COUNT(*) c FROM ib_office_groups WHERE ib_id=' . $ibId)->fetch_assoc();
+            if ((int)$groupCount['c'] >= 50) throw new DomainException('An IB can contain at most 50 office groups.');
+            $officeStmt = $conn->prepare('SELECT id,office_name FROM office_balances WHERE id=?');
+            $officeStmt->bind_param('i', $officeId); $officeStmt->execute(); $office = $officeStmt->get_result()->fetch_assoc(); $officeStmt->close();
+            if (!$office) throw new DomainException('The selected office no longer exists.');
+            $orderRow = $conn->query('SELECT COALESCE(MAX(sort_order),0)+1 next_order FROM ib_office_groups WHERE ib_id=' . $ibId . ' FOR UPDATE')->fetch_assoc();
+            $groupOrder = (int)$orderRow['next_order'];
+            $insertGroup = $conn->prepare('INSERT INTO ib_office_groups (ib_id,office_id,office_name,description,sort_order) VALUES (?,?,?,?,?)');
+            $insertGroup->bind_param('iissi', $ibId, $officeId, $office['office_name'], $description, $groupOrder); $insertGroup->execute(); $insertGroup->close();
+            $groupId = (int)$conn->insert_id;
+            $group = ['id'=>$groupId,'office_name'=>$office['office_name'],'description'=>$description];
+        } else {
+            $groupId = (int)($data['group_id'] ?? 0);
+            $groupStmt = $conn->prepare('SELECT id,office_name,description FROM ib_office_groups WHERE id=? AND ib_id=? FOR UPDATE');
+            $groupStmt->bind_param('ii', $groupId, $ibId); $groupStmt->execute(); $group = $groupStmt->get_result()->fetch_assoc(); $groupStmt->close();
+            if (!$group) throw new DomainException('Select a valid office group from this IB.');
+        }
         $addedCount = ib_append_active_items($conn, $groupId, is_array($items) ? $items : []);
         $update = $conn->prepare('UPDATE ib_headers SET version=version+1 WHERE id=?'); $update->bind_param('i', $ibId); $update->execute(); $update->close();
-        ib_activity($conn, $ibId, 'ACTIVE_ITEMS_ADDED', $actor, ['group_id'=>$groupId,'office'=>$group['office_name'],'count'=>$addedCount]);
-        $message = $addedCount . ' item' . ($addedCount === 1 ? '' : 's') . ' added to ' . $group['office_name'] . ' in IB ' . $header['ib_no'] . '.';
+        $activityAction = $action === 'add_active_group' ? 'ACTIVE_GROUP_ADDED' : 'ACTIVE_ITEMS_ADDED';
+        ib_activity($conn, $ibId, $activityAction, $actor, ['group_id'=>$groupId,'office'=>$group['office_name'],'description'=>$group['description'],'count'=>$addedCount]);
+        $message = $action === 'add_active_group'
+            ? $group['office_name'] . ' group with ' . $addedCount . ' item' . ($addedCount === 1 ? '' : 's') . ' added to IB ' . $header['ib_no'] . '.'
+            : $addedCount . ' item' . ($addedCount === 1 ? '' : 's') . ' added to ' . $group['office_name'] . ' in IB ' . $header['ib_no'] . '.';
     } elseif ($action === 'update_item_quantity') {
         $ibId = (int)($data['ib_id'] ?? 0);
         $lineId = (int)($data['line_id'] ?? 0);

@@ -214,6 +214,16 @@ try {
     ], $adminCookie);
     check_result('IB workflow', 'Append an item while IB is Active', $addActive['status'] === 200 && scalar($conn, "SELECT COUNT(*) FROM ib_item_lines l JOIN ib_office_groups g ON g.id=l.group_id WHERE g.ib_id={$ibId}") === 3, $addActive['json']['message'] ?? '', 'required');
 
+    $addActiveGroup = post_json($baseUrl, [
+        'action'=>'add_active_group','csrf_token'=>$csrf,'ib_id'=>$ibId,
+        'office_id'=>(int)$adminOffice['id'],'description'=>'Additional active office allocation',
+        'items'=>[$payloadItem($catalog[3], 3, '40.00')],
+    ], $adminCookie);
+    $activeGroupCount = scalar($conn, "SELECT COUNT(*) FROM ib_office_groups WHERE ib_id={$ibId}");
+    $activeLineCount = scalar($conn, "SELECT COUNT(*) FROM ib_item_lines l JOIN ib_office_groups g ON g.id=l.group_id WHERE g.ib_id={$ibId}");
+    $activeGroupAudit = scalar($conn, "SELECT COUNT(*) FROM ib_activity_log WHERE ib_id={$ibId} AND action='ACTIVE_GROUP_ADDED'");
+    check_result('IB workflow', 'Append a new office group while IB is Active', $addActiveGroup['status'] === 200 && $activeGroupCount === 3 && $activeLineCount === 4 && $activeGroupAudit === 1, $addActiveGroup['json']['message'] ?? '', 'blocker');
+
     $lineRows = $conn->query("SELECT l.id,l.item_id,l.item_no,l.planned_quantity,g.office_name FROM ib_item_lines l JOIN ib_office_groups g ON g.id=l.group_id WHERE g.ib_id={$ibId} ORDER BY l.id")->fetch_all(MYSQLI_ASSOC);
     $adminLine = null; $cswdoLine = null;
     foreach ($lineRows as $lineRow) {

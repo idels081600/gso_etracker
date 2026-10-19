@@ -9,6 +9,11 @@
   const quantityEditorModal = new bootstrap.Modal(document.getElementById('quantityEditorModal'));
   const groupContainer = document.getElementById('officeGroups');
   const activeItemRows = document.getElementById('activeItemRows');
+  const activeExistingGroupFields = document.getElementById('activeExistingGroupFields');
+  const activeNewGroupFields = document.getElementById('activeNewGroupFields');
+  const activeAddGroup = document.getElementById('activeAddGroup');
+  const activeNewOffice = document.getElementById('activeNewOffice');
+  const activeNewDescription = document.getElementById('activeNewDescription');
   const editorForm = document.getElementById('ibEditorForm');
   const activeItemsForm = document.getElementById('activeItemsForm');
   const deliveryForm = document.getElementById('deliveryForm');
@@ -129,17 +134,42 @@
     try{const result=await send({action:ibId?'update_draft':'create',ib_id:ibId,ib_no:document.getElementById('ibNumber').value.trim(),groups});alert(result.message);location.reload();}catch(error){alert(error.message);busy(button,false);}
   });
   document.querySelectorAll('.edit-ib').forEach(button=>button.addEventListener('click',()=>openEditor(records.get(Number(button.dataset.id)))));
+  function setActiveAddMode(mode) {
+    const creatingGroup=mode==='new';
+    activeExistingGroupFields.hidden=creatingGroup;
+    activeNewGroupFields.hidden=!creatingGroup;
+    activeAddGroup.required=!creatingGroup;
+    activeNewOffice.required=creatingGroup;
+    activeNewDescription.required=creatingGroup;
+    document.getElementById('saveActiveItemsBtn').textContent=creatingGroup?'Add group to Active IB':'Add items to Active IB';
+  }
   function openActiveItems(record) {
     document.getElementById('activeAddIbId').value=record.id; document.getElementById('activeAddIbNo').textContent=record.ib_no;
-    document.getElementById('activeAddGroup').innerHTML=record.groups.map(group=>`<option value="${group.id}">${escapeHtml(group.office_name)} — ${escapeHtml(group.description)}</option>`).join('');
+    activeAddGroup.innerHTML=record.groups.map(group=>`<option value="${group.id}">${escapeHtml(group.office_name)} — ${escapeHtml(group.description)}</option>`).join('');
+    activeItemsForm.querySelector('input[name="activeAddMode"][value="existing"]').checked=true;
+    activeNewOffice.value=''; activeNewDescription.value=''; setActiveAddMode('existing');
     activeItemRows.innerHTML=''; addItemRow(activeItemRows); calculateActiveAdd(); activeItemsModal.show();
   }
   document.querySelectorAll('.add-active-items').forEach(button=>button.addEventListener('click',()=>openActiveItems(records.get(Number(button.dataset.id)))));
+  activeItemsForm.querySelectorAll('input[name="activeAddMode"]').forEach(input=>input.addEventListener('change',()=>setActiveAddMode(input.value)));
   document.getElementById('activeAddRow').addEventListener('click',()=>addItemRow(activeItemRows));
   activeItemRows.addEventListener('click',event=>{const remove=event.target.closest('.remove-item');if(!remove)return;if(activeItemRows.querySelectorAll('.editor-item-row').length===1)return alert('Add at least one item.');remove.closest('.editor-item-row').remove();calculateActiveAdd();});
   activeItemRows.addEventListener('input',event=>{if(event.target.matches('.item-qty,.item-price'))calculateActiveAdd();if(event.target.matches('.item-search')){const item=itemByLabel.get(event.target.value),row=event.target.closest('.editor-item-row');row.querySelector('.item-id').value=item?.id||'';row.querySelector('.item-hint').textContent=item?`${item.unit||'No unit'} · Current stock ${item.current_balance}`:'Select an exact item from the list';}});
   activeItemRows.addEventListener('change',event=>{const row=event.target.closest('.editor-item-row');if(event.target.matches('.manual-add-toggle')){updateManualHelp(row,event.target.checked);return;}if(!event.target.matches('.manual-toggle'))return;const manual=event.target.checked;setRowMode(row,manual);if(manual){row.querySelector('.item-id').value='';row.querySelector('.item-search').value='';}else row.querySelectorAll('.manual-fields input').forEach(input=>input.value='');});
-  activeItemsForm.addEventListener('submit',async event=>{event.preventDefault();const button=document.getElementById('saveActiveItemsBtn'),items=readItemRows(activeItemRows),groupId=Number(document.getElementById('activeAddGroup').value),ibId=Number(document.getElementById('activeAddIbId').value);if(!groupId||!items.length||itemsAreInvalid(items))return alert('Select an office group and complete every item, quantity, unit, and unit price.');busy(button,true,'Adding…');try{const result=await send({action:'add_active_items',ib_id:ibId,group_id:groupId,items});alert(result.message);location.reload();}catch(error){alert(error.message);busy(button,false);}});
+  activeItemsForm.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const button=document.getElementById('saveActiveItemsBtn'),items=readItemRows(activeItemRows),ibId=Number(document.getElementById('activeAddIbId').value);
+    const mode=activeItemsForm.querySelector('input[name="activeAddMode"]:checked').value;
+    const creatingGroup=mode==='new',groupId=Number(activeAddGroup.value),officeId=Number(activeNewOffice.value),description=activeNewDescription.value.trim();
+    if(!items.length||itemsAreInvalid(items))return alert('Complete every item, quantity, unit, and unit price.');
+    if(creatingGroup&&(!officeId||!description))return alert('Select an office and enter the description for the new group.');
+    if(!creatingGroup&&!groupId)return alert('Select an existing office group.');
+    busy(button,true,creatingGroup?'Adding group…':'Adding items…');
+    const payload=creatingGroup
+      ? {action:'add_active_group',ib_id:ibId,office_id:officeId,description,items}
+      : {action:'add_active_items',ib_id:ibId,group_id:groupId,items};
+    try{const result=await send(payload);alert(result.message);location.reload();}catch(error){alert(error.message);busy(button,false);}
+  });
   async function simpleAction(button,payload,confirmation,label){ if(!confirm(confirmation))return; busy(button,true,label); try{const result=await send(payload);alert(result.message);location.reload();}catch(error){alert(error.message);busy(button,false);} }
   document.querySelectorAll('.activate-ib').forEach(button=>button.addEventListener('click',()=>simpleAction(button,{action:'activate',ib_id:Number(button.dataset.id)},'Activate this IB? Its offices, items, quantities, and prices will be frozen.','Activating…')));
   document.querySelectorAll('.cancel-ib').forEach(button=>button.addEventListener('click',()=>{const reason=prompt('Enter the cancellation reason:');if(!reason)return;simpleAction(button,{action:'cancel',ib_id:Number(button.dataset.id),reason},'Cancel this IB?','Cancelling…');}));
