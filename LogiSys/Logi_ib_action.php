@@ -350,8 +350,7 @@ try {
         foreach ($groupRows as $groupRow) {
             if (ib_is_admin_gso_office((string)$groupRow['office_name'])) { $adminGroup = $groupRow; break; }
         }
-        if (!$adminGroup) throw new DomainException('The selected IB has no ADMIN office allocation.');
-        $adminGroupId = (int)$adminGroup['id'];
+        $adminGroupId = $adminGroup ? (int)$adminGroup['id'] : null;
 
         $deliveryStmt = $conn->prepare("INSERT INTO ib_deliveries (ib_id, delivery_date, notes, idempotency_token, posted_by) VALUES (?, ?, NULLIF(?,''), ?, ?)");
         $deliveryStmt->bind_param('issss', $ibId, $deliveryDate, $notes, $token, $actor); $deliveryStmt->execute(); $deliveryStmt->close();
@@ -379,6 +378,7 @@ try {
             if (!$qty || $qty < 1) throw new DomainException('Every delivered quantity must be a positive whole number.');
 
             if (!empty($entry['not_in_ib'])) {
+                if (!$adminGroup) throw new DomainException('Not in IB deliveries require an ADMIN office allocation because their value is deducted from ADMIN.');
                 $isManualNonInventory = !empty($entry['not_in_inventory']);
                 $unitPriceText = trim((string)($entry['unit_price'] ?? ''));
                 if (!preg_match('/^(?:0|[1-9]\d{0,12})(?:\.\d{1,2})?$/', $unitPriceText)) throw new DomainException('Not in IB unit prices must be valid non-negative amounts with at most two decimal places.');

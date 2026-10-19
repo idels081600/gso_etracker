@@ -257,6 +257,27 @@ try {
     $monitorLinked = scalar($conn, "SELECT COUNT(*) FROM ib_delivery_lines WHERE ib_item_line_id=".(int)$cswdoLine['id']." AND inventory_transaction_id IS NOT NULL");
     check_result('Delivery', 'Non-ADMIN delivery is monitoring-only', $monitorDelivery['status'] === 200 && $cswdoBalanceAfter === $cswdoBalanceBefore && $monitorLinked === 0, "status={$monitorDelivery['status']}, stock_change=".($cswdoBalanceAfter-$cswdoBalanceBefore), 'blocker');
 
+    $monitorOnlyIbNo = $ibNo . '-NO-ADMIN';
+    $monitorOnlyCreate = post_json($baseUrl, [
+        'action'=>'create', 'csrf_token'=>$csrf, 'ib_no'=>$monitorOnlyIbNo,
+        'groups'=>[['office_id'=>(int)$cswdoOffice['id'], 'description'=>'No ADMIN monitoring-only delivery test', 'items'=>[$payloadItem($catalog[2], 6, '15.00')]]],
+    ], $adminCookie);
+    $monitorOnlyIbId = (int)($monitorOnlyCreate['json']['ib_id'] ?? 0);
+    $monitorOnlyActivate = post_json($baseUrl, ['action'=>'activate','csrf_token'=>$csrf,'ib_id'=>$monitorOnlyIbId], $adminCookie);
+    $monitorOnlyLine = $conn->query("SELECT l.id,l.item_id FROM ib_item_lines l JOIN ib_office_groups g ON g.id=l.group_id WHERE g.ib_id={$monitorOnlyIbId} LIMIT 1")->fetch_assoc();
+    $monitorOnlyBalanceBefore = scalar($conn, 'SELECT current_balance FROM inventory_items WHERE id=' . (int)$monitorOnlyLine['item_id']);
+    $monitorOnlyDelivery = post_json($baseUrl, [
+        'action'=>'record_delivery','csrf_token'=>$csrf,'ib_id'=>$monitorOnlyIbId,'delivery_date'=>date('Y-m-d'),
+        'notes'=>'IB without ADMIN allocation','idempotency_token'=>'25252525-2525-4252-8252-252525252525',
+        'lines'=>[['line_id'=>(int)$monitorOnlyLine['id'],'quantity'=>6]],
+    ], $adminCookie);
+    $monitorOnlyBalanceAfter = scalar($conn, 'SELECT current_balance FROM inventory_items WHERE id=' . (int)$monitorOnlyLine['item_id']);
+    $monitorOnlyTransactions = scalar($conn, "SELECT COUNT(*) FROM inventory_transactions WHERE reference_no='".$conn->real_escape_string($monitorOnlyIbNo)."'");
+    $monitorOnlyRecorded = scalar($conn, 'SELECT delivered_quantity FROM ib_item_lines WHERE id=' . (int)$monitorOnlyLine['id']);
+    $monitorOnlyLinked = scalar($conn, 'SELECT COUNT(*) FROM ib_delivery_lines WHERE ib_item_line_id='.(int)$monitorOnlyLine['id'].' AND inventory_transaction_id IS NOT NULL');
+    $monitorOnlyCompleted = scalar($conn, "SELECT status='COMPLETED' FROM ib_headers WHERE id={$monitorOnlyIbId}");
+    check_result('Delivery', 'IB without ADMIN allocation records monitoring delivery without stock movement', $monitorOnlyCreate['status'] === 200 && $monitorOnlyActivate['status'] === 200 && $monitorOnlyDelivery['status'] === 200 && $monitorOnlyRecorded === 6 && $monitorOnlyBalanceAfter === $monitorOnlyBalanceBefore && $monitorOnlyTransactions === 0 && $monitorOnlyLinked === 0 && $monitorOnlyCompleted === 1, "status={$monitorOnlyDelivery['status']}, delivered={$monitorOnlyRecorded}, stock_change=".($monitorOnlyBalanceAfter-$monitorOnlyBalanceBefore).", transactions={$monitorOnlyTransactions}", 'blocker');
+
     $adminConflictToken = '34343434-3434-4434-8434-343434343434';
     $adminConflictBalance = scalar($conn, 'SELECT current_balance FROM inventory_items WHERE id=' . (int)$adminLine['item_id']);
     $adminConflict = post_json($baseUrl, [
