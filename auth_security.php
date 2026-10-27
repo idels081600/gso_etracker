@@ -37,6 +37,112 @@ function login_throttle_config()
     ];
 }
 
+function login_endpoint_rate_limit_config()
+{
+    return [
+        'max_requests' => 30,
+        'window_seconds' => 60,
+        'block_seconds' => 5 * 60,
+    ];
+}
+
+function login_endpoint_rate_limit_dir()
+{
+    $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'cgso_login_endpoint_limits';
+
+    if (!is_dir($dir) && !@mkdir($dir, 0700, true)) {
+        return null;
+    }
+
+    return is_writable($dir) ? $dir : null;
+}
+
+function login_endpoint_rate_limit_path($ipAddress)
+{
+    $dir = login_endpoint_rate_limit_dir();
+    if ($dir === null) {
+        return null;
+    }
+
+    return $dir . DIRECTORY_SEPARATOR . hash('sha256', trim((string) $ipAddress)) . '.json';
+}
+
+function clear_login_endpoint_rate_limit($ipAddress)
+{
+    $path = login_endpoint_rate_limit_path($ipAddress);
+    if ($path !== null && is_file($path)) {
+        @unlink($path);
+    }
+}
+
+function consume_login_endpoint_rate_limit($ipAddress, $now = null)
+{
+    $config = login_endpoint_rate_limit_config();
+    $now = $now === null ? time() : (int) $now;
+    $path = login_endpoint_rate_limit_path($ipAddress);
+
+    if ($path === null) {
+        return ['limited' => false, 'retry_after' => 0, 'storage_available' => false];
+    }
+
+    $handle = @fopen($path, 'c+');
+    if ($handle === false || !@flock($handle, LOCK_EX)) {
+        if (is_resource($handle)) {
+            @fclose($handle);
+        }
+        return ['limited' => false, 'retry_after' => 0, 'storage_available' => false];
+    }
+
+    rewind($handle);
+    $raw = stream_get_contents($handle);
+    $data = json_decode((string) $raw, true);
+    if (!is_array($data)) {
+        $data = [];
+    }
+
+    $windowStartedAt = (int) ($data['window_started_at'] ?? 0);
+    $blockedUntil = (int) ($data['blocked_until'] ?? 0);
+
+    if ($blockedUntil > $now) {
+        $result = [
+            'limited' => true,
+            'retry_after' => $blockedUntil - $now,
+            'storage_available' => true,
+        ];
+    } else {
+        if ($windowStartedAt <= 0 || ($now - $windowStartedAt) >= $config['window_seconds']) {
+            $data = [
+                'count' => 0,
+                'window_started_at' => $now,
+                'blocked_until' => 0,
+            ];
+        }
+
+        $data['count'] = (int) ($data['count'] ?? 0) + 1;
+
+        if ($data['count'] > $config['max_requests']) {
+            $data['blocked_until'] = $now + $config['block_seconds'];
+            $result = [
+                'limited' => true,
+                'retry_after' => $config['block_seconds'],
+                'storage_available' => true,
+            ];
+        } else {
+            $data['blocked_until'] = 0;
+            $result = ['limited' => false, 'retry_after' => 0, 'storage_available' => true];
+        }
+    }
+
+    rewind($handle);
+    ftruncate($handle, 0);
+    fwrite($handle, json_encode($data));
+    fflush($handle);
+    flock($handle, LOCK_UN);
+    fclose($handle);
+
+    return $result;
+}
+
 function security_env_value($key)
 {
     if (isset($_ENV[$key])) {
