@@ -3,6 +3,8 @@ require_once 'auth_security.php';
 require_once 'passlip/dbh.php';
 start_secure_session();
 $twoFactorPending = has_pending_admin_login();
+$turnstileSiteKey = turnstile_site_key();
+$turnstileConfigured = turnstile_is_configured();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -66,6 +68,7 @@ $twoFactorPending = has_pending_admin_login();
 
     .login-panel {
       position: relative;
+      min-width: 0;
       padding: 54px clamp(32px, 6vw, 98px);
       display: flex;
       flex-direction: column;
@@ -99,6 +102,7 @@ $twoFactorPending = has_pending_admin_login();
 
     .form-wrap {
       width: 100%;
+      min-width: 0;
       max-width: 430px;
       margin-top: 72px;
     }
@@ -206,6 +210,19 @@ $twoFactorPending = has_pending_admin_login();
 
     .login-actions {
       margin-top: 28px;
+    }
+
+    .turnstile-wrap {
+      width: 100%;
+      min-height: 65px;
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .turnstile-wrap .cf-turnstile {
+      width: 100%;
     }
 
     .btn-login {
@@ -386,7 +403,7 @@ $twoFactorPending = has_pending_admin_login();
 
       .login-frame {
         min-height: 100vh;
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         border: 0;
         box-shadow: none;
       }
@@ -517,8 +534,25 @@ $twoFactorPending = has_pending_admin_login();
                 </div>
               </div>
 
+              <?php if ($turnstileConfigured) : ?>
+                <div class="turnstile-wrap">
+                  <div
+                    class="cf-turnstile"
+                    data-sitekey="<?php echo htmlspecialchars($turnstileSiteKey, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-theme="light"
+                    data-size="flexible"
+                    data-action="login"
+                    data-refresh-expired="auto"
+                  ></div>
+                </div>
+              <?php else : ?>
+                <div class="alert alert-warning" role="alert">
+                  Human verification is not configured. Please contact the system administrator.
+                </div>
+              <?php endif; ?>
+
               <div class="login-actions">
-                <button type="submit" name="login" id="login_btn" class="btn-login">
+                <button type="submit" name="login" id="login_btn" class="btn-login"<?php echo $turnstileConfigured ? '' : ' disabled aria-disabled="true"'; ?>>
                   <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
                   <span>Login</span>
                 </button>
@@ -555,6 +589,10 @@ $twoFactorPending = has_pending_admin_login();
     </section>
   </main>
 
+  <?php if (!$twoFactorPending && $turnstileConfigured) : ?>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <?php endif; ?>
+
   <script>
     var errorAlert = document.getElementById('error-alert');
     if (errorAlert) {
@@ -579,5 +617,3 @@ $twoFactorPending = has_pending_admin_login();
 </body>
 
 </html>
-
-

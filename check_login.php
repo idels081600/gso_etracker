@@ -50,6 +50,36 @@ if ($throttle['locked']) {
     exit;
 }
 
+$turnstileVerification = verify_turnstile_token(
+    $_POST['cf-turnstile-response'] ?? '',
+    $_SERVER['REMOTE_ADDR'] ?? ''
+);
+
+if (!$turnstileVerification['success']) {
+    $reason = $turnstileVerification['reason'] ?? 'unknown';
+    $serviceFailureReasons = [
+        'not_configured',
+        'curl_unavailable',
+        'curl_initialization_failed',
+        'provider_unreachable',
+        'provider_http_error',
+        'invalid_provider_response',
+    ];
+
+    $_SESSION['LoginMessage'] = in_array($reason, $serviceFailureReasons, true)
+        ? 'Human verification is temporarily unavailable. Please try again later.'
+        : 'Please complete the human verification and try again.';
+
+    security_audit_log('turnstile_failed', [
+        'reason' => $reason,
+        'error_codes' => $turnstileVerification['error_codes'] ?? [],
+    ]);
+
+    mysqli_close($conn);
+    header("location:login_v2.php");
+    exit;
+}
+
 if (is_numeric($input)) {
     $sql = "SELECT * FROM logindb WHERE id = ?";
     $stmt = mysqli_prepare($conn, $sql);

@@ -37,6 +37,138 @@ function login_throttle_config()
     ];
 }
 
+function security_env_value($key)
+{
+    if (isset($_ENV[$key])) {
+        return trim((string) $_ENV[$key]);
+    }
+
+    if (isset($_SERVER[$key])) {
+        return trim((string) $_SERVER[$key]);
+    }
+
+    $value = getenv($key);
+    return $value === false ? '' : trim((string) $value);
+}
+
+function turnstile_site_key()
+{
+    return security_env_value('TURNSTILE_SITE_KEY');
+}
+
+function turnstile_secret_key()
+{
+    return security_env_value('TURNSTILE_SECRET_KEY');
+}
+
+function turnstile_allowed_hostnames()
+{
+    $configuredHostnames = explode(',', security_env_value('TURNSTILE_ALLOWED_HOSTNAMES'));
+    $hostnames = [];
+
+    foreach ($configuredHostnames as $hostname) {
+        $hostname = strtolower(rtrim(trim($hostname), '.'));
+        if ($hostname !== '') {
+            $hostnames[] = $hostname;
+        }
+    }
+
+    return array_values(array_unique($hostnames));
+}
+
+function turnstile_is_configured()
+{
+    return turnstile_site_key() !== ''
+        && turnstile_secret_key() !== ''
+        && turnstile_allowed_hostnames() !== [];
+}
+
+function validate_turnstile_response(array $verification)
+{
+    $errorCodes = isset($verification['error-codes']) && is_array($verification['error-codes'])
+        ? array_values(array_filter($verification['error-codes'], 'is_string'))
+        : [];
+
+    if (($verification['success'] ?? false) !== true) {
+        return ['success' => false, 'reason' => 'challenge_rejected', 'error_codes' => $errorCodes];
+    }
+
+    if (($verification['action'] ?? '') !== 'login') {
+        return ['success' => false, 'reason' => 'action_mismatch', 'error_codes' => $errorCodes];
+    }
+
+    $verifiedHostname = strtolower(rtrim(trim((string) ($verification['hostname'] ?? '')), '.'));
+    if ($verifiedHostname === '' || !in_array($verifiedHostname, turnstile_allowed_hostnames(), true)) {
+        return ['success' => false, 'reason' => 'hostname_mismatch', 'error_codes' => $errorCodes];
+    }
+
+    return ['success' => true, 'reason' => 'verified', 'error_codes' => []];
+}
+
+function verify_turnstile_token($token, $remoteIp = null)
+{
+    $token = trim((string) $token);
+
+    if (!turnstile_is_configured()) {
+        return ['success' => false, 'reason' => 'not_configured', 'error_codes' => []];
+    }
+
+    if ($token === '') {
+        return ['success' => false, 'reason' => 'missing_token', 'error_codes' => []];
+    }
+
+    if (strlen($token) > 2048) {
+        return ['success' => false, 'reason' => 'invalid_token_length', 'error_codes' => []];
+    }
+
+    if (!function_exists('curl_init')) {
+        return ['success' => false, 'reason' => 'curl_unavailable', 'error_codes' => []];
+    }
+
+    $payload = [
+        'secret' => turnstile_secret_key(),
+        'response' => $token,
+    ];
+
+    $remoteIp = trim((string) $remoteIp);
+    if ($remoteIp !== '') {
+        $payload['remoteip'] = $remoteIp;
+    }
+
+    $curl = curl_init('https://challenges.cloudflare.com/turnstile/v0/siteverify');
+    if ($curl === false) {
+        return ['success' => false, 'reason' => 'curl_initialization_failed', 'error_codes' => []];
+    }
+
+    curl_setopt_array($curl, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($payload, '', '&', PHP_QUERY_RFC3986),
+        CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT => 6,
+    ]);
+
+    $responseBody = curl_exec($curl);
+    $httpStatus = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+    $transportFailed = $responseBody === false;
+
+    if ($transportFailed) {
+        return ['success' => false, 'reason' => 'provider_unreachable', 'error_codes' => []];
+    }
+
+    if ($httpStatus !== 200) {
+        return ['success' => false, 'reason' => 'provider_http_error', 'error_codes' => []];
+    }
+
+    $verification = json_decode($responseBody, true);
+    if (!is_array($verification)) {
+        return ['success' => false, 'reason' => 'invalid_provider_response', 'error_codes' => []];
+    }
+
+    return validate_turnstile_response($verification);
+}
+
 function login_attempts_dir()
 {
     $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'cgso_login_attempts';
