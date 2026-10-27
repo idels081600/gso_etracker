@@ -106,15 +106,18 @@ function turnstile_uses_test_credentials()
         || in_array(turnstile_secret_key(), $testSecretKeys, true);
 }
 
+function turnstile_test_credentials_allowed()
+{
+    return in_array(turnstile_request_hostname(), ['localhost', '127.0.0.1', '::1'], true);
+}
+
 function turnstile_configuration_issue()
 {
     if (turnstile_site_key() === '' || turnstile_secret_key() === '' || turnstile_allowed_hostnames() === []) {
         return 'not_configured';
     }
 
-    $hostname = turnstile_request_hostname();
-    $localHostnames = ['localhost', '127.0.0.1', '::1'];
-    if (turnstile_uses_test_credentials() && !in_array($hostname, $localHostnames, true)) {
+    if (turnstile_uses_test_credentials() && !turnstile_test_credentials_allowed()) {
         return 'test_keys_not_allowed';
     }
 
@@ -134,6 +137,10 @@ function validate_turnstile_response(array $verification)
 
     if (($verification['success'] ?? false) !== true) {
         return ['success' => false, 'reason' => 'challenge_rejected', 'error_codes' => $errorCodes];
+    }
+
+    if (turnstile_uses_test_credentials() && turnstile_test_credentials_allowed()) {
+        return ['success' => true, 'reason' => 'verified_test_response', 'error_codes' => []];
     }
 
     if (($verification['action'] ?? '') !== 'login') {

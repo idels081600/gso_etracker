@@ -41,6 +41,20 @@ expect_turnstile(
     turnstile_configuration_issue() === null,
     'Localhost must continue to allow Cloudflare test credentials.'
 );
+expect_turnstile(
+    validate_turnstile_response([
+        'success' => true,
+        'hostname' => 'example.com',
+    ])['success'] === true,
+    'Successful Cloudflare dummy responses must pass only in localhost test mode.'
+);
+expect_turnstile(
+    validate_turnstile_response([
+        'success' => false,
+        'error-codes' => ['invalid-input-response'],
+    ])['reason'] === 'challenge_rejected',
+    'Rejected Cloudflare dummy responses must still fail in localhost test mode.'
+);
 
 configure_turnstile_test(
     'production-site-key',
