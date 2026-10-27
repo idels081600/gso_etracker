@@ -225,6 +225,25 @@ $turnstileConfigured = turnstile_is_configured();
       width: 100%;
     }
 
+    .turnstile-status {
+      min-height: 20px;
+      margin: 8px 0 0;
+      color: var(--cgso-muted);
+      font-size: 0.82rem;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .turnstile-status.is-success {
+      color: var(--cgso-teal);
+      font-weight: 700;
+    }
+
+    .turnstile-status.is-error {
+      color: #a52323;
+      font-weight: 650;
+    }
+
     .btn-login {
       width: 100%;
       height: 52px;
@@ -246,6 +265,17 @@ $turnstileConfigured = turnstile_is_configured();
       color: #fff;
       box-shadow: 0 14px 28px rgba(4, 79, 89, 0.22);
       transform: translateY(-1px);
+    }
+
+    .btn-login:disabled,
+    .btn-login:disabled:hover,
+    .btn-login:disabled:focus {
+      background: #6f8589;
+      color: rgba(255, 255, 255, 0.88);
+      box-shadow: none;
+      cursor: not-allowed;
+      opacity: 0.78;
+      transform: none;
     }
 
     .support-row {
@@ -497,7 +527,7 @@ $turnstileConfigured = turnstile_is_configured();
           <?php endif; ?>
 
           <?php if ($twoFactorPending) : ?>
-            <form action="check_login.php" method="POST">
+            <form action="check_login.php" method="POST" id="login-form">
               <div class="form-group">
                 <label class="form-label" for="two_factor_code">Admin security code</label>
                 <div class="input-shell">
@@ -543,8 +573,14 @@ $turnstileConfigured = turnstile_is_configured();
                     data-size="flexible"
                     data-action="login"
                     data-refresh-expired="auto"
+                    data-callback="onTurnstileSuccess"
+                    data-expired-callback="onTurnstileExpired"
+                    data-error-callback="onTurnstileError"
+                    data-timeout-callback="onTurnstileTimeout"
+                    data-unsupported-callback="onTurnstileUnsupported"
                   ></div>
                 </div>
+                <p class="turnstile-status" id="turnstile-status" aria-live="polite">Human verification is loading&hellip;</p>
               <?php else : ?>
                 <div class="alert alert-warning" role="alert">
                   Human verification is not configured. Please contact the system administrator.
@@ -552,7 +588,7 @@ $turnstileConfigured = turnstile_is_configured();
               <?php endif; ?>
 
               <div class="login-actions">
-                <button type="submit" name="login" id="login_btn" class="btn-login"<?php echo $turnstileConfigured ? '' : ' disabled aria-disabled="true"'; ?>>
+                <button type="submit" name="login" id="login_btn" class="btn-login" disabled aria-disabled="true">
                   <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
                   <span>Login</span>
                 </button>
@@ -594,6 +630,56 @@ $turnstileConfigured = turnstile_is_configured();
   <?php endif; ?>
 
   <script>
+    var loginForm = document.getElementById('login-form');
+    var loginButton = document.getElementById('login_btn');
+    var turnstileStatus = document.getElementById('turnstile-status');
+    var turnstileRequired = <?php echo (!$twoFactorPending && $turnstileConfigured) ? 'true' : 'false'; ?>;
+    var turnstileReady = false;
+
+    function setTurnstileState(isReady, message, stateClass) {
+      turnstileReady = isReady;
+
+      if (loginButton) {
+        loginButton.disabled = !isReady;
+        loginButton.setAttribute('aria-disabled', isReady ? 'false' : 'true');
+      }
+
+      if (turnstileStatus) {
+        turnstileStatus.textContent = message;
+        turnstileStatus.className = 'turnstile-status' + (stateClass ? ' ' + stateClass : '');
+      }
+    }
+
+    window.onTurnstileSuccess = function(token) {
+      setTurnstileState(typeof token === 'string' && token.length > 0, 'Verification complete.', 'is-success');
+    };
+
+    window.onTurnstileExpired = function() {
+      setTurnstileState(false, 'Verification expired. Please wait for a new check.', 'is-error');
+    };
+
+    window.onTurnstileError = function() {
+      setTurnstileState(false, 'Verification could not be completed. Please refresh and try again.', 'is-error');
+    };
+
+    window.onTurnstileTimeout = function() {
+      setTurnstileState(false, 'Verification timed out. Please try again.', 'is-error');
+    };
+
+    window.onTurnstileUnsupported = function() {
+      setTurnstileState(false, 'This browser cannot complete verification. Please use an updated browser.', 'is-error');
+    };
+
+    if (loginForm && turnstileRequired) {
+      loginForm.addEventListener('submit', function(event) {
+        var tokenField = loginForm.querySelector('input[name="cf-turnstile-response"]');
+        if (!turnstileReady || !tokenField || !tokenField.value) {
+          event.preventDefault();
+          setTurnstileState(false, 'Please wait for human verification to finish.', 'is-error');
+        }
+      });
+    }
+
     var errorAlert = document.getElementById('error-alert');
     if (errorAlert) {
       setTimeout(function() {

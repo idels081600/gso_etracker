@@ -76,11 +76,54 @@ function turnstile_allowed_hostnames()
     return array_values(array_unique($hostnames));
 }
 
+function turnstile_request_hostname()
+{
+    $httpHost = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    if ($httpHost === '') {
+        return '';
+    }
+
+    $hostname = parse_url('http://' . $httpHost, PHP_URL_HOST);
+    return is_string($hostname) ? strtolower(rtrim($hostname, '.')) : '';
+}
+
+function turnstile_uses_test_credentials()
+{
+    $testSiteKeys = [
+        '1x00000000000000000000AA',
+        '2x00000000000000000000AB',
+        '1x00000000000000000000BB',
+        '2x00000000000000000000BB',
+        '3x00000000000000000000FF',
+    ];
+    $testSecretKeys = [
+        '1x0000000000000000000000000000000AA',
+        '2x0000000000000000000000000000000AA',
+        '3x0000000000000000000000000000000AA',
+    ];
+
+    return in_array(turnstile_site_key(), $testSiteKeys, true)
+        || in_array(turnstile_secret_key(), $testSecretKeys, true);
+}
+
+function turnstile_configuration_issue()
+{
+    if (turnstile_site_key() === '' || turnstile_secret_key() === '' || turnstile_allowed_hostnames() === []) {
+        return 'not_configured';
+    }
+
+    $hostname = turnstile_request_hostname();
+    $localHostnames = ['localhost', '127.0.0.1', '::1'];
+    if (turnstile_uses_test_credentials() && !in_array($hostname, $localHostnames, true)) {
+        return 'test_keys_not_allowed';
+    }
+
+    return null;
+}
+
 function turnstile_is_configured()
 {
-    return turnstile_site_key() !== ''
-        && turnstile_secret_key() !== ''
-        && turnstile_allowed_hostnames() !== [];
+    return turnstile_configuration_issue() === null;
 }
 
 function validate_turnstile_response(array $verification)
@@ -109,8 +152,9 @@ function verify_turnstile_token($token, $remoteIp = null)
 {
     $token = trim((string) $token);
 
-    if (!turnstile_is_configured()) {
-        return ['success' => false, 'reason' => 'not_configured', 'error_codes' => []];
+    $configurationIssue = turnstile_configuration_issue();
+    if ($configurationIssue !== null) {
+        return ['success' => false, 'reason' => $configurationIssue, 'error_codes' => []];
     }
 
     if ($token === '') {

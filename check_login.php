@@ -59,6 +59,7 @@ if (!$turnstileVerification['success']) {
     $reason = $turnstileVerification['reason'] ?? 'unknown';
     $serviceFailureReasons = [
         'not_configured',
+        'test_keys_not_allowed',
         'curl_unavailable',
         'curl_initialization_failed',
         'provider_unreachable',
