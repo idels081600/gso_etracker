@@ -9,6 +9,7 @@ if (logi_ib_admin_actor($conn) === null) {
     exit('This account does not have IB Monitoring administrator access. Please sign in with the Version 1 ADMIN_SAP account.');
 }
 logi_ensure_non_ib_delivery_schema($conn);
+logi_ensure_ib_reference_offices($conn);
 if (empty($_SESSION['ib_csrf'])) $_SESSION['ib_csrf'] = bin2hex(random_bytes(32));
 $csrf = $_SESSION['ib_csrf'];
 $status = strtoupper(trim((string)($_GET['status'] ?? 'ALL')));
