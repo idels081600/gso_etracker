@@ -80,6 +80,8 @@ try {
   });
   add('IB Monitoring keepalive refreshes the signed-in session', keepAliveResult.status === 200 && keepAliveResult.body?.active === true, `status=${keepAliveResult.status}`);
   await page.locator('#createIbBtn').click();
+  const temporaryDraftButtonVisible = await page.locator('#saveTemporaryIbDraft').isVisible();
+  add('IB editor shows a temporary draft action', temporaryDraftButtonVisible, `visible=${temporaryDraftButtonVisible}`);
   const cepidoOfficeAvailable = await page.locator('.editor-office-group').first().locator('.group-office option').allTextContents().then(options => options.some(option => option.trim() === 'CEPIDO'));
   add('CEPIDO is available in the IB office dropdown', cepidoOfficeAvailable, `available=${cepidoOfficeAvailable}`);
   const temporaryDraftIbNo = `TEMP-RECOVERY-${Date.now()}`;
@@ -91,6 +93,7 @@ try {
   await page.locator('.editor-item-row').first().locator('.item-search').dispatchEvent('input');
   await page.locator('.editor-item-row').first().locator('.item-qty').fill('3');
   await page.locator('.editor-item-row').first().locator('.item-price').fill('12.50');
+  await page.locator('#saveTemporaryIbDraft').click();
   await page.waitForFunction(() => document.getElementById('ibTemporaryDraftStatus')?.textContent.includes('Temporary draft saved'));
   const storedTemporaryDraft = await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith('logisys:ib-editor-draft:v1:')));
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -120,7 +123,7 @@ try {
   await page.locator('#createIbBtn').click();
   await page.locator('#ibEditorModal').waitFor({ state: 'visible' });
   await page.waitForTimeout(500);
-  const temporarySaveVisible = await page.getByRole('button', { name: 'Save temporarily' }).isVisible();
+  const temporarySaveVisible = await page.getByRole('button', { name: 'Save Temporary Draft' }).isVisible();
   const editorOverflow = await page.locator('#ibEditorModal .modal-content').evaluate(element => Math.max(0, element.scrollWidth - element.clientWidth));
   add('390px IB editor keeps temporary save available without horizontal overflow', temporarySaveVisible && editorOverflow <= 2, `button=${temporarySaveVisible}, overflow=${editorOverflow}px`);
   await page.screenshot({ path: 'outputs/ib-draft-editor-390.png', fullPage: true });

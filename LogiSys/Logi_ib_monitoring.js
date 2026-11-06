@@ -224,7 +224,7 @@
       if(status)return status;
       status=document.createElement('small');
       status.id='ibTemporaryDraftStatus';
-      status.className='d-block text-muted mt-1';
+      status.className='ib-draft-status';
       status.setAttribute('role','status');
       document.querySelector('.ib-editor-total')?.appendChild(status);
       return status;
@@ -238,11 +238,16 @@
       values:controls().map(control=>({value:control.value,checked:control.type==='checkbox'||control.type==='radio'?control.checked:null})),
     });
     const save=(showStatus=true)=>{
-      if(suppressSave||!hasContent())return;
+      if(suppressSave)return false;
+      if(!hasContent()){
+        if(showStatus){const status=draftStatus();if(status)status.textContent='Enter an IB number or item before saving a temporary draft.';}
+        return false;
+      }
       try{
         localStorage.setItem(storageKey,JSON.stringify(capture()));
         if(showStatus){const status=draftStatus();if(status)status.textContent=`Temporary draft saved at ${new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`;}
-      }catch(error){console.warn('Unable to save the temporary IB draft.',error);}
+        return true;
+      }catch(error){console.warn('Unable to save the temporary IB draft.',error);return false;}
     };
     const scheduleSave=()=>{clearTimeout(saveTimer);saveTimer=setTimeout(()=>save(true),450);};
     const clear=(afterSuccessfulSave=false)=>{suppressSave=afterSuccessfulSave;localStorage.removeItem(storageKey);const status=draftStatus();if(status)status.textContent='';document.getElementById('ibDraftRecovery')?.remove();};
@@ -306,12 +311,7 @@
     window.addEventListener('beforeunload',()=>save(false));
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save(false);});
 
-    const temporarySaveButton=document.createElement('button');
-    temporarySaveButton.type='button';
-    temporarySaveButton.className='btn btn-outline-success text-nowrap';
-    temporarySaveButton.innerHTML='<i class="fas fa-save" aria-hidden="true"></i> Save temporarily';
-    temporarySaveButton.addEventListener('click',()=>save(true));
-    editorForm.querySelector('.modal-footer .btn-outline-secondary')?.insertAdjacentElement('beforebegin',temporarySaveButton);
+    document.getElementById('saveTemporaryIbDraft')?.addEventListener('click',()=>save(true));
 
     const originalFetch=window.fetch.bind(window);
     window.fetch=async(...args)=>{
