@@ -24,6 +24,8 @@ const add = (name, passed, detail = '') => {
 try {
   const context = await browser.newContext();
   const page = await context.newPage();
+  page.setDefaultTimeout(60000);
+  page.setDefaultNavigationTimeout(120000);
   const consoleErrors = [];
   const pageErrors = [];
   page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
@@ -59,7 +61,7 @@ try {
 
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 1024, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
-    await page.goto(`${baseUrl}/Logi_ib_monitoring.php`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseUrl}/Logi_ib_monitoring.php`, { waitUntil: 'domcontentloaded' });
     const titleVisible = await page.getByRole('heading', { name: 'IB Monitoring' }).isVisible();
     const records = await page.locator('.ib-record').count();
     const expandedIbBodies = await page.locator('.ib-record > .collapse.show').count();
@@ -70,9 +72,60 @@ try {
     add(`${viewport.width}px has no page-level horizontal overflow`, overflow <= 2, `overflow=${overflow}px`);
     await page.screenshot({ path: `outputs/ib-monitoring-${viewport.width}.png`, fullPage: true });
   }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`${baseUrl}/Logi_ib_monitoring.php`, { waitUntil: 'domcontentloaded' });
+  const keepAliveResult = await page.evaluate(async () => {
+    const response = await fetch('Logi_session_keepalive.php', { cache: 'no-store' });
+    return { status: response.status, body: await response.json() };
+  });
+  add('IB Monitoring keepalive refreshes the signed-in session', keepAliveResult.status === 200 && keepAliveResult.body?.active === true, `status=${keepAliveResult.status}`);
+  await page.locator('#createIbBtn').click();
+  const temporaryDraftIbNo = `TEMP-RECOVERY-${Date.now()}`;
+  await page.locator('#ibNumber').fill(temporaryDraftIbNo);
+  await page.locator('.editor-office-group').first().locator('.group-office').selectOption({ index: 1 });
+  await page.locator('.editor-office-group').first().locator('.group-description').fill('Temporary draft browser test');
+  const firstCatalogItem = await page.evaluate(() => window.ibPageData.items[0]);
+  await page.locator('.editor-item-row').first().locator('.item-search').fill(`${firstCatalogItem.item_name} — ${firstCatalogItem.item_no}`);
+  await page.locator('.editor-item-row').first().locator('.item-search').dispatchEvent('input');
+  await page.locator('.editor-item-row').first().locator('.item-qty').fill('3');
+  await page.locator('.editor-item-row').first().locator('.item-price').fill('12.50');
+  await page.waitForFunction(() => document.getElementById('ibTemporaryDraftStatus')?.textContent.includes('Temporary draft saved'));
+  const storedTemporaryDraft = await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith('logisys:ib-editor-draft:v1:')));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const recoveryVisible = await page.locator('#ibDraftRecovery').isVisible();
+  await page.screenshot({ path: 'outputs/ib-draft-recovery-1440.png', fullPage: true });
+  await page.locator('#ibDraftRecovery').getByRole('button', { name: 'Restore draft' }).click();
+  await page.locator('#ibEditorModal').waitFor({ state: 'visible' });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: 'outputs/ib-draft-restored-1440.png', fullPage: true });
+  const restoredNumber = await page.locator('#ibNumber').inputValue();
+  const restoredDescription = await page.locator('.editor-office-group').first().locator('.group-description').inputValue();
+  const restoredQuantity = await page.locator('.editor-item-row').first().locator('.item-qty').inputValue();
+  const restoredPrice = await page.locator('.editor-item-row').first().locator('.item-price').inputValue();
+  await page.locator('#addOfficeGroup').click();
+  const restoredGroupIds = await page.locator('.editor-group-body').evaluateAll(elements => elements.map(element => element.id));
+  const uniqueRestoredGroupIds = new Set(restoredGroupIds).size === restoredGroupIds.length;
+  add('Unsaved IB form is restored after reload', storedTemporaryDraft && recoveryVisible && restoredNumber === temporaryDraftIbNo && restoredDescription === 'Temporary draft browser test' && restoredQuantity === '3' && restoredPrice === '12.50' && uniqueRestoredGroupIds, `stored=${storedTemporaryDraft}, recovery=${recoveryVisible}, groups=${restoredGroupIds.length}`);
+  await page.locator('.editor-office-group').nth(1).locator('.remove-group').click();
+  page.once('dialog', dialog => dialog.accept());
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+    page.locator('#saveDraftBtn').click(),
+  ]);
+  const temporaryDraftCleared = await page.evaluate(() => !Object.keys(localStorage).some(key => key.startsWith('logisys:ib-editor-draft:v1:')));
+  add('Successful IB save clears the temporary browser draft', temporaryDraftCleared, `cleared=${temporaryDraftCleared}`);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#createIbBtn').click();
+  await page.locator('#ibEditorModal').waitFor({ state: 'visible' });
+  await page.waitForTimeout(500);
+  const temporarySaveVisible = await page.getByRole('button', { name: 'Save temporarily' }).isVisible();
+  const editorOverflow = await page.locator('#ibEditorModal .modal-content').evaluate(element => Math.max(0, element.scrollWidth - element.clientWidth));
+  add('390px IB editor keeps temporary save available without horizontal overflow', temporarySaveVisible && editorOverflow <= 2, `button=${temporarySaveVisible}, overflow=${editorOverflow}px`);
+  await page.screenshot({ path: 'outputs/ib-draft-editor-390.png', fullPage: true });
+  await page.locator('#ibEditorModal [data-bs-dismiss="modal"]').first().click();
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
-    await page.goto(`${baseUrl}/Logi_ib_monitoring.php`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseUrl}/Logi_ib_monitoring.php`, { waitUntil: 'domcontentloaded' });
     const completedOfficeRecord = page.locator('.ib-record:has(.ib-office-fulfilled)').first();
     const fullyDeliveredOffices = await page.locator('.ib-office-fulfilled').count();
     if (fullyDeliveredOffices > 0) await completedOfficeRecord.locator('.ib-record-head').click();

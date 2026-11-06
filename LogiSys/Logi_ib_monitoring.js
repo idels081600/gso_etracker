@@ -206,4 +206,133 @@
   document.getElementById('deliveryLines').addEventListener('change',event=>{if(!event.target.matches('.delivery-full'))return;const line=event.target.closest('.delivery-line'),input=line.querySelector('.delivery-qty');if(event.target.checked){input.value=line.dataset.remaining;input.readOnly=true;input.setAttribute('aria-readonly','true');}else{input.value='0';input.readOnly=false;input.removeAttribute('aria-readonly');input.focus();input.select();}calculateDelivery();});
   deliveryForm.addEventListener('submit',async event=>{event.preventDefault();const button=event.submitter;const lines=[...document.querySelectorAll('.delivery-line')].map(line=>({line_id:Number(line.dataset.lineId),quantity:Number(line.querySelector('.delivery-qty').value)})).filter(line=>line.quantity>0);if(!lines.length)return alert('Enter at least one received quantity.');busy(button,true,'Posting…');try{const result=await send({action:'record_delivery',ib_id:Number(document.getElementById('deliveryIbId').value),delivery_date:document.getElementById('deliveryDate').value,notes:document.getElementById('deliveryNotes').value.trim(),idempotency_token:deliveryToken,lines});alert(result.message);location.reload();}catch(error){alert(error.message);busy(button,false);}});
   document.querySelectorAll('.reverse-delivery').forEach(button=>button.addEventListener('click',()=>{const reason=prompt('Enter the reason for reversing this entire delivery:');if(!reason)return;simpleAction(button,{action:'reverse_delivery',delivery_id:Number(button.dataset.deliveryId),reason},'Reverse this delivery and deduct its quantities from inventory?','Reversing…');}));
+  const ibDraftStorage=(()=>{
+    const editorForm=document.getElementById('ibEditorForm');
+    const groups=document.getElementById('officeGroups');
+    const ibNumber=document.getElementById('ibNumber');
+    const editId=document.getElementById('editIbId');
+    if(!editorForm||!groups||!ibNumber||!editId)return null;
+
+    const currentUser=(document.querySelector('.navbar-nav.ms-auto .nav-link')?.textContent||'admin').trim().replace(/\s+/g,'_');
+    const storageKey=`logisys:ib-editor-draft:v1:${currentUser}`;
+    let saveTimer=null,sessionWarningShown=false,suppressSave=false;
+    const controls=()=>[...groups.querySelectorAll('input,select,textarea')];
+    const hasContent=()=>ibNumber.value.trim()!==''||controls().some(control=>control.type==='checkbox'?control.checked:String(control.value||'').trim()!=='');
+    const readDraft=()=>{try{const draft=JSON.parse(localStorage.getItem(storageKey)||'null');return draft&&draft.version===1?draft:null;}catch{return null;}};
+    const draftStatus=()=>{
+      let status=document.getElementById('ibTemporaryDraftStatus');
+      if(status)return status;
+      status=document.createElement('small');
+      status.id='ibTemporaryDraftStatus';
+      status.className='d-block text-muted mt-1';
+      status.setAttribute('role','status');
+      document.querySelector('.ib-editor-total')?.appendChild(status);
+      return status;
+    };
+    const capture=()=>({
+      version:1,
+      savedAt:Date.now(),
+      editId:editId.value||'',
+      ibNumber:ibNumber.value,
+      groupsHtml:groups.innerHTML,
+      values:controls().map(control=>({value:control.value,checked:control.type==='checkbox'||control.type==='radio'?control.checked:null})),
+    });
+    const save=(showStatus=true)=>{
+      if(suppressSave||!hasContent())return;
+      try{
+        localStorage.setItem(storageKey,JSON.stringify(capture()));
+        if(showStatus){const status=draftStatus();if(status)status.textContent=`Temporary draft saved at ${new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`;}
+      }catch(error){console.warn('Unable to save the temporary IB draft.',error);}
+    };
+    const scheduleSave=()=>{clearTimeout(saveTimer);saveTimer=setTimeout(()=>save(true),450);};
+    const clear=(afterSuccessfulSave=false)=>{suppressSave=afterSuccessfulSave;localStorage.removeItem(storageKey);const status=draftStatus();if(status)status.textContent='';document.getElementById('ibDraftRecovery')?.remove();};
+    const applyValues=draft=>{
+      editId.value=draft.editId||'';
+      ibNumber.value=draft.ibNumber||'';
+      groups.innerHTML=draft.groupsHtml||'';
+      controls().forEach((control,index)=>{
+        const saved=draft.values?.[index];
+        if(!saved)return;
+        control.value=saved.value??'';
+        if(saved.checked!==null)control.checked=Boolean(saved.checked);
+        control.dispatchEvent(new Event('change',{bubbles:true}));
+        control.dispatchEvent(new Event('input',{bubbles:true}));
+      });
+      const restoredSequences=[...groups.querySelectorAll('.editor-group-body')].map(body=>Number(String(body.id).replace(/\D+/g,''))||0);
+      editorGroupSequence=Math.max(editorGroupSequence,...restoredSequences);
+      const restoredItemNumbers=[...groups.querySelectorAll('.manual-item-no')].map(input=>Number(input.value)||0);
+      nextAutomaticItemNo=Math.max(nextAutomaticItemNo,...restoredItemNumbers.map(number=>number+1));
+      calculateEditor();
+      const status=draftStatus();
+      if(status)status.textContent='Temporary draft restored. Save Draft when ready.';
+    };
+    const restore=draft=>{
+      const openEditor=()=>{
+        const editButton=draft.editId?document.querySelector(`.edit-ib[data-id="${CSS.escape(String(draft.editId))}"]`):null;
+        if(draft.editId&&!editButton){location.href='Logi_ib_monitoring.php';return;}
+        (editButton||document.getElementById('createIbBtn'))?.click();
+        setTimeout(()=>applyValues(draft),80);
+      };
+      openEditor();
+      document.getElementById('ibDraftRecovery')?.remove();
+    };
+    const showRecovery=draft=>{
+      if(!draft||Date.now()-Number(draft.savedAt||0)>7*24*60*60*1000){if(draft)clear();return;}
+      const host=document.querySelector('.ib-page-header');
+      if(!host||document.getElementById('ibDraftRecovery'))return;
+      const banner=document.createElement('section');
+      banner.id='ibDraftRecovery';
+      banner.className='alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 px-3 mb-3';
+      banner.setAttribute('role','status');
+      const details=document.createElement('div');
+      const title=document.createElement('strong');title.textContent='Unsaved IB draft found';
+      const note=document.createElement('small');note.className='d-block';note.textContent=`Saved ${new Date(draft.savedAt).toLocaleString()}. Restore it to continue where you left off.`;
+      details.append(title,note);
+      const actions=document.createElement('div');actions.className='d-flex gap-2';
+      const restoreButton=document.createElement('button');restoreButton.type='button';restoreButton.className='btn btn-sm btn-success';restoreButton.textContent='Restore draft';restoreButton.addEventListener('click',()=>restore(draft));
+      const discardButton=document.createElement('button');discardButton.type='button';discardButton.className='btn btn-sm btn-outline-secondary';discardButton.textContent='Discard';discardButton.addEventListener('click',()=>clear(false));
+      actions.append(restoreButton,discardButton);banner.append(details,actions);host.insertAdjacentElement('afterend',banner);
+    };
+    const warnExpired=()=>{
+      save(true);
+      if(sessionWarningShown)return;
+      sessionWarningShown=true;
+      alert('Your session has expired, but your IB form was saved as a temporary draft. Sign in again, return to IB Monitoring, and choose Restore draft.');
+    };
+
+    editorForm.addEventListener('input',scheduleSave);
+    editorForm.addEventListener('change',scheduleSave);
+    editorForm.addEventListener('click',event=>{if(event.target.closest('button'))setTimeout(scheduleSave,0);});
+    window.addEventListener('beforeunload',()=>save(false));
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save(false);});
+
+    const temporarySaveButton=document.createElement('button');
+    temporarySaveButton.type='button';
+    temporarySaveButton.className='btn btn-outline-success text-nowrap';
+    temporarySaveButton.innerHTML='<i class="fas fa-save" aria-hidden="true"></i> Save temporarily';
+    temporarySaveButton.addEventListener('click',()=>save(true));
+    editorForm.querySelector('.modal-footer .btn-outline-secondary')?.insertAdjacentElement('beforebegin',temporarySaveButton);
+
+    const originalFetch=window.fetch.bind(window);
+    window.fetch=async(...args)=>{
+      const options=args[1]||{};
+      let editorRequest=false;
+      try{const payload=JSON.parse(String(options.body||''));editorRequest=payload?.action==='create'||payload?.action==='update_draft';}catch{}
+      if(editorRequest)save(false);
+      const response=await originalFetch(...args);
+      if(response.status===401)warnExpired();
+      if(editorRequest&&response.ok){
+        try{const result=await response.clone().json();if(result?.success)clear(true);}catch{}
+      }
+      return response;
+    };
+    const keepAlive=async()=>{
+      try{await window.fetch('Logi_session_keepalive.php',{credentials:'same-origin',cache:'no-store',headers:{'X-Requested-With':'XMLHttpRequest'}});}catch{}
+    };
+    keepAlive();
+    setInterval(keepAlive,2*60*1000);
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')keepAlive();});
+    showRecovery(readDraft());
+    return {save,clear,restore};
+  })();
 })();

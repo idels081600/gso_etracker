@@ -153,6 +153,9 @@ try {
     $response = request_http($baseUrl . '/Logi_ib_action.php', 'POST', '{}', $anonymous, ['Content-Type: application/json']);
     check_result('Authorization', 'Anonymous IB mutations are rejected', $response['status'] === 401, "status={$response['status']}", 'blocker');
 
+    $response = request_http($baseUrl . '/Logi_session_keepalive.php', 'GET', null, $anonymous);
+    check_result('Authorization', 'Anonymous keepalive requests are rejected', $response['status'] === 401, "status={$response['status']}", 'blocker');
+
     request_http($baseUrl . '/login_process.php', 'POST', http_build_query(['username'=>'ADMIN','password'=>$testPassword]), $officeCookie, ['Content-Type: application/x-www-form-urlencoded']);
     $response = request_http($baseUrl . '/Logi_ib_monitoring.php', 'GET', null, $officeCookie);
     check_result('Authorization', 'Non-ADMIN_SAP account is rejected', $response['status'] === 403, "status={$response['status']}", 'blocker');
