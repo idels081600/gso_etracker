@@ -173,9 +173,8 @@ try {
     $csrf = (string) $pageData['csrf'];
     $adminOffice = array_values(array_filter($pageData['offices'], static fn(array $o): bool => strtoupper(trim((string)$o['office_name'])) === 'ADMIN'))[0] ?? null;
     $cswdoOffice = array_values(array_filter($pageData['offices'], static fn(array $o): bool => strtoupper(trim((string)$o['office_name'])) === 'CSWDO'))[0] ?? null;
-    $cepidoOffice = array_values(array_filter($pageData['offices'], static fn(array $o): bool => strtoupper(trim((string)$o['office_name'])) === 'CEPIDO'))[0] ?? null;
     $catalog = array_values($pageData['items']);
-    check_result('Fixtures', 'Required offices and four catalog items exist', $adminOffice !== null && $cswdoOffice !== null && $cepidoOffice !== null && count($catalog) >= 4, 'ADMIN, CSWDO, CEPIDO, catalog');
+    check_result('Fixtures', 'Required offices and four catalog items exist', $adminOffice !== null && $cswdoOffice !== null && count($catalog) >= 4, 'ADMIN, CSWDO, catalog');
 
     $badCsrf = post_json($baseUrl, ['action'=>'activate','ib_id'=>1,'csrf_token'=>'invalid'], $adminCookie);
     check_result('Security', 'IB mutations reject invalid CSRF', $badCsrf['status'] === 403, "status={$badCsrf['status']}", 'blocker');

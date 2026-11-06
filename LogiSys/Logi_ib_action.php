@@ -175,7 +175,6 @@ $data = ib_payload();
 if (empty($_SESSION['ib_csrf']) || !hash_equals($_SESSION['ib_csrf'], (string)($data['csrf_token'] ?? ''))) ib_fail('The security token is invalid. Refresh the page and try again.', 403);
 try {
     logi_ensure_non_ib_delivery_schema($conn);
-    logi_ensure_ib_reference_offices($conn);
 } catch (Throwable $schemaError) {
     error_log('IB schema initialization failed: ' . $schemaError->getMessage());
     ib_fail('The Not in IB delivery records are not available. Ask the administrator to run the database migration.', 500);

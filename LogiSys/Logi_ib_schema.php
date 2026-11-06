@@ -1,28 +1,5 @@
 <?php
 
-function logi_ensure_ib_reference_offices(mysqli $conn): void
-{
-    $requiredOffices = ['CEPIDO'];
-    $find = $conn->prepare('SELECT id FROM office_balances WHERE UPPER(TRIM(office_name)) = ? LIMIT 1');
-    $insert = $conn->prepare('INSERT INTO office_balances (office_name) VALUES (?)');
-    if (!$find || !$insert) {
-        throw new RuntimeException('Unable to prepare IB office catalog updates.');
-    }
-
-    foreach ($requiredOffices as $officeName) {
-        $normalized = strtoupper($officeName);
-        $find->bind_param('s', $normalized);
-        $find->execute();
-        if (!$find->get_result()->fetch_assoc()) {
-            $insert->bind_param('s', $officeName);
-            $insert->execute();
-        }
-    }
-
-    $find->close();
-    $insert->close();
-}
-
 function logi_ensure_non_ib_delivery_schema(mysqli $conn): void
 {
     $sql = "CREATE TABLE IF NOT EXISTS ib_non_ib_delivery_lines (

@@ -80,8 +80,6 @@ try {
   });
   add('IB Monitoring keepalive refreshes the signed-in session', keepAliveResult.status === 200 && keepAliveResult.body?.active === true, `status=${keepAliveResult.status}`);
   await page.locator('#createIbBtn').click();
-  const cepidoOfficeAvailable = await page.locator('.editor-office-group').first().locator('.group-office option').allTextContents().then(options => options.some(option => option.trim() === 'CEPIDO'));
-  add('CEPIDO is available in the IB office dropdown', cepidoOfficeAvailable, `available=${cepidoOfficeAvailable}`);
   const temporaryDraftIbNo = `TEMP-RECOVERY-${Date.now()}`;
   await page.locator('#ibNumber').fill(temporaryDraftIbNo);
   await page.locator('.editor-office-group').first().locator('.group-office').selectOption({ index: 1 });
