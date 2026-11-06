@@ -1,9 +1,15 @@
+# Environment files contain installation-specific credentials and must remain local.
+.env
+.env.*
+!.env.example
+!**/.env.example
 
+# Local dependencies, test output, logs, and generated exports.
 /.playwright-cli/
 /node_modules/
 /tmp/
 /outputs/
-/.env
+/test-results/
 *.log
 /items_requested_deducted_*.csv
 /ics_items_requested_deducted_*.csv
