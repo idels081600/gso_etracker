@@ -3,7 +3,7 @@
         'name' => 'laure/food',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '47e3edf8ee3cdee92a1afd21a57971dcb152b515',
+        'reference' => '4c7ce26d09799ce34138745e49ec4dc46082da93',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -22,7 +22,7 @@
         'laure/food' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '47e3edf8ee3cdee92a1afd21a57971dcb152b515',
+            'reference' => '4c7ce26d09799ce34138745e49ec4dc46082da93',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
