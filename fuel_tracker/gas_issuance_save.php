@@ -144,13 +144,16 @@ try {
             $status = 'draft';
         }
 
+        $issuedBy = trim((string) ($_SESSION['pay_name'] ?? $_SESSION['username'] ?? 'Unknown'));
+        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
         $stmt = $conn->prepare("
             INSERT INTO gas_issuances
-                (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, issuance_scope, approved_at)
+                (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, issuance_scope, approved_at, issued_by, ip_address)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'government', IF(? IN ('approved', 'valid'), NOW(), NULL))
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'government', IF(? IN ('approved', 'valid'), NOW(), NULL), ?, ?)
         ");
-        $stmt->bind_param('sissssdsssss', $serialNo, $vehicleId, $driverName, $office, $purpose, $fuelType, $authorizedLiters, $unit, $issueDate, $expiryDate, $status, $status);
+        $stmt->bind_param('sissssdsssssss', $serialNo, $vehicleId, $driverName, $office, $purpose, $fuelType, $authorizedLiters, $unit, $issueDate, $expiryDate, $status, $status, $issuedBy, $ipAddress);
         $stmt->execute();
         $newId = $stmt->insert_id;
         $stmt->close();

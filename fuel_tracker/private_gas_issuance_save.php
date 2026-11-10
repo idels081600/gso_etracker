@@ -47,7 +47,7 @@ function privateIssuanceDate(string $value, string $label, bool $required = true
 function privateIssuanceVehicle(mysqli $conn, int $vehicleId): array
 {
     if ($vehicleId <= 0) {
-        privateIssuanceJson(['success' => false, 'message' => 'Car is required.'], 422);
+        privateIssuanceJson(['success' => false, 'message' => 'Private vehicle is required.'], 422);
     }
 
     $stmt = $conn->prepare("
@@ -63,7 +63,7 @@ function privateIssuanceVehicle(mysqli $conn, int $vehicleId): array
     $stmt->close();
 
     if (!$row) {
-        privateIssuanceJson(['success' => false, 'message' => 'Selected car was not found.'], 422);
+        privateIssuanceJson(['success' => false, 'message' => 'Selected private vehicle was not found.'], 422);
     }
 
     return $row;
@@ -80,7 +80,7 @@ try {
     if ($action === 'delete') {
         $id = (int) ($input['id'] ?? 0);
         if ($id <= 0) {
-            privateIssuanceJson(['success' => false, 'message' => 'CARS issuance ID is required.'], 422);
+            privateIssuanceJson(['success' => false, 'message' => 'Private gas issuance ID is required.'], 422);
         }
 
         $stmt = $conn->prepare("
@@ -96,7 +96,7 @@ try {
         $stmt->close();
 
         if (!$issuance) {
-            privateIssuanceJson(['success' => false, 'message' => 'CARS issuance record was not found.'], 404);
+            privateIssuanceJson(['success' => false, 'message' => 'Private gas issuance record was not found.'], 404);
         }
 
         $conn->begin_transaction();
@@ -119,7 +119,7 @@ try {
         $stmt->close();
 
         if ($affected < 1) {
-            throw new RuntimeException('CARS issuance record was not found.');
+            throw new RuntimeException('Private gas issuance record was not found.');
         }
 
         $conn->commit();
@@ -128,7 +128,7 @@ try {
 
         privateIssuanceJson([
             'success' => true,
-            'message' => 'CARS issuance deleted.',
+            'message' => 'Private gas issuance deleted.',
             'deleted_id' => $id,
             'serial_no' => (string) ($issuance['serial_no'] ?? ''),
         ]);
@@ -138,7 +138,7 @@ try {
         $id = (int) ($input['id'] ?? 0);
         $approved = filter_var($input['approved'] ?? false, FILTER_VALIDATE_BOOLEAN);
         if ($id <= 0) {
-            privateIssuanceJson(['success' => false, 'message' => 'CARS issuance ID is required.'], 422);
+            privateIssuanceJson(['success' => false, 'message' => 'Private gas issuance ID is required.'], 422);
         }
 
         $stmt = $conn->prepare("
@@ -154,15 +154,15 @@ try {
         $stmt->close();
 
         if (!$row) {
-            privateIssuanceJson(['success' => false, 'message' => 'CARS issuance record was not found.'], 404);
+            privateIssuanceJson(['success' => false, 'message' => 'Private gas issuance record was not found.'], 404);
         }
 
         $currentStatus = strtolower((string) ($row['status'] ?? ''));
         if ($currentStatus === 'used') {
-            privateIssuanceJson(['success' => false, 'message' => 'Used CARS issuances can no longer be changed.'], 409);
+            privateIssuanceJson(['success' => false, 'message' => 'Used private issuances can no longer be changed.'], 409);
         }
         if (in_array($currentStatus, ['expired', 'revoked'], true) && $approved) {
-            privateIssuanceJson(['success' => false, 'message' => 'Expired or revoked CARS issuances cannot be approved.'], 409);
+            privateIssuanceJson(['success' => false, 'message' => 'Expired or revoked private issuances cannot be approved.'], 409);
         }
 
         $newStatus = $approved ? 'approved' : 'draft';
@@ -181,7 +181,7 @@ try {
 
         privateIssuanceJson([
             'success' => true,
-            'message' => $approved ? 'CARS issuance approved.' : 'CARS issuance moved back to draft.',
+            'message' => $approved ? 'Private gas issuance approved.' : 'Private gas issuance moved back to draft.',
             'status' => $newStatus,
             'updated' => $affected,
         ]);
@@ -216,10 +216,10 @@ try {
     $driverName = trim((string) ($input['driver_name'] ?? ''));
     $office = trim((string) ($input['office'] ?? ''));
     if ($office === '') {
-        $office = trim((string) ($vehicle['office'] ?? '')) ?: 'CARS';
+        $office = trim((string) ($vehicle['office'] ?? '')) ?: 'PRIVATE';
     }
 
-    $purpose = trim((string) ($input['purpose'] ?? '')) ?: 'CARS FUEL ISSUANCE';
+    $purpose = trim((string) ($input['purpose'] ?? '')) ?: 'PRIVATE VEHICLE FUEL ISSUANCE';
     $fuelType = trim((string) ($input['fuel_type'] ?? ''));
     if ($fuelType === '') {
         $fuelType = trim((string) ($vehicle['fuel_type'] ?? 'unleaded')) ?: 'unleaded';
@@ -231,20 +231,23 @@ try {
         $status = 'draft';
     }
 
+    $issuedBy = trim((string) ($_SESSION['pay_name'] ?? $_SESSION['username'] ?? 'Unknown'));
+    $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
     $stmt = $conn->prepare("
         INSERT INTO gas_issuances
-            (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, issuance_scope, approved_at)
+            (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, issuance_scope, approved_at, issued_by, ip_address)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'private', IF(? IN ('approved', 'valid'), NOW(), NULL))
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'private', IF(? IN ('approved', 'valid'), NOW(), NULL), ?, ?)
     ");
-    $stmt->bind_param('sissssdsssss', $serialNo, $vehicleId, $driverName, $office, $purpose, $fuelType, $authorizedLiters, $unit, $issueDate, $expiryDate, $status, $status);
+    $stmt->bind_param('sissssdsssssss', $serialNo, $vehicleId, $driverName, $office, $purpose, $fuelType, $authorizedLiters, $unit, $issueDate, $expiryDate, $status, $status, $issuedBy, $ipAddress);
     $stmt->execute();
     $newId = $stmt->insert_id;
     $stmt->close();
 
     privateIssuanceJson([
         'success' => true,
-        'message' => 'CARS issuance saved.',
+        'message' => 'Private gas issuance saved.',
         'id' => $newId,
         'serial_no' => $serialNo,
     ]);
@@ -257,7 +260,7 @@ try {
         privateIssuanceJson(['success' => false, 'message' => 'This serial number already exists.'], 409);
     }
 
-    privateIssuanceJson(['success' => false, 'message' => 'Unable to save CARS issuance.'], 500);
+    privateIssuanceJson(['success' => false, 'message' => 'Unable to save private gas issuance.'], 500);
 } catch (Throwable $e) {
     if ($transactionStarted) {
         $conn->rollback();

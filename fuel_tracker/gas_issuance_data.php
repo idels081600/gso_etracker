@@ -375,11 +375,14 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
             AND LOWER(TRIM(COALESCE(issuance_scope, 'government'))) <> 'private'
         LIMIT 1
     ");
+    $issuedBy = trim((string) ($_SESSION['pay_name'] ?? $_SESSION['username'] ?? 'System'));
+    $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
     $insert = $conn->prepare("
         INSERT INTO gas_issuances
-            (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, issuance_scope, approved_at)
+            (serial_no, vehicle_id, driver_name, office, purpose, fuel_type, authorized_liters, unit, issue_date, expiry_date, status, issuance_scope, approved_at, issued_by, ip_address)
         VALUES
-            (?, ?, ?, ?, 'OFFICIAL TRAVEL', ?, ?, 'Liters', ?, ?, 'draft', 'government', NULL)
+            (?, ?, ?, ?, 'OFFICIAL TRAVEL', ?, ?, 'Liters', ?, ?, 'draft', 'government', NULL, ?, ?)
     ");
 
     $created = 0;
@@ -409,7 +412,7 @@ function fuelTrackerCreateScheduledIssuances(mysqli $conn, ?DateTimeInterface $d
             continue;
         }
 
-        $insert->bind_param('sisssdss', $serialNo, $vehicleId, $driverName, $office, $fuelType, $authorizedLiters, $issueDate, $expiryDate);
+        $insert->bind_param('sisssdssss', $serialNo, $vehicleId, $driverName, $office, $fuelType, $authorizedLiters, $issueDate, $expiryDate, $issuedBy, $ipAddress);
         $insert->execute();
         $created++;
     }
