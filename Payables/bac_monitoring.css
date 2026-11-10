@@ -6,12 +6,15 @@
 .bac-monitoring-content {
   min-height: 100vh;
   overflow: hidden;
-  padding: clamp(16px, 2vw, 32px) clamp(16px, 2vw, 32px) clamp(16px, 2vw, 32px) calc(var(--sidebar-width, 250px) + clamp(16px, 2vw, 32px));
+  padding: clamp(16px, 2vw, 32px) clamp(16px, 2vw, 32px) clamp(16px, 2vw, 32px)
+    calc(var(--sidebar-width, 250px) + clamp(16px, 2vw, 32px));
   background: #f6f8fb;
 }
 
 body.sidebar-collapsed .bac-monitoring-content {
-  padding-left: calc(var(--sidebar-collapsed-width, 78px) + clamp(16px, 2vw, 32px));
+  padding-left: calc(
+    var(--sidebar-collapsed-width, 78px) + clamp(16px, 2vw, 32px)
+  );
 }
 
 .bac-monitoring-shell {
@@ -193,10 +196,10 @@ body.sidebar-collapsed .bac-monitoring-content {
 
 .bac-monitoring-row {
   display: grid;
-  grid-template-columns: 110px 150px 260px 130px 130px 190px 140px 120px 135px 120px 115px 150px 180px 130px 120px 175px 140px 185px 120px 150px 92px;
+  grid-template-columns: 110px 150px 260px 130px 130px 130px 155px 190px 140px 120px 135px 120px 115px 150px 180px 130px 120px 175px 140px 185px 120px 150px 145px;
   gap: 12px;
   align-items: center;
-  min-width: 3312px;
+  min-width: 3645px;
   min-height: 54px;
   border: 1px solid #edf0f4;
   border-radius: 8px;
@@ -247,6 +250,49 @@ body.sidebar-collapsed .bac-monitoring-content {
   color: #101828;
   font-size: 0.8rem;
   font-weight: 850;
+}
+
+.bac-payment-paid {
+  color: #0f766e;
+}
+
+.bac-payment-balance {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+.bac-payment-balance > strong {
+  color: #101828;
+  font-size: 0.8rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.bac-payment-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #667085;
+  font-size: 0.66rem;
+  font-weight: 850;
+  padding: 3px 7px;
+  white-space: nowrap;
+}
+
+.bac-payment-status.is-partially-paid {
+  border-color: #a5d8d2;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.bac-payment-status.is-fully-paid {
+  border-color: #b7e4c7;
+  background: #ecfdf3;
+  color: #15803d;
 }
 
 .bac-bidder,
@@ -406,7 +452,10 @@ body.sidebar-collapsed .bac-monitoring-content {
   color: #475467;
   font-size: 0.74rem;
   text-decoration: none;
-  transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .bac-icon-button:hover,
@@ -421,6 +470,12 @@ body.sidebar-collapsed .bac-monitoring-content {
 .bac-icon-button.is-danger:focus-visible {
   border-color: #fecaca;
   color: #b42318;
+}
+
+.bac-icon-button.bac-payment-row {
+  border-color: #a5d8d2;
+  background: #f0fdfa;
+  color: #0f766e;
 }
 
 .bac-monitoring-empty {
@@ -579,6 +634,262 @@ body.sidebar-collapsed .bac-monitoring-content {
   border-color: #158f82;
 }
 
+.bac-payment-dialog {
+  max-width: 1200px;
+}
+
+.bac-payment-modal {
+  border: 1px solid #e6eaf0;
+  border-radius: 8px;
+}
+
+.bac-payment-modal .modal-header {
+  border-color: #e6eaf0;
+}
+
+.bac-payment-modal .modal-title {
+  color: #172033;
+  font-size: 1rem;
+  font-weight: 850;
+}
+#ibPaymentModal .modal-dialog.bac-payment-dialog {
+  max-width: 1200px !important;
+}
+
+.bac-payment-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid #e6eaf0;
+  border-radius: 8px;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.bac-payment-summary > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 12px 14px;
+}
+
+.bac-payment-summary > div + div {
+  border-left: 1px solid #e6eaf0;
+}
+
+.bac-payment-summary span:not(.bac-payment-status) {
+  color: #667085;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.bac-payment-summary strong:not(.bac-payment-status) {
+  overflow: hidden;
+  color: #101828;
+  font-size: 0.95rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bac-payment-entry,
+.bac-payment-history {
+  margin-top: 18px;
+}
+
+.bac-payment-section-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.bac-payment-section-head h6 {
+  margin: 0;
+  color: #172033;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.bac-payment-section-head span {
+  color: #667085;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.bac-payment-cancel-edit {
+  border: 0;
+  background: transparent;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 850;
+  padding: 4px;
+}
+
+.bac-payment-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.7fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.bac-payment-dv-number {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #0f766e;
+  white-space: nowrap;
+}
+
+.bac-payment-form-grid label {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.bac-payment-form-grid label > span {
+  color: #344054;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.bac-payment-form-grid input {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #202432;
+  font-size: 0.82rem;
+  font-weight: 700;
+  outline: none;
+  padding: 0 10px;
+}
+
+.bac-payment-form-grid input:focus {
+  border-color: #20a797;
+  box-shadow: 0 0 0 3px rgba(32, 167, 151, 0.12);
+}
+
+.bac-payment-form-grid input:disabled,
+.bac-payment-form-grid button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.bac-payment-form-grid > button {
+  height: 40px;
+  white-space: nowrap;
+}
+
+.bac-payment-money-input {
+  position: relative;
+}
+
+.bac-payment-money-input > span {
+  position: absolute;
+  top: 50%;
+  left: 11px;
+  color: #667085;
+  font-size: 0.8rem;
+  font-weight: 850;
+  transform: translateY(-50%);
+}
+
+.bac-payment-money-input input {
+  padding-left: 27px;
+}
+
+#paymentHistoryList {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.bac-payment-history-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(180px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #e6eaf0;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.bac-payment-history-row > div:first-child,
+.bac-payment-history-user {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bac-payment-history-row > div:first-child strong {
+  color: #101828;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.bac-payment-history-row span {
+  color: #667085;
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.bac-payment-history-user strong {
+  overflow: hidden;
+  color: #344054;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bac-payment-history-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.bac-payment-history-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #475467;
+}
+
+.bac-payment-history-actions button:hover,
+.bac-payment-history-actions button:focus-visible {
+  border-color: #20a797;
+  color: #0f766e;
+  outline: none;
+}
+
+.bac-payment-history-actions button.is-danger:hover,
+.bac-payment-history-actions button.is-danger:focus-visible {
+  border-color: #fecaca;
+  color: #b42318;
+}
+
+.bac-payment-empty {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 76px;
+  border: 1px dashed #d9dee8;
+  border-radius: 8px;
+  color: #667085;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
 @media (max-width: 860px) {
   .bac-monitoring-content {
     padding: 16px;
@@ -620,6 +931,38 @@ body.sidebar-collapsed .bac-monitoring-content {
 
   .bac-add-grid {
     grid-template-columns: 1fr;
+  }
+
+  .bac-payment-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bac-payment-summary > div:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid #e6eaf0;
+  }
+
+  .bac-payment-summary > div:nth-child(4) {
+    border-top: 1px solid #e6eaf0;
+  }
+
+  .bac-payment-form-grid,
+  .bac-payment-history-row {
+    grid-template-columns: 1fr;
+  }
+
+  .bac-payment-form-grid > button {
+    width: 100%;
+  }
+
+  .bac-payment-history-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bac-icon-button {
+    transition: none;
   }
 }
 

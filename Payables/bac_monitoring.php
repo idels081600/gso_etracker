@@ -4,6 +4,36 @@ require_once 'auth_payables.php';
 $full_name = isset($_SESSION['pay_name']) ? $_SESSION['pay_name'] : '';
 require_once 'transmit_db.php';
 require_once 'payables_helpers.php';
+require_once 'payables_ib_payments.php';
+
+function bac_monitoring_payment_return_url(string $queryString, int $recordId = 0): string
+{
+    parse_str(ltrim($queryString, '?'), $query);
+    $allowed = [];
+    if (!empty($query['search']) && is_scalar($query['search'])) {
+        $allowed['search'] = trim((string)$query['search']);
+    }
+    if (!empty($query['sort']) && is_scalar($query['sort'])) {
+        $allowed['sort'] = trim((string)$query['sort']);
+    }
+    if (!empty($query['page']) && filter_var($query['page'], FILTER_VALIDATE_INT)) {
+        $allowed['page'] = max(1, (int)$query['page']);
+    }
+    if ($recordId > 0) {
+        $allowed['payment_record'] = $recordId;
+    }
+
+    return 'bac_monitoring.php' . ($allowed ? '?' . http_build_query($allowed) : '');
+}
+
+function bac_monitoring_set_payment_flash(string $type, string $message, array $oldInput = []): void
+{
+    $_SESSION['_bac_payment_flash'] = [
+        'type' => $type,
+        'message' => $message,
+        'old_input' => $oldInput,
+    ];
+}
 
 function bac_monitoring_ensure_date_column(mysqli $conn, string $column): void
 {
@@ -57,6 +87,14 @@ foreach (['pre_procurement', 'pre_bid', 'evaluation'] as $bacDateColumn) {
     bac_monitoring_ensure_date_column($conn, $bacDateColumn);
 }
 bac_monitoring_ensure_text_column($conn, 'pr_included');
+
+$paymentStorageError = '';
+try {
+    payables_ensure_ib_payments_table($conn);
+} catch (Throwable $exception) {
+    $paymentStorageError = 'Partial payments are temporarily unavailable.';
+    payables_log_error('IB payment storage initialization failed: ' . $exception->getMessage());
+}
 
 $formErrors = [];
 $formValues = [
@@ -125,6 +163,62 @@ $validateBacForm = function (array $values): array {
 };
 
 $action = $_POST['action'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_ib_payment', 'edit_ib_payment', 'delete_ib_payment'], true)) {
+    $recordId = filter_var($_POST['record_id'] ?? null, FILTER_VALIDATE_INT) ?: 0;
+    $paymentId = filter_var($_POST['payment_id'] ?? null, FILTER_VALIDATE_INT) ?: 0;
+    $amount = trim((string)($_POST['payment_amount'] ?? ''));
+    $paymentDate = trim((string)($_POST['payment_date'] ?? ''));
+    $dvNumber = trim((string)($_POST['dv_number'] ?? ''));
+    $returnQuery = trim((string)($_POST['return_query'] ?? ''));
+    $oldInput = [
+        'action' => $action,
+        'payment_id' => $paymentId,
+        'amount' => $amount,
+        'payment_date' => $paymentDate,
+        'dv_number' => $dvNumber,
+    ];
+
+    try {
+        $token = (string)($_POST['csrf_token'] ?? '');
+        $sessionToken = (string)($_SESSION['_payables_csrf_token'] ?? '');
+        if (!$token || !$sessionToken || !hash_equals($sessionToken, $token)) {
+            throw new InvalidArgumentException('Security token expired. Please refresh and try again.');
+        }
+        if ($paymentStorageError !== '') {
+            throw new RuntimeException($paymentStorageError);
+        }
+        if ($recordId < 1) {
+            throw new InvalidArgumentException('Invalid IB monitoring record.');
+        }
+
+        $changedBy = trim((string)($_SESSION['pay_name'] ?? ''));
+        if ($action === 'add_ib_payment') {
+            payables_add_ib_payment($conn, $recordId, $amount, $paymentDate, $changedBy, $dvNumber);
+            bac_monitoring_set_payment_flash('success', 'Partial payment recorded successfully.');
+        } elseif ($action === 'edit_ib_payment') {
+            if ($paymentId < 1) {
+                throw new InvalidArgumentException('Invalid partial payment.');
+            }
+            payables_edit_ib_payment($conn, $recordId, $paymentId, $amount, $paymentDate, $changedBy, $dvNumber);
+            bac_monitoring_set_payment_flash('success', 'Partial payment updated successfully.');
+        } else {
+            if ($paymentId < 1) {
+                throw new InvalidArgumentException('Invalid partial payment.');
+            }
+            payables_delete_ib_payment($conn, $recordId, $paymentId);
+            bac_monitoring_set_payment_flash('success', 'Partial payment deleted successfully.');
+        }
+    } catch (InvalidArgumentException $exception) {
+        bac_monitoring_set_payment_flash('error', $exception->getMessage(), $oldInput);
+    } catch (Throwable $exception) {
+        payables_log_error('IB payment action failed: ' . $exception->getMessage());
+        bac_monitoring_set_payment_flash('error', 'Unable to update partial payments right now.', $oldInput);
+    }
+
+    header('Location: ' . bac_monitoring_payment_return_url($returnQuery, $recordId));
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitoring', 'edit_bac_monitoring', 'delete_bac_monitoring'], true)) {
     $formValues = [
         'id' => trim($_POST['id'] ?? ''),
@@ -193,6 +287,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add_bac_monitor
         if ($formValues['status'] === 'Transmitted to GSO') {
             $finalAmount = $abc;
             $formValues['final_amount'] = number_format($abc, 2, '.', '');
+        }
+        if (!$formErrors && $action === 'edit_bac_monitoring') {
+            try {
+                $totalPaidCents = payables_ib_total_paid_cents($conn, (int)$recordId);
+                if (payables_amount_to_cents($finalAmount) < $totalPaidCents) {
+                    $formErrors[] = 'Final Amount cannot be lower than the recorded Total Paid of PHP ' . number_format($totalPaidCents / 100, 2) . '.';
+                }
+            } catch (Throwable $exception) {
+                payables_log_error('Unable to validate Final Amount against payments: ' . $exception->getMessage());
+                $formErrors[] = 'Unable to validate the Final Amount right now.';
+            }
         }
         $preProcurement = $formValues['pre_procurement'] !== '' ? $formValues['pre_procurement'] : null;
         $preBid = $formValues['pre_bid'] !== '' ? $formValues['pre_bid'] : null;
@@ -393,6 +498,16 @@ $buildPageUrl = function (int $page = 1) use ($searchTerm, $sortOption): string 
 };
 
 $bacRows = [];
+$paymentTotalSelect = '0 AS total_paid';
+$paymentTotalJoin = '';
+if ($paymentStorageError === '') {
+    $paymentTotalSelect = 'COALESCE(payment_totals.total_paid, 0) AS total_paid';
+    $paymentTotalJoin = "LEFT JOIN (
+        SELECT bac_monitoring_id, SUM(amount) AS total_paid
+        FROM payables_ib_payments
+        GROUP BY bac_monitoring_id
+    ) payment_totals ON payment_totals.bac_monitoring_id = bac_monitoring.id";
+}
 $bacSql = "
     SELECT
         id,
@@ -415,8 +530,10 @@ $bacSql = "
         contract_date,
         calendar_days_delivery,
         deadline,
-        received_by
+        received_by,
+        {$paymentTotalSelect}
     FROM bac_monitoring
+    {$paymentTotalJoin}
     WHERE {$whereSql}
     ORDER BY {$orderBySql}
     LIMIT ? OFFSET ?";
@@ -432,6 +549,23 @@ if ($bacStmt) {
     }
     $bacStmt->close();
 }
+$paymentMap = [];
+if ($bacRows && $paymentStorageError === '') {
+    try {
+        $paymentMap = payables_get_ib_payment_map($conn, array_column($bacRows, 'id'));
+    } catch (Throwable $exception) {
+        $paymentStorageError = 'Partial-payment history could not be loaded.';
+        payables_log_error('IB payment history load failed: ' . $exception->getMessage());
+    }
+}
+$paymentFlash = $_SESSION['_bac_payment_flash'] ?? null;
+unset($_SESSION['_bac_payment_flash']);
+$openPaymentRecordId = filter_input(INPUT_GET, 'payment_record', FILTER_VALIDATE_INT) ?: 0;
+$returnQueryValues = ['page' => $currentPage, 'sort' => $sortOption];
+if ($searchTerm !== '') {
+    $returnQueryValues['search'] = $searchTerm;
+}
+$paymentReturnQuery = http_build_query($returnQueryValues);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -511,6 +645,8 @@ if ($bacStmt) {
                     <div>Name of Project</div>
                     <div>ABC</div>
                     <div>Final Amount</div>
+                    <div>Total Paid</div>
+                    <div>Balance</div>
                     <div>Bidder</div>
                     <div>Pre Procurement</div>
                     <div>Pre Bid</div>
@@ -561,6 +697,16 @@ if ($bacStmt) {
                         $prIncluded = trim((string)($row['pr_included'] ?? ''));
                         $prNumbers = bac_monitoring_pr_numbers($prIncluded);
                         $prCount = count($prNumbers);
+                        $finalAmountValue = (float)($row['final_amount'] ?? 0);
+                        $totalPaidValue = (float)($row['total_paid'] ?? 0);
+                        $balanceValue = max(0, $finalAmountValue - $totalPaidValue);
+                        $paymentState = $totalPaidValue <= 0
+                            ? 'unpaid'
+                            : ($balanceValue <= 0.004 ? 'fully-paid' : 'partially-paid');
+                        $paymentStateLabel = $paymentState === 'fully-paid'
+                            ? 'Fully Paid'
+                            : ($paymentState === 'partially-paid' ? 'Partially Paid' : 'Unpaid');
+                        $recordPayments = $paymentMap[(int)$row['id']] ?? [];
                         ?>
                         <div class="bac-monitoring-row" role="row">
                             <div class="bac-ref"><?php echo htmlspecialchars($row['ib_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
@@ -583,7 +729,12 @@ if ($bacStmt) {
                             </div>
                             <div class="bac-project"><?php echo htmlspecialchars($row['project_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-amount">&#8369;<?php echo number_format((float)($row['abc'] ?? 0), 2); ?></div>
-                            <div class="bac-amount">&#8369;<?php echo number_format((float)($row['final_amount'] ?? 0), 2); ?></div>
+                            <div class="bac-amount">&#8369;<?php echo number_format($finalAmountValue, 2); ?></div>
+                            <div class="bac-amount bac-payment-paid">&#8369;<?php echo number_format($totalPaidValue, 2); ?></div>
+                            <div class="bac-payment-balance">
+                                <strong>&#8369;<?php echo number_format($balanceValue, 2); ?></strong>
+                                <span class="bac-payment-status is-<?php echo htmlspecialchars($paymentState, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($paymentStateLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+                            </div>
                             <div class="bac-bidder"><?php echo htmlspecialchars($row['bidder'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-date"><?php echo htmlspecialchars($displayPreProcurement, ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-date"><?php echo htmlspecialchars($displayPreBid, ENT_QUOTES, 'UTF-8'); ?></div>
@@ -608,6 +759,22 @@ if ($bacStmt) {
                             <div class="bac-date"><?php echo htmlspecialchars($row['deadline'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-bidder"><?php echo htmlspecialchars($receivedBy, ENT_QUOTES, 'UTF-8'); ?></div>
                             <div class="bac-row-actions">
+                                <button
+                                    type="button"
+                                    class="bac-icon-button bac-payment-row"
+                                    title="Manage partial payments"
+                                    aria-label="<?php echo htmlspecialchars('Manage partial payments for ' . ($row['ib_no'] ?? 'record'), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-record-id="<?php echo (int)$row['id']; ?>"
+                                    data-ib-no="<?php echo htmlspecialchars($row['ib_no'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-project-name="<?php echo htmlspecialchars($row['project_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-final-amount="<?php echo htmlspecialchars(number_format($finalAmountValue, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-total-paid="<?php echo htmlspecialchars(number_format($totalPaidValue, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-balance="<?php echo htmlspecialchars(number_format($balanceValue, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-payment-state="<?php echo htmlspecialchars($paymentState, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-payments="<?php echo htmlspecialchars(json_encode($recordPayments, JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>"
+                                >
+                                    <i class="fas fa-money-check-dollar"></i>
+                                </button>
                                 <a
                                     class="bac-icon-button"
                                     href="print_document_barcode.php?type=IB&id=<?php echo (int)$row['id']; ?>"
@@ -897,8 +1064,289 @@ if ($bacStmt) {
             </form>
         </div>
     </div>
+    <div class="modal fade" id="ibPaymentModal" tabindex="-1" aria-labelledby="ibPaymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered bac-payment-dialog">
+            <div class="modal-content bac-payment-modal">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="ibPaymentModalLabel">Partial Payments</h5>
+                        <div class="bac-add-subtitle" id="ibPaymentSubtitle">Record and review IB payments.</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="bac-payment-summary" aria-label="Payment summary">
+                        <div><span>Final Amount</span><strong id="paymentFinalAmount">&#8369;0.00</strong></div>
+                        <div><span>Total Paid</span><strong id="paymentTotalPaid">&#8369;0.00</strong></div>
+                        <div><span>Balance</span><strong id="paymentBalance">&#8369;0.00</strong></div>
+                        <div><span>Status</span><strong class="bac-payment-status is-unpaid" id="paymentStatus">Unpaid</strong></div>
+                    </div>
+
+                    <div class="bac-monitoring-alert d-none" id="paymentModalAlert" role="status" aria-live="polite"></div>
+
+                    <section class="bac-payment-entry" aria-labelledby="paymentEntryTitle">
+                        <div class="bac-payment-section-head">
+                            <div>
+                                <h6 id="paymentEntryTitle">Record Partial Payment</h6>
+                                <span id="paymentEntryHelp">Enter an amount up to the remaining balance.</span>
+                            </div>
+                            <button type="button" class="bac-payment-cancel-edit d-none" id="cancelPaymentEdit">Cancel edit</button>
+                        </div>
+                        <form method="post" action="bac_monitoring.php" id="ibPaymentForm">
+                            <?php echo payables_csrf_input(); ?>
+                            <input type="hidden" name="action" id="paymentAction" value="add_ib_payment">
+                            <input type="hidden" name="record_id" id="paymentRecordId">
+                            <input type="hidden" name="payment_id" id="paymentId">
+                            <input type="hidden" name="return_query" value="<?php echo htmlspecialchars($paymentReturnQuery, ENT_QUOTES, 'UTF-8'); ?>">
+                            <div class="bac-payment-form-grid">
+                                <label>
+                                    <span>Payment Amount</span>
+                                    <div class="bac-payment-money-input">
+                                        <span>&#8369;</span>
+                                        <input type="text" name="payment_amount" id="paymentAmount" inputmode="decimal" autocomplete="off" placeholder="0.00" required>
+                                    </div>
+                                </label>
+                                <label>
+                                    <span>Payment Date</span>
+                                    <input type="date" name="payment_date" id="paymentDate" max="<?php echo date('Y-m-d'); ?>" required>
+                                </label>
+                                <label>
+                                    <span>DV Number</span>
+                                    <input type="text" name="dv_number" id="paymentDvNumber" placeholder="e.g. DV-2024-0001">
+                                </label>
+                                <button type="submit" class="btn btn-success bac-save-button" id="savePaymentButton">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Record Payment</span>
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+
+                    <section class="bac-payment-history" aria-labelledby="paymentHistoryTitle">
+                        <div class="bac-payment-section-head">
+                            <div>
+                                <h6 id="paymentHistoryTitle">Payment History</h6>
+                                <span>Most recent payment first</span>
+                            </div>
+                        </div>
+                        <div id="paymentHistoryList"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+    <form method="post" action="bac_monitoring.php" id="deletePaymentForm" class="d-none">
+        <?php echo payables_csrf_input(); ?>
+        <input type="hidden" name="action" value="delete_ib_payment">
+        <input type="hidden" name="record_id" id="deletePaymentRecordId">
+        <input type="hidden" name="payment_id" id="deletePaymentId">
+        <input type="hidden" name="return_query" value="<?php echo htmlspecialchars($paymentReturnQuery, ENT_QUOTES, 'UTF-8'); ?>">
+    </form>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const paymentFlash = <?php echo json_encode($paymentFlash, JSON_UNESCAPED_SLASHES); ?>;
+        const openPaymentRecordId = <?php echo (int)$openPaymentRecordId; ?>;
+        const paymentStorageError = <?php echo json_encode($paymentStorageError); ?>;
+
+        (function () {
+            var modalElement = document.getElementById("ibPaymentModal");
+            var paymentForm = document.getElementById("ibPaymentForm");
+            var paymentAction = document.getElementById("paymentAction");
+            var paymentRecordId = document.getElementById("paymentRecordId");
+            var paymentId = document.getElementById("paymentId");
+            var paymentAmount = document.getElementById("paymentAmount");
+            var paymentDate = document.getElementById("paymentDate");
+            var paymentDvNumber = document.getElementById("paymentDvNumber");
+            var saveButton = document.getElementById("savePaymentButton");
+            var cancelEdit = document.getElementById("cancelPaymentEdit");
+            var entryTitle = document.getElementById("paymentEntryTitle");
+            var entryHelp = document.getElementById("paymentEntryHelp");
+            var historyList = document.getElementById("paymentHistoryList");
+            var modalAlert = document.getElementById("paymentModalAlert");
+            var activePaymentButton = null;
+            var activePayments = [];
+
+            function escapeHtml(value) {
+                return String(value == null ? "" : value)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            function money(value) {
+                return "₱" + new Intl.NumberFormat("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                }).format(Number(value || 0));
+            }
+
+            function paymentStatusLabel(state) {
+                if (state === "fully-paid") return "Fully Paid";
+                if (state === "partially-paid") return "Partially Paid";
+                return "Unpaid";
+            }
+
+            function showPaymentAlert(type, message) {
+                if (!message) {
+                    modalAlert.className = "bac-monitoring-alert d-none";
+                    modalAlert.textContent = "";
+                    return;
+                }
+                modalAlert.className = "bac-monitoring-alert is-" + (type === "success" ? "success" : "error");
+                modalAlert.textContent = message;
+            }
+
+            function setAddAvailability() {
+                if (!activePaymentButton) return;
+                var finalAmount = Number(activePaymentButton.dataset.finalAmount || 0);
+                var state = activePaymentButton.dataset.paymentState || "unpaid";
+                var unavailableMessage = "";
+                if (paymentStorageError) {
+                    unavailableMessage = paymentStorageError;
+                } else if (finalAmount <= 0) {
+                    unavailableMessage = "Set a positive Final Amount before recording a payment.";
+                } else if (state === "fully-paid") {
+                    unavailableMessage = "This IB is fully paid. Edit or delete an existing payment to change the balance.";
+                }
+
+                paymentAmount.disabled = unavailableMessage !== "";
+                paymentDate.disabled = unavailableMessage !== "";
+                paymentDvNumber.disabled = unavailableMessage !== "";
+                saveButton.disabled = unavailableMessage !== "";
+                entryHelp.textContent = unavailableMessage || "Enter an amount up to " + money(activePaymentButton.dataset.balance) + ".";
+            }
+
+            function resetPaymentForm() {
+                paymentAction.value = "add_ib_payment";
+                paymentId.value = "";
+                paymentAmount.value = "";
+                paymentDvNumber.value = "";
+                paymentDate.value = paymentDate.max;
+                entryTitle.textContent = "Record Partial Payment";
+                saveButton.querySelector("i").className = "fas fa-plus";
+                saveButton.querySelector("span").textContent = "Record Payment";
+                cancelEdit.classList.add("d-none");
+                setAddAvailability();
+            }
+
+            function renderPaymentHistory() {
+                if (!activePayments.length) {
+                    historyList.innerHTML = '<div class="bac-payment-empty"><i class="fas fa-receipt"></i><span>No partial payments recorded.</span></div>';
+                    return;
+                }
+
+                historyList.innerHTML = activePayments.map(function (payment, index) {
+                    var changedBy = payment.updated_by || payment.created_by || "Payables admin";
+                    var dvHtml = payment.dv_number ? '<span class="bac-payment-dv-number">' + escapeHtml(payment.dv_number) + '</span>' : '';
+                    return '<div class="bac-payment-history-row">' +
+                        '<div><strong>' + money(payment.amount) + '</strong><span>' + escapeHtml(payment.payment_date) + '</span>' + dvHtml + '</div>' +
+                        '<div class="bac-payment-history-user"><span>Recorded by</span><strong>' + escapeHtml(changedBy) + '</strong></div>' +
+                        '<div class="bac-payment-history-actions">' +
+                            '<button type="button" data-edit-payment="' + index + '" aria-label="Edit payment"><i class="fas fa-pen"></i></button>' +
+                            '<button type="button" class="is-danger" data-delete-payment="' + escapeHtml(payment.id) + '" aria-label="Delete payment"><i class="fas fa-trash"></i></button>' +
+                        '</div>' +
+                    '</div>';
+                }).join("");
+            }
+
+            function openPaymentModal(button) {
+                activePaymentButton = button;
+                try {
+                    activePayments = JSON.parse(button.dataset.payments || "[]");
+                } catch (error) {
+                    activePayments = [];
+                }
+
+                paymentRecordId.value = button.dataset.recordId || "";
+                document.getElementById("ibPaymentModalLabel").textContent = "Partial Payments · " + (button.dataset.ibNo || "IB");
+                document.getElementById("ibPaymentSubtitle").textContent = button.dataset.projectName || "Record and review IB payments.";
+                document.getElementById("paymentFinalAmount").textContent = money(button.dataset.finalAmount);
+                document.getElementById("paymentTotalPaid").textContent = money(button.dataset.totalPaid);
+                document.getElementById("paymentBalance").textContent = money(button.dataset.balance);
+                var status = document.getElementById("paymentStatus");
+                var state = button.dataset.paymentState || "unpaid";
+                status.className = "bac-payment-status is-" + state;
+                status.textContent = paymentStatusLabel(state);
+                showPaymentAlert("", "");
+                resetPaymentForm();
+                renderPaymentHistory();
+                bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            }
+
+            document.querySelectorAll(".bac-payment-row").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    openPaymentModal(button);
+                });
+            });
+
+            historyList.addEventListener("click", function (event) {
+                var editButton = event.target.closest("[data-edit-payment]");
+                if (editButton) {
+                    var payment = activePayments[Number(editButton.dataset.editPayment)];
+                    if (!payment) return;
+                    paymentAction.value = "edit_ib_payment";
+                    paymentId.value = payment.id || "";
+                    paymentAmount.disabled = false;
+                    paymentDate.disabled = false;
+                    paymentDvNumber.disabled = false;
+                    saveButton.disabled = false;
+                    paymentAmount.value = Number(payment.amount || 0).toFixed(2);
+                    paymentDvNumber.value = payment.dv_number || "";
+                    paymentDate.value = payment.payment_date || paymentDate.max;
+                    entryTitle.textContent = "Edit Partial Payment";
+                    entryHelp.textContent = "The balance will be recalculated after saving.";
+                    saveButton.querySelector("i").className = "fas fa-check";
+                    saveButton.querySelector("span").textContent = "Save Payment";
+                    cancelEdit.classList.remove("d-none");
+                    paymentAmount.focus();
+                    return;
+                }
+
+                var deleteButton = event.target.closest("[data-delete-payment]");
+                if (!deleteButton || !activePaymentButton) return;
+                if (!confirm("Delete this partial payment? The IB balance will be recalculated.")) return;
+                document.getElementById("deletePaymentRecordId").value = activePaymentButton.dataset.recordId || "";
+                document.getElementById("deletePaymentId").value = deleteButton.dataset.deletePayment || "";
+                document.getElementById("deletePaymentForm").submit();
+            });
+
+            cancelEdit.addEventListener("click", resetPaymentForm);
+
+            if (openPaymentRecordId > 0) {
+                var targetButton = document.querySelector('.bac-payment-row[data-record-id="' + openPaymentRecordId + '"]');
+                if (targetButton) {
+                    openPaymentModal(targetButton);
+                    if (paymentFlash) {
+                        showPaymentAlert(paymentFlash.type, paymentFlash.message);
+                        var oldInput = paymentFlash.old_input || {};
+                        if (paymentFlash.type === "error" && oldInput.action !== "delete_ib_payment") {
+                            if (oldInput.action === "edit_ib_payment") {
+                                paymentAction.value = "edit_ib_payment";
+                                paymentId.value = oldInput.payment_id || "";
+                                entryTitle.textContent = "Edit Partial Payment";
+                                saveButton.querySelector("i").className = "fas fa-check";
+                                saveButton.querySelector("span").textContent = "Save Payment";
+                                cancelEdit.classList.remove("d-none");
+                            }
+                            paymentAmount.disabled = false;
+                            paymentDate.disabled = false;
+                            paymentDvNumber.disabled = false;
+                            saveButton.disabled = false;
+                            paymentAmount.value = oldInput.amount || "";
+                            paymentDvNumber.value = oldInput.dv_number || "";
+                            paymentDate.value = oldInput.payment_date || paymentDate.max;
+                        }
+                    }
+                }
+
+                var cleanUrl = new URL(window.location.href);
+                cleanUrl.searchParams.delete("payment_record");
+                window.history.replaceState({}, "", cleanUrl.pathname + (cleanUrl.search ? cleanUrl.search : ""));
+            }
+        })();
+
         document.querySelectorAll(".bac-edit-row").forEach(function (button) {
             button.addEventListener("click", function () {
                 document.getElementById("editBacId").value = button.dataset.id || "";
