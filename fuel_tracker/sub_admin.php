@@ -504,6 +504,11 @@ $totalLiters = array_reduce($printableIssuances, static fn(float $sum, array $is
                             <i class="fas fa-print me-1"></i>Print Desk
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="fuel_reports.php">
+                            <i class="fas fa-chart-column me-1"></i>Reports
+                        </a>
+                    </li>
                 </ul>
 
                 <div class="dropdown">
