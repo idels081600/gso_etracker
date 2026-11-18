@@ -33,7 +33,7 @@ function login_throttle_config()
     return [
         'max_attempts' => 5,
         'window_seconds' => 15 * 60,
-        'lock_seconds' => 10 * 60,
+        'lock_seconds' => 5 * 60,
     ];
 }
 
